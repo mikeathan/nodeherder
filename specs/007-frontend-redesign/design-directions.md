@@ -110,3 +110,25 @@ job: see the state of the house and change it safely.
 - Workbench uses mono only for real code values, not as decoration for labels.
 - No direction uses ALL-CAPS eyebrow labels or "A · B" meta strings. Numbered markers appear
   only in the Floorplan wizard, where the steps are a real sequence.
+
+## Round 3 (2026-10-10): Hearth + Panel
+
+Owner feedback: keep Hearth and Deck, drop the rest. Deck does not work well on phones,
+especially automations; Hearth's automations need better spacing on phones; recent activity
+should be switchable; both layouts should share one set of themes; add the NodeHerder logo.
+
+Decision (recommended, built as `samples/hearthpanel.html`): one app. Hearth provides every
+page and the single automation editor; Deck's look becomes **panel mode** (`#/panel`), a
+full-screen room view for wall tablets with an exit back to the app. Reasons: one editor and
+one set of pages to maintain and test; Deck's strength (glanceable rooms, big targets) is kept
+where it is useful and its weak spots (dense editing on phones) are avoided.
+
+- Logo: `frontend/src/assets/images/nodeherder_logo.png` (cropped) at the top of the sidebar,
+  in the phone header, on sign-in, and at the left of the panel clock strip.
+- Themes (`samples/shared/themes.css`, light + dark each): Daylight, Teak, Avocado (Hearth),
+  Lagoon, Ember, Frost (Deck), and new Fleece (from the logo's wool blues), Fjord, Plum,
+  Graphite. Panel mode reads `--dk-lamp` and `--dk-climate` from the same theme.
+- Recent activity on Overview has a Show switch; off hides the feed and stops collecting it
+  (in-memory only, FE-05); the choice is stored per browser.
+- Automation editor at ≤ 700 px: When / If / Then stack vertically, fields go full width, and
+  reorder/delete controls get larger touch targets.

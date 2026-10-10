@@ -522,6 +522,59 @@ button.nh-tile-ic:hover:not(:disabled) { box-shadow: 0 0 0 3px var(--nh-accent-s
 .nh-allpage-b .nh-chat { height: 34rem; }
 .nh-allpage-b .nh-console { height: 24rem; }
 
+/* ---------- logo ---------- */
+.nh-brand-logo.has-img { background: none; width: 2.2rem; height: 2.6rem; }
+.nh-logo-img { width: auto; height: 100%; max-height: 2.6rem; object-fit: contain; display: block; }
+.nh-header-logo { display: none; height: 2.2rem; }
+.nh-login-brand.has-img .nh-logo-img { height: 4rem; max-height: none; }
+@media (max-width: 860px) { .nh-header-logo { display: block; } }
+/* ---------- activity on/off ---------- */
+.nh-feed-switch { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.8rem; color: var(--nh-text-muted); cursor: pointer; }
+.nh-activity .nh-card-meta { margin-left: auto; }
+.nh-feed-off { display: flex; align-items: center; gap: 0.6rem; margin: 0; padding: 1.1rem var(--nh-space); color: var(--nh-text-muted); }
+/* ---------- automation editor on phones: one column, fields full width ---------- */
+@media (max-width: 700px) {
+  .nh-editor { gap: 0.75rem; }
+  .nh-editor-main .nh-page-head { margin-bottom: 0.75rem; }
+  .nh-trig-head { padding: 0.6rem 0.75rem; }
+  .nh-sentence { order: 3; flex-basis: 100%; font-size: 0.85rem; }
+  .nh-trig-tools { margin-left: auto; }
+  .nh-flow { padding: 0.75rem; }
+  .nh-block { grid-template-columns: minmax(0, 1fr); }
+  .nh-block-label { justify-content: flex-start; margin-bottom: 0.45rem; }
+  .nh-block-label::after { display: none; }
+  .nh-block-label span { height: 1.6rem; font-size: 0.68rem; }
+  .nh-block-body { margin-left: 0.7rem; padding: 0 0 1rem 0.8rem; border-left: 2px solid var(--nh-border-strong); }
+  .nh-block:last-child .nh-block-body { padding-bottom: 0.2rem; }
+  .nh-cond, .nh-act { padding: 0.6rem; gap: 0.5rem; }
+  .nh-cond-kind { min-width: 0; flex: 1 1 auto; }
+  .nh-cond > .nh-inline, .nh-set-row > .nh-inline, .nh-act-body > .nh-inline:not(.nh-act-opts) { flex: 1 1 100%; order: 2; }
+  .nh-cond > .nh-reorder { order: 1; margin-left: auto; }
+  .nh-cond .nh-err, .nh-act .nh-err { order: 3; }
+  .nh-cond .nh-inline > .nh-select:first-child, .nh-set-row .nh-inline > .nh-select:first-child, .nh-act-body > .nh-inline > .nh-select:first-child { flex: 1 1 100%; }
+  .nh-cond .nh-inline > .nh-select:not(.is-op), .nh-cond .nh-inline > .nh-unit-input, .nh-cond .nh-inline > .nh-input, .nh-set-row .nh-inline > .nh-unit-input, .nh-set-row .nh-inline > .nh-select { flex: 1 1 8rem; min-width: 0; }
+  .nh-unit-input .nh-input.is-num { width: 100%; }
+  .nh-cond input[type='time'] { flex: 1 1 6.5rem; }
+  .nh-act-head { gap: 0.4rem; }
+  .nh-act-head > .nh-select { order: 3; flex: 1 1 100%; }
+  .nh-act-head > .nh-reorder { order: 2; margin-left: auto; }
+  .nh-act-body { padding-left: 0; }
+  .nh-act-opts { gap: 0.4rem; }
+  .nh-block-body > .nh-inline .nh-btn, .nh-add-trig { flex: 1 1 auto; }
+  .nh-src { flex: 1 1 100%; }
+  .nh-block.is-when .nh-inline > .nh-select { flex: 1 1 100%; }
+  .nh-reorder .nh-btn.is-icon.is-sm { width: 2.4rem; min-height: 2.4rem; }
+  .nh-savebar { padding: 0.5rem 0.6rem; border-radius: var(--nh-radius-m); }
+  .nh-savebar .nh-dirty { flex: 1 1 100%; }
+  .nh-savebar .nh-btn { flex: 1 1 auto; }
+  .nh-editor-side .nh-card { margin-bottom: 0.75rem; }
+}
+@media (max-width: 700px) { .nh-cond .nh-inline > .nh-select.is-op { flex: 0 0 4.4rem; } }
+@media (max-width: 700px) {
+  .nh-cond > .nh-inline > .nh-select:first-child:not(.is-op) { flex: 1 1 0; min-width: 0; }
+  .nh-cond > .nh-inline > .nh-select:first-child + .nh-select.is-op + * { flex: 1 1 100%; }
+}
+
 </style>
 <style>
 /* 1 · Hearth — Lovelace-inspired, warm and rounded. */
@@ -560,27 +613,57 @@ button.nh-tile-ic:hover:not(:disabled) { box-shadow: 0 0 0 3px var(--nh-accent-s
 [data-effects='on'] .nh-content { background: transparent; }
 
 </style>
+<style>
+/* Shared theme set for Hearth, Deck and Hearth + Panel. Each theme defines light and dark.
+   Loaded after the design stylesheet, so a theme wins over a design's built-in palette.
+   --dk-* tokens drive panel mode (lamp = lights, climate = temperature dials). */
+
+/* 1 Daylight (Hearth's original) */
+[data-preset='daylight'][data-mode='light'] { --nh-bg: #f4f2ee; --nh-surface: #ffffff; --nh-surface-2: #f0ede7; --nh-border: #e4dfd6; --nh-border-strong: #cfc7ba; --nh-text: #23211d; --nh-text-muted: #6b665d; --nh-accent: #0f8bd6; --nh-accent-contrast: #ffffff; --nh-nav-bg: #fbfaf7; --nh-header-bg: #f4f2ee; --dk-lamp: #e0901a; --dk-climate: #0f8bd6; --dk-glass: rgb(255 255 255 / 0.7); }
+[data-preset='daylight'][data-mode='dark'] { --nh-bg: #121416; --nh-surface: #1d2023; --nh-surface-2: #272b2f; --nh-border: #2f3337; --nh-border-strong: #454a50; --nh-text: #eceae6; --nh-text-muted: #a29e96; --nh-accent: #3fb0f0; --nh-accent-contrast: #06121a; --nh-nav-bg: #17191c; --nh-header-bg: #121416; --dk-lamp: #ffb547; --dk-climate: #3fb0f0; --dk-glass: rgb(255 255 255 / 0.04); }
+/* 2 Teak (Hearth's original) */
+[data-preset='teak'][data-mode='light'] { --nh-bg: #f3ece1; --nh-surface: #fffaf2; --nh-surface-2: #f1e6d6; --nh-border: #e6d8c3; --nh-border-strong: #d2bea0; --nh-text: #2b2118; --nh-text-muted: #6f604f; --nh-accent: #b8611f; --nh-accent-contrast: #ffffff; --nh-nav-bg: #efe4d3; --nh-header-bg: #f3ece1; --dk-lamp: #c9780f; --dk-climate: #2f7d8c; --dk-glass: rgb(255 255 255 / 0.6); }
+[data-preset='teak'][data-mode='dark'] { --nh-bg: #19130e; --nh-surface: #241b14; --nh-surface-2: #31251b; --nh-border: #3a2c20; --nh-border-strong: #57412f; --nh-text: #f3e8da; --nh-text-muted: #b9a58d; --nh-accent: #e98a3c; --nh-accent-contrast: #1a0f05; --nh-nav-bg: #1d1610; --nh-header-bg: #19130e; --dk-lamp: #ffb547; --dk-climate: #7cc7d4; --dk-glass: rgb(255 255 255 / 0.04); }
+/* 3 Avocado (Hearth's original) */
+[data-preset='avocado'][data-mode='light'] { --nh-bg: #eef0e2; --nh-surface: #fbfcf4; --nh-surface-2: #e8ebd6; --nh-border: #dadfc2; --nh-border-strong: #bfc79c; --nh-text: #20251a; --nh-text-muted: #5f6650; --nh-accent: #5e7d1e; --nh-accent-contrast: #ffffff; --nh-nav-bg: #e6e9d2; --nh-header-bg: #eef0e2; --dk-lamp: #c99a06; --dk-climate: #3e7f74; --dk-glass: rgb(255 255 255 / 0.6); }
+[data-preset='avocado'][data-mode='dark'] { --nh-bg: #12140c; --nh-surface: #1c1f13; --nh-surface-2: #272b1b; --nh-border: #30351f; --nh-border-strong: #4a5230; --nh-text: #edf0e0; --nh-text-muted: #a9b08f; --nh-accent: #a5c640; --nh-accent-contrast: #12160a; --nh-nav-bg: #161910; --nh-header-bg: #12140c; --dk-lamp: #e8c547; --dk-climate: #7fc4b4; --dk-glass: rgb(255 255 255 / 0.04); }
+/* 4 Lagoon (Deck's original) */
+[data-preset='lagoon'][data-mode='light'] { --nh-bg: #e6eef0; --nh-surface: #f7fbfb; --nh-surface-2: #dbe7ea; --nh-border: #c9dadd; --nh-border-strong: #9bb8bd; --nh-text: #13252c; --nh-text-muted: #4b6a70; --nh-accent: #1d6fa3; --nh-accent-contrast: #ffffff; --nh-nav-bg: #eef4f5; --nh-header-bg: #e6eef0; --dk-lamp: #e0901a; --dk-climate: #1d7fa3; --dk-glass: rgb(255 255 255 / 0.6); }
+[data-preset='lagoon'][data-mode='dark'] { --nh-bg: #13252c; --nh-surface: #1b343d; --nh-surface-2: #24444f; --nh-border: #2c505c; --nh-border-strong: #3d6875; --nh-text: #eaf4f4; --nh-text-muted: #9fc0c4; --nh-accent: #6fd3e8; --nh-accent-contrast: #0b1b20; --nh-nav-bg: #172d35; --nh-header-bg: #13252c; --dk-lamp: #ffb547; --dk-climate: #6fd3e8; --dk-glass: rgb(255 255 255 / 0.04); }
+/* 5 Ember (Deck's original) */
+[data-preset='ember'][data-mode='light'] { --nh-bg: #f4ebe3; --nh-surface: #fffaf5; --nh-surface-2: #efe2d6; --nh-border: #e5d3c3; --nh-border-strong: #c9ad95; --nh-text: #2a1a10; --nh-text-muted: #6e5646; --nh-accent: #b4521a; --nh-accent-contrast: #ffffff; --nh-nav-bg: #f8f0e8; --nh-header-bg: #f4ebe3; --dk-lamp: #d9800f; --dk-climate: #2f8a7c; --dk-glass: rgb(255 255 255 / 0.6); }
+[data-preset='ember'][data-mode='dark'] { --nh-bg: #24170f; --nh-surface: #301f14; --nh-surface-2: #3d281a; --nh-border: #4d3423; --nh-border-strong: #6b4a33; --nh-text: #fbefe5; --nh-text-muted: #d2b6a0; --nh-accent: #ff8a3d; --nh-accent-contrast: #24170f; --nh-nav-bg: #2a1b11; --nh-header-bg: #24170f; --dk-lamp: #ffc35c; --dk-climate: #8fd3c4; --dk-glass: rgb(255 255 255 / 0.04); }
+/* 6 Frost (Deck's original) */
+[data-preset='frost'][data-mode='light'] { --nh-bg: #eef3f8; --nh-surface: #ffffff; --nh-surface-2: #e4ebf3; --nh-border: #d3dde9; --nh-border-strong: #a9bacd; --nh-text: #142236; --nh-text-muted: #51627a; --nh-accent: #1d6fa3; --nh-accent-contrast: #ffffff; --nh-nav-bg: #f6f9fc; --nh-header-bg: #eef3f8; --dk-lamp: #d98e1a; --dk-climate: #2a72c2; --dk-glass: rgb(255 255 255 / 0.7); }
+[data-preset='frost'][data-mode='dark'] { --nh-bg: #182433; --nh-surface: #1f2f42; --nh-surface-2: #283c53; --nh-border: #314864; --nh-border-strong: #49668a; --nh-text: #e9f1fb; --nh-text-muted: #a3b6cf; --nh-accent: #9cc9ff; --nh-accent-contrast: #0e1a29; --nh-nav-bg: #1b293a; --nh-header-bg: #182433; --dk-lamp: #ffc66b; --dk-climate: #9cc9ff; --dk-glass: rgb(255 255 255 / 0.04); }
+/* 7 Fleece (new) — taken from the NodeHerder logo: wool blues and the face's warm off-white */
+[data-preset='fleece'][data-mode='light'] { --nh-bg: #eef6fa; --nh-surface: #ffffff; --nh-surface-2: #e2f0f7; --nh-border: #cfe4ee; --nh-border-strong: #9cc6da; --nh-text: #0f2a38; --nh-text-muted: #4b6878; --nh-accent: #1b7fb0; --nh-accent-contrast: #ffffff; --nh-nav-bg: #f6fbfd; --nh-header-bg: #eef6fa; --dk-lamp: #e0a23a; --dk-climate: #1b8fc4; --dk-glass: rgb(255 255 255 / 0.7); }
+[data-preset='fleece'][data-mode='dark'] { --nh-bg: #0e2230; --nh-surface: #14303f; --nh-surface-2: #1b3d50; --nh-border: #23495e; --nh-border-strong: #33657f; --nh-text: #eef4f2; --nh-text-muted: #a4c3d1; --nh-accent: #5cc4ec; --nh-accent-contrast: #072030; --nh-nav-bg: #112836; --nh-header-bg: #0e2230; --dk-lamp: #f1d9b5; --dk-climate: #5cc4ec; --dk-glass: rgb(255 255 255 / 0.04); }
+/* 8 Fjord (new) — slate with sea-green */
+[data-preset='fjord'][data-mode='light'] { --nh-bg: #edf2f2; --nh-surface: #ffffff; --nh-surface-2: #e2eaea; --nh-border: #d0dcdc; --nh-border-strong: #a5b9ba; --nh-text: #142426; --nh-text-muted: #506668; --nh-accent: #0e7c86; --nh-accent-contrast: #ffffff; --nh-nav-bg: #f5f8f8; --nh-header-bg: #edf2f2; --dk-lamp: #d18b1c; --dk-climate: #0e7c86; --dk-glass: rgb(255 255 255 / 0.7); }
+[data-preset='fjord'][data-mode='dark'] { --nh-bg: #0f1a20; --nh-surface: #16242c; --nh-surface-2: #1e313b; --nh-border: #29414d; --nh-border-strong: #3d5a68; --nh-text: #e4eef2; --nh-text-muted: #9db3bd; --nh-accent: #4fc3cf; --nh-accent-contrast: #06181b; --nh-nav-bg: #131f26; --nh-header-bg: #0f1a20; --dk-lamp: #ffbe5c; --dk-climate: #4fc3cf; --dk-glass: rgb(255 255 255 / 0.04); }
+/* 9 Plum (new) — dusk violet with rose */
+[data-preset='plum'][data-mode='light'] { --nh-bg: #f6f1f5; --nh-surface: #ffffff; --nh-surface-2: #efe6ee; --nh-border: #e2d4e0; --nh-border-strong: #c9b2c5; --nh-text: #2a1d29; --nh-text-muted: #6d5a6b; --nh-accent: #8e3b7f; --nh-accent-contrast: #ffffff; --nh-nav-bg: #faf6f9; --nh-header-bg: #f6f1f5; --dk-lamp: #d98a1f; --dk-climate: #5a62b8; --dk-glass: rgb(255 255 255 / 0.7); }
+[data-preset='plum'][data-mode='dark'] { --nh-bg: #1b1220; --nh-surface: #251a2b; --nh-surface-2: #302236; --nh-border: #3b2b42; --nh-border-strong: #57405f; --nh-text: #f3e9f2; --nh-text-muted: #bfa9bd; --nh-accent: #e889cf; --nh-accent-contrast: #1b1220; --nh-nav-bg: #20162a; --nh-header-bg: #1b1220; --dk-lamp: #ffb35c; --dk-climate: #a9b4ff; --dk-glass: rgb(255 255 255 / 0.04); }
+/* 10 Graphite (new) — neutral, for people who want no colour cast */
+[data-preset='graphite'][data-mode='light'] { --nh-bg: #f2f2f2; --nh-surface: #ffffff; --nh-surface-2: #ebebeb; --nh-border: #dcdcdc; --nh-border-strong: #b5b5b5; --nh-text: #1a1a1a; --nh-text-muted: #5e5e5e; --nh-accent: #2d2d2d; --nh-accent-contrast: #ffffff; --nh-nav-bg: #f8f8f8; --nh-header-bg: #f2f2f2; --dk-lamp: #d4900f; --dk-climate: #4a7fb5; --dk-glass: rgb(255 255 255 / 0.7); }
+[data-preset='graphite'][data-mode='dark'] { --nh-bg: #1c1c1e; --nh-surface: #252528; --nh-surface-2: #2e2e32; --nh-border: #38383d; --nh-border-strong: #505057; --nh-text: #ededed; --nh-text-muted: #a3a3a8; --nh-accent: #e8e8e8; --nh-accent-contrast: #1c1c1e; --nh-nav-bg: #202023; --nh-header-bg: #1c1c1e; --dk-lamp: #ffbf47; --dk-climate: #8fb8e8; --dk-glass: rgb(255 255 255 / 0.04); }
+
+</style>
 </head>
 <body>
 <div id="app"><p style="padding:2rem;font-family:system-ui">Loading NodeHerder sample… (JavaScript required)</p></div>
 <script>
-/* Registry of the sample designs (gallery + in-page design switcher). Round 2: Hearth kept,
-   four structurally different directions added — see ../design-directions.md. */
+/* Registry of the sample designs (gallery + in-page design switcher). Round 3: Hearth + Panel (merged), Hearth and Deck — see ../design-directions.md. */
 window.NH_DESIGNS = [
-  { n: 1, id: 'hearth', name: 'Hearth', file: 'hearth.html', short: 'Areas of soft tiles · sidebar',
-    blurb: 'Home Assistant–style areas and tiles with a warm palette. Sidebar and top bar; When / If / Then flow editor.',
+  { n: 1, id: 'hearthpanel', name: 'Hearth + Panel', file: 'hearthpanel.html', short: 'Recommended · Hearth app with a wall-panel mode',
+    blurb: 'Hearth for every page (with the NodeHerder logo and a phone-friendly automation editor) plus Deck’s big-dial look as a full-screen panel mode for a wall tablet. Recent activity can be switched off.',
+    shell: 'sidebar', defaults: { mode: 'system', accent: 'preset', density: 'comfortable', radius: 14, fontScale: 100, preset: 'fleece', effects: true } },
+  { n: 2, id: 'hearth', name: 'Hearth', file: 'hearth.html', short: 'Areas of soft tiles · sidebar',
+    blurb: 'Home Assistant–style areas and tiles. Sidebar and top bar; When / If / Then flow editor (now phone-friendly).',
     shell: 'sidebar', defaults: { mode: 'system', accent: 'preset', density: 'comfortable', radius: 14, fontScale: 100, preset: 'daylight', effects: true } },
-  { n: 2, id: 'floorplan', name: 'Floorplan', file: 'floorplan.html', short: 'The house plan is the home page',
-    blurb: 'Rooms drawn as a floor plan with switch pins; a room inspector slides in. Faceted device finder, rules as device-to-device diagrams, step-by-step wizard editor.',
-    shell: 'custom', defaults: { mode: 'light', accent: 'preset', density: 'comfortable', radius: 8, fontScale: 100, preset: 'blueprint', effects: true } },
-  { n: 3, id: 'workbench', name: 'Workbench', file: 'workbench.html', short: 'IDE-style explorer, tabs and inspector',
-    blurb: 'For the owner who configures everything: explorer tree, open tabs, property grids with type and access mode, status bar and a live log panel. Outline + inspector + JSON editor.',
-    shell: 'custom', defaults: { mode: 'dark', accent: 'preset', density: 'compact', radius: 4, fontScale: 100, preset: 'graphite', effects: false } },
-  { n: 4, id: 'brief', name: 'Brief', file: 'brief.html', short: 'The house written as sentences · command bar',
-    blurb: 'One calm column. Home reads like a note about the house, with inline switches; Ctrl K finds any device, room or action. Rules are edited as fill-in-the-blanks sentences.',
-    shell: 'custom', defaults: { mode: 'light', accent: 'preset', density: 'comfortable', radius: 10, fontScale: 105, preset: 'paper', effects: false } },
-  { n: 5, id: 'deck', name: 'Deck', file: 'deck.html', short: 'Wall-tablet panel · big dials · room pager',
-    blurb: 'Readable from across the room: clock strip, one room per page, temperature dial and big light buttons, bottom dock. Rules are a node canvas with an inspector drawer.',
+  { n: 3, id: 'deck', name: 'Deck', file: 'deck.html', short: 'Wall-tablet panel · big dials · room pager',
+    blurb: 'The full Deck layout from round 2, for comparison. Its look lives on as panel mode in Hearth + Panel.',
     shell: 'custom', defaults: { mode: 'dark', accent: 'preset', density: 'spacious', radius: 22, fontScale: 100, preset: 'lagoon', effects: true } },
 ];
 window.NH_DESIGN_FOR = function (id, extra) {
@@ -590,7 +673,7 @@ window.NH_DESIGN_FOR = function (id, extra) {
 
 </script>
 <script>window.NH_DESIGN_FOR_ALL = (id, x) => NH_DESIGN_FOR(id, Object.assign({ defaultRoute: '#/all' }, x));</script>
-<script>window.NH_DESIGN = NH_DESIGN_FOR_ALL('hearth', {"presets": [{"id": "daylight", "name": "Daylight", "swatch": ["#f4f2ee", "#0f8bd6"]}, {"id": "teak", "name": "Teak", "swatch": ["#f3ece1", "#b8611f"]}, {"id": "avocado", "name": "Avocado", "swatch": ["#eef0e2", "#5e7d1e"]}], "accents": ["#0f8bd6", "#d9480f", "#2b8a3e", "#7048e8", "#c2255c", "#0c8599"], "effectsLabel": "dot grid"});</script>
+<script>window.NH_DESIGN = NH_DESIGN_FOR_ALL('hearth', {"presets": [{"id": "daylight", "name": "Daylight", "swatch": ["#f4f2ee", "#0f8bd6"]}, {"id": "teak", "name": "Teak", "swatch": ["#f3ece1", "#b8611f"]}, {"id": "avocado", "name": "Avocado", "swatch": ["#eef0e2", "#5e7d1e"]}, {"id": "lagoon", "name": "Lagoon", "swatch": ["#13252c", "#6fd3e8"]}, {"id": "ember", "name": "Ember", "swatch": ["#24170f", "#ff8a3d"]}, {"id": "frost", "name": "Frost", "swatch": ["#182433", "#9cc9ff"]}, {"id": "fleece", "name": "Fleece", "swatch": ["#eef6fa", "#1b7fb0"]}, {"id": "fjord", "name": "Fjord", "swatch": ["#0f1a20", "#4fc3cf"]}, {"id": "plum", "name": "Plum", "swatch": ["#f6f1f5", "#8e3b7f"]}, {"id": "graphite", "name": "Graphite", "swatch": ["#1c1c1e", "#e8e8e8"]}], "accents": ["#0f8bd6", "#d9480f", "#2b8a3e", "#7048e8", "#c2255c", "#0c8599"], "effectsLabel": "dot grid", "useLogo": false});</script>
 <script>
 /* NodeHerder design samples — stroke icon set (24×24, currentColor). Hand-drawn for the
    samples so they work offline; production would keep @mdi/js via the capability registry. */
@@ -971,8 +1054,9 @@ window.NH_DESIGN_FOR = function (id, extra) {
     navOpen: false, edit: false, pop: false, consolePaused: false, consoleLevel: 'debug', consoleQ: '',
     list: { q: '', proto: 'all', power: 'all', status: 'all', sort: 'friendly_name', dir: 1 },
     activeConv: 'c1', typing: false, period: 'Today', draft: null, original: null, jsonOpen: false, running: {}, collapsed: {},
-    authed: true, loginError: false,
+    authed: true, loginError: false, feedOn: true,
   };
+  try { S.feedOn = localStorage.getItem('nh-sample-feed') !== 'off'; } catch (e) { /* default on */ }
   const dev = (id) => S.devices.find((d) => d.id === id);
   const devCfg = (id) => S.cfg.hub.devices.overrides[id] || S.cfg.hub.devices.defaults;
   const isDisabled = (d) => devCfg(d.id).disabled === true;
@@ -1048,7 +1132,8 @@ window.NH_DESIGN_FOR = function (id, extra) {
     const v = typeof o === 'object' ? o.v : o, t = typeof o === 'object' ? o.t : o;
     return '<button type="button" data-act="' + act + '" data-arg="' + esc(v) + '" aria-pressed="' + (String(v) === String(val)) + '">' + esc(t) + '</button>';
   }).join('') + '</div>';
-  const sel = (opts, val, attrs, ph) => '<select class="nh-select" ' + attrs + '>' + (ph ? '<option value=""' + (val === '' || val == null ? ' selected' : '') + '>' + esc(ph) + '</option>' : '') +
+  const sel = (opts, val, attrs, ph) => { const m = /class="([^"]*)"/.exec(attrs || ''); if (m) attrs = attrs.replace(m[0], ''); return selRaw(opts, val, attrs, ph, m ? ' ' + m[1] : ''); };
+  const selRaw = (opts, val, attrs, ph, extra) => '<select class="nh-select' + extra + '" ' + attrs + '>' + (ph ? '<option value=""' + (val === '' || val == null ? ' selected' : '') + '>' + esc(ph) + '</option>' : '') +
     opts.map((o) => '<option value="' + esc(o.v) + '"' + (String(o.v) === String(val) ? ' selected' : '') + '>' + esc(o.t) + '</option>').join('') + '</select>';
   const empty = (icon, title, text, action) => '<div class="nh-empty">' + I(icon) + '<h3>' + esc(title) + '</h3><p>' + esc(text) + '</p>' + (action || '') + '</div>';
   const pageHead = (title, sub, actions) => '<div class="nh-page-head"><div><h1 class="nh-h1">' + esc(title) + '</h1>' + (sub ? '<p class="nh-sub">' + sub + '</p>' : '') + '</div><div class="nh-page-actions">' + (actions || '') + '</div></div>';
@@ -1155,6 +1240,7 @@ window.NH_DESIGN_FOR = function (id, extra) {
       (o.edit ? '<button type="button" class="nh-tile-del" data-act="tile-remove" data-arg="' + esc(o.group + '|' + id + '|' + name) + '" aria-label="Remove ' + esc(m.label) + ' from ' + esc(o.group) + '">' + I('close') + '</button>' : '') + '</div>';
   }
 
+  const logo = (cls) => (window.NH_LOGO && DESIGN.useLogo ? '<img class="nh-logo-img' + (cls ? ' ' + cls : '') + '" src="' + window.NH_LOGO + '" alt="" width="28" height="41">' : I('hub'));
   /* ------------------------------------------------------------------ shell */
   function shell(view) {
     const r = route();
@@ -1165,7 +1251,7 @@ window.NH_DESIGN_FOR = function (id, extra) {
     return '<button type="button" class="nh-skip" data-act="skip">Skip to content</button>' +
       '<div class="nh-app" data-nav-open="' + S.navOpen + '">' +
       '<nav class="nh-nav" aria-label="Main">' +
-      '<div class="nh-brand"><span class="nh-brand-logo">' + I('hub') + '</span><span class="nh-brand-name">Node<b>Herder</b></span><span class="nh-brand-ver">v' + esc(DATA.version) + '</span></div>' +
+      '<div class="nh-brand"><span class="nh-brand-logo' + (window.NH_LOGO && DESIGN.useLogo ? ' has-img' : '') + '">' + logo() + '</span><span class="nh-brand-name">Node<b>Herder</b></span><span class="nh-brand-ver">v' + esc(DATA.version) + '</span></div>' +
       '<div class="nh-nav-list">' + navItems + '</div>' +
       '<div class="nh-nav-foot">' +
       '<button type="button" class="nh-nav-item nh-permit' + (S.permit ? ' is-on' : '') + '" data-act="permit"><span class="nh-nav-key">J</span><span class="nh-nav-ic">' + I('join') + '</span><span class="nh-nav-label">' + (S.permit ? 'Joining <span data-permit>' + fmtTimer(S.permit) + '</span>' : 'Permit join') + '</span></button>' +
@@ -1174,7 +1260,7 @@ window.NH_DESIGN_FOR = function (id, extra) {
       '<div class="nh-scrim" data-act="nav-close"></div>' +
       '<div class="nh-main">' +
       '<header class="nh-header">' +
-      '<button type="button" class="nh-btn is-icon nh-menu-btn" data-act="nav-toggle" aria-label="Open navigation" aria-expanded="' + S.navOpen + '">' + I('menu') + '</button>' +
+      '<button type="button" class="nh-btn is-icon nh-menu-btn" data-act="nav-toggle" aria-label="Open navigation" aria-expanded="' + S.navOpen + '">' + I('menu') + '</button>' + (window.NH_LOGO && DESIGN.useLogo ? '<a class="nh-header-logo" href="#/home" aria-label="NodeHerder home">' + logo() + '</a>' : '') +
       '<div class="nh-header-title"><span class="nh-window-dots" aria-hidden="true"><i></i><i></i><i></i></span><span>' + esc(viewTitle(r)) + '</span></div>' +
       '<div class="nh-header-actions">' +
       (S.permit ? '<button type="button" class="nh-chip is-accent nh-permit-chip" data-act="permit">' + I('join') + '<span>Join open · <span data-permit>' + fmtTimer(S.permit) + '</span></span></button>' : '') +
@@ -1222,7 +1308,7 @@ window.NH_DESIGN_FOR = function (id, extra) {
   const V = {};
 
   V.login = (r, noFab) => '<div class="nh-login"><form class="nh-login-card" data-form="login" novalidate>' +
-    '<div class="nh-login-brand">' + I('hub') + '<div><b>NodeHerder</b><small>Smart-home hub · v' + esc(DATA.version) + '</small></div></div>' +
+    '<div class="nh-login-brand' + (window.NH_LOGO && DESIGN.useLogo ? ' has-img' : '') + '">' + logo('is-lg') + '<div><b>NodeHerder</b><small>Smart-home hub · v' + esc(DATA.version) + '</small></div></div>' +
     '<h1>Sign in</h1>' + (S.loginError ? '<div class="nh-alert is-danger" role="alert">' + I('error') + '<span>Wrong username or password.</span></div>' : '') +
     '<div class="nh-field"><label for="lu">Username</label><input id="lu" class="nh-input" autocomplete="username" value="mike"></div>' +
     '<div class="nh-field"><label for="lp">Password</label><input id="lp" class="nh-input" type="password" autocomplete="current-password" placeholder="any value — type wrong to see error"></div>' +
@@ -1248,7 +1334,8 @@ window.NH_DESIGN_FOR = function (id, extra) {
       stat(lowL.length, 'Low LQI', 'signal', lowL.length ? 'warn' : 'ok', '#/list/sort=lqi', '< 50') +
       stat(lowB.length, 'Low battery', 'batteryLow', lowB.length ? 'warn' : 'ok', '#/list/sort=battery', '< 20 %') +
       '</div><div class="nh-cols">' +
-      '<section class="nh-card nh-col-wide"><div class="nh-card-head"><h2 class="nh-card-title">' + I('wave') + 'Recent activity</h2><span class="nh-card-meta">live · last ' + S.feed.length + ' updates (memory only)</span></div><div class="nh-feed" data-region="feed">' + feedHtml(10) + '</div></section>' +
+      '<section class="nh-card nh-col-wide nh-activity' + (S.feedOn ? '' : ' is-off') + '"><div class="nh-card-head"><h2 class="nh-card-title">' + I('wave') + 'Recent activity</h2><span class="nh-card-meta">' + (S.feedOn ? 'Live, last ' + S.feed.length + ' updates' : 'Off') + '</span><label class="nh-feed-switch"><span>Show</span>' + toggle(S.feedOn, 'feed-toggle', '', { label: 'Show recent activity' }) + '</label></div>' +
+      (S.feedOn ? '<div class="nh-feed" data-region="feed">' + feedHtml(10) + '</div>' : '<p class="nh-feed-off">' + I('pause') + 'Recent activity is off. Turn it on to watch device changes as they happen. Nothing is collected while it is off.</p>') + '</section>' +
       '<div class="nh-col-side">' +
       '<section class="nh-card"><div class="nh-card-head"><h2 class="nh-card-title">' + I('warn') + 'Needs attention</h2></div><ul class="nh-attn">' +
       (attention.length ? attention.map((d) => '<li><a href="#/device/' + encodeURIComponent(d.id) + '"><span class="nh-attn-ic">' + I(devIcon(d)) + '</span><span><b>' + esc(d.friendly_name) + '</b><small>' + esc(!isOnline(d) ? 'Offline since ' + timeAgo(d.last_seen) : isDisabled(d) ? 'Disabled in device settings' : battOf(d) != null && battOf(d) < 20 ? 'Battery ' + Math.round(battOf(d)) + ' %' : 'Weak link ' + lqiOf(d) + ' LQI') + '</small></span>' + I('chevronR') + '</a></li>').join('') : '<li class="nh-muted">All good.</li>') + '</ul></section>' +
@@ -1667,7 +1754,7 @@ window.NH_DESIGN_FOR = function (id, extra) {
     const changes = [];
     Object.keys(data).forEach((n) => { const e = d.exposes[n]; if (!e) return; if (e.data !== data[n]) changes.push({ n, from: fmt(e), to: fmt(e, data[n]) }); e.data = data[n]; });
     d.last_seen = new Date().toISOString();
-    if (changes.length) { S.feed.unshift({ id, name: d.friendly_name, changes, t: Date.now() }); S.feed.length = Math.min(S.feed.length, 200); }
+    if (changes.length && S.feedOn) { S.feed.unshift({ id, name: d.friendly_name, changes, t: Date.now() }); S.feed.length = Math.min(S.feed.length, 200); }
     const r = route();
     if (quiet || LIVE.indexOf(r.name) < 0 || (r.name === 'device' && r.b === 'settings')) return;
     softRender();
@@ -1704,6 +1791,7 @@ window.NH_DESIGN_FOR = function (id, extra) {
   const A = {
     'nav-toggle': () => { S.navOpen = !S.navOpen; render(); }, 'nav-close': () => { S.navOpen = false; render(); },
     pop: () => { S.pop = !S.pop; render(); },
+    'feed-toggle': () => { S.feedOn = !S.feedOn; if (!S.feedOn) S.feed = []; try { localStorage.setItem('nh-sample-feed', S.feedOn ? 'on' : 'off'); } catch (e) { /* ignore */ } render(); },
     'all-jump': (id) => { const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: 'smooth' }); },
     skip: () => { const c = $('.nh-content'); if (c) c.focus(); },
     'mode-toggle': () => { T.mode = document.documentElement.dataset.mode === 'dark' ? 'light' : 'dark'; render(); },

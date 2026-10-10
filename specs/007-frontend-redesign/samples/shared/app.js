@@ -80,8 +80,9 @@
     navOpen: false, edit: false, pop: false, consolePaused: false, consoleLevel: 'debug', consoleQ: '',
     list: { q: '', proto: 'all', power: 'all', status: 'all', sort: 'friendly_name', dir: 1 },
     activeConv: 'c1', typing: false, period: 'Today', draft: null, original: null, jsonOpen: false, running: {}, collapsed: {},
-    authed: true, loginError: false,
+    authed: true, loginError: false, feedOn: true,
   };
+  try { S.feedOn = localStorage.getItem('nh-sample-feed') !== 'off'; } catch (e) { /* default on */ }
   const dev = (id) => S.devices.find((d) => d.id === id);
   const devCfg = (id) => S.cfg.hub.devices.overrides[id] || S.cfg.hub.devices.defaults;
   const isDisabled = (d) => devCfg(d.id).disabled === true;
@@ -157,7 +158,8 @@
     const v = typeof o === 'object' ? o.v : o, t = typeof o === 'object' ? o.t : o;
     return '<button type="button" data-act="' + act + '" data-arg="' + esc(v) + '" aria-pressed="' + (String(v) === String(val)) + '">' + esc(t) + '</button>';
   }).join('') + '</div>';
-  const sel = (opts, val, attrs, ph) => '<select class="nh-select" ' + attrs + '>' + (ph ? '<option value=""' + (val === '' || val == null ? ' selected' : '') + '>' + esc(ph) + '</option>' : '') +
+  const sel = (opts, val, attrs, ph) => { const m = /class="([^"]*)"/.exec(attrs || ''); if (m) attrs = attrs.replace(m[0], ''); return selRaw(opts, val, attrs, ph, m ? ' ' + m[1] : ''); };
+  const selRaw = (opts, val, attrs, ph, extra) => '<select class="nh-select' + extra + '" ' + attrs + '>' + (ph ? '<option value=""' + (val === '' || val == null ? ' selected' : '') + '>' + esc(ph) + '</option>' : '') +
     opts.map((o) => '<option value="' + esc(o.v) + '"' + (String(o.v) === String(val) ? ' selected' : '') + '>' + esc(o.t) + '</option>').join('') + '</select>';
   const empty = (icon, title, text, action) => '<div class="nh-empty">' + I(icon) + '<h3>' + esc(title) + '</h3><p>' + esc(text) + '</p>' + (action || '') + '</div>';
   const pageHead = (title, sub, actions) => '<div class="nh-page-head"><div><h1 class="nh-h1">' + esc(title) + '</h1>' + (sub ? '<p class="nh-sub">' + sub + '</p>' : '') + '</div><div class="nh-page-actions">' + (actions || '') + '</div></div>';
@@ -264,6 +266,7 @@
       (o.edit ? '<button type="button" class="nh-tile-del" data-act="tile-remove" data-arg="' + esc(o.group + '|' + id + '|' + name) + '" aria-label="Remove ' + esc(m.label) + ' from ' + esc(o.group) + '">' + I('close') + '</button>' : '') + '</div>';
   }
 
+  const logo = (cls) => (window.NH_LOGO && DESIGN.useLogo ? '<img class="nh-logo-img' + (cls ? ' ' + cls : '') + '" src="' + window.NH_LOGO + '" alt="" width="28" height="41">' : I('hub'));
   /* ------------------------------------------------------------------ shell */
   function shell(view) {
     const r = route();
@@ -274,7 +277,7 @@
     return '<button type="button" class="nh-skip" data-act="skip">Skip to content</button>' +
       '<div class="nh-app" data-nav-open="' + S.navOpen + '">' +
       '<nav class="nh-nav" aria-label="Main">' +
-      '<div class="nh-brand"><span class="nh-brand-logo">' + I('hub') + '</span><span class="nh-brand-name">Node<b>Herder</b></span><span class="nh-brand-ver">v' + esc(DATA.version) + '</span></div>' +
+      '<div class="nh-brand"><span class="nh-brand-logo' + (window.NH_LOGO && DESIGN.useLogo ? ' has-img' : '') + '">' + logo() + '</span><span class="nh-brand-name">Node<b>Herder</b></span><span class="nh-brand-ver">v' + esc(DATA.version) + '</span></div>' +
       '<div class="nh-nav-list">' + navItems + '</div>' +
       '<div class="nh-nav-foot">' +
       '<button type="button" class="nh-nav-item nh-permit' + (S.permit ? ' is-on' : '') + '" data-act="permit"><span class="nh-nav-key">J</span><span class="nh-nav-ic">' + I('join') + '</span><span class="nh-nav-label">' + (S.permit ? 'Joining <span data-permit>' + fmtTimer(S.permit) + '</span>' : 'Permit join') + '</span></button>' +
@@ -283,7 +286,7 @@
       '<div class="nh-scrim" data-act="nav-close"></div>' +
       '<div class="nh-main">' +
       '<header class="nh-header">' +
-      '<button type="button" class="nh-btn is-icon nh-menu-btn" data-act="nav-toggle" aria-label="Open navigation" aria-expanded="' + S.navOpen + '">' + I('menu') + '</button>' +
+      '<button type="button" class="nh-btn is-icon nh-menu-btn" data-act="nav-toggle" aria-label="Open navigation" aria-expanded="' + S.navOpen + '">' + I('menu') + '</button>' + (window.NH_LOGO && DESIGN.useLogo ? '<a class="nh-header-logo" href="#/home" aria-label="NodeHerder home">' + logo() + '</a>' : '') +
       '<div class="nh-header-title"><span class="nh-window-dots" aria-hidden="true"><i></i><i></i><i></i></span><span>' + esc(viewTitle(r)) + '</span></div>' +
       '<div class="nh-header-actions">' +
       (S.permit ? '<button type="button" class="nh-chip is-accent nh-permit-chip" data-act="permit">' + I('join') + '<span>Join open · <span data-permit>' + fmtTimer(S.permit) + '</span></span></button>' : '') +
@@ -331,7 +334,7 @@
   const V = {};
 
   V.login = (r, noFab) => '<div class="nh-login"><form class="nh-login-card" data-form="login" novalidate>' +
-    '<div class="nh-login-brand">' + I('hub') + '<div><b>NodeHerder</b><small>Smart-home hub · v' + esc(DATA.version) + '</small></div></div>' +
+    '<div class="nh-login-brand' + (window.NH_LOGO && DESIGN.useLogo ? ' has-img' : '') + '">' + logo('is-lg') + '<div><b>NodeHerder</b><small>Smart-home hub · v' + esc(DATA.version) + '</small></div></div>' +
     '<h1>Sign in</h1>' + (S.loginError ? '<div class="nh-alert is-danger" role="alert">' + I('error') + '<span>Wrong username or password.</span></div>' : '') +
     '<div class="nh-field"><label for="lu">Username</label><input id="lu" class="nh-input" autocomplete="username" value="mike"></div>' +
     '<div class="nh-field"><label for="lp">Password</label><input id="lp" class="nh-input" type="password" autocomplete="current-password" placeholder="any value — type wrong to see error"></div>' +
@@ -357,7 +360,8 @@
       stat(lowL.length, 'Low LQI', 'signal', lowL.length ? 'warn' : 'ok', '#/list/sort=lqi', '< 50') +
       stat(lowB.length, 'Low battery', 'batteryLow', lowB.length ? 'warn' : 'ok', '#/list/sort=battery', '< 20 %') +
       '</div><div class="nh-cols">' +
-      '<section class="nh-card nh-col-wide"><div class="nh-card-head"><h2 class="nh-card-title">' + I('wave') + 'Recent activity</h2><span class="nh-card-meta">live · last ' + S.feed.length + ' updates (memory only)</span></div><div class="nh-feed" data-region="feed">' + feedHtml(10) + '</div></section>' +
+      '<section class="nh-card nh-col-wide nh-activity' + (S.feedOn ? '' : ' is-off') + '"><div class="nh-card-head"><h2 class="nh-card-title">' + I('wave') + 'Recent activity</h2><span class="nh-card-meta">' + (S.feedOn ? 'Live, last ' + S.feed.length + ' updates' : 'Off') + '</span><label class="nh-feed-switch"><span>Show</span>' + toggle(S.feedOn, 'feed-toggle', '', { label: 'Show recent activity' }) + '</label></div>' +
+      (S.feedOn ? '<div class="nh-feed" data-region="feed">' + feedHtml(10) + '</div>' : '<p class="nh-feed-off">' + I('pause') + 'Recent activity is off. Turn it on to watch device changes as they happen. Nothing is collected while it is off.</p>') + '</section>' +
       '<div class="nh-col-side">' +
       '<section class="nh-card"><div class="nh-card-head"><h2 class="nh-card-title">' + I('warn') + 'Needs attention</h2></div><ul class="nh-attn">' +
       (attention.length ? attention.map((d) => '<li><a href="#/device/' + encodeURIComponent(d.id) + '"><span class="nh-attn-ic">' + I(devIcon(d)) + '</span><span><b>' + esc(d.friendly_name) + '</b><small>' + esc(!isOnline(d) ? 'Offline since ' + timeAgo(d.last_seen) : isDisabled(d) ? 'Disabled in device settings' : battOf(d) != null && battOf(d) < 20 ? 'Battery ' + Math.round(battOf(d)) + ' %' : 'Weak link ' + lqiOf(d) + ' LQI') + '</small></span>' + I('chevronR') + '</a></li>').join('') : '<li class="nh-muted">All good.</li>') + '</ul></section>' +
@@ -776,7 +780,7 @@
     const changes = [];
     Object.keys(data).forEach((n) => { const e = d.exposes[n]; if (!e) return; if (e.data !== data[n]) changes.push({ n, from: fmt(e), to: fmt(e, data[n]) }); e.data = data[n]; });
     d.last_seen = new Date().toISOString();
-    if (changes.length) { S.feed.unshift({ id, name: d.friendly_name, changes, t: Date.now() }); S.feed.length = Math.min(S.feed.length, 200); }
+    if (changes.length && S.feedOn) { S.feed.unshift({ id, name: d.friendly_name, changes, t: Date.now() }); S.feed.length = Math.min(S.feed.length, 200); }
     const r = route();
     if (quiet || LIVE.indexOf(r.name) < 0 || (r.name === 'device' && r.b === 'settings')) return;
     softRender();
@@ -813,6 +817,7 @@
   const A = {
     'nav-toggle': () => { S.navOpen = !S.navOpen; render(); }, 'nav-close': () => { S.navOpen = false; render(); },
     pop: () => { S.pop = !S.pop; render(); },
+    'feed-toggle': () => { S.feedOn = !S.feedOn; if (!S.feedOn) S.feed = []; try { localStorage.setItem('nh-sample-feed', S.feedOn ? 'on' : 'off'); } catch (e) { /* ignore */ } render(); },
     'all-jump': (id) => { const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: 'smooth' }); },
     skip: () => { const c = $('.nh-content'); if (c) c.focus(); },
     'mode-toggle': () => { T.mode = document.documentElement.dataset.mode === 'dark' ? 'light' : 'dark'; render(); },

@@ -13,6 +13,8 @@ Spec: [spec.md](spec.md) | Plan: [plan.md](plan.md) | Status: Phase 0 complete; 
   screen (see plan traceability).
 - [x] T003b — Round 2 after owner feedback (2026-10-10): keep Hearth, add four structurally
   different designs (`design-directions.md`, `samples/designs/*.js`); done: verified in Chromium.
+- [x] T003c — Round 3 (2026-10-10): Hearth + Panel merge with logo, shared themes, activity
+  switch and phone editor layout; done: verified in Chromium (desktop + 375 px).
 - [ ] T004 — Owner review: choose design / combination; IDs: Q-01, SC-01; done: decision
   recorded in spec.
 

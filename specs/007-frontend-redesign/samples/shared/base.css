@@ -511,3 +511,56 @@ button.nh-tile-ic:hover:not(:disabled) { box-shadow: 0 0 0 3px var(--nh-accent-s
 .nh-allpage-b .nh-savebar { position: static; }
 .nh-allpage-b .nh-chat { height: 34rem; }
 .nh-allpage-b .nh-console { height: 24rem; }
+
+/* ---------- logo ---------- */
+.nh-brand-logo.has-img { background: none; width: 2.2rem; height: 2.6rem; }
+.nh-logo-img { width: auto; height: 100%; max-height: 2.6rem; object-fit: contain; display: block; }
+.nh-header-logo { display: none; height: 2.2rem; }
+.nh-login-brand.has-img .nh-logo-img { height: 4rem; max-height: none; }
+@media (max-width: 860px) { .nh-header-logo { display: block; } }
+/* ---------- activity on/off ---------- */
+.nh-feed-switch { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.8rem; color: var(--nh-text-muted); cursor: pointer; }
+.nh-activity .nh-card-meta { margin-left: auto; }
+.nh-feed-off { display: flex; align-items: center; gap: 0.6rem; margin: 0; padding: 1.1rem var(--nh-space); color: var(--nh-text-muted); }
+/* ---------- automation editor on phones: one column, fields full width ---------- */
+@media (max-width: 700px) {
+  .nh-editor { gap: 0.75rem; }
+  .nh-editor-main .nh-page-head { margin-bottom: 0.75rem; }
+  .nh-trig-head { padding: 0.6rem 0.75rem; }
+  .nh-sentence { order: 3; flex-basis: 100%; font-size: 0.85rem; }
+  .nh-trig-tools { margin-left: auto; }
+  .nh-flow { padding: 0.75rem; }
+  .nh-block { grid-template-columns: minmax(0, 1fr); }
+  .nh-block-label { justify-content: flex-start; margin-bottom: 0.45rem; }
+  .nh-block-label::after { display: none; }
+  .nh-block-label span { height: 1.6rem; font-size: 0.68rem; }
+  .nh-block-body { margin-left: 0.7rem; padding: 0 0 1rem 0.8rem; border-left: 2px solid var(--nh-border-strong); }
+  .nh-block:last-child .nh-block-body { padding-bottom: 0.2rem; }
+  .nh-cond, .nh-act { padding: 0.6rem; gap: 0.5rem; }
+  .nh-cond-kind { min-width: 0; flex: 1 1 auto; }
+  .nh-cond > .nh-inline, .nh-set-row > .nh-inline, .nh-act-body > .nh-inline:not(.nh-act-opts) { flex: 1 1 100%; order: 2; }
+  .nh-cond > .nh-reorder { order: 1; margin-left: auto; }
+  .nh-cond .nh-err, .nh-act .nh-err { order: 3; }
+  .nh-cond .nh-inline > .nh-select:first-child, .nh-set-row .nh-inline > .nh-select:first-child, .nh-act-body > .nh-inline > .nh-select:first-child { flex: 1 1 100%; }
+  .nh-cond .nh-inline > .nh-select:not(.is-op), .nh-cond .nh-inline > .nh-unit-input, .nh-cond .nh-inline > .nh-input, .nh-set-row .nh-inline > .nh-unit-input, .nh-set-row .nh-inline > .nh-select { flex: 1 1 8rem; min-width: 0; }
+  .nh-unit-input .nh-input.is-num { width: 100%; }
+  .nh-cond input[type='time'] { flex: 1 1 6.5rem; }
+  .nh-act-head { gap: 0.4rem; }
+  .nh-act-head > .nh-select { order: 3; flex: 1 1 100%; }
+  .nh-act-head > .nh-reorder { order: 2; margin-left: auto; }
+  .nh-act-body { padding-left: 0; }
+  .nh-act-opts { gap: 0.4rem; }
+  .nh-block-body > .nh-inline .nh-btn, .nh-add-trig { flex: 1 1 auto; }
+  .nh-src { flex: 1 1 100%; }
+  .nh-block.is-when .nh-inline > .nh-select { flex: 1 1 100%; }
+  .nh-reorder .nh-btn.is-icon.is-sm { width: 2.4rem; min-height: 2.4rem; }
+  .nh-savebar { padding: 0.5rem 0.6rem; border-radius: var(--nh-radius-m); }
+  .nh-savebar .nh-dirty { flex: 1 1 100%; }
+  .nh-savebar .nh-btn { flex: 1 1 auto; }
+  .nh-editor-side .nh-card { margin-bottom: 0.75rem; }
+}
+@media (max-width: 700px) { .nh-cond .nh-inline > .nh-select.is-op { flex: 0 0 4.4rem; } }
+@media (max-width: 700px) {
+  .nh-cond > .nh-inline > .nh-select:first-child:not(.is-op) { flex: 1 1 0; min-width: 0; }
+  .nh-cond > .nh-inline > .nh-select:first-child + .nh-select.is-op + * { flex: 1 1 100%; }
+}

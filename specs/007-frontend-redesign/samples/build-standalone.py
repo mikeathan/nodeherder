@@ -18,7 +18,7 @@ def inline(html):
                   lambda m: '<script>\n' + read(m.group(1)).replace('</script', '<\\/script') + '\n</script>', html)
     return html
 
-for name in ['index', 'hearth', 'floorplan', 'workbench', 'brief', 'deck']:
+for name in ['index', 'hearthpanel', 'hearth', 'deck']:
     html = inline(read(name + '.html'))
     if name != 'index':
         html = html.replace("NH_DESIGN_FOR('", "NH_DESIGN_FOR_ALL('")

@@ -31,21 +31,20 @@
 <body>
 <main>
   <h1>NodeHerder redesign — design samples</h1>
-  <p class="lead">Round 2. Hearth is kept from round 1; the other four are new directions with their own layout,
-  navigation, page structure and automation editor, not recolours. All five share the same mock household, so you can
-  compare them directly. Each has an <b>Appearance</b> panel (palette icon) for mode, palette, accent, density, corner
-  radius and text size. Open <b>All pages</b> to see every screen of a design on one scroll.</p>
+  <p class="lead">Round 3. <b>Hearth + Panel</b> is the recommended merge: Hearth for every page, with the NodeHerder logo and a
+  phone-friendly automation editor, plus Deck’s big-dial look as a full-screen <b>panel mode</b> for a wall tablet. Hearth and Deck
+  are kept for comparison. All three share one set of ten themes (palette icon → Palette), each in light and dark.
+  Open <b>All pages</b> to see every screen on one scroll.</p>
   <div class="grid" id="grid"></div>
 
   <section>
-    <h3>What is different about each</h3>
+    <h3>What to look at</h3>
     <ul>
-      <li><b>Hearth</b>: sidebar, areas of tiles, When / If / Then flow editor (unchanged from round 1).</li>
-      <li><b>Floorplan</b>: the home page is a drawn floor plan with switch pins; tap a room for its inspector. Devices grouped by room, a faceted finder, rules shown as device-to-device diagrams, and a five-step wizard editor.</li>
-      <li><b>Workbench</b>: IDE layout with an explorer tree, open tabs, property grids (type, access, category), a status bar and a live log panel. The editor is an outline, an inspector and the live JSON payload side by side.</li>
-      <li><b>Brief</b>: one calm column. Home is written as sentences with inline switches; <code>Ctrl&nbsp;K</code> opens a command palette for any device, room, rule or action. Rules are edited as fill-in-the-blanks sentences.</li>
-      <li><b>Deck</b>: wall-tablet panel with a clock strip, one room per page (arrow keys or the pager), big dials and light buttons, and a bottom dock. The editor is a node canvas; tap a node to edit it in a drawer.</li>
-      <li>All of them: switches show <i>Sending…</i> until the device confirms; the Hallway Shelly plug simulates a timeout. Click the connection pill to simulate reconnecting or offline.</li>
+      <li><b>Panel mode</b>: “Panel mode” in the sidebar or on Home. One room per page (arrows or the pager), temperature dial, big light buttons, Status gauges; “Exit panel” goes back. Tapping a sensor opens the normal device page.</li>
+      <li><b>Recent activity</b> on Overview has a <i>Show</i> switch. Off hides the feed and stops collecting it; the choice is remembered in this browser.</li>
+      <li><b>Automation editor on a phone</b>: When / If / Then stack vertically, every field is full width, and the save bar stays at the bottom.</li>
+      <li><b>Themes</b>: Daylight, Teak, Avocado (from Hearth), Lagoon, Ember, Frost (from Deck), and new Fleece (from the logo), Fjord, Plum, Graphite.</li>
+      <li><b>Logo</b>: top of the sidebar, in the phone header, on the sign-in page and at the left of the panel clock strip.</li>
     </ul>
   </section>
   <section>
@@ -63,23 +62,16 @@
   </section>
 </main>
 <script>
-/* Registry of the sample designs (gallery + in-page design switcher). Round 2: Hearth kept,
-   four structurally different directions added — see ../design-directions.md. */
+/* Registry of the sample designs (gallery + in-page design switcher). Round 3: Hearth + Panel (merged), Hearth and Deck — see ../design-directions.md. */
 window.NH_DESIGNS = [
-  { n: 1, id: 'hearth', name: 'Hearth', file: 'hearth.html', short: 'Areas of soft tiles · sidebar',
-    blurb: 'Home Assistant–style areas and tiles with a warm palette. Sidebar and top bar; When / If / Then flow editor.',
+  { n: 1, id: 'hearthpanel', name: 'Hearth + Panel', file: 'hearthpanel.html', short: 'Recommended · Hearth app with a wall-panel mode',
+    blurb: 'Hearth for every page (with the NodeHerder logo and a phone-friendly automation editor) plus Deck’s big-dial look as a full-screen panel mode for a wall tablet. Recent activity can be switched off.',
+    shell: 'sidebar', defaults: { mode: 'system', accent: 'preset', density: 'comfortable', radius: 14, fontScale: 100, preset: 'fleece', effects: true } },
+  { n: 2, id: 'hearth', name: 'Hearth', file: 'hearth.html', short: 'Areas of soft tiles · sidebar',
+    blurb: 'Home Assistant–style areas and tiles. Sidebar and top bar; When / If / Then flow editor (now phone-friendly).',
     shell: 'sidebar', defaults: { mode: 'system', accent: 'preset', density: 'comfortable', radius: 14, fontScale: 100, preset: 'daylight', effects: true } },
-  { n: 2, id: 'floorplan', name: 'Floorplan', file: 'floorplan.html', short: 'The house plan is the home page',
-    blurb: 'Rooms drawn as a floor plan with switch pins; a room inspector slides in. Faceted device finder, rules as device-to-device diagrams, step-by-step wizard editor.',
-    shell: 'custom', defaults: { mode: 'light', accent: 'preset', density: 'comfortable', radius: 8, fontScale: 100, preset: 'blueprint', effects: true } },
-  { n: 3, id: 'workbench', name: 'Workbench', file: 'workbench.html', short: 'IDE-style explorer, tabs and inspector',
-    blurb: 'For the owner who configures everything: explorer tree, open tabs, property grids with type and access mode, status bar and a live log panel. Outline + inspector + JSON editor.',
-    shell: 'custom', defaults: { mode: 'dark', accent: 'preset', density: 'compact', radius: 4, fontScale: 100, preset: 'graphite', effects: false } },
-  { n: 4, id: 'brief', name: 'Brief', file: 'brief.html', short: 'The house written as sentences · command bar',
-    blurb: 'One calm column. Home reads like a note about the house, with inline switches; Ctrl K finds any device, room or action. Rules are edited as fill-in-the-blanks sentences.',
-    shell: 'custom', defaults: { mode: 'light', accent: 'preset', density: 'comfortable', radius: 10, fontScale: 105, preset: 'paper', effects: false } },
-  { n: 5, id: 'deck', name: 'Deck', file: 'deck.html', short: 'Wall-tablet panel · big dials · room pager',
-    blurb: 'Readable from across the room: clock strip, one room per page, temperature dial and big light buttons, bottom dock. Rules are a node canvas with an inspector drawer.',
+  { n: 3, id: 'deck', name: 'Deck', file: 'deck.html', short: 'Wall-tablet panel · big dials · room pager',
+    blurb: 'The full Deck layout from round 2, for comparison. Its look lives on as panel mode in Hearth + Panel.',
     shell: 'custom', defaults: { mode: 'dark', accent: 'preset', density: 'spacious', radius: 22, fontScale: 100, preset: 'lagoon', effects: true } },
 ];
 window.NH_DESIGN_FOR = function (id, extra) {

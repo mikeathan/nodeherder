@@ -91,6 +91,9 @@ devices).
 `samples/` holds 5 static, dependency-free designs sharing one mock-data set and one
 renderer, each with its own skin and layout. Open `samples/index.html`.
 
+Round 3 (2026-10-10, current recommendation): **Hearth + Panel**, see
+[design-directions.md](design-directions.md#round-3-2026-10-10-hearth--panel).
+
 Round 1 (2026-10-09) offered five skins on one layout. Owner feedback (2026-10-10): keep Hearth;
 the rest must be structurally different. Round 2 is described in
 [design-directions.md](design-directions.md):
