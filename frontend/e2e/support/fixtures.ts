@@ -63,3 +63,31 @@ export const test = base.extend<Fixtures>({
 });
 
 export { expect };
+
+type Point = { x: number; y: number };
+
+/**
+ * Drags from one point to another the way the device would: touch events on touch devices
+ * (phones), mouse events otherwise. Moves in small steps so drag libraries see a gesture.
+ */
+export async function dragBetween(page: Page, from: Point, to: Point, steps = 14): Promise<void> {
+  const touch = await page.evaluate(() => navigator.maxTouchPoints > 0);
+  const at = (i: number) => ({ x: from.x + ((to.x - from.x) * i) / steps, y: from.y + ((to.y - from.y) * i) / steps });
+  if (!touch) {
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    for (let i = 1; i <= steps; i++) await page.mouse.move(at(i).x, at(i).y);
+    await page.mouse.up();
+    return;
+  }
+  const cdp = await page.context().newCDPSession(page);
+  const send = (type: 'touchStart' | 'touchMove' | 'touchEnd', p?: Point) =>
+    cdp.send('Input.dispatchTouchEvent', { type, touchPoints: p ? [{ x: p.x, y: p.y }] : [] });
+  await send('touchStart', from);
+  for (let i = 1; i <= steps; i++) {
+    await send('touchMove', at(i));
+    await page.waitForTimeout(16);
+  }
+  await send('touchEnd');
+  await cdp.detach();
+}

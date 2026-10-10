@@ -37,21 +37,22 @@ can resume from any checkpoint.
     action type has its own editor (strategy map); conditions and actions can be reordered;
     validation messages appear on the fields; there is an unsaved-changes guard; unchanged
     drafts save exactly as loaded.
-- `vue-tsc` and `vite build` pass at this checkpoint.
+- **T109 (part):** Settings has sections in a vertical tab list, including Appearance (it reuses
+  `AppearanceForm`). The Console wrapper is restyled.
+- **T110:** page objects are rewritten. New e2e specs: area reorder (arrows and touch/mouse drag),
+  activity switch, panel mode, and a horizontal-overflow check on 11 screens.
+- Checks at this checkpoint:
+  - Jest: 135/135 pass.
+  - e2e: 26/26 pass at desktop 1280×800 and mobile 390×844.
+  - Lint: 0 errors.
+  - `vue-tsc` and `vite build` pass.
 
 ## Left to do
 
 1. **T109:**
-   - Restyle Settings with tabs and add an Appearance tab that reuses
-     `shell/AppearanceForm.vue`.
-   - Restyle the Console and Assistant wrappers.
-   - Check the legacy dialogs (`EntityViewDialog` and others) under the new preset.
-2. **T110:**
-   - Rewrite `frontend/e2e/support/ui.ts` page objects for the new UI. The specs assert wire
-     frames and should not need changes.
-   - Add e2e tests for: drag/arrow reorder (`saveDashboardGroup` with `order`), panel mode,
-     the activity switch, and no horizontal overflow on the phone viewport.
-   - Run `npm run test:e2e`.
+   - Check the Assistant view and the legacy dialogs (`EntityViewDialog` and others) under
+     the new preset, and restyle them where needed.
+2. **T110:** add an e2e test that edits an automation (change a value, then save).
 3. **Remove unused legacy files:**
    - Automation editor: `automations/{Viewer,Editor,Creator,DeviceAutomation,Trigger}.vue`,
      `actions/*`, `conditions/*`, `schedule/*`.

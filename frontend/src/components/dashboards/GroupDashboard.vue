@@ -23,6 +23,8 @@
   const { initialized } = useHub();
 
   const editing = ref(false);
+  /** True while an area is held: areas collapse to their headers so every drop target fits on screen. */
+  const dragging = ref(false);
   /** Local copy the drag list mutates; resynced from the store whenever it changes. */
   const list = ref<DashboardGroup[]>([]);
   watch(areas.groups, (groups) => (list.value = [...groups]), { immediate: true });
@@ -41,6 +43,7 @@
   }
 
   function onDragEnd() {
+    dragging.value = false;
     areas.applyOrder(list.value);
   }
 
@@ -126,10 +129,13 @@
       v-model="list"
       item-key="name"
       class="nh-areas"
+      :class="{ 'is-dragging': dragging }"
       handle=".nh-area-handle"
       :disabled="!editing"
       :animation="160"
       ghost-class="is-ghost"
+      @choose="dragging = true"
+      @unchoose="dragging = false"
       @end="onDragEnd">
       <template #item="{ element, index }">
         <AreaCard
@@ -165,6 +171,9 @@
     flex-direction: column;
     gap: 0.6rem;
     padding: 1rem;
+  }
+  .nh-areas.is-dragging :deep(.nh-tiles) {
+    display: none;
   }
   .nh-areas :deep(.is-ghost) {
     opacity: 0.4;
