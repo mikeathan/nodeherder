@@ -1,10 +1,10 @@
-import { describeTrigger, issuesUnder, validateAutomation } from '@/domain/automation';
+import { cloneAutomation, describeTrigger, issuesUnder, newAutomation, sameAutomation, validateAutomation } from '@/domain/automation';
 import { Automation, AutomationTrigger } from '@/types/automation.type';
 import { device, expose } from '../helpers/devices';
 
 const lamp = device('lamp', { friendly_name: 'Desk lamp' }, [
   expose('state', { type: 'binary' as never, access_mode: 'readwrite' as never, values: { on: 'ON', off: 'OFF' } }),
-  expose('brightness', { access_mode: 'readwrite' as never, attributes: { value_max: 254 } as never }),
+  expose('brightness', { access_mode: 'readwrite' as never, attributes: { min: 0, max: 254 } }),
 ]);
 const sensor = device('pir', { friendly_name: 'Hall sensor' }, [expose('occupancy', { type: 'binary' as never, values: { on: true, off: false } })]);
 const offline = device('plug', { friendly_name: 'Plug', availability: 'offline' as never }, [expose('state')]);
@@ -27,13 +27,12 @@ describe('describeTrigger', () => {
     expect(describeTrigger(a, a.triggers[0], lookup)).toBe('When Hall sensor occupancy changes, if occupancy = Detected, then set Desk lamp state to On.');
   });
 
-  it('describes manual triggers, time conditions and delays', () => {
+  it('describes time conditions and delays', () => {
     const t = trigger({
-      type: 'manualTrigger',
       conditions: [{ type: 'time', timeRange: { startAt: '22:00', endAt: '06:00' } }],
       actions: [{ id: 'lamp', type: 'trigger', exposes: [{ name: 'brightness', data: 127 }], publishMode: 'batch', delay: { value: 5, unit: 'seconds' } } as never],
     });
-    expect(describeTrigger(automation([t]), t, lookup)).toBe('When run by hand, if the time is between 22:00 and 06:00 (overnight), then set Desk lamp brightness to 50 % after 5 seconds.');
+    expect(describeTrigger(automation([t]), t, lookup)).toBe('When Hall sensor occupancy changes, if the time is between 22:00 and 06:00 (overnight), then set Desk lamp brightness to 50 % after 5 seconds.');
   });
 
   it('handles empty states', () => {
@@ -70,6 +69,7 @@ describe('validateAutomation', () => {
       'triggers.0.actions.1.delay.value',
       'triggers.0.actions.2.property',
       'triggers.0.actions.2.data',
+      'triggers.0.actions.2.steps',
       'triggers.0.actions.3.property',
     ]);
   });
@@ -103,5 +103,30 @@ describe('issuesUnder', () => {
   it('matches the path and its children only', () => {
     const issues = [{ path: 'triggers.1', message: 'a' }, { path: 'triggers.1.name', message: 'b' }, { path: 'triggers.10', message: 'c' }];
     expect(issuesUnder(issues, 'triggers.1').map((i) => i.message)).toEqual(['a', 'b']);
+  });
+});
+
+describe('new automations', () => {
+  it('starts with one empty device trigger and is disabled', () => {
+    const a = newAutomation({ id: 'pir', friendly_name: 'Hall sensor' });
+    expect(a).toEqual({ id: 'pir', friendlyname: 'Hall sensor', type: 'device', description: '', enabled: false, schedules: [], triggers: [{ name: '', type: 'deviceTrigger', conditions: [], actions: [] }] });
+  });
+
+  it('clones without sharing state and compares by payload', () => {
+    const a = automation([trigger()]);
+    const b = cloneAutomation(a);
+    expect(sameAutomation(a, b)).toBe(true);
+    b.triggers[0].conditions = [];
+    expect(sameAutomation(a, b)).toBe(false);
+    expect(a.triggers[0].conditions).toHaveLength(1);
+  });
+});
+
+describe('step actions', () => {
+  it('describe the backend formula, innermost step last', () => {
+    const t = trigger({
+      actions: [{ id: 'lamp', type: 'step', property: 'brightness', data: 0.5, steps: [{ id: 'lamp', property: 'brightness', operator: '+' }, { id: 'pir', property: 'action_time', operator: '*' }] } as never],
+    });
+    expect(describeTrigger(automation([t]), t, lookup)).toBe('When Hall sensor occupancy changes, if occupancy = Detected, then set Desk lamp brightness to brightness + (action time × 0.5).');
   });
 });

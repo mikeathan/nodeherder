@@ -8,12 +8,12 @@ import {
   Automation,
   AutomationAction,
   AutomationCondition,
+  AutomationStepAction,
   AutomationTrigger,
   isExposeCondition,
   isTimeCondition,
-  TriggerTypes,
 } from '@/types/automation.type';
-import { isPresetCyclingAction, isStepAction, isTriggerAction } from '@/contracts/automations';
+import { DeviceAutomation, isPresetCyclingAction, isStepAction, isTriggerAction } from '@/contracts/automations';
 import { exposeLabel, formatExposeValue } from './exposes';
 
 export type DeviceLookup = (id: string) => Device | undefined;
@@ -42,6 +42,22 @@ export function describeCondition(automation: Automation, c: AutomationCondition
   return 'an unknown condition';
 }
 
+const OPERATOR_SYMBOL: Record<string, string> = { '+': '+', '-': '−', '*': '×' };
+
+/**
+ * Step actions compute property = step0 op0 (step1 op1 (… amount)), evaluated from the last
+ * step (backend operations.go stepOperation.CreatePayload).
+ */
+export function stepFormula(a: AutomationStepAction): string {
+  let acc = blank(a.data) ? '…' : String(a.data);
+  for (let i = a.steps.length - 1; i >= 0; i--) {
+    const step = a.steps[i];
+    const inner = i === a.steps.length - 1 ? acc : `(${acc})`;
+    acc = `${lower(step.property)} ${OPERATOR_SYMBOL[step.operator] ?? step.operator} ${inner}`;
+  }
+  return acc;
+}
+
 export function describeAction(a: AutomationAction, lookup: DeviceLookup): string {
   const device = a.id ? lookup(a.id) : undefined;
   const target = device?.friendly_name ?? (a.id ? a.id : '…');
@@ -50,11 +66,7 @@ export function describeAction(a: AutomationAction, lookup: DeviceLookup): strin
     const wait = a.delay && a.delay.value > 0 ? ` after ${a.delay.value} ${a.delay.unit}` : '';
     return `set ${target} ${values}${wait}`;
   }
-  if (isStepAction(a)) {
-    const op = a.steps[0]?.operator ?? '+';
-    const verb = op === '-' ? 'decrease' : op === '*' ? 'multiply' : 'increase';
-    return `${verb} ${target} ${lower(a.property)} by ${blank(a.data) ? '…' : a.data}`;
-  }
+  if (isStepAction(a)) return `set ${target} ${lower(a.property)} to ${stepFormula(a)}`;
   if (isPresetCyclingAction(a)) return `cycle ${target} ${lower(a.property)} presets`;
   return 'do something unknown';
 }
@@ -63,7 +75,9 @@ export function describeAction(a: AutomationAction, lookup: DeviceLookup): strin
 export function describeTrigger(automation: Automation, t: AutomationTrigger | undefined, lookup: DeviceLookup): string {
   if (!t) return 'No triggers yet.';
   const source = lookup(automation.id)?.friendly_name ?? automation.friendlyname;
-  const when = t.type === TriggerTypes.ManualTrigger ? 'When run by hand' : `When ${source} ${lower(t.name)} changes`;
+  // The hub only accepts device triggers (backend triggerTypeRegistry); running by hand is a
+  // separate request, not a trigger type.
+  const when = `When ${source} ${lower(t.name)} changes`;
   const ifs = t.conditions.length ? `, if ${t.conditions.map((c) => describeCondition(automation, c, lookup)).join(' and ')}` : '';
   const thens = t.actions.length ? `, then ${t.actions.map((a) => describeAction(a, lookup)).join(', then ')}` : ', then …';
   return `${when}${ifs}${thens}.`;
@@ -79,7 +93,7 @@ export function validateAutomation(a: Automation, lookup: DeviceLookup): Validat
   a.triggers.forEach((t, i) => {
     const tp = `triggers.${i}`;
     if (!t.name) err(`${tp}.name`, 'Choose which property starts this trigger.');
-    if (t.type !== TriggerTypes.ManualTrigger && t.conditions.length === 0) {
+    if (t.conditions.length === 0) {
       // backend/internal/automations/trigger.go: device-triggered runs without conditions are blocked
       warn(tp, 'No conditions: the hub only runs this trigger when you run it by hand.');
     }
@@ -110,7 +124,12 @@ export function validateAutomation(a: Automation, lookup: DeviceLookup): Validat
         if (x.delay && (!Number.isFinite(x.delay.value) || x.delay.value < 0)) err(`${ap}.delay.value`, 'Enter a wait of 0 or more.');
       } else if (isStepAction(x)) {
         if (!x.property) err(`${ap}.property`, 'Choose a number property.');
-        if (blank(x.data) || Number.isNaN(Number(x.data))) err(`${ap}.data`, 'Enter an amount.');
+        // the hub reads the amount as a JSON number (operations.go), never a string
+        if (typeof x.data !== 'number' || !Number.isFinite(x.data)) err(`${ap}.data`, 'Enter an amount.');
+        if (!x.steps.length) err(`${ap}.steps`, 'Add at least one step.');
+        x.steps.forEach((step, n) => {
+          if (!step.id || !step.property) err(`${ap}.steps.${n}`, 'Choose the device and value for this step.');
+        });
       } else if (isPresetCyclingAction(x)) {
         if (!x.property) err(`${ap}.property`, 'Choose a property with presets.');
       }
@@ -121,3 +140,20 @@ export function validateAutomation(a: Automation, lookup: DeviceLookup): Validat
 
 export const issuesUnder = (issues: Issue[], prefix: string): Issue[] =>
   issues.filter((x) => x.path === prefix || x.path.startsWith(`${prefix}.`));
+
+/** A new, empty automation for a device (automations are keyed by the device that triggers them). */
+export function newAutomation(device: Pick<Device, 'id' | 'friendly_name'>): Automation {
+  const a = new DeviceAutomation();
+  a.id = device.id;
+  a.friendlyname = device.friendly_name;
+  return { ...a, triggers: [newTrigger()] };
+}
+
+/** The hub only accepts device triggers (backend triggerTypeRegistry). */
+export function newTrigger(): AutomationTrigger {
+  return { name: '', type: 'deviceTrigger', conditions: [], actions: [] };
+}
+
+/** Deep copy through JSON, which is exactly what is sent to the hub. */
+export const cloneAutomation = (a: Automation): Automation => JSON.parse(JSON.stringify(a));
+export const sameAutomation = (a: Automation, b: Automation): boolean => JSON.stringify(a) === JSON.stringify(b);

@@ -52,6 +52,8 @@ const BINARY_WORDS: Record<string, [string, string]> = {
   test: ['Testing', 'Idle'],
 };
 
+const humanise = (s: string) => s.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
+
 export const isWritable = (e: Expose): boolean => e.access_mode !== ExposeAccessModes.Read;
 
 export function exposeKind(name: string): ExposeKind {
@@ -75,22 +77,53 @@ export function isBinaryOn(e: Expose, value: unknown = e.data): boolean {
   return value === binaryOnValue(e);
 }
 
+export type NumericRange = { min: number; max: number };
+
+/** Numeric bounds from expose attributes (hub uses min/max; Zigbee2MQTT value_min/value_max). */
+export function exposeRange(e: Expose): NumericRange | null {
+  const a = e.attributes ?? {};
+  const max = Number(a['max'] ?? a['value_max']);
+  if (!Number.isFinite(max)) return null;
+  const min = Number(a['min'] ?? a['value_min'] ?? 0);
+  return { min: Number.isFinite(min) ? min : 0, max };
+}
+
+/** Named preset values (e.g. colour temperature "warm" → 454), excluding sentinel values. */
+export function exposePresets(e: Expose): { label: string; value: unknown }[] {
+  if (!e.values) return [];
+  const range = exposeRange(e);
+  return Object.entries(e.values)
+    .filter(([, v]) => !(range && typeof v === 'number' && (v < range.min || v > range.max)))
+    .map(([k, v]) => (e.type === ExposeTypes.Enum ? { label: humanise(String(v)), value: v } : { label: humanise(k), value: v }));
+}
+
 export function capabilityOf(e: Expose): ExposeCapability {
   if (e.category === ExposeCategories.Config) return 'config';
   const writable = isWritable(e);
   if (e.type === ExposeTypes.Binary) return writable ? 'switch' : 'binary-sensor';
-  if (e.type === ExposeTypes.Numeric && writable && e.attributes && e.attributes['value_max'] != null) return 'slider';
+  if (e.type === ExposeTypes.Numeric && writable && exposeRange(e)) return 'slider';
   if (writable && e.values && Object.keys(e.values).length > 0 && (e.type === ExposeTypes.Enum || e.type === ExposeTypes.Numeric)) return 'preset';
   if (e.name.startsWith('action')) return 'event';
   if (e.category === ExposeCategories.Diagnostic) return 'diagnostic';
   return 'reading';
 }
 
+export type ExposeControl = 'switch' | 'slider' | 'choice' | 'number' | 'none';
+
+/** Which input changes this expose (any category; config exposes are edited the same way). */
+export function controlOf(e: Expose): ExposeControl {
+  if (!isWritable(e)) return 'none';
+  if (e.type === ExposeTypes.Binary) return 'switch';
+  if (e.type === ExposeTypes.Numeric) return exposeRange(e) ? 'slider' : 'number';
+  if (e.type === ExposeTypes.Enum && exposePresets(e).length) return 'choice';
+  return 'none';
+}
+
 const numberText = (v: number): string => (Number.isInteger(v) ? String(v) : String(parseFloat(v.toFixed(Math.abs(v) < 10 ? 2 : 1))));
 
 /**
  * Display text for an expose value (defaults to its current data). Uses expose metadata when
- * present: brightness becomes a percentage of value_max; binary values become words.
+ * present: brightness becomes a percentage of its maximum; binary values become words.
  * Missing data is "—", never a fake zero (NH-06).
  */
 export function formatExposeValue(e: Expose, value: unknown = e.data): string {
@@ -101,7 +134,7 @@ export function formatExposeValue(e: Expose, value: unknown = e.data): string {
   }
   if (typeof value === 'number') {
     if (e.name === 'brightness') {
-      const max = Number(e.attributes?.['value_max'] ?? 254) || 254;
+      const max = exposeRange(e)?.max || 254;
       return `${Math.round((value / max) * 100)} %`;
     }
     if (e.name === 'color_temp' && value > 0) return `${Math.round(1e6 / value)} K`;
@@ -111,7 +144,7 @@ export function formatExposeValue(e: Expose, value: unknown = e.data): string {
   if (typeof value === 'string') {
     if (value === 'ON') return 'On';
     if (value === 'OFF') return 'Off';
-    return value.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
+    return humanise(value);
   }
   return getFormattedSensorValueByName(e.name, value, e.unit);
 }

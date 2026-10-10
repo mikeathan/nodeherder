@@ -1,274 +1,127 @@
 <script setup lang="ts">
-  import { useAuth } from '@/mixins/composables/useAuthentication';
-  import { ref } from 'vue';
-  import { getOAuthUrl } from '@/services/auth.service';
+  /*
+   * Sign-in (spec 007 US-08, FR-11, AC-25/26). OAuth redirect only; the hub owns the session
+   * cookie. Handles the provider's return (/?auth=success) on mount.
+   */
+  import { onMounted } from 'vue';
+  import { useRoute } from 'vue-router';
+  import { useSession } from '@/composables/useSession';
+  import AppLogo from '@/components/ui/AppLogo.vue';
+  import UiIcon from '@/components/ui/UiIcon.vue';
   import GoogleIcon from '@/components/icons/GoogleIcon.vue';
 
-  const error = ref<string>('');
-  const loading = ref(false);
-  const isProcessing = ref(false);
+  const route = useRoute();
+  const { signIn, signingIn, error, completeOAuthReturn, resumeSession } = useSession();
+  const year = new Date().getFullYear();
 
-  // calls onmounted inside useAuth
-  useAuth();
-
-  const handleLogin = async () => {
-    if (isProcessing.value || loading.value) {
-      return;
-    }
-
-    isProcessing.value = true;
-    loading.value = true;
-    error.value = '';
-
-    try {
-      // Get OAuth URL and redirect directly in the same window
-      const url = await getOAuthUrl();
-
-      // Redirect to OAuth URL in the same window
-      window.location.href = url;
-    } catch (e: any) {
-      console.error('Login failed', e);
-      error.value = e.message || 'Login failed. Please try again.';
-      loading.value = false;
-      isProcessing.value = false;
-    }
-  };
+  onMounted(async () => {
+    if (!(await completeOAuthReturn(route))) await resumeSession(route);
+  });
 </script>
 
 <template>
-  <div class="login-container">
-    <div class="login-card">
-      <!-- Logo -->
-      <div class="logo-container">
-        <img src="@/assets/images/nodeherder_logo.png" alt="Logo" class="logo" />
+  <div class="nh-login">
+    <main class="nh-login-card" aria-labelledby="login-title">
+      <AppLogo :size="72" class="nh-login-logo" />
+      <div>
+        <h1 id="login-title">Welcome home</h1>
+        <p class="nh-muted">Sign in to see and control your devices.</p>
       </div>
 
-      <!-- Welcome Text -->
-      <div class="welcome-section">
-        <h1 class="welcome-title">Welcome Back</h1>
-        <p class="welcome-subtitle">Sign in to continue to your account</p>
-      </div>
+      <button type="button" class="nh-google" :disabled="signingIn" :aria-busy="signingIn || undefined" @click="signIn">
+        <span v-if="signingIn" class="nh-spin" aria-hidden="true" />
+        <GoogleIcon v-else class="nh-google-ic" aria-hidden="true" />
+        <span>{{ signingIn ? 'Signing in…' : 'Sign in with Google' }}</span>
+      </button>
 
-      <!-- Login Button -->
-      <div class="button-container">
-        <button class="google-button" :disabled="loading" @click.prevent="handleLogin">
-          <GoogleIcon class="icon" />
-          <span>{{ loading ? 'Signing in...' : 'Sign in with Google' }}</span>
-        </button>
-
-        <!-- Error Message -->
-        <div v-if="error" class="error-message">
-          {{ error }}
-        </div>
-
-        <!-- Redirect Notice -->
-        <p class="redirect-notice">You'll be redirected to Google to sign in securely</p>
-      </div>
-
-      <!-- Security Badge -->
-      <div class="security-badge">
-        <svg class="security-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path
-            d="M12 2L4 6V12C4 16.55 7.16 20.74 12 22C16.84 20.74 20 16.55 20 12V6L12 2Z"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round" />
-          <path
-            d="M9 12L11 14L15 10"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round" />
-        </svg>
-        <span>Secure Login</span>
-      </div>
-    </div>
-
-    <!-- Footer -->
-    <div class="footer">
-      <i class="footer-link">Copyright © 2025 NodeHerder</i>
-      <!-- <span class="footer-divider">•</span> -->
-    </div>
+      <p v-if="error" class="nh-alert is-danger" role="alert"><UiIcon name="error" /><span>{{ error }}</span></p>
+      <p class="nh-login-note"><UiIcon name="secure" />You will be sent to Google to sign in, then brought back here.</p>
+    </main>
+    <footer class="nh-login-foot">© {{ year }} NodeHerder</footer>
   </div>
 </template>
 
 <style scoped>
-  .login-container {
-    min-height: 100vh;
-    width: 100%;
+  .nh-login {
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
-    justify-content: center;
     align-items: center;
-    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
-    padding: 20px;
-    position: relative;
-  }
-
-  .login-card {
-    background: rgba(30, 30, 30, 0.95);
-    border-radius: 24px;
-    padding: 48px 40px;
-    max-width: 450px;
-    width: 100%;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
-
-  .logo-container {
-    display: flex;
     justify-content: center;
-    margin-bottom: 32px;
+    gap: 1.5rem;
+    padding: 1.5rem 1rem;
+    background:
+      radial-gradient(50rem 30rem at 0% 0%, var(--nh-accent-soft), transparent 70%),
+      radial-gradient(40rem 30rem at 100% 100%, color-mix(in srgb, var(--dk-lamp) 14%, transparent), transparent 70%),
+      var(--nh-bg);
   }
-
-  .logo {
-    width: 120px;
-    height: 120px;
-    object-fit: contain;
+  .nh-login-card {
+    width: min(25rem, 100%);
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    padding: 2rem;
+    background: var(--nh-surface);
+    border: var(--nh-border-w) solid var(--nh-border);
+    border-radius: var(--nh-radius-l);
+    box-shadow: var(--nh-shadow-2);
   }
-
-  .welcome-section {
-    text-align: center;
-    margin-bottom: 40px;
+  .nh-login-logo :deep(.nh-logo-word) {
+    font-size: 1.5rem;
   }
-
-  .welcome-title {
-    font-size: 28px;
+  h1 {
+    font-size: 1.45rem;
+    margin-bottom: 0.25rem;
+  }
+  p {
+    margin: 0;
+  }
+  .nh-google {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    width: 100%;
+    min-height: 3rem;
+    border-radius: 99px;
+    border: var(--nh-border-w) solid var(--nh-border-strong);
+    background: var(--nh-surface);
+    color: var(--nh-text);
     font-weight: 600;
-    color: #e3e3e3;
-    margin: 0 0 8px 0;
-  }
-
-  .welcome-subtitle {
-    font-size: 14px;
-    color: #a0a0a0;
-    margin: 0;
-  }
-
-  .button-container {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    margin-bottom: 32px;
-  }
-
-  .google-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    font-weight: 500;
-    transition: all 0.2s ease;
-    width: 100%;
-    background-color: #131314;
-    border: 1px solid #747775;
-    border-radius: 20px;
-    color: #e3e3e3;
     cursor: pointer;
-    font-size: 14px;
-    height: 48px;
-    letter-spacing: 0.25px;
-    outline: none;
-    padding: 0 24px;
+    transition:
+      background var(--nh-motion),
+      box-shadow var(--nh-motion);
   }
-
-  .google-button:hover:not(:disabled) {
-    background-color: #1f1f1f;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    border-color: #8f8f8f;
+  .nh-google:hover:not(:disabled) {
+    background: var(--nh-surface-2);
+    box-shadow: var(--nh-shadow-1);
   }
-
-  .google-button:active:not(:disabled) {
-    transform: scale(0.98);
+  .nh-google:disabled {
+    opacity: 0.6;
+    cursor: progress;
   }
-
-  .google-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  .nh-google-ic {
+    width: 1.25rem;
+    height: 1.25rem;
   }
-
-  .icon {
-    width: 20px;
-    height: 20px;
-  }
-
-  .error-message {
-    color: #ff6b6b;
-    font-size: 14px;
-    text-align: center;
-    padding: 12px;
-    background: rgba(255, 107, 107, 0.1);
-    border-radius: 8px;
-    border: 1px solid rgba(255, 107, 107, 0.3);
-  }
-
-  .redirect-notice {
-    font-size: 12px;
-    color: #808080;
-    text-align: center;
-    margin: 0;
-  }
-
-  .security-badge {
+  .nh-login-note {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 12px;
-    background: rgba(77, 208, 225, 0.1);
-    border: 1px solid rgba(77, 208, 225, 0.3);
-    border-radius: 12px;
-    margin-bottom: 32px;
-    color: #4dd0e1;
-    font-size: 13px;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--nh-text-muted);
   }
-
-  .security-icon {
-    width: 18px;
-    height: 18px;
-    color: #4dd0e1;
+  .nh-login-note .nh-ic {
+    color: var(--nh-ok);
   }
-
-  .footer {
-    position: absolute;
-    bottom: 24px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 13px;
+  .nh-login-foot {
+    font-size: 0.8rem;
+    color: var(--nh-text-muted);
   }
-
-  .footer-link {
-    color: #808080;
-    text-decoration: none;
-    transition: color 0.2s;
-  }
-
-  .footer-link:hover {
-    color: #4dd0e1;
-  }
-
-  .footer-divider {
-    color: #4a4a4a;
-  }
-
-  @media (max-width: 768px) {
-    .login-card {
-      padding: 32px 24px;
-    }
-
-    .welcome-title {
-      font-size: 24px;
-    }
-
-    .footer {
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .footer-divider {
-      display: none;
+  @media (max-width: 420px) {
+    .nh-login-card {
+      padding: 1.5rem 1.25rem;
     }
   }
 </style>

@@ -1,162 +1,66 @@
 <script setup lang="ts">
-  import { computed, ref } from 'vue';
+  /*
+   * Home (spec 007 US-02, US-06 / FR-09). Areas are shown in their saved order. In "Edit
+   * layout" mode areas can be dragged by their handle or moved with the arrow buttons
+   * (keyboard and touch friendly); each change saves the new positions to the hub.
+   */
+  import { computed, ref, watch } from 'vue';
+  import draggable from 'vuedraggable';
+  import { DashboardGroup, DashboardGroups } from '@/types/settings.type';
+  import { RouteName } from '@/types/router';
   import { store } from '@/store';
-  import { DashboardGroup, DashboardGroups, DeviceGroup } from '@/types/settings.type';
-  import { getDeviceGroupId } from '@/contracts/device-group';
-  import EntityCard from './cards/EntityCard.vue';
-  import {
-    emitOpenConfirmationDialog,
-    emitOpenDeviceGroupSelectionDialog,
-    emitOpenInputDialogEvent,
-  } from '@/contracts/dialog-events';
+  import { useDashboardGroups } from '@/composables/useDashboardGroups';
+  import { useHub } from '@/composables/useHub';
+  import { confirm } from '@/composables/useConfirm';
+  import UiPageHeader from '@/components/ui/UiPageHeader.vue';
+  import UiButton from '@/components/ui/UiButton.vue';
+  import UiEmpty from '@/components/ui/UiEmpty.vue';
+  import AreaCard from './AreaCard.vue';
+  import AreaNameDialog from './AreaNameDialog.vue';
+  import AddTilesDialog from './AddTilesDialog.vue';
 
-  
-  const dashboardGroups = computed(() => {
-    return store.getters['hub/dashboardGroups']() as DashboardGroups;
-  });
+  const areas = useDashboardGroups();
+  const { initialized } = useHub();
 
-  function flattenDeviceGroup(group: DashboardGroup): any[] {
-    return Object.entries(group.deviceGroup).flatMap(([key, value]) =>
-      value.exposes.map((expose) => ({
-        deviceId: value.deviceId,
-        expose,
-      }))
-    );
+  const editing = ref(false);
+  /** Local copy the drag list mutates; resynced from the store whenever it changes. */
+  const list = ref<DashboardGroup[]>([]);
+  watch(areas.groups, (groups) => (list.value = [...groups]), { immediate: true });
+
+  const tileCount = computed(() => list.value.reduce((n, g) => n + Object.values(g.deviceGroup ?? {}).reduce((m, d) => m + d.exposes.length, 0), 0));
+
+  // dialogs
+  const nameDialog = ref<{ open: boolean; current?: string }>({ open: false });
+  const tilesFor = ref<DashboardGroup | null>(null);
+
+  function saveName(name: string) {
+    const current = nameDialog.value.current;
+    if (current) areas.rename(current, name);
+    else areas.create(name);
+    nameDialog.value = { open: false };
   }
 
-  const isEditMode = ref(false);
-  const selectedCard = ref<string | null>(null);
-
-  function handleCardSelected(id: string) {
-    selectedCard.value = id;
+  function onDragEnd() {
+    areas.applyOrder(list.value);
   }
 
-  function openRenameDashboardGroupDialog(groupName: string) {
-    const props = {
-      title: 'Rename Dashboard Group',
-      message: 'Enter new name',
-      value: groupName,
-    };
-    emitOpenInputDialogEvent((value) => renameDashboardGroup(groupName, value), props);
+  async function removeArea(group: DashboardGroup) {
+    const ok = await confirm({
+      title: `Delete ${group.name}?`,
+      message: 'The area and its tiles are removed from Home. Devices are not affected.',
+      confirmLabel: 'Delete area',
+      danger: true,
+    });
+    if (ok) areas.remove(group.name);
   }
 
-  function openNewDashboardGroupDialog() {
-    const props = {
-      title: 'create new dashboard group',
-    };
-    emitOpenInputDialogEvent((value) => addNewDashboardGroup(value), props);
+  function addTiles(deviceId: string, exposes: string[]) {
+    if (tilesFor.value) areas.addEntities(tilesFor.value, deviceId, exposes);
+    tilesFor.value = null;
   }
 
-  function openAddDeviceExposeDialog(dashboardroup: DashboardGroup) {
-    const props = {
-      dashboardGroup: dashboardroup,
-      title: 'Select Device group entities',
-    };
-    emitOpenDeviceGroupSelectionDialog((args: DeviceGroup) => addNewDeviceExpose(dashboardroup, args), props);
-  }
-
-  function addNewDeviceExpose(dashboardGroup: DashboardGroup, deviceGroup: DeviceGroup) {
-    const deviceId = deviceGroup.deviceId;
-    dashboardGroup.deviceGroup[deviceId] = deviceGroup;
-    store.dispatch('hub/saveDashboardGroup', dashboardGroup as DashboardGroup);
-  }
-
-  function openDeleteDeviceGroupConfirmationDialog(groupName: string) {
-    const props = {
-      title: 'Question',
-      message: `Delete group ${groupName} ?`,
-    };
-    emitOpenConfirmationDialog(() => deleteDeviceGroup(groupName), props);
-  }
-
-  function openDeleteDeviceExposeConfirmationDialog(groupName: string, deviceId: string, exposeName: string) {
-    const props = {
-      title: 'Question',
-      message: `Delete expose ${exposeName} ?`,
-    };
-    emitOpenConfirmationDialog(() => deleteDeviceExpose(groupName, deviceId, exposeName), props);
-  }
-
-  function openImportDashboardGroupsConfirmationDialog() {
-    const props = {
-      title: 'Import Dashboard Groups',
-      message: `Import new dashboard groups from file.\n\nAre you sure you want to continue?`,
-    };
-    emitOpenConfirmationDialog(importDashboardGroups, props);
-  }
-
-  function addNewDashboardGroup(grouName: string) {
-    if (!grouName) {
-      // TODO: emit error message
-      alert('groupName is empty');
-      return;
-    }
-
-    if (dashboardGroups.value[grouName]) {
-      alert('groupName already exists');
-
-      // TODO: emit error message
-      return;
-    }
-
-    dashboardGroups.value[grouName] = {
-      name: grouName,
-      deviceGroup: {},
-    };
-  }
-
-  function renameDashboardGroup(groupName: string, newName: string) {
-    if (!groupName || !newName) {
-      alert('groupName or newName is empty');
-      return;
-    }
-    if (dashboardGroups.value[newName]) {
-      alert('newName already exists');
-      return;
-    }
-
-    // TODO: this is wrong, this should be done in the ws event response in case the request is not successful
-    const group = dashboardGroups.value[groupName];
-    delete dashboardGroups.value[groupName];
-
-    group.name = newName;
-    dashboardGroups.value[newName] = group;
-    store.dispatch('hub/renameDashboardGroup', { oldName: groupName, newName: newName });
-  }
-
-  function deleteDeviceExpose(groupName: string, deviceId: string, exposeName: string) {
-    if (!groupName || !deviceId || !exposeName) {
-      alert('groupName or deviceId or exposeName is empty');
-      return;
-    }
-
-    // TODO: this is wrong, this should be done in the ws event response in case the request is not successful
-    const deviceGroupExposes = dashboardGroups.value[groupName].deviceGroup[deviceId].exposes;
-    const idx = deviceGroupExposes.indexOf(exposeName);
-    if (idx === -1) {
-      alert('exposeName not found');
-      return;
-    }
-    deviceGroupExposes.splice(idx, 1);
-    store.dispatch('hub/saveDashboardGroup', dashboardGroups.value[groupName] as DashboardGroup);
-  }
-
-  function deleteDeviceGroup(groupName: string) {
-    if (!groupName) {
-      alert('groupName is empty');
-      return;
-    }
-
-    // TODO: this is wrong, this should be done in the ws event response in case the request is not successful
-    delete dashboardGroups.value[groupName];
-    store.dispatch('hub/deleteDashboardGroup', groupName);
-  }
-
-  function exportDashboardGroups() {
-    const dashboardGroupsJson = JSON.stringify({ dashboardGroups: dashboardGroups.value }, null, 2);
-
-    const blob = new Blob([dashboardGroupsJson], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
+  function exportAreas() {
+    const url = URL.createObjectURL(new Blob([areas.exportJson()], { type: 'application/json' }));
     const link = document.createElement('a');
     link.href = url;
     link.download = 'dashboard-groups.json';
@@ -164,144 +68,105 @@
     URL.revokeObjectURL(url);
   }
 
-  function importDashboardGroups() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = (event) => {
-      const file = (event.target as HTMLInputElement).files?.[0];
-      if (!file) {
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const dashboardGroupsJson = JSON.parse(event.target?.result as string);
-        store.dispatch('hub/importDashboardGroups', dashboardGroupsJson.dashboardGroups);
-      };
-      reader.readAsText(file);
-    };
-    input.click();
-  }
-
-  function allowExport(): boolean {
-    return Object.keys(dashboardGroups.value).length > 0;
-  }
-
-  function toggleEditMode() {
-    isEditMode.value = !isEditMode.value;
+  const fileInput = ref<HTMLInputElement | null>(null);
+  async function importAreas(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    let groups: DashboardGroups | undefined;
+    try {
+      groups = JSON.parse(await file.text())?.dashboardGroups;
+    } catch {
+      groups = undefined;
+    }
+    if (!groups || typeof groups !== 'object' || Array.isArray(groups)) {
+      store.dispatch('alerts/showError', 'That file is not a NodeHerder areas export.');
+      return;
+    }
+    const ok = await confirm({
+      title: 'Import areas?',
+      message: `Import ${Object.keys(groups).length} area(s) from ${file.name}. Areas with the same name are replaced.`,
+      confirmLabel: 'Import',
+    });
+    if (ok) areas.importGroups(groups);
   }
 </script>
 
 <template>
-  <div>
-    <Button icon="pi pi-cog" severity="secondary" size="small" @click="toggleEditMode" />
-    <template v-if="isEditMode">
-      <Button
-        icon="pi pi-plus"
-        severity="secondary"
-        size="small"
-        @click="openNewDashboardGroupDialog"
-        label="New Group" />
-      <Button
-        icon="pi pi-download"
-        severity="secondary"
-        size="small"
-        @click="exportDashboardGroups"
-        :disabled="!allowExport()"
-        label="Export" />
-      <Button
-        icon="pi pi-upload"
-        severity="secondary"
-        size="small"
-        @click="openImportDashboardGroupsConfirmationDialog()"
-        label="Import" />
-    </template>
-  </div>
+  <div class="nh-home">
+    <UiPageHeader title="Home" :subtitle="`${list.length} areas · ${tileCount} tiles`">
+      <template #actions>
+        <template v-if="editing">
+          <UiButton icon="add" @click="nameDialog = { open: true }">New area</UiButton>
+          <UiButton icon="export" :disabled="!list.length" @click="exportAreas">Export</UiButton>
+          <UiButton icon="import" @click="fileInput?.click()">Import</UiButton>
+          <UiButton variant="primary" icon="check" @click="editing = false">Done</UiButton>
+        </template>
+        <template v-else>
+          <UiButton icon="panel" :to="{ name: RouteName.Panel }">Panel mode</UiButton>
+          <UiButton icon="edit" @click="editing = true">Edit layout</UiButton>
+        </template>
+        <input ref="fileInput" type="file" accept=".json,application/json" class="sr-only" tabindex="-1" aria-hidden="true" @change="importAreas" />
+      </template>
+    </UiPageHeader>
 
-  <div class="flex flex-wrap gap-2">
-    <div v-for="group in dashboardGroups" :key="group.name" class="dashboard-group">
-      <div class="dashboard-title">{{ group.name }}</div>
-      <div class="card-container" :class="{ 'edit-mode': isEditMode }">
-        <div v-for="item in flattenDeviceGroup(group)" :key="`${item.deviceId}-${item.expose}`" class="card-item">
-          <EntityCard
-            :id="item.deviceId"
-            :name="item.expose"
-            compact
-            :is-selected="isEditMode && selectedCard == getDeviceGroupId(item.deviceId, item.expose)"
-            @selected="handleCardSelected"
-            @delete="openDeleteDeviceExposeConfirmationDialog(group.name, $event.id, $event.name)" />
-        </div>
-        <div v-if="isEditMode" class="icon-tools">
-          <span class="edit-icon pi pi-pen-to-square" @click="openRenameDashboardGroupDialog(group.name)" />
-          <span class="edit-icon pi pi-trash" @click="openDeleteDeviceGroupConfirmationDialog(group.name)" />
-          <span class="edit-icon pi pi-plus" @click="openAddDeviceExposeDialog(group)" />
-        </div>
-      </div>
+    <p v-if="editing" class="nh-alert is-info nh-home-hint" role="status">
+      Drag an area by its handle, or use the arrows, to change the order. Changes save as you go.
+    </p>
+
+    <div v-if="!initialized && !list.length" class="nh-areas" aria-busy="true">
+      <div v-for="n in 3" :key="n" class="nh-card nh-skel-card"><span class="nh-skel" /><span class="nh-skel" /></div>
     </div>
+    <UiEmpty v-else-if="!list.length" icon="home" title="No areas yet" text="Areas group the values you check most, like a room.">
+      <UiButton variant="primary" icon="add" @click="nameDialog = { open: true }">Create your first area</UiButton>
+    </UiEmpty>
+    <draggable
+      v-else
+      v-model="list"
+      item-key="name"
+      class="nh-areas"
+      handle=".nh-area-handle"
+      :disabled="!editing"
+      :animation="160"
+      ghost-class="is-ghost"
+      @end="onDragEnd">
+      <template #item="{ element, index }">
+        <AreaCard
+          :group="element"
+          :editing="editing"
+          :index="index"
+          :count="list.length"
+          @move="areas.move(index, $event)"
+          @rename="nameDialog = { open: true, current: element.name }"
+          @remove="removeArea(element)"
+          @add-tiles="tilesFor = element"
+          @remove-tile="(deviceId: string, expose: string) => areas.removeEntity(element, deviceId, expose)" />
+      </template>
+    </draggable>
+
+    <AreaNameDialog :open="nameDialog.open" :current="nameDialog.current" :validate="areas.validateName" @close="nameDialog = { open: false }" @save="saveName" />
+    <AddTilesDialog :open="!!tilesFor" :group="tilesFor" @close="tilesFor = null" @add="addTiles" />
   </div>
 </template>
 
 <style scoped>
-  /* Deskop view */
-  .dashboard-group {
-    padding: 1rem 0.1rem;
+  .nh-areas {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--nh-area-w)), 1fr));
+    gap: calc(var(--nh-space) * 1.5) calc(var(--nh-space) * 1.4);
+    align-items: start;
   }
-
-  /* Mobile view */
-  @media (max-width: 768px) {
-    .dashboard-group {
-      padding: 1rem 0;
-      flex: 1 1 200px;
-      max-width: 100%;
-      box-sizing: border-box;
-    }
+  .nh-home-hint {
+    margin-bottom: calc(var(--nh-space) * 1.2);
   }
-
-  .dashboard-title {
-    font-size: 0.95rem;
-    font-weight: 500;
-    padding-left: 12px;
-    padding-bottom: 5px;
-    line-height: 1.4;
-    color: var(--text-color);
-    letter-spacing: 0.25px;
-  }
-
-  .card-container {
-    column-count: 2;
-    column-gap: 0.5rem;
-    max-width: 400px;
-    border-radius: 12px;
-    padding: 5px 10px 5px 10px;
-    position: relative;
-  }
-
-  .card-container.edit-mode {
-    border: 2px dotted var(--surface-border);
-  }
-
-  .card-item {
-    margin-bottom: 0.5rem;
-    width: 100%;
-    display: inline-block;
-    break-inside: avoid;
-  }
-
-  .icon-tools {
+  .nh-skel-card {
     display: flex;
-    justify-content: flex-start;
-    gap: 12px;
-    margin-top: 12px;
-    width: 100%;
-    column-span: all;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 1rem;
   }
-
-  .edit-icon {
-    border: 2px dotted var(--surface-border);
-    border-radius: 8px;
-    padding: 12px 14px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: background-color 0.2s ease;
+  .nh-areas :deep(.is-ghost) {
+    opacity: 0.4;
   }
 </style>

@@ -1,0 +1,104 @@
+/*
+ * Design tokens (spec 007 design-system.md, ADR-001). Every colour, radius, space and font
+ * used by the UI comes from a --nh-* token. Palettes live in themes.css; runtime overrides
+ * (radius, font scale, custom accent) are set on <html> by useThemeSettings.
+ */
+:root {
+  /* runtime knobs (overridden inline by useThemeSettings) */
+  --nh-r: 14;
+  --nh-scale: 1;
+
+  --nh-radius-s: calc(var(--nh-r) * 0.5px);
+  --nh-radius-m: calc(var(--nh-r) * 1px);
+  --nh-radius-l: calc(var(--nh-r) * 1.4px);
+
+  --nh-font-ui: 'Figtree', 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
+  --nh-font-display: var(--nh-font-ui);
+  --nh-font-panel: 'Lexend', var(--nh-font-ui);
+  --nh-font-mono: ui-monospace, 'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace;
+
+  --nh-border-w: 1px;
+  --nh-nav-w: 15.5rem;
+  --nh-area-w: 18rem;
+  --nh-motion: 160ms;
+  --nh-header-h: 3.5rem;
+  --nh-bottom-nav-h: 3.75rem;
+
+  /* status colours shared by every theme */
+  --nh-ok: #2e9e5b;
+  --nh-warn: #d98a00;
+  --nh-danger: #d93a3a;
+  --nh-info: #2f7fd6;
+
+  /* sensor kind colours (see domain/exposes.ts ExposeKind) */
+  --nh-kind-temp: #ef5350;
+  --nh-kind-humidity: #29b6f6;
+  --nh-kind-energy: #43a047;
+  --nh-kind-power: #fb8c00;
+  --nh-kind-light: #f2b01e;
+  --nh-kind-motion: #7e57c2;
+  --nh-kind-contact: #26a69a;
+  --nh-kind-alarm: #e53935;
+  --nh-kind-air: #8d6e63;
+  --nh-kind-zigbee: #e5a50a;
+  --nh-kind-wifi: #3b82f6;
+
+  --nh-shadow-1: 0 1px 2px rgb(30 30 30 / 0.06), 0 2px 8px rgb(30 30 30 / 0.04);
+  --nh-shadow-2: 0 10px 32px rgb(0 0 0 / 0.2);
+
+  --nh-accent-soft: color-mix(in srgb, var(--nh-accent) 16%, transparent);
+  --nh-ok-soft: color-mix(in srgb, var(--nh-ok) 16%, transparent);
+  --nh-warn-soft: color-mix(in srgb, var(--nh-warn) 18%, transparent);
+  --nh-danger-soft: color-mix(in srgb, var(--nh-danger) 16%, transparent);
+  --nh-info-soft: color-mix(in srgb, var(--nh-info) 16%, transparent);
+  --nh-focus: var(--nh-accent);
+
+  font-size: calc(100% * var(--nh-scale));
+}
+
+:root,
+[data-density='comfortable'] {
+  --nh-space: 1rem;
+  --nh-ctl-h: 2.5rem;
+  --nh-tile-h: 4.4rem;
+  --nh-gap: 0.75rem;
+}
+[data-density='compact'] {
+  --nh-space: 0.7rem;
+  --nh-ctl-h: 2.1rem;
+  --nh-tile-h: 3.6rem;
+  --nh-gap: 0.5rem;
+}
+[data-density='spacious'] {
+  --nh-space: 1.3rem;
+  --nh-ctl-h: 2.85rem;
+  --nh-tile-h: 5.2rem;
+  --nh-gap: 1rem;
+}
+
+[data-mode='dark'] {
+  --nh-shadow-1: 0 1px 2px rgb(0 0 0 / 0.4);
+  --nh-shadow-2: 0 12px 36px rgb(0 0 0 / 0.5);
+  color-scheme: dark;
+}
+[data-mode='light'] {
+  color-scheme: light;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --nh-motion: 0ms;
+  }
+}
+
+/*
+ * Aliases read by components kept from the previous UI (settings editors, charts, dialogs).
+ * They point at the new tokens so those components follow the active theme.
+ */
+:root {
+  --surface-ground: var(--nh-bg);
+  --surface-card: var(--nh-surface);
+  --surface-border: var(--nh-border);
+  --text-color: var(--nh-text);
+  --text-color-secondary: var(--nh-text-muted);
+}

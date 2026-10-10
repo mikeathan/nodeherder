@@ -1,0 +1,477 @@
+/*
+ * Base styles and shared primitives (spec 007 design-system.md). Classes here are the single
+ * definition of each primitive; Vue components in src/components/ui add behaviour on top.
+ * Screen-specific layout lives in each screen's scoped <style>.
+ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+body {
+  background: var(--nh-bg);
+  color: var(--nh-text);
+  font: 400 0.9375rem/1.45 var(--nh-font-ui);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+[data-effects='on'] body {
+  background-image: radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--nh-text) 5%, transparent) 1px, transparent 0);
+  background-size: 18px 18px;
+}
+#app {
+  min-height: 100dvh;
+}
+a {
+  color: inherit;
+}
+code {
+  font-family: var(--nh-font-mono);
+  font-size: 0.85em;
+}
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  font-family: var(--nh-font-display);
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+:focus-visible {
+  outline: 2px solid var(--nh-focus);
+  outline-offset: 2px;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.nh-muted {
+  color: var(--nh-text-muted);
+}
+.nh-help {
+  color: var(--nh-text-muted);
+  font-size: 0.85rem;
+  margin: 0.4rem 0 0;
+}
+.nh-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+.nh-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nh-gap);
+}
+
+/* ---------- buttons ---------- */
+.nh-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: var(--nh-ctl-h);
+  padding: 0 0.95rem;
+  border-radius: var(--nh-radius-m);
+  border: var(--nh-border-w) solid var(--nh-border);
+  background: var(--nh-surface);
+  color: var(--nh-text);
+  font: 500 0.875rem/1 var(--nh-font-ui);
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background var(--nh-motion),
+    border-color var(--nh-motion),
+    transform 80ms;
+}
+.nh-btn:hover:not(:disabled) {
+  background: var(--nh-surface-2);
+  border-color: var(--nh-border-strong);
+}
+.nh-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.nh-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.nh-btn.is-primary {
+  background: var(--nh-accent);
+  border-color: var(--nh-accent);
+  color: var(--nh-accent-contrast);
+}
+.nh-btn.is-primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--nh-accent) 85%, var(--nh-text));
+  border-color: transparent;
+}
+.nh-btn.is-ghost {
+  background: transparent;
+  border-color: transparent;
+}
+.nh-btn.is-danger {
+  color: var(--nh-danger);
+}
+.nh-btn.is-danger:hover:not(:disabled) {
+  background: var(--nh-danger-soft);
+}
+.nh-btn.is-icon {
+  width: var(--nh-ctl-h);
+  padding: 0;
+}
+.nh-btn.is-sm {
+  min-height: calc(var(--nh-ctl-h) * 0.82);
+  font-size: 0.8rem;
+  padding: 0 0.65rem;
+}
+.nh-btn.is-icon.is-sm {
+  width: calc(var(--nh-ctl-h) * 0.82);
+  padding: 0;
+}
+.nh-btn.is-block {
+  width: 100%;
+}
+
+/* ---------- chips ---------- */
+.nh-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 1.6rem;
+  padding: 0 0.55rem;
+  border-radius: 99px;
+  background: var(--nh-surface-2);
+  color: var(--nh-text);
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.nh-chip .nh-ic {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+.nh-chip.is-ok {
+  background: var(--nh-ok-soft);
+}
+.nh-chip.is-ok .nh-ic {
+  color: var(--nh-ok);
+}
+.nh-chip.is-warn {
+  background: var(--nh-warn-soft);
+}
+.nh-chip.is-warn .nh-ic {
+  color: var(--nh-warn);
+}
+.nh-chip.is-danger {
+  background: var(--nh-danger-soft);
+}
+.nh-chip.is-danger .nh-ic {
+  color: var(--nh-danger);
+}
+.nh-chip.is-info {
+  background: var(--nh-info-soft);
+}
+.nh-chip.is-info .nh-ic {
+  color: var(--nh-info);
+}
+.nh-chip.is-accent {
+  background: var(--nh-accent-soft);
+}
+.nh-chip.is-accent .nh-ic {
+  color: var(--nh-accent);
+}
+.nh-chip.is-muted {
+  color: var(--nh-text-muted);
+}
+
+/* ---------- form controls ---------- */
+.nh-input,
+.nh-select {
+  height: var(--nh-ctl-h);
+  padding: 0 0.7rem;
+  border-radius: var(--nh-radius-s);
+  border: var(--nh-border-w) solid var(--nh-border-strong);
+  background: var(--nh-surface);
+  color: var(--nh-text);
+  font-size: 0.9rem;
+  min-width: 0;
+  max-width: 100%;
+}
+.nh-input:focus,
+.nh-select:focus {
+  outline: 2px solid var(--nh-focus);
+  outline-offset: -1px;
+}
+.nh-input:disabled,
+.nh-select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.nh-input[aria-invalid='true'],
+.nh-select[aria-invalid='true'] {
+  border-color: var(--nh-danger);
+  box-shadow: 0 0 0 3px var(--nh-danger-soft);
+}
+.nh-input.is-num {
+  width: 6.5rem;
+}
+textarea.nh-input {
+  height: auto;
+  padding: 0.6rem 0.7rem;
+  resize: vertical;
+}
+.nh-select {
+  padding-right: 1.8rem;
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--nh-text-muted) 50%),
+    linear-gradient(135deg, var(--nh-text-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 0.95rem) 55%,
+    calc(100% - 0.65rem) 55%;
+  background-size: 0.3rem 0.3rem;
+  background-repeat: no-repeat;
+}
+.nh-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+.nh-field > label,
+.nh-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--nh-text-muted);
+}
+.nh-err {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--nh-danger);
+  font-size: 0.8rem;
+  flex-basis: 100%;
+  margin: 0;
+}
+.nh-err .nh-ic {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* ---------- cards and pages ---------- */
+.nh-card {
+  background: var(--nh-surface);
+  border: var(--nh-border-w) solid var(--nh-card-border, transparent);
+  border-radius: var(--nh-radius-l);
+  box-shadow: var(--nh-shadow-1);
+  overflow: hidden;
+}
+[data-mode='dark'] .nh-card {
+  --nh-card-border: var(--nh-border);
+}
+.nh-card + .nh-card {
+  margin-top: var(--nh-space);
+}
+.nh-card-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  padding: 0.75rem var(--nh-space);
+  border-bottom: var(--nh-border-w) solid var(--nh-border);
+}
+.nh-card-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 650;
+  margin: 0;
+}
+.nh-card-title .nh-ic {
+  color: var(--nh-accent);
+}
+.nh-card-tools {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.nh-card-body {
+  padding: var(--nh-space);
+}
+.nh-card-foot {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.7rem var(--nh-space);
+  border-top: var(--nh-border-w) solid var(--nh-border);
+}
+.nh-kv {
+  display: grid;
+  grid-template-columns: minmax(7rem, max-content) 1fr;
+  gap: 0.55rem 1rem;
+  margin: 0;
+  padding: var(--nh-space);
+  font-size: 0.9rem;
+  align-items: center;
+}
+.nh-kv dt {
+  color: var(--nh-text-muted);
+}
+.nh-kv dd {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.nh-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1rem;
+  margin-bottom: var(--nh-space);
+}
+.nh-alert {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--nh-radius-m);
+  background: var(--nh-surface-2);
+  font-size: 0.875rem;
+}
+.nh-alert > span {
+  flex: 1;
+}
+.nh-alert.is-info {
+  background: var(--nh-info-soft);
+}
+.nh-alert.is-warn {
+  background: var(--nh-warn-soft);
+}
+.nh-alert.is-danger {
+  background: var(--nh-danger-soft);
+}
+.nh-alert.is-warn > .nh-ic {
+  color: var(--nh-warn);
+}
+.nh-alert.is-danger > .nh-ic {
+  color: var(--nh-danger);
+}
+.nh-alert.is-info > .nh-ic {
+  color: var(--nh-info);
+}
+
+/* ---------- feedback ---------- */
+.nh-spin {
+  display: inline-block;
+  width: 0.9em;
+  height: 0.9em;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  animation: nh-rot 0.7s linear infinite;
+  vertical-align: -0.1em;
+}
+.nh-skel {
+  display: block;
+  height: 0.9rem;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--nh-surface-2), var(--nh-border), var(--nh-surface-2));
+  background-size: 200% 100%;
+  animation: nh-shimmer 1.4s infinite linear;
+}
+@keyframes nh-rot {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes nh-pulse {
+  50% {
+    opacity: 0.4;
+  }
+}
+@keyframes nh-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+@keyframes nh-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes nh-flash {
+  from {
+    background: var(--nh-accent-soft);
+  }
+}
+
+/* ---------- sensor kinds → colour tokens (domain/exposes.ts ExposeKind) ---------- */
+.kind-temp {
+  --nh-kc: var(--nh-kind-temp);
+}
+.kind-humidity {
+  --nh-kc: var(--nh-kind-humidity);
+}
+.kind-energy {
+  --nh-kc: var(--nh-kind-energy);
+}
+.kind-power {
+  --nh-kc: var(--nh-kind-power);
+}
+.kind-light {
+  --nh-kc: var(--nh-kind-light);
+}
+.kind-switch {
+  --nh-kc: var(--nh-accent);
+}
+.kind-motion {
+  --nh-kc: var(--nh-kind-motion);
+}
+.kind-contact {
+  --nh-kc: var(--nh-kind-contact);
+}
+.kind-alarm {
+  --nh-kc: var(--nh-kind-alarm);
+}
+.kind-air {
+  --nh-kc: var(--nh-kind-air);
+}
+.kind-battery,
+.kind-signal,
+.kind-misc {
+  --nh-kc: var(--nh-text-muted);
+}
+
+/* ---------- responsive helpers ---------- */
+@media (max-width: 760px) {
+  .hide-sm {
+    display: none !important;
+  }
+}
+@media (min-width: 761px) {
+  .show-sm {
+    display: none !important;
+  }
+}
