@@ -4,6 +4,7 @@
   import { Device } from '@/types/device';
   import { RouteName } from '@/types/router';
   import { measurementExposes } from '@/domain/exposes';
+  import { isKnownTime } from '@/domain/time';
   import { statusOf } from '@/composables/useHub';
   import { deviceIcon } from '@/components/ui/icons';
   import UiIcon from '@/components/ui/UiIcon.vue';
@@ -30,7 +31,7 @@
     </RouterLink>
     <div v-if="status === 'offline' || status === 'disabled'" class="nh-overlay">
       <UiIcon :name="status === 'offline' ? 'offline' : 'disabled'" />
-      <span v-if="status === 'offline'">Offline · last seen <RelativeTime :value="device.last_seen" /></span>
+      <span v-if="status === 'offline'">Offline<template v-if="isKnownTime(device.last_seen)"> · last seen <RelativeTime :value="device.last_seen" /></template></span>
       <span v-else>Disabled in device settings</span>
     </div>
     <div v-else-if="rows.length" class="nh-dcard-rows">
@@ -39,7 +40,7 @@
     <p v-else class="nh-dcard-none">No live values. Open the device for details.</p>
     <footer class="nh-dcard-foot">
       <DeviceChips :device="device" />
-      <span class="nh-dcard-seen"><RelativeTime :value="device.last_seen" /></span>
+      <span v-if="isKnownTime(device.last_seen)" class="nh-dcard-seen"><RelativeTime :value="device.last_seen" /></span>
     </footer>
   </article>
 </template>

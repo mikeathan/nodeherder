@@ -39,7 +39,7 @@
   const pending = computed(() => !!switchExpose.value && isPending(props.deviceId, switchExpose.value.name));
   const toggleable = computed(() => !!switchExpose.value && canControl(device.value) && !props.editing);
 
-  const label = computed(() => entity.value?.description || exposeLabel(props.expose));
+  const label = computed(() => exposeLabel(props.expose));
   const value = computed(() => {
     if (status.value === 'missing') return 'Device removed';
     if (status.value === 'offline') return 'Offline';
@@ -65,7 +65,8 @@
     class="nh-tile"
     :class="[`kind-${exposeKind(expose)}`, `is-${status}`, { 'is-on': isOn, 'is-alert': isAlert, 'is-pending': pending }]"
     :data-device="deviceId"
-    :data-expose="expose">
+    :data-expose="expose"
+    :title="entity?.description || undefined">
     <button
       v-if="switchExpose"
       type="button"

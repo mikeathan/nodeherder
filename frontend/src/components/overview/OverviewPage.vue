@@ -9,6 +9,7 @@
   import { useAutomationsLoader } from '@/composables/useAutomations';
   import { needsAttention, summarizeNetwork } from '@/domain/network';
   import { batteryLevel, linkQuality } from '@/domain/devices';
+  import { isKnownTime } from '@/domain/time';
   import { deviceIcon } from '@/components/ui/icons';
   import UiPageHeader from '@/components/ui/UiPageHeader.vue';
   import UiCard from '@/components/ui/UiCard.vue';
@@ -58,7 +59,7 @@
                   <b>{{ item.device.friendly_name }}</b>
                   <small>
                     {{ reasonText[item.reason] }}
-                    <template v-if="item.reason === 'offline'"> · last seen <RelativeTime :value="item.device.last_seen" /></template>
+                    <template v-if="item.reason === 'offline' && isKnownTime(item.device.last_seen)"> · last seen <RelativeTime :value="item.device.last_seen" /></template>
                     <template v-else-if="item.reason === 'low-battery'"> · {{ Math.round(batteryLevel(item.device) ?? 0) }} %</template>
                     <template v-else-if="item.reason === 'weak-link'"> · {{ linkQuality(item.device) }} LQI</template>
                   </small>

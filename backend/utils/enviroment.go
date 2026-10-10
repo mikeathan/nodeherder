@@ -169,10 +169,16 @@ func LoadEnviromentConfig() error {
 	}
 	exeDir := filepath.Dir(exe)
 
-	// Local-only: check .env in binary directory
-	envPath := filepath.Join(exeDir, ".env")
-	if _, err := os.Stat(envPath); err == nil {
-		_ = godotenv.Load(envPath)
+	// Directories searched for env files, in precedence order (godotenv.Load
+	// never overrides values that are already set). The working directory is
+	// included so `go run .` works, since the binary then lives in a temp dir.
+	dirs := []string{exeDir}
+	if cwd, err := os.Getwd(); err == nil && cwd != exeDir {
+		dirs = append(dirs, cwd)
+	}
+
+	for _, dir := range dirs {
+		loadEnvFile(filepath.Join(dir, ".env"))
 	}
 
 	env := os.Getenv("APP_ENV")
@@ -181,11 +187,18 @@ func LoadEnviromentConfig() error {
 		env = "development"
 	}
 
-	// Load env specific file explicitly from binary directory
-	envFile := filepath.Join(exeDir, ".env."+env)
-	if _, err := os.Stat(envFile); err == nil {
-		_ = godotenv.Load(envFile)
-		LogInfo("loaded env file: " + envFile)
+	// Load env specific file explicitly
+	for _, dir := range dirs {
+		if loadEnvFile(filepath.Join(dir, ".env."+env)) {
+			LogInfo("loaded env file: " + filepath.Join(dir, ".env."+env))
+		}
 	}
 	return nil
+}
+
+func loadEnvFile(path string) bool {
+	if _, err := os.Stat(path); err != nil {
+		return false
+	}
+	return godotenv.Load(path) == nil
 }

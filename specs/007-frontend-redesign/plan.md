@@ -152,7 +152,7 @@ Samples are review aids, not production code; they are not built, linted or ship
 | FR-02, AC-18, NFR-02 | `assets/styles/tokens/`, `composables/useThemeSettings.ts` | Jest: migration + validation; contrast script over preset tokens | Pending |
 | AC-03, AC-05, AC-06, NFR-01 | `components/dashboards/*`, `components/ui/*` | Manual at 360/768/1280/1920 with `npm run test-server` mocks; keyboard pass | Pending |
 | AC-04, FR-04 | `composables/useDeviceCommand.ts` | Jest with fake store: confirm, timeout, offline; manual with mock server | Pending |
-| AC-07, AC-08, FR-07, FR-08 | `registry/*` | Jest: known/unknown protocols, capability resolution for all expose types | Pending |
+| AC-07, AC-08, FR-07, FR-08 | `domain/devices.ts`, `domain/exposes.ts` | Jest: known/unknown protocols, capability resolution for all expose types | Pending |
 | AC-09, FR-05, NFR-04 | `selectors/network.ts`, `composables/useActivityFeed.ts` | Jest counts/thresholds; perf script 100 tiles × 10 msg/s | Pending |
 | AC-10…AC-15, FR-06 | `components/automations/editor/*`, `selectors/automation.ts` | Jest: describeTrigger, validateAutomation, round-trip equality over `docs/` + test fixtures; manual leave-guard and Run lock | Pending |
 | AC-16, AC-17 | shell + all screens | Manual keyboard-only pass; WS stop/start via mock server | Pending |
@@ -186,12 +186,15 @@ Observed facts that shape it: dashboard groups are a Go map (JSON keys sorted, s
 survives today); `power_source` values include `"mains (single phase)"`; sign-in is OAuth redirect
 only; the mock hub (`frontend/tools/server`) implements HTTP, WS and OAuth.
 
+Note: the `registry/` and `selectors/` folders in the earlier sketch above are implemented as
+`src/domain/` modules (protocol registry in `devices.ts`, expose capabilities in `exposes.ts`).
+
 ### Layers (single source of truth, FE-01)
 
 | Concern | Owner | Notes |
 | --- | --- | --- |
 | Device/config/automation truth | existing Vuex modules (`hub`, `automations`, `ws`, …) | unchanged API; bug fixes only (`renameDashboardGroup` mutation, `setDeviceDeConfigfaults` typo) |
-| Pure domain logic | `src/domain/` (`protocols`, `exposes`, `network`, `dashboard`, `automation`, `activity`, `commands`) | framework-free, Jest-tested; components never re-implement it |
+| Pure domain logic | `src/domain/` (`devices` (protocol registry), `exposes`, `network`, `dashboard`, `automation`, `activity`, `commands`, `time`, `panel`) | framework-free, Jest-tested; components never re-implement it |
 | Presentation preferences | `src/theme/` (`themes`, `theme-settings`) + `useThemeSettings` | `localStorage.nodeherder_theme`, migrates legacy `theme`; no household data (FE-05) |
 | Shared behaviour | composables: `useThemeSettings`, `useDeviceCommand`, `useActivityFeed`, `useAutomationDraft`, `useDashboardGroups` | each wraps one domain module + store access |
 | Visual primitives | `src/components/ui/` (icon, chip, card, page header, empty, stat) + PrimeVue controls | PrimeVue themed by a token-mapped preset (ADR-001); MDI paths for icons |
@@ -232,7 +235,7 @@ The owner chose a full redesign, so the legacy-preset switch from the earlier pl
 | --- | --- | --- |
 | AC-03…06, AC-19…22, FR-09 | `components/dashboards/*`, `domain/dashboard.ts`, Go `settings.DashboardGroup` | Jest `domain/dashboard`; e2e `home.spec`; Go `group_test` |
 | AC-04, FR-04 | `domain/commands.ts`, `composables/useDeviceCommand.ts` | Jest; e2e `home.spec`, `panel.spec` |
-| AC-07…09, FR-05, FR-07, FR-08 | `domain/protocols.ts`, `domain/exposes.ts`, `domain/network.ts` | Jest |
+| AC-07…09, FR-05, FR-07, FR-08 | `domain/devices.ts`, `domain/exposes.ts`, `domain/network.ts` | Jest |
 | AC-10…15, FR-06 | `components/automations/**`, `domain/automation.ts`, `useAutomationDraft` | Jest round-trip; e2e `automations.spec` |
 | AC-23, AC-24, FR-10 | `components/panel/*` | e2e `panel.spec` |
 | AC-25, AC-26, FR-11 | `components/auth/LoginPage.vue` | e2e `auth.spec` |
@@ -240,3 +243,19 @@ The owner chose a full redesign, so the legacy-preset switch from the earlier pl
 | FR-02, AC-02, AC-18 | `theme/*`, `useThemeSettings`, Appearance settings | Jest; e2e `appearance` check |
 | NFR-01, NFR-06 | all screens | e2e at two viewports, horizontal-overflow assertion |
 | NFR-03 | build | gzip before: JS 641 KB, CSS 66 KB (`4da0245`…`c7284c0` baseline) |
+
+### Evidence (2026-10-10)
+
+Checks run in the dev container against the mock hub; no household devices were contacted.
+
+| Check | Result |
+| --- | --- |
+| `npm test -- --runInBand` | 21 suites, 136 tests pass |
+| `npm run test:e2e` (desktop 1280×800, mobile 390×844) | 26/26 pass: sign-in/out, Home toggle (`deviceSetValue`), area reorder by arrows and drag (`saveDashboardGroup` with `order`), automation list and unchanged round-trip (`saveAutomation` equals the hub payload), device list/page, activity switch, panel mode, no horizontal overflow on 11 screens |
+| `npm run lint` | 0 errors (7 warnings in pre-existing `scripts/`) |
+| `npm run build` (vue-tsc + vite) | passes |
+| `go test ./...` (backend `order` field) | passes |
+| NFR-03 bundle (gzip) | JS 560 KB (baseline 641 KB), CSS 62 KB (baseline 66 KB) |
+
+Not run: manual keyboard, screen-reader and offline/reconnect checks at 360/768/1920 (T061),
+and tests against a real hub.

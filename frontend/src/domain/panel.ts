@@ -38,8 +38,7 @@ export function panelRoom(group: DashboardGroup, lookup: (id: string) => Device 
       toggled.add(item.deviceId);
       buttons.push({ ...item, label: shortName(device.friendly_name, group.name) });
     } else {
-      const description = device?.exposes[item.expose]?.description;
-      buttons.push({ ...item, label: description || exposeLabel(item.expose) });
+      buttons.push({ ...item, label: exposeLabel(item.expose) });
     }
   }
   return { name: group.name, climate, humidity, buttons };
