@@ -63,6 +63,8 @@ export type DeviceConfig = {
 export type DashboardGroup = {
   name: string;
   deviceGroup: KeyValuePair<DeviceGroup>;
+  /** Display position (spec 007 FR-09). Absent on groups saved before ordering existed. */
+  order?: number;
 };
 
 export type DeviceGroup = {
