@@ -47,26 +47,31 @@ can resume from any checkpoint.
   - Lint: 0 errors.
   - `vue-tsc` and `vite build` pass.
 
+## Also done (final pass)
+
+- Removed the legacy UI files listed earlier, checked with an import and tag scan plus a
+  build.
+- Removed the popup OAuth code and the Roboto font.
+- ADR-003 records the Figtree and Lexend font choice.
+- The plan's evidence table, the tasks checklist and `docs/sdd/repository-map.md` are
+  updated.
+- Fixes from the visual review:
+  - Tile labels use the short expose name; the description is now a tooltip.
+  - "Last seen" is hidden when the hub has not reported a time.
+  - The mobile drawer slides closed instead of disappearing.
+- Final checks:
+  - Jest: 136/136 pass.
+  - e2e: 26/26 pass at both viewports.
+  - Lint: 0 errors.
+  - `vue-tsc`, `vite build` and `go test ./...` pass.
+
 ## Left to do
 
-1. **T109:**
-   - Check the Assistant view and the legacy dialogs (`EntityViewDialog` and others) under
-     the new preset, and restyle them where needed.
-2. **T110:** add an e2e test that edits an automation (change a value, then save).
-3. **Remove unused legacy files:**
-   - Automation editor: `automations/{Viewer,Editor,Creator,DeviceAutomation,Trigger}.vue`,
-     `actions/*`, `conditions/*`, `schedule/*`.
-   - `controls/Navigation*`, `controls/PermitJoinTimer.vue`, `layout/*`,
-     `mixins/composables/useAuthentication.ts`, `services/theme.service.ts`,
-     `themes/material_blue.js`, `assets/styles/variables.css`.
-   - The popup OAuth code in `auth.service.ts` and `OAuthDialog`, if they are unused.
-   - Check each removal with grep and a build.
-4. **T111:**
-   - Self-review the full diff.
-   - Run `npm test -- --runInBand`, `npm run lint`, `npm run build`, `npm run test:e2e` and
-     `go test ./...`.
-   - Compare bundle size with NFR-03. Baseline gzip: JS 641 KB, CSS 66 KB. Charts are now
-     loaded only when needed.
-   - Update the docs and repository map: `src/domain` replaces the planned `registry/` and
-     `selectors/` folders.
-   - Write ADR-003 for the `@fontsource/figtree` and `@fontsource/lexend` dependencies.
+1. **T109 (rest):** the Assistant view and the legacy dialogs (`EntityViewDialog`, the
+   selection dialogs) follow the new theme through the PrimeVue preset and token aliases,
+   but their layouts are unchanged.
+2. **T061:** manual keyboard, screen-reader and offline/reconnect checks at 360, 768 and
+   1920 px.
+3. **T111:** a review by a person; the constitutions and ADRs are still proposed, not
+   approved.
+4. Optional: an e2e test that edits an automation (change a value, then save).

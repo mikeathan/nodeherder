@@ -27,7 +27,7 @@ describe('panelRoom', () => {
     expect(room.humidity).toEqual({ deviceId: 'th', expose: 'humidity' });
     expect(room.buttons).toEqual([
       { deviceId: 'lamp', expose: 'brightness', label: 'Light' },
-      { deviceId: 'door', expose: 'contact', label: 'Door' },
+      { deviceId: 'door', expose: 'contact', label: 'Contact' },
       { deviceId: 'gone', expose: 'power', label: 'Power' },
     ]);
   });

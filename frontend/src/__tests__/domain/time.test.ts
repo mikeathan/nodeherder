@@ -1,4 +1,4 @@
-import { clockTime, relativeTime } from '@/domain/time';
+import { clockTime, isKnownTime, relativeTime } from '@/domain/time';
 
 const now = Date.parse('2026-10-10T12:00:00Z');
 
@@ -21,5 +21,15 @@ describe('relativeTime', () => {
 describe('clockTime', () => {
   it('pads to HH:MM:SS', () => {
     expect(clockTime(new Date(2026, 0, 1, 7, 5, 9).getTime())).toBe('07:05:09');
+  });
+});
+
+describe('isKnownTime', () => {
+  it('accepts timestamps and ISO strings only', () => {
+    expect(isKnownTime('2026-10-10T12:00:00Z')).toBe(true);
+    expect(isKnownTime(0)).toBe(true);
+    expect(isKnownTime('')).toBe(false);
+    expect(isKnownTime(null)).toBe(false);
+    expect(isKnownTime('soon')).toBe(false);
   });
 });

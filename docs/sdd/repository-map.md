@@ -13,7 +13,7 @@ Toolchain files supersede older setup versions: [go.mod](../../backend/go.mod),
 | HTTP/auth/events | `backend/internal/{api,auth,ws}/` | Route/middleware/token/event-hub tests |
 | MCP/assistant | `backend/internal/mcp/`, `backend/models/assistant/`, `backend/store/assistant.go` | Resolver/intent/transport/assistant tests |
 | Browser state/network | `frontend/src/{store,contracts,services}/` | `frontend/src/__tests__/` |
-| UI | `frontend/src/{components,composables,router}/` | Source/scoped UI checks |
+| UI | `frontend/src/{components,composables,router}/`; pure UI logic `frontend/src/domain/`, appearance `frontend/src/theme/`, tokens `frontend/src/assets/styles/` | Jest `frontend/src/__tests__/domain/`, Playwright `frontend/e2e/` |
 | Dev/deployment | Compose/Dockerfiles, `scripts/`, `frontend/tools/server/`, `.github/workflows/ci.yml` | Setup/mocks/CI |
 
 Braces group directories, not literal paths. Backend layers: models, repositories/

@@ -109,13 +109,17 @@
       width: min(18rem, 85vw);
       z-index: 60;
       transform: translateX(-105%);
-      transition: transform var(--nh-motion);
+      /* hide only after the slide-out finishes, so closed links cannot take focus */
+      transition:
+        transform var(--nh-motion),
+        visibility 0s linear var(--nh-motion);
       box-shadow: var(--nh-shadow-2);
       visibility: hidden;
     }
     [data-nav-open='true'] .nh-app-nav {
       transform: none;
       visibility: visible;
+      transition: transform var(--nh-motion);
     }
     [data-nav-open='true'] .nh-scrim {
       display: block;

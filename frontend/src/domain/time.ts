@@ -20,3 +20,7 @@ export function clockTime(at: number): string {
   const d = new Date(at);
   return [d.getHours(), d.getMinutes(), d.getSeconds()].map((n) => String(n).padStart(2, '0')).join(':');
 }
+
+/** True when the value is a timestamp we can show. */
+export const isKnownTime = (iso: string | number | null | undefined): boolean =>
+  typeof iso === 'number' ? Number.isFinite(iso) : !!iso && Number.isFinite(Date.parse(iso));
