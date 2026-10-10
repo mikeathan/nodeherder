@@ -1,6 +1,6 @@
 # Tasks: Frontend redesign and customisable design system
 
-Spec: [spec.md](spec.md) | Plan: [plan.md](plan.md) | Status: Phase 0 complete; Phases 1–6 blocked on Q-01
+Spec: [spec.md](spec.md) | Plan: [plan.md](plan.md) | Status: Phase 0 complete; Q-01 resolved; implementation in progress
 
 ## Phase 0 — Documentation and samples (authorised 2026-10-09)
 
@@ -15,8 +15,7 @@ Spec: [spec.md](spec.md) | Plan: [plan.md](plan.md) | Status: Phase 0 complete; 
   different designs (`design-directions.md`, `samples/designs/*.js`); done: verified in Chromium.
 - [x] T003c — Round 3 (2026-10-10): Hearth + Panel merge with logo, shared themes, activity
   switch and phone editor layout; done: verified in Chromium (desktop + 375 px).
-- [ ] T004 — Owner review: choose design / combination; IDs: Q-01, SC-01; done: decision
-  recorded in spec.
+- [x] T004 — Owner review: Hearth + Panel chosen 2026-10-10; done: Q-01 resolved in spec.
 
 ## Phase 1 — Foundations (blocked: T004)
 
@@ -67,3 +66,21 @@ Spec: [spec.md](spec.md) | Plan: [plan.md](plan.md) | Status: Phase 0 complete; 
   actual results in plan.
 - [ ] T062 — Final constitution check; update `docs/sdd/repository-map.md`; gates:
   NH-01/04/05.
+
+## Implementation (authorised 2026-10-10)
+
+- [ ] T100 — Characterization Jest tests for WS-emitting store actions, WS routing, auth
+  service; gate: NH-05; done: tests pass on unchanged code.
+- [ ] T101 — Playwright harness (`frontend/e2e`, `.env.e2e`, `npm run test:e2e`) with auth,
+  home, automations, device flows passing on the current UI; ADR-002; NFR-06.
+- [ ] T102 — Backend `DashboardGroup.order` + Go test; mock hub pass-through; FR-09.
+- [ ] T103 — `src/domain/*`, `src/theme/*` with Jest tests first; FR-02, FR-04, FR-05, FR-07…09, FR-12.
+- [ ] T104 — Token CSS, themes, PrimeVue preset, fonts, UI primitives; remove legacy theme.
+- [ ] T105 — Shell (sidebar, header, logo, connection, permit join), sign-in page; FR-11, FR-13.
+- [ ] T106 — Overview with activity switch; Home with drag/keyboard reorder; devices; device
+  list; device page; FR-01, FR-09, FR-12.
+- [ ] T107 — Panel mode; FR-10.
+- [ ] T108 — Automations list and single-page editor; FR-06, AC-10…15.
+- [ ] T109 — Assistant, console, settings + Appearance, dialogs, toasts.
+- [ ] T110 — Update e2e page objects; full e2e at two viewports; CI job; docs.
+- [ ] T111 — Self-review of the full diff, constitution check, evidence in plan.

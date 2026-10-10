@@ -13,7 +13,8 @@
     "dev": "vite",
     "type-check": "vue-tsc --noEmit --watch",
     "build": "vue-tsc --noEmit --project tsconfig.build.json && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:e2e": "playwright test"
   },
   "jest": {
     "moduleFileExtensions": [
@@ -31,7 +32,9 @@
     },
     "testPathIgnorePatterns": [
       "/node_modules/",
-      "/src/__tests__/mocks/"
+      "/src/__tests__/mocks/",
+      "/src/__tests__/helpers/",
+      "/e2e/"
     ],
     "setupFiles": [
       "<rootDir>/jest.setup.js"
@@ -77,11 +80,11 @@
   "devDependencies": {
     "@eslint/js": "^9.17.0",
     "@mdi/js": "^7.4.47",
+    "@playwright/test": "1.56.1",
     "@primevue/auto-import-resolver": "^4.2.5",
     "@types/jest": "^29.5.11",
     "@types/vue": "^1.0.31",
     "@vitejs/plugin-vue": "^5.2.1",
-
     "cookie-parser": "^1.4.7",
     "eslint": "^9.17.0",
     "eslint-plugin-vue": "^9.32.0",

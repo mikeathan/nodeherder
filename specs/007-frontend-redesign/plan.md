@@ -1,7 +1,7 @@
 # Plan: Frontend redesign and customisable design system
 
-Spec: [spec.md](spec.md) | Tasks: [tasks.md](tasks.md) | Status: Draft for review
-Author: Claude Code | Updated: 2026-10-09 | Reviewed code: `4da0245`
+Spec: [spec.md](spec.md) | Tasks: [tasks.md](tasks.md) | Status: Implementation in progress (owner-approved direction)
+Author: Claude Code | Updated: 2026-10-10 | Reviewed code: `c7284c0`
 Constitutions: parent/frontend 1.0.0, proposed; none claimed ratified.
 
 Supporting documents: [current state](current-state.md) ·
@@ -9,8 +9,8 @@ Supporting documents: [current state](current-state.md) ·
 [automation editor](automation-editor.md) · [ADR-001 theming](adr-001-theming-tokens.md) ·
 [design samples](samples/index.html).
 
-Progress: Phase 0 (documentation + static samples) is complete in this branch.
-No production code was changed. Phases 1–6 are **blocked on Q-01** (owner picks a design).
+Progress: Phase 0 (documentation + samples) complete. Q-01 resolved 2026-10-10 (Hearth + Panel);
+the owner authorised implementation. See [Implementation design](#implementation-design-2026-10-10).
 
 ## Context and design
 
@@ -178,3 +178,65 @@ Real household devices MUST NOT be used for routine verification; use
 
 Phase 0 complete when the owner has reviewed the samples and documents. Each later
 phase records actual check output in this plan before merge.
+
+## Implementation design (2026-10-10)
+
+Scope: implement `samples/hearthpanel.html` in `frontend/` (spec amendment US-06…US-09).
+Observed facts that shape it: dashboard groups are a Go map (JSON keys sorted, so no order
+survives today); `power_source` values include `"mains (single phase)"`; sign-in is OAuth redirect
+only; the mock hub (`frontend/tools/server`) implements HTTP, WS and OAuth.
+
+### Layers (single source of truth, FE-01)
+
+| Concern | Owner | Notes |
+| --- | --- | --- |
+| Device/config/automation truth | existing Vuex modules (`hub`, `automations`, `ws`, …) | unchanged API; bug fixes only (`renameDashboardGroup` mutation, `setDeviceDeConfigfaults` typo) |
+| Pure domain logic | `src/domain/` (`protocols`, `exposes`, `network`, `dashboard`, `automation`, `activity`, `commands`) | framework-free, Jest-tested; components never re-implement it |
+| Presentation preferences | `src/theme/` (`themes`, `theme-settings`) + `useThemeSettings` | `localStorage.nodeherder_theme`, migrates legacy `theme`; no household data (FE-05) |
+| Shared behaviour | composables: `useThemeSettings`, `useDeviceCommand`, `useActivityFeed`, `useAutomationDraft`, `useDashboardGroups` | each wraps one domain module + store access |
+| Visual primitives | `src/components/ui/` (icon, chip, card, page header, empty, stat) + PrimeVue controls | PrimeVue themed by a token-mapped preset (ADR-001); MDI paths for icons |
+| Screens | existing route components rewritten in place; new `overview/`, `panel/`, `automations/editor/` | routes keep their paths; `/overview` and `/panel` added |
+
+Patterns: registry (protocols, expose capabilities), strategy (action editors per action type),
+adapter (Vuex ↔ domain in composables), observer (activity feed via `store.subscribe`),
+command with pending state (device commands, no retries).
+
+### Contract change: `DashboardGroup.order` (FR-09, NH-04)
+
+- Go `models/settings.DashboardGroup` gains `Order *int \`json:"order,omitempty"\``; pointer keeps
+  "absent" distinct from 0. Producers: frontend `saveDashboardGroup`/`importDashboardGroups`.
+  Consumers: backend store (persisted in app config JSON), frontend sort, mock hub (passes through).
+- Compatibility: old data has no `order` → sorted by name after ordered groups; old frontend
+  ignores the field; older backend drops it (session-only order, AC-21). No migration needed.
+- Rollback: removing the field leaves stored JSON readable (unknown field ignored by Go).
+
+### Testing strategy (NH-05, [ADR-002](adr-002-browser-tests.md))
+
+1. **Before UI changes**: extend Jest characterization tests for store actions that emit WS
+   commands (dashboard groups, device commands, permit join, automations), WS message routing,
+   auth service, and add the Playwright harness with flows written against the **current** UI.
+   Flows assert wire payloads, so the same specs prove behaviour after the redesign; only the
+   page objects change.
+2. **During**: Jest tests first for every `src/domain/` and `src/theme/` module.
+3. **After**: full e2e at 1280×800 and 390×844; `npm test`, `npm run lint`, `npm run build`,
+   `go test ./...` for the backend field.
+
+### Rollout
+
+The owner chose a full redesign, so the legacy-preset switch from the earlier plan is dropped:
+`themes/material_blue.js` and `services/theme.service.ts` are removed once nothing imports them.
+
+### Traceability (implementation)
+
+| IDs | Paths | Evidence |
+| --- | --- | --- |
+| AC-03…06, AC-19…22, FR-09 | `components/dashboards/*`, `domain/dashboard.ts`, Go `settings.DashboardGroup` | Jest `domain/dashboard`; e2e `home.spec`; Go `group_test` |
+| AC-04, FR-04 | `domain/commands.ts`, `composables/useDeviceCommand.ts` | Jest; e2e `home.spec`, `panel.spec` |
+| AC-07…09, FR-05, FR-07, FR-08 | `domain/protocols.ts`, `domain/exposes.ts`, `domain/network.ts` | Jest |
+| AC-10…15, FR-06 | `components/automations/**`, `domain/automation.ts`, `useAutomationDraft` | Jest round-trip; e2e `automations.spec` |
+| AC-23, AC-24, FR-10 | `components/panel/*` | e2e `panel.spec` |
+| AC-25, AC-26, FR-11 | `components/auth/LoginPage.vue` | e2e `auth.spec` |
+| AC-27, FR-12 | `domain/activity.ts`, `useActivityFeed`, overview | Jest; e2e `overview.spec` |
+| FR-02, AC-02, AC-18 | `theme/*`, `useThemeSettings`, Appearance settings | Jest; e2e `appearance` check |
+| NFR-01, NFR-06 | all screens | e2e at two viewports, horizontal-overflow assertion |
+| NFR-03 | build | gzip before: JS 641 KB, CSS 66 KB (`4da0245`…`c7284c0` baseline) |

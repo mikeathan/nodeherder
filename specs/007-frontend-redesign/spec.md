@@ -1,8 +1,8 @@
 # Spec: Frontend redesign and customisable design system
 
-ID: 007-frontend-redesign | Status: Draft for review | Author: Claude Code | Updated: 2026-10-09
-Constitutions: parent/frontend 1.0.0, proposed, not ratified. Components: frontend
-(backend contracts referenced read-only; no backend change in scope).
+ID: 007-frontend-redesign | Status: Approved direction, implementation in progress | Author: Claude Code | Updated: 2026-10-10
+Constitutions: parent/frontend/backend 1.0.0, proposed, not ratified. Components: frontend; one additive
+backend field (`DashboardGroup.order`, FR-09).
 
 ## Problem, scope, exclusions
 
@@ -145,7 +145,7 @@ Independent verification: manual procedure on the implemented dashboard with moc
   `localStorage.theme`, which is migrated once).
 - Dashboard layout preferences that must sync across browsers stay in
   `appConfig.hub.dashboardGroups` (existing contract). Any new persisted layout field
-  (tile size, order, area icon) is a contract change and needs Q-04.
+  (tile size, area icon) is a contract change and needs a new spec; `order` is specified in FR-09.
 - No HTTP/WS/MQTT/MCP changes. Consumers of existing contracts listed in
   [current-state §4](current-state.md#4-transport-contracts-used-by-the-browser).
 
@@ -153,13 +153,72 @@ Independent verification: manual procedure on the implemented dashboard with moc
 
 | ID | Question | Consequence | Owner | Status |
 | --- | --- | --- | --- | --- |
-| Q-01 | Which sample (or mix) becomes the target design? | Blocks implementation phases 2+ | Owner | Open |
+| Q-01 | Which sample (or mix) becomes the target design? | Blocks implementation phases 2+ | Owner | **Resolved 2026-10-10:** owner chose Hearth + Panel (`samples/hearthpanel.html`) and authorised implementation |
 | Q-02 | Are multiple actions per trigger supported by the backend engine? | Determines whether editor allows N actions | Maintainer | Code evidence: `backend/internal/automations/trigger.go` executes every action in order and joins errors; editor may allow N actions in order. Confirm intent. |
 | Q-03 | Should design/theme be per-browser only, or synced via appConfig? | Contract change if synced | Owner | Assumed per-browser |
-| Q-04 | May dashboard groups gain optional fields (order, icon, tile size)? | Backend contract change, separate spec | Owner/maintainer | Open; out of scope here |
+| Q-04 | May dashboard groups gain optional fields (order, icon, tile size)? | Backend contract change | Owner/maintainer | **Resolved 2026-10-10 for `order` only:** owner asked for drag-to-reorder areas; an optional integer `order` is added (FR-09). Icon/tile size remain out of scope. |
 | Q-05 | Pending-command timeout value | Affects AC-04 | Owner | Assumed 5 s |
 | Q-06 | Is a "Lovelace-style" freely arranged card grid wanted, or areas + tiles only? | Scope of dashboard editor | Owner | Assumed areas + tiles |
 
 Assumptions: samples are static HTML (no build) to keep review cheap; mock data mirrors
 real contract shapes; "retro" means typography, palette and chrome, not reduced
 usability.
+
+## Amendment 2026-10-10 — implementation of Hearth + Panel
+
+Owner decision (Q-01): implement **Hearth + Panel** in `frontend/`, responsive on desktop and
+mobile; automations, panels (panel mode and dashboards) and the sign-in page must keep working;
+add drag-to-reorder for Home areas; build tests first. IDs above remain valid; new IDs below.
+
+### US-06 — Arrange Home areas (P1)
+
+Independent verification: Playwright against the mock hub; Go unit test for the field round-trip.
+
+- AC-19: Given Home in edit mode, when the user drags an area onto another position (mouse or
+  touch), then the areas render in the new order and `saveDashboardGroup` is sent for every
+  group whose `order` changed, with the new `order` values.
+- AC-20: Given the same, when the user uses the area's "Move earlier/later" buttons with the
+  keyboard, then the result is identical to dragging (FE-04 keyboard alternative).
+- AC-21: Given groups without `order` (existing data), when Home renders, then groups appear
+  in name order and the first reorder assigns `order` 0…n-1; given an older backend that drops
+  the field, reorder still works for the session and no error is shown.
+- AC-22: Given a reload after reordering, when Home renders, then the saved order is used.
+
+### US-07 — Panel mode (P1)
+
+- AC-23: Given any page, when the user opens Panel mode, then a full-screen room view shows a
+  clock, one room per page (pager, arrow keys), a climate dial when the room has a temperature,
+  and large buttons that toggle with the same pending/confirmed behaviour as AC-04.
+- AC-24: Given panel mode, when the user selects a read-only sensor, then the normal device page
+  opens; "Exit panel" returns to Home. Panel mode never contains an automation editor.
+
+### US-08 — Sign in (P1)
+
+- AC-25: Given an unauthenticated visitor, when any protected route is opened, then the sign-in
+  page shows the logo and a "Sign in with Google" button; pressing it calls `POST /api/auth/login`
+  and redirects to the returned URL (unchanged contract); while pending the button is disabled
+  with a "Signing in…" label; a failure shows a plain-language error with a retry.
+- AC-26: Given a return to `/?auth=success`, when the session is valid, then the user lands on
+  Home (or the `redirect` query target) and the URL parameter is removed.
+
+### US-09 — Recent activity switch (P2)
+
+- AC-27: Given Overview, when the user turns Recent activity off, then the feed is hidden, its
+  buffer is cleared and no new entries are collected; the preference is stored per browser and
+  restored on reload.
+
+### Requirements
+
+- FR-09: MUST support reordering dashboard groups by drag and drop and by keyboard; MUST
+  persist order in an optional integer `order` field on `DashboardGroup` (absent = unordered,
+  sorted by name after ordered groups); AC-19…AC-22.
+- FR-10: MUST provide panel mode at `/panel` sharing the device-command path of the main UI;
+  AC-23, AC-24.
+- FR-11: MUST keep the OAuth redirect sign-in contract (`/api/auth/login`, `/api/auth/me`,
+  `?auth=success`); AC-25, AC-26.
+- FR-12: MUST provide the Recent activity switch; AC-27.
+- FR-13: MUST show the NodeHerder logo in the sidebar, the mobile header, the sign-in page and
+  panel mode.
+- NFR-06: Critical flows (sign-in, Home toggle, area reorder, automation open/edit/save, panel
+  toggle, device page) MUST have automated browser tests at 1280×800 and 390×844 that run in CI
+  against the mock hub, never real devices (NH-05).
