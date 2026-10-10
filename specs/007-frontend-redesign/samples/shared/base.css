@@ -497,3 +497,17 @@ button.nh-tile-ic:hover:not(:disabled) { box-shadow: 0 0 0 3px var(--nh-accent-s
   .nh-savebar { gap: 0.35rem; } .nh-savebar .nh-btn.is-ghost span { display: none; }
   .nh-h1 { font-size: 1.35rem; }
 }
+
+/* ---------- all pages view ---------- */
+.nh-allpages-toc { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 2rem; }
+.nh-allpages-toc a { font-size: 0.8rem; padding: 0.3rem 0.65rem; border: var(--nh-border-w) solid var(--nh-border); border-radius: 99px; text-decoration: none; background: var(--nh-surface); }
+.nh-allpages-toc a:hover { border-color: var(--nh-accent); color: var(--nh-accent); }
+.nh-allpage { margin: 0 0 3rem; border: 2px dashed var(--nh-border-strong); border-radius: var(--nh-radius-l); overflow: hidden; scroll-margin-top: 1rem; }
+.nh-allpage-t { display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 1rem; background: var(--nh-accent); color: var(--nh-accent-contrast); font-weight: 700; font-family: var(--nh-font-display); }
+.nh-allpage-t span { display: grid; place-items: center; min-width: 1.6rem; height: 1.6rem; border-radius: 99px; background: var(--nh-accent-contrast); color: var(--nh-accent); font-size: 0.8rem; }
+.nh-allpage-t a { margin-left: auto; font-size: 0.8rem; font-weight: 500; color: inherit; }
+.nh-allpage-b { padding: calc(var(--nh-space) * 1.25); background: var(--nh-bg); }
+.nh-allpage-b .nh-login { min-height: 0; padding: 2rem 1rem; }
+.nh-allpage-b .nh-savebar { position: static; }
+.nh-allpage-b .nh-chat { height: 34rem; }
+.nh-allpage-b .nh-console { height: 24rem; }

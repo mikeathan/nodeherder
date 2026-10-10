@@ -8,7 +8,7 @@ Spec: [spec.md](spec.md) | Plan: [plan.md](plan.md) | Status: Phase 0 complete; 
   gate: NH-01/NH-04; done: file committed.
 - [x] T002 — Draft spec, plan, design system, device support, automation editor docs and
   ADR-001; gate: NH-01; done: files committed, open questions listed.
-- [x] T003 — Build 5 static design samples covering every FR-01 screen with customiser in
+- [x] T003 — Build 5 static design samples (plus single-file `samples/standalone/*.html` with an All pages view) covering every FR-01 screen with customiser in
   `samples/`; IDs: AC-01, AC-02; done: rendered in headless Chromium for every design ×
   screen (see plan traceability).
 - [ ] T004 — Owner review: choose design / combination; IDs: Q-01, SC-01; done: decision

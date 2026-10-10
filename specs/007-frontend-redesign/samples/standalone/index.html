@@ -31,7 +31,7 @@
 <body>
 <main>
   <h1>NodeHerder redesign — design samples</h1>
-  <p class="lead">Five interactive, dependency-free prototypes for <a href="../spec.md">spec 007</a>. All share the same mock household
+  <p class="lead">Five interactive, dependency-free prototypes for <a href="../../spec.md">spec 007</a>. All share the same mock household
   and screens, so you can compare look &amp; feel directly. Every sample has a live <b>Appearance</b> panel (palette icon, top right):
   mode, palette, accent (incl. custom colour), density, corner radius, text size and retro effects. Switch designs from that panel
   and you stay on the same screen. Mix-and-match is fine — tell me e.g. “Mesh layout with the Studio controls”.</p>
@@ -51,18 +51,42 @@
   <section>
     <h3>Documents</h3>
     <ul>
-      <li><a href="../spec.md">spec.md</a> — problem, scenarios, acceptance criteria, open questions (Q-01: pick a design)</li>
-      <li><a href="../plan.md">plan.md</a> — architecture, phases, constitution check, traceability</li>
-      <li><a href="../tasks.md">tasks.md</a> — phased tasks</li>
-      <li><a href="../current-state.md">current-state.md</a> — today's code paths, contracts, logic and known gaps</li>
-      <li><a href="../design-system.md">design-system.md</a> — tokens, customisation model, components, states</li>
-      <li><a href="../device-support.md">device-support.md</a> — Zigbee/MQTT, Wi-Fi/HTTP and future protocols</li>
-      <li><a href="../automation-editor.md">automation-editor.md</a> — editor redesign</li>
-      <li><a href="../adr-001-theming-tokens.md">adr-001-theming-tokens.md</a> — theming decision</li>
+      <li><a href="../../spec.md">spec.md</a> — problem, scenarios, acceptance criteria, open questions (Q-01: pick a design)</li>
+      <li><a href="../../plan.md">plan.md</a> — architecture, phases, constitution check, traceability</li>
+      <li><a href="../../tasks.md">tasks.md</a> — phased tasks</li>
+      <li><a href="../../current-state.md">current-state.md</a> — today's code paths, contracts, logic and known gaps</li>
+      <li><a href="../../design-system.md">design-system.md</a> — tokens, customisation model, components, states</li>
+      <li><a href="../../device-support.md">device-support.md</a> — Zigbee/MQTT, Wi-Fi/HTTP and future protocols</li>
+      <li><a href="../../automation-editor.md">automation-editor.md</a> — editor redesign</li>
+      <li><a href="../../adr-001-theming-tokens.md">adr-001-theming-tokens.md</a> — theming decision</li>
     </ul>
   </section>
 </main>
-<script src="shared/designs.js"></script>
+<script>
+/* Registry of the five sample designs (used by the gallery and the in-page design switcher). */
+window.NH_DESIGNS = [
+  { n: 1, id: 'hearth', name: 'Hearth', file: 'hearth.html', short: 'Lovelace-inspired · warm, rounded, friendly',
+    blurb: 'Home Assistant–style areas and tiles with a soft 70s living-room palette. Sidebar + top bar. Best for wall tablets and family use.',
+    shell: 'sidebar', defaults: { mode: 'system', accent: 'preset', density: 'comfortable', radius: 14, fontScale: 100, preset: 'daylight', effects: true } },
+  { n: 2, id: 'mesh', name: 'Mesh', file: 'mesh.html', short: 'Zigbee2MQTT-inspired · dense, data-first',
+    blurb: 'Operations console: stat strip, activity feed, dashed device cards, compact tables with LQI/battery chips. Best for power users.',
+    shell: 'sidebar', defaults: { mode: 'dark', accent: 'preset', density: 'compact', radius: 6, fontScale: 100, preset: 'night', effects: true } },
+  { n: 3, id: 'phosphor', name: 'Phosphor', file: 'phosphor.html', short: '80s terminal · monospace, phosphor glow',
+    blurb: 'CRT terminal look with function-key tabs, inverse-video tiles and ASCII framing. Amber, green or ice phosphor; light mode is green-bar paper.',
+    shell: 'tabs', defaults: { mode: 'dark', accent: 'preset', density: 'comfortable', radius: 0, fontScale: 105, preset: 'amber', effects: true } },
+  { n: 4, id: 'studio', name: 'Studio', file: 'studio.html', short: 'Braun/Rams hardware · warm neutrals, orange',
+    blurb: 'Industrial-design calm: hardware rocker switches, inset LCD readouts, rail navigation that becomes a bottom dock on phones.',
+    shell: 'dock', defaults: { mode: 'light', accent: 'preset', density: 'comfortable', radius: 10, fontScale: 100, preset: 'braun', effects: true } },
+  { n: 5, id: 'platinum', name: 'Platinum', file: 'platinum.html', short: '90s desktop OS · bevels, title bars',
+    blurb: 'Classic desktop windows: menu bar navigation, striped title bars, bevelled controls and pinstripe desktop. Nostalgic but crisp.',
+    shell: 'menubar', defaults: { mode: 'light', accent: 'preset', density: 'comfortable', radius: 3, fontScale: 100, preset: 'platinum', effects: true } },
+];
+window.NH_DESIGN_FOR = function (id, extra) {
+  const d = window.NH_DESIGNS.find((x) => x.id === id);
+  return Object.assign({}, d, extra);
+};
+
+</script>
 <script>
   const screens = [['overview','Overview'],['home','Home'],['devices','Devices'],['list','Device list'],['device/0x001788010c5f3e21/controls','Device page'],['automations','Automations'],['automation/0x001788010d1e2f09','Editor'],['assistant','Assistant'],['console','Console'],['settings','Settings'],['components','Components'],['login','Login']];
   document.getElementById('grid').innerHTML = NH_DESIGNS.map(d =>
