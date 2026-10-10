@@ -13,6 +13,7 @@ cancel the other component. Superseded PR runs are cancelled; main runs are not.
 | Backend Tests and Build | Go module checksum changes, Linux compilation failures, uncached unit regressions, `go vet` findings |
 | Backend Race Detection | Concurrent accesses exercised by backend tests; not proof that all races are absent |
 | Frontend Tests and Build | Locked install failures, existing ESLint errors, Jest regressions, Vue/TypeScript compilation and production bundle failures |
+| Frontend E2E (mock hub) | Broken user flows in a real Chromium at desktop and phone sizes: OAuth sign-in/out, dashboards and device commands, automation save payloads, device pages (Playwright against `frontend/tools/server`; never real devices) |
 | Container (backend/frontend) | Real Dockerfile/context/build failures on Linux/amd64; backend executable help; nginx config and built index smoke checks |
 
 Images are built/loaded on disposable runners, never published. Smoke containers
