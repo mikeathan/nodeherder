@@ -91,14 +91,22 @@ devices).
 `samples/` holds 5 static, dependency-free designs sharing one mock-data set and one
 renderer, each with its own skin and layout. Open `samples/index.html`.
 
-| # | Name | Inspiration | Shell | Character |
-| --- | --- | --- | --- | --- |
-| 1 | Hearth | Home Assistant Lovelace | Sidebar + top bar | Soft, rounded tiles, area sections, friendly |
-| 2 | Mesh | Zigbee2MQTT | Dense sidebar | Ops/data-first, stat strip, tables, activity feed |
-| 3 | Phosphor | 80s CRT terminals | Top tabs (F-keys) | Monospace, amber/green phosphor, ASCII rules |
-| 4 | Studio | 60s–70s Braun/Rams hardware | Bottom dock (mobile) / rail | Warm neutrals, orange accent, hardware switches, 7-segment readouts |
-| 5 | Platinum | 90s desktop OS | Window chrome + menu bar | Bevels, pinstripes, title bars; classic yet crisp |
+Round 1 (2026-10-09) offered five skins on one layout. Owner feedback (2026-10-10): keep Hearth;
+the rest must be structurally different. Round 2 is described in
+[design-directions.md](design-directions.md):
 
+| # | Name | Structure | Navigation | Automation editor |
+| --- | --- | --- | --- | --- |
+| 1 | Hearth (kept) | Areas of tiles | Sidebar + top bar | When / If / Then flow cards |
+| 2 | Floorplan | Drawn floor plan + room inspector | Top tabs (bottom on phones) | 5-step wizard |
+| 3 | Workbench | Explorer tree, open tabs, property grids, log panel | Activity bar + tree + status bar | Outline + inspector + live JSON |
+| 4 | Brief | One column of sentences | Command palette (Ctrl K) + text menu | Fill-in-the-blanks sentence |
+| 5 | Deck | Wall-tablet room pages, dials | Room pager + bottom dock | Node canvas + drawer |
+
+Each design has its own layout module (`samples/designs/<id>.js`) over a shared renderer core
+(`samples/shared/app.js`: state, contracts, actions, editor field builders `edParts()`), so every
+editor emits the same `saveAutomation` payload. In production the equivalent split is shared
+composables/selectors plus per-layout route components (FE-01).
 Every sample has a live customiser (mode, accent, density, radius, font scale, preset).
 Samples are review aids, not production code; they are not built, linted or shipped.
 
@@ -137,7 +145,7 @@ Samples are review aids, not production code; they are not built, linted or ship
 
 | Requirement/acceptance IDs | Paths | Test/manual procedure | Actual result |
 | --- | --- | --- | --- |
-| AC-01, AC-02 | `specs/007-frontend-redesign/samples/` | Open `index.html` via `file://` in Chromium; visit every screen in all 5 designs; change each customiser control; reload | Pass 2026-10-09: Playwright + Chromium 1194 via `file://`, fonts blocked (offline fallback). 13 routes × 5 designs at 1440×900 rendered with no page errors; scripted checks per design: tile toggle shows pending then confirms; editor shows inline error + disables Save after adding an empty action; leave guard blocks navigation and "Discard and leave" proceeds; mode switch applies; 375 px width shows no horizontal page scroll on Home/Editor/List. Not checked: Safari/Firefox, screen readers, contrast measurement (NFR-02 is a Phase 1 gate). |
+| AC-01, AC-02 | `specs/007-frontend-redesign/samples/` | Open `index.html` via `file://` in Chromium; visit every screen in all 5 designs; change each customiser control; reload | Round 1 pass 2026-10-09; round 2 pass 2026-10-10 (5 designs × 13 routes + All pages, standalone files opened alone, editor validation, Brief palette, Deck node drawer, 375 px no horizontal scroll). Playwright + Chromium 1194 via `file://`, fonts blocked (offline fallback). 13 routes × 5 designs at 1440×900 rendered with no page errors; scripted checks per design: tile toggle shows pending then confirms; editor shows inline error + disables Save after adding an empty action; leave guard blocks navigation and "Discard and leave" proceeds; mode switch applies; 375 px width shows no horizontal page scroll on Home/Editor/List. Not checked: Safari/Firefox, screen readers, contrast measurement (NFR-02 is a Phase 1 gate). |
 | FR-02, AC-18, NFR-02 | `assets/styles/tokens/`, `composables/useThemeSettings.ts` | Jest: migration + validation; contrast script over preset tokens | Pending |
 | AC-03, AC-05, AC-06, NFR-01 | `components/dashboards/*`, `components/ui/*` | Manual at 360/768/1280/1920 with `npm run test-server` mocks; keyboard pass | Pending |
 | AC-04, FR-04 | `composables/useDeviceCommand.ts` | Jest with fake store: confirm, timeout, offline; manual with mock server | Pending |
@@ -153,8 +161,8 @@ Real household devices MUST NOT be used for routine verification; use
 
 ## Debt, risks, exceptions
 
-- Risk: PrimeVue token mapping may not reach Phosphor/Platinum looks (bevels, ASCII
-  rules). Mitigation: component-token overrides + `pt` passthrough classes; escalate to
+- Risk: PrimeVue token mapping may not reach every direction's look (e.g. Floorplan walls,
+  Deck dials). Mitigation: component-token overrides + `pt` passthrough classes; escalate to
   unstyled mode via ADR-001 amendment only if needed.
 - Risk: retro skins hurting legibility. Mitigation: NFR-02 contrast gate; scanline/CRT
   effects optional and off under `prefers-reduced-motion`/`prefers-contrast`.

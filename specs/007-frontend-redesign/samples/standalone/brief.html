@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NodeHerder · Mesh design sample</title>
+<title>NodeHerder · Brief design sample</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
 <style>
 /* NodeHerder samples — structure + components. Skins (../designs/*.css) only set tokens
    and add chrome. Every colour below is a --nh-* token (design-system.md). */
@@ -524,78 +524,127 @@ button.nh-tile-ic:hover:not(:disabled) { box-shadow: 0 0 0 3px var(--nh-accent-s
 
 </style>
 <style>
-/* 2 · Mesh — Zigbee2MQTT-inspired operations console: dense, dashed outlines, mono ids. */
+/* 4 · Brief — one legible column; marker highlight only on things you can change. */
 :root {
-  --nh-font-ui: 'Inter', 'Segoe UI', system-ui, sans-serif; --nh-font-mono: 'JetBrains Mono', ui-monospace, monospace;
-  --nh-nav-w: 13.5rem; --nh-area-w: 16rem;
-  --nh-ok: #36c26b; --nh-warn: #e3a008; --nh-danger: #f05252; --nh-info: #3f83f8;
-  --nh-shadow-1: none;
-}
-[data-mode='dark'] {
-  --nh-bg: #1d232a; --nh-surface: #191e24; --nh-surface-2: #242b33; --nh-border: #343c46; --nh-border-strong: #4b5563;
-  --nh-text: #dbe2ea; --nh-text-muted: #8b96a3; --nh-accent: #4f8cff; --nh-accent-contrast: #fff;
-  --nh-nav-bg: #15191e; --nh-header-bg: #15191e; --nh-dash: #6b5a1f; --nh-console-bg: #101317;
+  --nh-font-ui: 'Atkinson Hyperlegible', 'Segoe UI', system-ui, sans-serif; --nh-font-display: var(--nh-font-ui);
+  --nh-ok: #0f7e6e; --nh-warn: #a86b00; --nh-danger: #b4482e; --nh-info: #3a55b4; --nh-shadow-1: none; --nh-shadow-2: 0 20px 60px rgb(20 25 40 / 0.25);
 }
 [data-mode='light'] {
-  --nh-bg: #eef1f4; --nh-surface: #ffffff; --nh-surface-2: #f3f5f8; --nh-border: #d8dee5; --nh-border-strong: #b8c1cc;
-  --nh-text: #1b2430; --nh-text-muted: #5d6b7a; --nh-accent: #2563eb; --nh-accent-contrast: #fff;
-  --nh-nav-bg: #ffffff; --nh-header-bg: #ffffff; --nh-dash: #d9c27a;
+  --nh-bg: #fafbfc; --nh-surface: #ffffff; --nh-surface-2: #f0f2f5; --nh-border: #e1e4ea; --nh-border-strong: #c4c9d2;
+  --nh-text: #1f2430; --nh-text-muted: #5e6675; --nh-accent: #0f7e6e; --nh-accent-contrast: #ffffff; --br-marker: #ffe79a; --br-marker-ink: #1f2430; --nh-console-bg: #1f2430;
 }
-[data-preset='hive'][data-mode='dark'] { --nh-accent: #f2b705; --nh-accent-contrast: #1a1400; --nh-dash: #8a6d10; --nh-bg: #1c1a16; --nh-surface: #18160f; --nh-surface-2: #26231b; --nh-border: #3a352a; --nh-nav-bg: #14120d; --nh-header-bg: #14120d; }
-[data-preset='hive'][data-mode='light'] { --nh-accent: #a87800; --nh-dash: #e2c15a; --nh-bg: #f6f3ea; }
-[data-preset='lagoon'][data-mode='dark'] { --nh-accent: #2dd4bf; --nh-accent-contrast: #032420; --nh-dash: #1f5d57; --nh-bg: #0f1d20; --nh-surface: #0c171a; --nh-surface-2: #152629; --nh-border: #23393d; --nh-nav-bg: #0a1416; --nh-header-bg: #0a1416; }
-[data-preset='lagoon'][data-mode='light'] { --nh-accent: #0f766e; --nh-dash: #8fd3cb; --nh-bg: #ecf5f4; }
-/* chrome: dashed outlines like the Z2M device grid */
-.nh-dcard, .nh-tile, .nh-stat, .nh-auto, .nh-trig { border-style: dashed; border-color: var(--nh-dash); }
-.nh-card { border-color: var(--nh-border); }
-.nh-nav { border-right-color: var(--nh-border); font-size: 0.875rem; }
-.nh-nav-item { min-height: 2.2rem; }
-.nh-nav-item.is-active { background: var(--nh-surface-2); color: var(--nh-text); box-shadow: inset 3px 0 0 var(--nh-accent); }
-.nh-brand-logo { border-radius: 6px; }
-.nh-header { min-height: 3rem; }
-.nh-h1 { font-size: 1.35rem; font-weight: 700; }
-.nh-stat { padding: 0.65rem 0.8rem; background: transparent; }
-.nh-stat-num { font-size: 1.6rem; }
-.nh-stat-label { order: -1; }
-.nh-feed-row { font-size: 0.8rem; padding: 0.3rem var(--nh-space); border-bottom: 0; }
-.nh-feed-dev { font-weight: 700; }
-.nh-feed { font-family: var(--nh-font-ui); }
-.nh-table td, .nh-table th { padding: 0.35rem 0.6rem; }
-.nh-dcard-head { padding: 0.6rem 0.8rem; }
-.nh-dcard-head b { font-size: 0.9rem; }
-.nh-dcard-ic { background: transparent; border: 1px solid var(--nh-border-strong); }
-.nh-chip { border-radius: 6px; background: var(--nh-surface-2); border-color: var(--nh-border); }
-.nh-tile-ic { width: 2.1rem; height: 2.1rem; }
-.nh-tile.is-on .nh-tile-ic { background: transparent; box-shadow: inset 0 0 0 2px var(--nh-kc); }
-.nh-tile-label { font-size: 0.8rem; }
-.nh-row { padding-top: 0.25rem; padding-bottom: 0.25rem; }
-code, .nh-table code { font-family: var(--nh-font-mono); }
-[data-effects='on'] .nh-content { background-image: linear-gradient(var(--nh-border) 1px, transparent 1px), linear-gradient(90deg, var(--nh-border) 1px, transparent 1px); background-size: 32px 32px; background-position: -1px -1px; background-attachment: local; }
-[data-effects='on'][data-mode='dark'] .nh-content { background-image: linear-gradient(rgb(255 255 255 / 0.025) 1px, transparent 1px), linear-gradient(90deg, rgb(255 255 255 / 0.025) 1px, transparent 1px); }
-[data-effects='on'][data-mode='light'] .nh-content { background-image: linear-gradient(rgb(0 0 0 / 0.035) 1px, transparent 1px), linear-gradient(90deg, rgb(0 0 0 / 0.035) 1px, transparent 1px); }
+[data-mode='dark'] {
+  --nh-bg: #1a1f29; --nh-surface: #212734; --nh-surface-2: #29303f; --nh-border: #343c4c; --nh-border-strong: #4a5468;
+  --nh-text: #eceff4; --nh-text-muted: #a5adbd; --nh-accent: #62d2bf; --nh-accent-contrast: #0f1a18; --br-marker: #5c4e17; --br-marker-ink: #fff3c4;
+}
+[data-preset='slate'][data-mode='light'] { --nh-bg: #eef1f5; --nh-accent: #3a55b4; --br-marker: #d8e1ff; }
+[data-preset='slate'][data-mode='dark'] { --nh-accent: #9db2ff; --br-marker: #2c3a6b; --br-marker-ink: #e3e9ff; }
+[data-preset='night'][data-mode='light'] { --nh-accent: #6b4c00; --br-marker: #ffe79a; }
+[data-preset='night'][data-mode='dark'] { --nh-bg: #12151c; --nh-surface: #181c25; --nh-accent: #ffe79a; --nh-accent-contrast: #12151c; --br-marker: #ffe79a; --br-marker-ink: #12151c; }
+body { font-size: 1.0625rem; line-height: 1.6; }
+.br-app { display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; height: 100dvh; }
+.br-top { display: grid; grid-template-columns: 1fr minmax(0, 34rem) 1fr; align-items: center; gap: 1rem; padding: 0.9rem 1.5rem 0.4rem; }
+.br-brand { font-weight: 700; text-decoration: none; font-size: 1.05rem; }
+.br-bar { display: flex; align-items: center; gap: 0.6rem; height: 2.9rem; padding: 0 0.6rem 0 0.9rem; border: 1px solid var(--nh-border-strong); border-radius: 99px; background: var(--nh-surface); color: var(--nh-text-muted); font: inherit; cursor: text; text-align: left; }
+.br-bar:hover { border-color: var(--nh-accent); } .br-bar span { flex: 1; }
+.br-bar kbd, .br-hint { font: inherit; font-size: 0.78rem; }
+.br-bar kbd { padding: 0.1rem 0.5rem; border-radius: 6px; border: 1px solid var(--nh-border); }
+.br-menu { grid-column: 1 / -1; display: flex; flex-wrap: wrap; justify-content: center; gap: 0.2rem 1.1rem; font-size: 0.95rem; }
+.br-menu a { text-decoration: none; color: var(--nh-text-muted); padding: 0.15rem 0; border-bottom: 2px solid transparent; }
+.br-menu a:hover { color: var(--nh-text); } .br-menu a[aria-current='page'] { color: var(--nh-text); border-bottom-color: var(--nh-accent); font-weight: 700; }
+.br-content { overflow: auto; padding: 1.5rem 1.25rem 5rem; outline: none; }
+.br-col { max-width: 44rem; margin: 0 auto; }
+.br-foot { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 1.25rem; border-top: 1px solid var(--nh-border); font-size: 0.85rem; }
+.br-foot-gap { flex: 1; }
+@media (max-width: 760px) { .br-top { grid-template-columns: 1fr; padding: 0.75rem 1rem 0.3rem; } .br-brand { display: none; } .br-menu { justify-content: flex-start; overflow-x: auto; flex-wrap: nowrap; white-space: nowrap; } .br-content { padding: 1rem 1rem 5rem; } }
+
+.br-h1 { font-size: 2rem; line-height: 1.2; font-weight: 700; margin: 0 0 0.75rem; text-wrap: balance; letter-spacing: -0.01em; }
+.br-h2 { font-size: 1.15rem; font-weight: 700; margin: 2rem 0 0.4rem; }
+.br-lead { font-size: 1.25rem; line-height: 1.55; margin: 0 0 0.5rem; text-wrap: pretty; }
+.br-p { margin: 0 0 0.75rem; text-wrap: pretty; } .br-dim { color: var(--nh-text-muted); }
+.br-col a { color: var(--nh-text); text-decoration-color: var(--nh-accent); text-decoration-thickness: 2px; text-underline-offset: 3px; }
+.br-col a:hover { color: var(--nh-accent); }
+.br-tok { display: inline-flex; align-items: center; gap: 0.35rem; margin: 0 0.6rem 0.35rem 0; white-space: nowrap; }
+.br-sw { display: inline-flex; align-items: center; gap: 0.3rem; vertical-align: middle; } .br-sw small { color: var(--nh-text-muted); }
+.br-sw .nh-toggle { width: 2.5rem; height: 1.4rem; } .br-sw .nh-toggle-knob { width: 1rem; height: 1rem; } .br-sw .nh-toggle[aria-checked='true'] .nh-toggle-knob { transform: translateX(1.1rem); }
+.br-log { list-style: none; margin: 0; padding: 0; } .br-log li { display: flex; gap: 1rem; padding: 0.35rem 0; border-bottom: 1px solid var(--nh-border); }
+.br-log time { color: var(--nh-text-muted); font-variant-numeric: tabular-nums; flex: none; }
+.br-dev { border-bottom: 1px solid var(--nh-border); }
+.br-dev summary { display: flex; align-items: center; gap: 0.75rem; padding: 0.55rem 0; cursor: pointer; list-style: none; }
+.br-dev summary::-webkit-details-marker { display: none; }
+.br-dev summary > span:first-child { flex: 1; }
+.br-dev summary::after { content: '+'; color: var(--nh-text-muted); font-size: 1.2rem; width: 1rem; text-align: center; } .br-dev[open] summary::after { content: '–'; }
+.br-dev .nh-rows { padding: 0 0 0.75rem 1rem; border-left: 3px solid var(--br-marker); }
+.br-inl, .br-col .nh-select, .br-col select.nh-select, .br-mad .nh-input, .br-mad .nh-select { font: inherit; color: var(--br-marker-ink); background: var(--br-marker); border: 0; border-bottom: 2px solid color-mix(in srgb, var(--br-marker-ink) 40%, transparent); border-radius: 4px 4px 0 0; padding: 0 0.35rem; height: auto; min-height: 1.9rem; }
+.br-col .nh-select { padding-right: 1.4rem; background-image: linear-gradient(45deg, transparent 50%, var(--br-marker-ink) 50%), linear-gradient(135deg, var(--br-marker-ink) 50%, transparent 50%); background-position: calc(100% - 0.7rem) 55%, calc(100% - 0.4rem) 55%; background-size: 0.3rem 0.3rem; background-repeat: no-repeat; background-color: var(--br-marker); }
+.br-inl:focus, .br-mad .nh-input:focus, .br-mad .nh-select:focus { outline: 2px solid var(--nh-focus); outline-offset: 1px; }
+.br-q { min-width: 12rem; } .br-wide { width: 100%; }
+.br-filter { line-height: 2.3; }
+.br-count { color: var(--nh-text-muted); margin: 0.5rem 0 0.25rem; }
+.br-table { width: 100%; border-collapse: collapse; } .br-table th { text-align: left; font-weight: 700; font-size: 0.9rem; padding: 0.4rem 0.5rem 0.4rem 0; border-bottom: 2px solid var(--nh-text); }
+.br-table td { padding: 0.45rem 0.5rem 0.45rem 0; border-bottom: 1px solid var(--nh-border); } .br-table tr.is-off td { color: var(--nh-text-muted); }
+.br-num { font-variant-numeric: tabular-nums; } .br-flag { color: var(--nh-danger); font-size: 0.85rem; font-weight: 700; }
+@media (max-width: 600px) { .br-table th:nth-child(2), .br-table td:nth-child(2), .br-table th:nth-child(5), .br-table td:nth-child(5) { display: none; } }
+.br-crumb { margin: 0 0 0.3rem; } .br-crumb .nh-back { margin: 0; }
+.br-readings { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: 1rem 1.5rem; margin: 1.25rem 0; }
+.br-readings dt { color: var(--nh-text-muted); font-size: 0.9rem; } .br-readings dd { margin: 0; font-size: 1.8rem; font-weight: 700; font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 0.5rem; }
+.br-rows { border-top: 1px solid var(--nh-border); } .br-rows:empty { display: none; }
+.br-col .nh-card, .br-col .nh-chart { border: 0; border-top: 1px solid var(--nh-border); border-radius: 0; box-shadow: none; background: transparent; }
+.br-col .nh-card-head { padding-left: 0; padding-right: 0; } .br-col .nh-kv, .br-col .nh-card-body { padding-left: 0; padding-right: 0; } .br-col .nh-cols { grid-template-columns: 1fr; }
+.br-col .nh-charts { grid-template-columns: 1fr; }
+.br-rule { padding: 1rem 0; border-bottom: 1px solid var(--nh-border); } .br-rule.is-off { color: var(--nh-text-muted); }
+.br-rule-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; } .br-rule-head h2 { font-size: 1.2rem; margin: 0; flex: 1; }
+.br-meta { color: var(--nh-text-muted); font-size: 0.9rem; }
+.br-rule p { margin: 0.4rem 0 0; max-width: 62ch; } .br-rule-act { display: flex; gap: 0.4rem; margin-top: 0.6rem !important; }
+.br-mad { padding: 1rem 0 0.75rem; border-bottom: 1px solid var(--nh-border); }
+.br-mad-p { font-size: 1.2rem; line-height: 2.4; margin: 0; }
+.br-clause { display: inline; } .br-clause .nh-inline { display: inline-flex; vertical-align: baseline; } .br-clause .nh-set-row, .br-clause .nh-set-row > .nh-inline { display: inline-flex; }
+.br-clause .nh-act-opts { display: inline-flex; font-size: 0.95rem; } .br-clause .nh-err { display: inline-flex; font-size: 0.85rem; margin-left: 0.3rem; flex-basis: auto; }
+.br-mad .nh-seg { vertical-align: middle; font-size: 0.85rem; } .br-mad .nh-unit-input em { color: var(--nh-text-muted); }
+.br-mad .nh-input.is-num { width: 5rem; }
+.br-missing { color: var(--nh-danger); font-style: italic; }
+.br-mad-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem; margin: 0.4rem 0 0; font-size: 0.9rem; } .br-gap { flex: 1; }
+.br-mad .nh-warn-list { border-top: 0; margin-top: 0.4rem; border-radius: 6px; }
+.br-col .nh-sentence { font-style: normal; color: var(--nh-text); font-size: 1.05rem; margin: 0 0 0.5rem; }
+.br-col .nh-savebar { bottom: -4.25rem; }
+.br-chat { display: flex; flex-direction: column; gap: 0.75rem; margin: 1rem 0; }
+.br-msg { margin: 0; padding-left: 0.9rem; border-left: 3px solid var(--nh-border-strong); } .br-msg.is-assistant { border-left-color: var(--nh-accent); } .br-msg b { display: block; font-size: 0.85rem; color: var(--nh-text-muted); }
+.br-ask { display: flex; gap: 0.5rem; align-items: flex-end; } .br-ask textarea { flex: 1; font-size: 1rem; }
+.br-col a[aria-current='true'] { font-weight: 700; }
+/* palette */
+.br-cmd { position: fixed; z-index: 101; top: 12vh; left: 50%; transform: translateX(-50%); width: min(38rem, calc(100vw - 2rem)); background: var(--nh-surface); border: 1px solid var(--nh-border-strong); border-radius: 16px; box-shadow: var(--nh-shadow-2); overflow: hidden; overscroll-behavior: contain; }
+.br-cmd-in { display: flex; align-items: center; gap: 0.6rem; padding: 0 1rem; border-bottom: 1px solid var(--nh-border); } .br-cmd-in .nh-ic { color: var(--nh-text-muted); }
+.br-cmd-in input { flex: 1; height: 3.4rem; border: 0; background: none; font: inherit; font-size: 1.15rem; color: var(--nh-text); outline: none; }
+.br-results { max-height: 50vh; overflow: auto; padding: 0.4rem; }
+.br-res { display: flex; align-items: center; gap: 0.75rem; width: 100%; padding: 0.55rem 0.7rem; border-radius: 10px; border: 0; background: none; color: inherit; font: inherit; text-align: left; text-decoration: none; cursor: pointer; }
+.br-res span { flex: 1; display: flex; flex-direction: column; } .br-res small { color: var(--nh-text-muted); font-size: 0.85rem; } .br-res em { font-style: normal; color: var(--nh-text-muted); font-size: 0.85rem; }
+.br-res.is-cur, .br-res:hover { background: var(--br-marker); color: var(--br-marker-ink); } .br-res.is-cur small, .br-res.is-cur em { color: inherit; }
+.br-none { padding: 1rem; margin: 0; color: var(--nh-text-muted); } .br-hint { margin: 0; padding: 0.5rem 1rem; border-top: 1px solid var(--nh-border); color: var(--nh-text-muted); }
+[data-effects='on'] .br-col a { text-decoration-color: var(--br-marker); text-decoration-thickness: 0.45em; text-underline-offset: -0.25em; text-decoration-skip-ink: none; }
 
 </style>
 </head>
 <body>
 <div id="app"><p style="padding:2rem;font-family:system-ui">Loading NodeHerder sample… (JavaScript required)</p></div>
 <script>
-/* Registry of the five sample designs (used by the gallery and the in-page design switcher). */
+/* Registry of the sample designs (gallery + in-page design switcher). Round 2: Hearth kept,
+   four structurally different directions added — see ../design-directions.md. */
 window.NH_DESIGNS = [
-  { n: 1, id: 'hearth', name: 'Hearth', file: 'hearth.html', short: 'Lovelace-inspired · warm, rounded, friendly',
-    blurb: 'Home Assistant–style areas and tiles with a soft 70s living-room palette. Sidebar + top bar. Best for wall tablets and family use.',
+  { n: 1, id: 'hearth', name: 'Hearth', file: 'hearth.html', short: 'Areas of soft tiles · sidebar',
+    blurb: 'Home Assistant–style areas and tiles with a warm palette. Sidebar and top bar; When / If / Then flow editor.',
     shell: 'sidebar', defaults: { mode: 'system', accent: 'preset', density: 'comfortable', radius: 14, fontScale: 100, preset: 'daylight', effects: true } },
-  { n: 2, id: 'mesh', name: 'Mesh', file: 'mesh.html', short: 'Zigbee2MQTT-inspired · dense, data-first',
-    blurb: 'Operations console: stat strip, activity feed, dashed device cards, compact tables with LQI/battery chips. Best for power users.',
-    shell: 'sidebar', defaults: { mode: 'dark', accent: 'preset', density: 'compact', radius: 6, fontScale: 100, preset: 'night', effects: true } },
-  { n: 3, id: 'phosphor', name: 'Phosphor', file: 'phosphor.html', short: '80s terminal · monospace, phosphor glow',
-    blurb: 'CRT terminal look with function-key tabs, inverse-video tiles and ASCII framing. Amber, green or ice phosphor; light mode is green-bar paper.',
-    shell: 'tabs', defaults: { mode: 'dark', accent: 'preset', density: 'comfortable', radius: 0, fontScale: 105, preset: 'amber', effects: true } },
-  { n: 4, id: 'studio', name: 'Studio', file: 'studio.html', short: 'Braun/Rams hardware · warm neutrals, orange',
-    blurb: 'Industrial-design calm: hardware rocker switches, inset LCD readouts, rail navigation that becomes a bottom dock on phones.',
-    shell: 'dock', defaults: { mode: 'light', accent: 'preset', density: 'comfortable', radius: 10, fontScale: 100, preset: 'braun', effects: true } },
-  { n: 5, id: 'platinum', name: 'Platinum', file: 'platinum.html', short: '90s desktop OS · bevels, title bars',
-    blurb: 'Classic desktop windows: menu bar navigation, striped title bars, bevelled controls and pinstripe desktop. Nostalgic but crisp.',
-    shell: 'menubar', defaults: { mode: 'light', accent: 'preset', density: 'comfortable', radius: 3, fontScale: 100, preset: 'platinum', effects: true } },
+  { n: 2, id: 'floorplan', name: 'Floorplan', file: 'floorplan.html', short: 'The house plan is the home page',
+    blurb: 'Rooms drawn as a floor plan with switch pins; a room inspector slides in. Faceted device finder, rules as device-to-device diagrams, step-by-step wizard editor.',
+    shell: 'custom', defaults: { mode: 'light', accent: 'preset', density: 'comfortable', radius: 8, fontScale: 100, preset: 'blueprint', effects: true } },
+  { n: 3, id: 'workbench', name: 'Workbench', file: 'workbench.html', short: 'IDE-style explorer, tabs and inspector',
+    blurb: 'For the owner who configures everything: explorer tree, open tabs, property grids with type and access mode, status bar and a live log panel. Outline + inspector + JSON editor.',
+    shell: 'custom', defaults: { mode: 'dark', accent: 'preset', density: 'compact', radius: 4, fontScale: 100, preset: 'graphite', effects: false } },
+  { n: 4, id: 'brief', name: 'Brief', file: 'brief.html', short: 'The house written as sentences · command bar',
+    blurb: 'One calm column. Home reads like a note about the house, with inline switches; Ctrl K finds any device, room or action. Rules are edited as fill-in-the-blanks sentences.',
+    shell: 'custom', defaults: { mode: 'light', accent: 'preset', density: 'comfortable', radius: 10, fontScale: 105, preset: 'paper', effects: false } },
+  { n: 5, id: 'deck', name: 'Deck', file: 'deck.html', short: 'Wall-tablet panel · big dials · room pager',
+    blurb: 'Readable from across the room: clock strip, one room per page, temperature dial and big light buttons, bottom dock. Rules are a node canvas with an inspector drawer.',
+    shell: 'custom', defaults: { mode: 'dark', accent: 'preset', density: 'spacious', radius: 22, fontScale: 100, preset: 'lagoon', effects: true } },
 ];
 window.NH_DESIGN_FOR = function (id, extra) {
   const d = window.NH_DESIGNS.find((x) => x.id === id);
@@ -604,7 +653,7 @@ window.NH_DESIGN_FOR = function (id, extra) {
 
 </script>
 <script>window.NH_DESIGN_FOR_ALL = (id, x) => NH_DESIGN_FOR(id, Object.assign({ defaultRoute: '#/all' }, x));</script>
-<script>window.NH_DESIGN = NH_DESIGN_FOR_ALL('mesh', {"presets": [{"id": "night", "name": "Night", "swatch": ["#1d232a", "#4f8cff"]}, {"id": "hive", "name": "Hive", "swatch": ["#1c1a16", "#f2b705"]}, {"id": "lagoon", "name": "Lagoon", "swatch": ["#0f1d20", "#2dd4bf"]}], "accents": ["#4f8cff", "#f2b705", "#2dd4bf", "#a78bfa", "#f472b6", "#34d399"], "effectsLabel": "blueprint grid"});</script>
+<script>window.NH_DESIGN = NH_DESIGN_FOR_ALL('brief', {"presets": [{"id": "paper", "name": "Paper", "swatch": ["#fafbfc", "#0f7e6e"]}, {"id": "slate", "name": "Slate", "swatch": ["#eef1f5", "#3a55b4"]}, {"id": "night", "name": "Night", "swatch": ["#1a1f29", "#ffe79a"]}], "accents": ["#0f7e6e", "#3a55b4", "#9a3f9e", "#b4482e", "#1f2430", "#6b7d1b"], "effectsLabel": "marker highlights"});</script>
 <script>
 /* NodeHerder design samples — stroke icon set (24×24, currentColor). Hand-drawn for the
    samples so they work offline; production would keep @mdi/js via the capability registry. */
@@ -900,6 +949,145 @@ window.NH_DESIGN_FOR = function (id, extra) {
 
   window.NH_DATA = { devices, appConfig, automations, logs, conversations, mcpStatus, version: '0.12.16-dev', user: { name: 'mike', email: 'owner@home.lan' } };
 })();
+
+</script>
+<script>
+/* 4 · Brief — one column of plain sentences, a command palette (Ctrl K), fill-in-the-blanks rules. */
+window.NH_LAYOUT = function (c) {
+  const { S, I, esc, btn, chip, toggle, sel, empty, dev, meta, fmt, roomsOf, timeAgo, clock, devIcon, isOnline, isDisabled, lqiOf, battOf, protocol, capability, canControl, pkey, stateExposeOf, describeTrigger, autoStatus, canManual, $ } = c;
+  S.cmd = false; S.cmdQ = ''; S.cmdI = 0; S.open = S.open || {};
+  const MENU = [['home', 'Home'], ['overview', 'Status'], ['devices', 'Rooms'], ['list', 'All devices'], ['automations', 'Rules'], ['assistant', 'Ask'], ['console', 'Log'], ['settings', 'Settings'], ['components', 'Parts'], ['all', 'All pages']];
+  const link = (d) => '<a href="#/device/' + encodeURIComponent(d.id) + '">' + esc(d.friendly_name) + '</a>';
+  const list = (xs) => (xs.length < 2 ? xs.join('') : xs.slice(0, -1).join(', ') + ' and ' + xs[xs.length - 1]);
+  const sw = (d, e) => { const k = pkey(d.id, e.name), p = S.pending[k] !== undefined; return '<span class="br-sw">' + toggle(e.data === e.values.on || e.data === true, 'expose-toggle', k, { disabled: !canControl(d) || p, pending: p, label: d.friendly_name }) + (p ? '<small>sending…</small>' : '') + '</span>'; };
+
+  function commands() {
+    const q = S.cmdQ.trim().toLowerCase(), out = [];
+    MENU.forEach((m) => out.push({ t: 'Open ' + m[1], k: 'page', href: '#/' + m[0], icon: 'chevronR' }));
+    S.devices.forEach((d) => {
+      out.push({ t: d.friendly_name, k: 'device', href: '#/device/' + encodeURIComponent(d.id), icon: devIcon(d), sub: protocol(d.connection_type).label + (isOnline(d) ? '' : ', offline') });
+      const st = stateExposeOf(d); if (st && canControl(d)) out.push({ t: 'Turn ' + (st.data === st.values.on ? 'off ' : 'on ') + d.friendly_name, k: 'action', act: 'expose-toggle', arg: pkey(d.id, st.name), icon: 'power' });
+    });
+    S.automations.forEach((a, i) => { out.push({ t: 'Edit rule: ' + (a.description || a.friendlyname), k: 'rule', href: '#/automation/' + encodeURIComponent(a.id), icon: 'automation' }); const m = a.triggers.findIndex(canManual); if (m >= 0) out.push({ t: 'Run rule: ' + (a.description || a.friendlyname), k: 'action', act: 'auto-run', arg: i + '|' + m, icon: 'play' }); });
+    out.push({ t: 'Let new Zigbee devices join', k: 'action', act: 'permit', icon: 'join' }, { t: 'Switch light or dark', k: 'action', act: 'mode-toggle', icon: 'moon' }, { t: 'Change appearance', k: 'action', act: 'pop', icon: 'palette' });
+    return (q ? out.filter((x) => (x.t + ' ' + (x.sub || '')).toLowerCase().includes(q)) : out.filter((x) => x.k !== 'device' || true)).slice(0, 9);
+  }
+  const cmdList = () => { const r = commands(); if (S.cmdI >= r.length) S.cmdI = 0; return r.length ? r.map((x, i) => (x.href ? '<a href="' + x.href + '" data-act="br-cmd-close"' : '<button type="button" data-act="br-run" data-arg="' + i + '"') + ' class="br-res' + (i === S.cmdI ? ' is-cur' : '') + '" id="br-r' + i + '" role="option" aria-selected="' + (i === S.cmdI) + '">' + I(x.icon) + '<span>' + esc(x.t) + (x.sub ? '<small>' + esc(x.sub) + '</small>' : '') + '</span><em>' + x.k + '</em>' + (x.href ? '</a>' : '</button>')).join('') : '<p class="br-none">Nothing matches “' + esc(S.cmdQ) + '”. Try a room or device name.</p>'; };
+  const palette = () => !S.cmd ? '' : '<div class="nh-dialog-backdrop" data-act="br-cmd-close"></div><div class="br-cmd" role="dialog" aria-modal="true" aria-label="Command palette"><label class="br-cmd-in">' + I('search') + '<input type="text" placeholder="Find a device, room, rule or action…" value="' + esc(S.cmdQ) + '" data-cmdq="1" data-focus-key="cmdq" role="combobox" aria-expanded="true" aria-controls="br-results" aria-activedescendant="br-r' + S.cmdI + '" autocomplete="off" spellcheck="false"></label><div class="br-results" id="br-results" role="listbox">' + cmdList() + '</div><p class="br-hint">↑ ↓ to move, Enter to open, Esc to close</p></div>';
+
+  function shell(view) {
+    const r = c.route(), cur = r.name === 'device' ? 'devices' : r.name === 'automation' ? 'automations' : r.name;
+    return '<button type="button" class="nh-skip" data-act="skip">Skip to content</button><div class="br-app"><header class="br-top"><a class="br-brand" href="#/home">NodeHerder</a>' +
+      '<button type="button" class="br-bar" data-act="br-cmd">' + I('search') + '<span>Search or type a command…</span><kbd>Ctrl&nbsp;K</kbd></button>' +
+      '<nav class="br-menu" aria-label="Main">' + MENU.map((m) => '<a href="#/' + m[0] + '"' + (cur === m[0] ? ' aria-current="page"' : '') + '>' + m[1] + '</a>').join('') + '</nav></header>' +
+      c.banners() + '<main class="nh-content br-content" id="nh-content" tabindex="-1"><div class="br-col">' + view + '</div></main>' +
+      '<footer class="br-foot">' + c.connBtn() + (S.permit ? '<button type="button" class="nh-chip is-accent" data-act="permit-stop">' + I('join') + '<span>Joining, <span data-permit>' + c.fmtTimer(S.permit) + '</span> left. Stop</span></button>' : '') + '<span class="br-foot-gap"></span>' + btn('', 'mode-toggle', { icon: document.documentElement.dataset.mode === 'dark' ? 'sun' : 'moon', title: 'Light or dark', sm: true }) + btn('', 'pop', { icon: 'palette', title: 'Appearance', sm: true }) + btn('Sign out', 'logout', { sm: true, kind: 'ghost' }) + '</footer></div>' + palette() + c.overlays();
+  }
+
+  const greet = () => { const h = new Date().getHours(); return h < 5 ? 'Late night' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'; };
+  const views = {};
+  views.home = () => {
+    const ds = S.devices, off = ds.filter((d) => !isOnline(d)), onSw = [], offSw = [];
+    ds.forEach((d) => { const st = stateExposeOf(d); if (!st || isDisabled(d) || !isOnline(d)) return; (st.data === st.values.on ? onSw : offSw).push([d, st]); });
+    const humid = [], rooms = roomsOf().map((r) => {
+      const t = r.items.find((x) => x[1] === 'temperature' || x[1] === 'local_temperature'), h = r.items.find((x) => x[1] === 'humidity');
+      const td = t && dev(t[0]), hd = h && dev(h[0]);
+      if (!td || !isOnline(td)) return td ? esc(r.name) + ' has no reading right now (' + link(td) + ' is offline).' : '';
+      const hv = hd && hd.exposes.humidity.data; if (hv > 75) humid.push(r.name);
+      return esc(r.name) + ' is <b>' + esc(fmt(td.exposes[t[1]])) + '</b>' + (hd ? ' at ' + esc(fmt(hd.exposes.humidity)) + ' humidity' : '') + '.';
+    }).filter(Boolean);
+    const quiet = !off.length && !humid.length;
+    return '<h1 class="br-h1">' + greet() + '. ' + (quiet ? 'The house is quiet.' : 'A couple of things to know.') + '</h1>' +
+      '<p class="br-lead">' + (ds.length - off.length) + ' of ' + ds.length + ' devices are online. ' + (off.length ? list(off.map((d) => link(d) + ' went offline ' + timeAgo(d.last_seen))) + '. ' : '') + (humid.length ? 'The ' + list(humid.map(esc)).toLowerCase() + ' ' + (humid.length > 1 ? 'are' : 'is') + ' humid.' : '') + '</p>' +
+      '<h2 class="br-h2">Lights and switches</h2><p class="br-p">' + (onSw.length ? 'On: ' + onSw.map(([d, e]) => '<span class="br-tok">' + link(d) + sw(d, e) + '</span>').join(' ') : 'Everything is off.') + '</p>' + (offSw.length ? '<p class="br-p br-dim">Off: ' + offSw.map(([d, e]) => '<span class="br-tok">' + link(d) + sw(d, e) + '</span>').join(' ') + '</p>' : '') +
+      '<h2 class="br-h2">Rooms</h2><p class="br-p">' + rooms.join(' ') + '</p>' +
+      '<h2 class="br-h2">Today</h2><ol class="br-log" data-region="feed">' + S.feed.slice(0, 10).map((f) => '<li><time>' + clock(f.t).slice(0, 5) + '</time><span>' + link(dev(f.id)) + ': ' + f.changes.map((ch) => esc(meta(ch.n).label.toLowerCase()) + ' changed to <b>' + esc(ch.to) + '</b>').join(', ') + '.</span></li>').join('') + '</ol>';
+  };
+  views.overview = () => {
+    const ds = S.devices, z = ds.filter((d) => d.connection_type === 'mqtt'), weak = ds.filter((d) => lqiOf(d) != null && lqiOf(d) < 50), low = ds.filter((d) => battOf(d) != null && battOf(d) < 20);
+    const auto = S.automations, sched = auto.filter((a) => a.schedules.length), noCond = [];
+    auto.forEach((a) => a.triggers.forEach((t, i) => t.type === 'deviceTrigger' && !t.conditions.length && noCond.push(a.friendlyname + ' (trigger ' + (i + 1) + ')')));
+    return '<h1 class="br-h1">Status</h1><h2 class="br-h2">Network</h2><p class="br-p">NodeHerder is <b>' + esc(c.connText().toLowerCase()) + '</b> and knows ' + ds.length + ' devices: ' + z.length + ' on Zigbee (' + z.filter((d) => d.power_source === 'mains').length + ' mains-powered routers, ' + z.filter((d) => d.power_source === 'battery').length + ' battery end devices) and ' + (ds.length - z.length) + ' on Wi-Fi over HTTP. ' +
+      (weak.length ? list(weak.map(link)) + (weak.length > 1 ? ' have' : ' has') + ' a weak Zigbee link (under 50). A mains-powered device nearby would help.' : 'All Zigbee links are healthy.') + ' ' + (S.permit ? 'New Zigbee devices can join for <span data-permit>' + c.fmtTimer(S.permit) + '</span>.' : 'Joining is closed. <a href="#" data-act="permit">Let new devices join</a>.') + '</p>' +
+      '<h2 class="br-h2">Batteries</h2><p class="br-p">' + (low.length ? list(low.map((d) => link(d) + ' is at ' + Math.round(battOf(d)) + ' %')) + '.' : 'No batteries are low.') + '</p>' +
+      '<h2 class="br-h2">Rules</h2><p class="br-p">' + auto.filter((a) => a.enabled).length + ' of ' + auto.length + ' rules are enabled; ' + sched.length + ' follow a schedule. ' + (noCond.length ? list(noCond.map(esc)) + ' will only run by hand, because the hub ignores device triggers without conditions.' : '') + '</p>' +
+      '<h2 class="br-h2">Assistant</h2><p class="br-p">The MCP server is ' + (S.mcp.running ? 'running with ' + S.mcp.connectedClients + ' client connected' : 'stopped') + '. <a href="#/assistant">Ask a question about the house</a>.</p>';
+  };
+  views.devices = () => '<h1 class="br-h1">Rooms</h1>' + roomsOf().map((r) => '<h2 class="br-h2">' + esc(r.name) + '</h2>' + r.ids.filter((x, i, a) => a.indexOf(x) === i).map((id) => {
+    const d = dev(id); if (!d) return '';
+    const reads = Object.values(d.exposes).filter((e) => e.category === 'measurement' && capability(e) !== 'switch').slice(0, 3).map((e) => esc(meta(e.name).label.toLowerCase()) + ' ' + '<b>' + esc(fmt(e)) + '</b>');
+    const st = stateExposeOf(d);
+    return '<details class="br-dev" data-open-key="' + esc(id) + '"' + (S.open[id] ? ' open' : '') + '><summary><span>' + link(d) + (isOnline(d) ? (isDisabled(d) ? ' is disabled.' : (reads.length ? ': ' + list(reads) + '.' : '.')) : ' is offline (last seen ' + esc(timeAgo(d.last_seen)) + ').') + '</span>' + (st && isOnline(d) ? sw(d, st) : '') + '</summary><div class="nh-rows">' + Object.values(d.exposes).filter((e) => e.category === 'measurement').map((e) => c.exposeRow(d, e, false)).join('') + '</div></details>';
+  }).join('')).join('');
+  views.list = (r) => {
+    const L = S.list;
+    if (r.a) { r.a.split('&').forEach((kv) => { const p = kv.split('='); if (p[0] === 'sort') { L.sort = p[1]; L.dir = 1; } else if (L[p[0]] !== undefined) L[p[0]] = p[1]; }); history.replaceState(null, '', '#/list'); }
+    const ds = S.devices.filter((d) => (L.proto === 'all' || d.connection_type === L.proto) && (L.power === 'all' || d.power_source === L.power) && (L.status === 'all' || (L.status === 'online' && isOnline(d) && !isDisabled(d)) || (L.status === 'offline' && !isOnline(d)) || (L.status === 'disabled' && isDisabled(d))) && (!L.q || (d.friendly_name + d.id + d.description).toLowerCase().includes(L.q.toLowerCase())));
+    const key = { friendly_name: (d) => d.friendly_name.toLowerCase(), lqi: (d) => (lqiOf(d) == null ? 999 : lqiOf(d)), battery: (d) => (battOf(d) == null ? 999 : battOf(d)), last_seen: (d) => -new Date(d.last_seen).getTime() }[L.sort];
+    ds.sort((a, b) => (key(a) > key(b) ? 1 : key(a) < key(b) ? -1 : 0) * L.dir);
+    const s = (k, opts) => sel(opts.map((o) => ({ v: o[0], t: o[1] })), L[k], 'class="br-inl" data-br-filter="' + k + '" aria-label="' + k + '"');
+    return '<h1 class="br-h1">All devices</h1><p class="br-p br-filter">Show ' + s('status', [['all', 'every'], ['online', 'online'], ['offline', 'offline'], ['disabled', 'disabled']]) + ' device on ' + s('proto', [['all', 'any connection'], ['mqtt', 'Zigbee'], ['http', 'Wi-Fi']]) + ', powered by ' + s('power', [['all', 'anything'], ['mains', 'mains'], ['battery', 'battery']]) + ', sorted by ' + s('sort', [['friendly_name', 'name'], ['lqi', 'weakest signal'], ['battery', 'lowest battery'], ['last_seen', 'most recent']]) + '. <input class="br-inl br-q" type="search" placeholder="Filter by name…" value="' + esc(L.q) + '" data-bind="list-q" data-focus-key="list-q" aria-label="Filter by name"></p>' +
+      '<p class="br-count">' + ds.length + ' of ' + S.devices.length + '</p><table class="br-table"><thead><tr><th scope="col">Device</th><th scope="col">Connection</th><th scope="col">Signal</th><th scope="col">Power</th><th scope="col">Seen</th></tr></thead><tbody>' +
+      ds.map((d) => '<tr' + (isOnline(d) ? '' : ' class="is-off"') + '><td>' + link(d) + (isOnline(d) ? '' : ' <span class="br-flag">offline</span>') + (isDisabled(d) ? ' <span class="br-flag">disabled</span>' : '') + '</td><td>' + esc(protocol(d.connection_type).label) + '</td><td class="br-num">' + (lqiOf(d) != null ? lqiOf(d) + ' LQI' : d.exposes.rssi ? d.exposes.rssi.data + ' dBm' : '—') + '</td><td class="br-num">' + (battOf(d) != null ? Math.round(battOf(d)) + ' %' : 'mains') + '</td><td>' + esc(timeAgo(d.last_seen)) + '</td></tr>').join('') + '</tbody></table>';
+  };
+  views.device = (r) => {
+    const d = dev(r.a); if (!d) return empty('question', 'Device not found', 'It may have been removed or renamed.');
+    const sup = protocol(d.connection_type).supports, ms = Object.values(d.exposes).filter((e) => e.category === 'measurement');
+    return '<p class="br-crumb"><a href="#/devices">Rooms</a></p><h1 class="br-h1">' + esc(d.friendly_name) + '</h1><p class="br-lead">' + esc(d.description) + '. Connected over ' + esc(protocol(d.connection_type).label) + ', ' + (d.power_source === 'battery' ? 'on battery (' + Math.round(battOf(d) || 0) + ' %)' : 'mains powered') + ', ' + (isOnline(d) ? 'last heard from ' + esc(timeAgo(d.last_seen)) : '<b>offline</b> since ' + esc(timeAgo(d.last_seen))) + '.</p>' +
+      '<dl class="br-readings">' + ms.map((e) => '<div><dt>' + esc(e.description || meta(e.name).label) + '</dt><dd>' + (capability(e) === 'switch' ? esc(fmt(e)) + sw(d, e) : esc(fmt(e))) + '</dd></div>').join('') + '</dl>' +
+      '<h2 class="br-h2">Adjust</h2><div class="nh-rows br-rows">' + ms.filter((e) => capability(e) === 'slider' || capability(e) === 'preset').map((e) => c.exposeRow(d, e, false)).join('') + '</div>' +
+      '<h2 class="br-h2">Settings</h2>' + c.DV.settings(d) + '<h2 class="br-h2">History</h2>' + c.DV.metrics(d) +
+      '<h2 class="br-h2">Device</h2>' + c.DV.about(d) + '<p class="br-p">' + btn('Rename', 'dev-rename', { arg: d.id, disabled: !sup.rename }) + ' ' + btn('Interview', 'dev-interview', { arg: d.id, disabled: !sup.interview }) + ' ' + btn('Remove from network', 'dev-remove', { arg: d.id, kind: 'danger', disabled: !sup.remove }) + '</p>';
+  };
+  views.automations = () => '<h1 class="br-h1">Rules</h1><p class="br-lead">Each rule reads as a sentence. Select a rule to change it.</p>' + S.automations.map((a, i) => { const st = autoStatus(a), m = a.triggers.findIndex(canManual);
+    return '<article class="br-rule' + (a.enabled ? '' : ' is-off') + '"><div class="br-rule-head">' + toggle(a.enabled, 'auto-enable', i, { label: 'Enable ' + a.friendlyname }) + '<h2><a href="#/automation/' + encodeURIComponent(a.id) + '">' + esc(a.description || a.friendlyname) + '</a></h2><span class="br-meta">' + esc(st.text + (st.title ? ', ' + st.title : '')) + '</span></div>' + a.triggers.map((t) => '<p>' + esc(describeTrigger(a, t)) + '</p>').join('') + '<p class="br-rule-act">' + (m >= 0 ? btn('Run now', 'auto-run', { sm: true, icon: 'play', arg: i + '|' + m }) : '') + '<a class="nh-btn is-sm" href="#/automation/' + encodeURIComponent(a.id) + '">Edit</a>' + btn('Delete', 'auto-delete', { sm: true, kind: 'danger', arg: i }) + '</p></article>'; }).join('') + '<p>' + btn('Write a new rule', 'auto-create', { kind: 'primary', icon: 'plus' }) + '</p>';
+
+  // Fill-in-the-blanks editor: the sentence IS the form.
+  views.automation = (r) => {
+    c.V.automation(r);
+    if (!S.draft) return empty('question', 'Rule not found', '');
+    const P = c.edParts(), a = P.a, sch = a.schedules;
+    const paras = a.triggers.map((t, i) => {
+      const conds = t.conditions.map((x, j) => '<span class="br-clause">' + (j ? 'and ' : 'only if ') + P.condFields(i, j) + btn('', 'ed-del', { icon: 'close', sm: true, kind: 'ghost', title: 'Remove this condition', arg: P.tp(i) + '.conditions.' + j }) + '</span>').join(' ');
+      const acts = t.actions.map((x, k) => '<span class="br-clause">' + (k ? 'and then ' : 'then ') + P.actType(i, k) + ' ' + P.actTarget(i, k) + P.err(P.tp(i) + '.actions.' + k + '.id') + ' ' + P.actBody(i, k) + btn('', 'ed-del', { icon: 'close', sm: true, kind: 'ghost', title: 'Remove this action', arg: P.tp(i) + '.actions.' + k }) + '</span>').join(' ');
+      return '<section class="br-mad"><p class="br-mad-p"><span class="br-clause">' + (t.type === 'manualTrigger' ? 'When I run it by hand' : 'When <b>' + esc(a.friendlyname) + '</b>’s ' + P.srcSelect(i) + ' changes') + P.err(P.tp(i) + '.name') + '</span>, ' + (conds ? conds + ', ' : '') + (acts || '<span class="br-missing">then… (add an action)</span>') + '.' + P.err(P.tp(i) + '.actions') + '</p>' +
+        '<p class="br-mad-tools">' + btn('add a condition', 'ed-add-cond', { sm: true, kind: 'ghost', icon: 'plus', arg: P.tp(i) + '|expose' }) + btn('add a time window', 'ed-add-cond', { sm: true, kind: 'ghost', icon: 'clock', arg: P.tp(i) + '|time' }) + btn('add an action', 'ed-add-act', { sm: true, kind: 'ghost', icon: 'plus', arg: P.tp(i) }) + '<span class="br-gap"></span>' + P.trigType(i) + P.trigTools(i) + '</p>' + P.warnList(i) + '</section>';
+    }).join('');
+    const en = sch.find((s) => s.type === 'enable'), di = sch.find((s) => s.type === 'disable');
+    return '<p class="br-crumb">' + P.back() + '</p><h1 class="br-h1">' + esc(a.description || a.friendlyname) + '</h1>' +
+      '<p class="br-lead">Change any highlighted word. This rule belongs to ' + (P.d ? '<a href="#/device/' + encodeURIComponent(a.id) + '">' + esc(a.friendlyname) + '</a>' : esc(a.friendlyname)) + ' and is ' + toggle(a.enabled, 'ed-enabled', '', { label: 'Enabled' }) + ' ' + (a.enabled ? 'enabled' : 'disabled') + '.</p>' +
+      (paras || '<p class="br-p">This rule has no triggers yet.</p>') + '<p>' + btn('Add another “when…”', 'ed-add-trig', { icon: 'plus' }) + '</p>' +
+      '<h2 class="br-h2">Schedule</h2><p class="br-p">' + (en ? 'Turn the rule on at <input type="time" class="br-inl" data-sched="enable" value="' + en.startAt + '" aria-label="Enable at"> ' + btn('', 'ed-sched-del', { icon: 'close', sm: true, kind: 'ghost', title: 'Remove', arg: 'enable' }) : btn('turn on at a set time', 'ed-sched-add', { sm: true, kind: 'ghost', icon: 'plus', arg: 'enable' })) + ' ' + (di ? 'and off at <input type="time" class="br-inl" data-sched="disable" value="' + di.startAt + '" aria-label="Disable at"> ' + btn('', 'ed-sched-del', { icon: 'close', sm: true, kind: 'ghost', title: 'Remove', arg: 'disable' }) : btn('turn off at a set time', 'ed-sched-add', { sm: true, kind: 'ghost', icon: 'plus', arg: 'disable' })) + '. Times are in ' + esc(Intl.DateTimeFormat().resolvedOptions().timeZone) + '.</p>' +
+      '<h2 class="br-h2">Description</h2><p class="br-p"><input class="br-inl br-wide" data-path="description" data-kind="str" data-focus-key="desc" value="' + esc(a.description) + '" aria-label="Description"></p>' +
+      '<h2 class="br-h2">In plain words</h2>' + a.triggers.map((t, i) => P.sentence(i)).join('') + P.checks() + P.savebar() + P.json();
+  };
+
+  views.assistant = () => {
+    const cv = S.convs.find((x) => x.id === S.activeConv) || S.convs[0];
+    return '<h1 class="br-h1">Ask about the house</h1><p class="br-p">Earlier: ' + S.convs.map((x) => '<a href="#" data-act="chat-sel" data-arg="' + x.id + '"' + (x.id === cv.id ? ' aria-current="true"' : '') + '>' + esc(x.title) + '</a>').join(', ') + '. ' + btn('Start over', 'chat-new', { sm: true, kind: 'ghost' }) + '</p>' +
+      '<div class="br-chat" data-region="msgs">' + (cv.messages.length ? cv.messages.map((m) => '<p class="br-msg is-' + m.role + '"><b>' + (m.role === 'user' ? 'You' : 'NodeHerder') + '</b> ' + esc(m.content) + '</p>').join('') : '<p class="br-dim">Try “Which devices have weak signal?” or “How warm was the garden last night?”. Answers come from stored metrics; the assistant cannot change devices.</p>') + (S.typing ? '<p class="br-msg is-assistant"><b>NodeHerder</b> thinking…</p>' : '') + '</div>' +
+      '<form class="br-ask" data-form="chat"><textarea class="nh-input" rows="2" placeholder="Ask a question…" data-focus-key="chat" aria-label="Question"></textarea>' + '<button type="submit" class="nh-btn is-primary"' + (S.typing ? ' disabled' : '') + '>Ask</button></form>';
+  };
+
+  const actions = {
+    'br-cmd': () => { S.cmd = true; S.cmdQ = ''; S.cmdI = 0; c.render(); setTimeout(() => { const i = $('[data-cmdq]'); if (i) i.focus(); }, 0); },
+    'br-cmd-close': () => { S.cmd = false; c.render(); },
+    'br-run': (i) => { const x = commands()[+i]; S.cmd = false; if (x && x.act) actions._run(x); else c.render(); },
+  };
+  actions._run = (x) => { c.render(); c.A[x.act](x.arg); };
+  document.addEventListener('keydown', (ev) => {
+    if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'k') { ev.preventDefault(); actions['br-cmd'](); return; }
+    if (!S.cmd) return;
+    const n = commands().length;
+    if (ev.key === 'Escape') { ev.stopPropagation(); actions['br-cmd-close'](); }
+    else if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') { ev.preventDefault(); S.cmdI = (S.cmdI + (ev.key === 'ArrowDown' ? 1 : n - 1)) % Math.max(n, 1); const box = $('#br-results'); if (box) box.innerHTML = cmdList(); }
+    else if (ev.key === 'Enter') { ev.preventDefault(); const x = commands()[S.cmdI]; if (!x) return; S.cmd = false; if (x.href) { c.render(); c.go(x.href); } else actions._run(x); }
+  }, true);
+  document.addEventListener('input', (ev) => { if (ev.target.dataset && ev.target.dataset.cmdq) { S.cmdQ = ev.target.value; S.cmdI = 0; const box = $('#br-results'); if (box) box.innerHTML = cmdList(); } });
+  document.addEventListener('change', (ev) => { const k = ev.target.dataset && ev.target.dataset.brFilter; if (k) { if (k === 'sort') { S.list.sort = ev.target.value; S.list.dir = 1; } else S.list[k] = ev.target.value; c.render(); } });
+  document.addEventListener('toggle', (ev) => { const k = ev.target.dataset && ev.target.dataset.openKey; if (k) S.open[k] = ev.target.open; }, true);
+  return { shell, views, actions };
+};
 
 </script>
 <script>
@@ -1458,7 +1646,8 @@ window.NH_DESIGN_FOR = function (id, extra) {
     return editorHtml();
   };
   const dirty = () => S.draft && JSON.stringify(S.draft) !== JSON.stringify(S.original);
-  function editorHtml() {
+  // Editor building blocks shared by every design's editor layout (same data-path contract).
+  function edParts() {
     const a = S.draft, d = dev(a.id), v = validate(a), E = {};
     v.errs.forEach((e) => (E[e.p] = e.m));
     const err = (p) => (E[p] ? '<span class="nh-err" id="err-' + p.replace(/\./g, '-') + '">' + I('error') + esc(E[p]) + '</span>' : '');
@@ -1466,6 +1655,7 @@ window.NH_DESIGN_FOR = function (id, extra) {
     const srcEx = d ? Object.values(d.exposes).filter((e) => e.category !== 'config') : [];
     const writableDevs = S.devices.filter((x) => Object.values(x.exposes).some((e) => isWritable(e) && e.category !== 'config'));
     const devOpts = (list) => list.map((x) => ({ v: x.id, t: x.friendly_name + (isOnline(x) ? '' : ' (offline)') }));
+    const withPath = (html, p) => html.replace(/data-arg="/g, 'data-path="' + p + '" data-arg="');
     function valueInput(dv, exName, val, path) {
       const e = dv && dv.exposes[exName], attrs = 'data-path="' + path + '" data-focus-key="' + path + '"' + inv(path);
       if (!e) return '<input class="nh-input" disabled placeholder="value" ' + attrs + '>';
@@ -1476,74 +1666,92 @@ window.NH_DESIGN_FOR = function (id, extra) {
       if (e.type === 'numeric') return '<span class="nh-unit-input"><input class="nh-input is-num" type="number" data-kind="num" ' + attrs + ' value="' + esc(val == null ? '' : val) + '"' + (e.attributes ? ' min="' + e.attributes.value_min + '" max="' + e.attributes.value_max + '"' : '') + ' aria-label="Value">' + (e.unit ? '<em>' + esc(e.unit) + '</em>' : '') + '</span>';
       return '<input class="nh-input" data-kind="str" ' + attrs + ' value="' + esc(val == null ? '' : val) + '" aria-label="Value">';
     }
+    const P = { a, d, v, E, err, inv, srcEx, valueInput, withPath };
+    P.tp = (i) => 'triggers.' + i;
+    P.trigType = (i) => withPath(seg([{ v: 'deviceTrigger', t: 'Device changes' }, { v: 'manualTrigger', t: 'Manual only' }], a.triggers[i].type, 'ed-trig-type', 'Trigger type'), P.tp(i) + '.type');
+    P.srcSelect = (i) => sel(srcEx.map((x) => ({ v: x.name, t: meta(x.name).label + '  (now ' + fmt(x) + ')' })), a.triggers[i].name, 'data-path="' + P.tp(i) + '.name" data-kind="str"' + inv(P.tp(i) + '.name') + ' aria-label="Source expose"', 'Which expose?');
+    P.srcChip = () => '<span class="nh-src">' + I(d ? devIcon(d) : 'devices') + esc(d ? d.friendly_name : a.friendlyname) + '</span>';
+    P.whenBody = (i) => '<div class="nh-inline">' + P.trigType(i) + '</div><div class="nh-inline">' + P.srcChip() + P.srcSelect(i) + '<span class="nh-muted">changes</span></div>' + err(P.tp(i) + '.name');
+    P.condTools = (i, j) => { const cp = P.tp(i) + '.conditions.' + j, n = a.triggers[i].conditions.length; return '<span class="nh-reorder">' + btn('', 'ed-move', { icon: 'up', sm: true, title: 'Move up', arg: cp + '|-1', disabled: j === 0 }) + btn('', 'ed-move', { icon: 'down', sm: true, title: 'Move down', arg: cp + '|1', disabled: j === n - 1 }) + btn('', 'ed-del', { icon: 'trash', sm: true, kind: 'danger', title: 'Remove condition', arg: cp }) + '</span>'; };
+    P.condFields = (i, j) => {
+      const c = a.triggers[i].conditions[j], cp = P.tp(i) + '.conditions.' + j;
+      if (c.type === 'time') return '<span class="nh-inline"><span>between</span><input type="time" class="nh-input" data-path="' + cp + '.timeRange.startAt" data-kind="str" data-focus-key="' + cp + 's" value="' + esc(c.timeRange.startAt) + '"' + inv(cp + '.timeRange.startAt') + ' aria-label="From"><span>and</span><input type="time" class="nh-input" data-path="' + cp + '.timeRange.endAt" data-kind="str" data-focus-key="' + cp + 'e" value="' + esc(c.timeRange.endAt) + '"' + inv(cp + '.timeRange.endAt') + ' aria-label="To">' + (c.timeRange.startAt > c.timeRange.endAt && c.timeRange.endAt ? chip('overnight', 'info', 'moon') : '') + '</span>' + err(cp + '.timeRange.startAt') + err(cp + '.timeRange.endAt');
+      const e = d && d.exposes[c.name], ops = !e || e.type === 'numeric' ? ['=', '<', '<=', '>', '>='] : ['='];
+      return '<span class="nh-inline">' + sel(srcEx.map((x) => ({ v: x.name, t: meta(x.name).label + '  (now ' + fmt(x) + ')' })), c.name, 'data-path="' + cp + '.name" data-kind="str" data-reset="' + cp + '.value"' + inv(cp + '.name') + ' aria-label="Expose"', 'Expose…') +
+        sel(ops.map((o) => ({ v: o, t: o })), c.equality, 'data-path="' + cp + '.equality" data-kind="str" aria-label="Operator" class="is-op"') + valueInput(d, c.name, c.value, cp + '.value') + '</span>' + err(cp + '.name') + err(cp + '.value');
+    };
+    P.condKind = (c) => '<span class="nh-cond-kind">' + I(c.type === 'time' ? 'clock' : c.name ? meta(c.name).icon : 'filter') + (c.type === 'time' ? 'Time' : 'Value') + '</span>';
+    P.condRow = (i, j) => { const f = P.condFields(i, j), k = f.indexOf('<span class="nh-err"'); return '<div class="nh-cond">' + P.condKind(a.triggers[i].conditions[j]) + (k < 0 ? f + P.condTools(i, j) : f.slice(0, k) + P.condTools(i, j) + f.slice(k)) + '</div>'; };
+    P.condAdd = (i) => '<div class="nh-inline">' + btn('Value condition', 'ed-add-cond', { icon: 'plus', sm: true, arg: P.tp(i) + '|expose' }) + btn('Time window', 'ed-add-cond', { icon: 'clock', sm: true, arg: P.tp(i) + '|time' }) + '</div>';
+    P.actType = (i, k) => withPath(seg([{ v: 'trigger', t: 'Set' }, { v: 'step', t: 'Step' }, { v: 'preset', t: 'Cycle' }], a.triggers[i].actions[k].type, 'ed-act-type', 'Action type'), P.tp(i) + '.actions.' + k);
+    P.actTarget = (i, k) => { const x = a.triggers[i].actions[k], ap = P.tp(i) + '.actions.' + k; return sel(devOpts(x.type === 'preset' ? S.devices.filter((z) => Object.values(z.exposes).some(isPreset)) : writableDevs), x.id, 'data-path="' + ap + '.id" data-kind="str" data-reset-act="1"' + inv(ap + '.id') + ' aria-label="Target device"', 'Target device…'); };
+    P.actTools = (i, k) => { const ap = P.tp(i) + '.actions.' + k, n = a.triggers[i].actions.length; return '<span class="nh-reorder">' + btn('', 'ed-move', { icon: 'up', sm: true, title: 'Move up', arg: ap + '|-1', disabled: k === 0 }) + btn('', 'ed-move', { icon: 'down', sm: true, title: 'Move down', arg: ap + '|1', disabled: k === n - 1 }) + btn('', 'ed-del', { icon: 'trash', sm: true, kind: 'danger', title: 'Remove action', arg: ap }) + '</span>'; };
+    P.actBody = (i, k) => {
+      const x = a.triggers[i].actions[k], ap = P.tp(i) + '.actions.' + k, td = dev(x.id);
+      const filt = x.type === 'step' ? (e) => e.type === 'numeric' && isWritable(e) && e.category === 'measurement' : x.type === 'preset' ? isPreset : (e) => isWritable(e) && e.category !== 'config';
+      const opts = td ? Object.values(td.exposes).filter(filt).map((e) => ({ v: e.name, t: meta(e.name).label })) : [];
+      if (x.type === 'trigger') {
+        return x.exposes.map((r2, n) => { const rp = ap + '.exposes.' + n; return '<div class="nh-set-row"><span class="nh-inline">' + sel(opts, r2.name, 'data-path="' + rp + '.name" data-kind="str" data-reset="' + rp + '.data"' + inv(rp + '.name') + ' aria-label="Expose"', 'Expose…') + '<span>=</span>' + valueInput(td, r2.name, r2.data, rp + '.data') + btn('', 'ed-del', { icon: 'close', sm: true, title: 'Remove value', arg: rp }) + '</span>' + err(rp + '.name') + err(rp + '.data') + '</div>'; }).join('') + err(ap + '.exposes') +
+          '<div class="nh-inline nh-act-opts">' + btn('Add value', 'ed-add-row', { icon: 'plus', sm: true, arg: ap, disabled: !x.id }) +
+          (x.exposes.length > 1 ? '<span class="nh-muted">Publish</span>' + withPath(seg([{ v: 'batch', t: 'Together' }, { v: 'single', t: 'One by one' }], x.publishMode || 'batch', 'ed-publish', 'Publish mode'), ap + '.publishMode') : '') +
+          '<label class="nh-check"><input type="checkbox" data-act-check="ed-delay" data-path="' + ap + '"' + (x.delay && x.delay.value ? ' checked' : '') + '> Wait first</label>' +
+          (x.delay && x.delay.value ? '<input class="nh-input is-num" type="number" min="1" data-path="' + ap + '.delay.value" data-kind="num" data-focus-key="' + ap + 'dv" value="' + x.delay.value + '" aria-label="Delay">' + sel([{ v: 'seconds', t: 'seconds' }, { v: 'minutes', t: 'minutes' }, { v: 'hours', t: 'hours' }], x.delay.unit, 'data-path="' + ap + '.delay.unit" data-kind="str" aria-label="Delay unit"') : '') + '</div>';
+      }
+      if (x.type === 'step') return '<div class="nh-inline">' + sel(opts, x.property, 'data-path="' + ap + '.property" data-kind="str" data-sync-steps="1"' + inv(ap + '.property') + ' aria-label="Numeric expose"', 'Numeric expose…') +
+        withPath(seg([{ v: '+', t: '+' }, { v: '-', t: '−' }, { v: '*', t: '×' }], (x.steps[0] && x.steps[0].operator) || '+', 'ed-step-op', 'Operator'), ap) +
+        '<input class="nh-input is-num" type="number" data-path="' + ap + '.data" data-kind="num" data-focus-key="' + ap + 'd" value="' + esc(x.data == null ? '' : x.data) + '"' + inv(ap + '.data') + ' aria-label="Amount"></div>' + err(ap + '.property') + err(ap + '.data');
+      const pe = td && td.exposes[x.property];
+      return '<div class="nh-inline">' + sel(opts, x.property, 'data-path="' + ap + '.property" data-kind="str"' + inv(ap + '.property') + ' aria-label="Preset expose"', 'Expose with presets…') + (pe && pe.values ? '<span class="nh-muted">cycles</span>' + Object.keys(pe.values).map((k2) => chip(titleCase(k2), 'muted')).join('<span class="nh-arrow">→</span>') : '') + '</div>' + err(ap + '.property');
+    };
+    P.actRow = (i, k) => '<div class="nh-act"><div class="nh-act-head"><span class="nh-act-n">' + (k + 1) + '</span>' + P.actType(i, k) + P.actTarget(i, k) + P.actTools(i, k) + '</div>' + err(P.tp(i) + '.actions.' + k + '.id') + '<div class="nh-act-body">' + P.actBody(i, k) + '</div></div>';
+    P.actAdd = (i) => '<div class="nh-inline">' + btn('Add action', 'ed-add-act', { icon: 'plus', sm: true, arg: P.tp(i) }) + (a.triggers[i].actions.length > 1 ? '<span class="nh-muted">Actions run in order.</span>' : '') + '</div>';
+    P.trigErrs = (i) => v.errs.filter((e) => e.p.indexOf(P.tp(i)) === 0 && (e.p.length === P.tp(i).length || e.p[P.tp(i).length] === '.'));
+    P.trigWarns = (i) => v.warns.filter((w) => w.p.indexOf(P.tp(i)) === 0 && (w.p.length === P.tp(i).length || w.p[P.tp(i).length] === '.'));
+    P.trigTools = (i) => { const t = a.triggers[i], te = P.trigErrs(i); return (te.length ? chip(te.length + ' to fix', 'danger', 'error') : chip('Valid', 'ok', 'check')) +
+      (canManual(t) ? btn(S.running[a.id + i] ? 'Running…' : 'Run', 'ed-run', { icon: 'play', sm: true, arg: i, disabled: S.running[a.id + i] || S.conn !== 'connected', title: 'Run this trigger now (POST /api/automation/trigger)' }) : '') +
+      btn('', 'ed-dup', { icon: 'copy', sm: true, title: 'Duplicate trigger', arg: i }) + btn('', 'ed-del', { icon: 'trash', sm: true, kind: 'danger', title: 'Delete trigger', arg: P.tp(i) }); };
+    P.warnList = (i) => { const tw = P.trigWarns(i); return tw.length ? '<ul class="nh-warn-list">' + tw.map((w) => '<li>' + I('warn') + esc(w.m) + '</li>').join('') + '</ul>' : ''; };
+    P.sentence = (i) => '<p class="nh-sentence" data-region="sent-' + i + '">' + esc(describeTrigger(a, a.triggers[i])) + '</p>';
+    P.details = () => '<div class="nh-form"><div class="nh-field"><label>Device</label><div>' + esc(a.friendlyname) + ' <code class="nh-muted">' + esc(a.id) + '</code></div></div>' +
+      '<div class="nh-field"><label for="ed-desc">Description</label><input id="ed-desc" class="nh-input" data-path="description" data-kind="str" data-focus-key="desc" value="' + esc(a.description) + '"></div>' +
+      '<div class="nh-field is-row"><label>Enabled</label>' + toggle(a.enabled, 'ed-enabled', '', { label: 'Enabled' }) + '</div></div>';
+    P.schedule = () => {
+      const sch = a.schedules, en = sch.find((s) => s.type === 'enable'), di = sch.find((s) => s.type === 'disable');
+      const pct = (hm) => { const p = hm.split(':'); return ((+p[0] * 60 + +p[1]) / 1440) * 100; };
+      let band = '';
+      if (en && di) { const s = pct(en.startAt), e = pct(di.startAt); band = s < e ? '<span class="nh-tl-on" style="left:' + s + '%;width:' + (e - s) + '%"></span>' : '<span class="nh-tl-on" style="left:0;width:' + e + '%"></span><span class="nh-tl-on" style="left:' + s + '%;width:' + (100 - s) + '%"></span>'; }
+      const nowP = ((new Date().getHours() * 60 + new Date().getMinutes()) / 1440) * 100;
+      return '<div class="nh-timeline" aria-label="24 hour schedule">' + band + sch.map((s) => '<span class="nh-tl-mark is-' + s.type + '" style="left:' + pct(s.startAt) + '%" title="' + s.type + ' at ' + s.startAt + '"></span>').join('') + '<span class="nh-tl-now" style="left:' + nowP + '%" title="now"></span></div><div class="nh-axis-row"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div>' +
+        ['enable', 'disable'].map((ty) => { const s = sch.find((x) => x.type === ty); return '<div class="nh-sched-row"><span class="nh-sched-t is-' + ty + '">' + (ty === 'enable' ? 'Enable at' : 'Disable at') + '</span>' + (s ? '<input type="time" class="nh-input" data-sched="' + ty + '" value="' + s.startAt + '" aria-label="' + ty + ' time">' + btn('', 'ed-sched-del', { icon: 'close', sm: true, title: 'Remove', arg: ty }) : btn('Add', 'ed-sched-add', { icon: 'plus', sm: true, arg: ty })) + '</div>'; }).join('') +
+        '<p class="nh-help">Hub timezone: ' + esc(Intl.DateTimeFormat().resolvedOptions().timeZone) + '</p>';
+    };
+    P.checks = () => '<div data-region="checks">' + checksHtml(v) + '</div>';
+    P.savebar = () => '<div class="nh-savebar" data-region="savebar">' + savebarHtml(v) + '</div>';
+    P.json = () => (S.jsonOpen ? '<section class="nh-card nh-json-card"><div class="nh-card-head"><h2 class="nh-card-title">' + I('code') + 'saveAutomation payload</h2><span class="nh-card-meta">read-only · exact shape sent over WS</span></div><pre class="nh-json" data-region="json">' + esc(JSON.stringify(a, null, 2)) + '</pre></section>' : '');
+    P.back = () => '<a class="nh-back" href="#/automations">' + I('chevronL') + 'Automations</a>';
+    return P;
+  }
+  function editorHtml() {
+    const P = edParts(), a = P.a, d = P.d;
     const trig = a.triggers.map((t, i) => {
-      const tp = 'triggers.' + i, col = S.collapsed[i], tw = v.warns.filter((w) => w.p.indexOf(tp) === 0), te = v.errs.filter((e) => e.p.indexOf(tp) === 0);
-      const conds = t.conditions.map((c, j) => {
-        const cp = tp + '.conditions.' + j;
-        const tools = '<span class="nh-reorder">' + btn('', 'ed-move', { icon: 'up', sm: true, title: 'Move up', arg: cp + '|-1', disabled: j === 0 }) + btn('', 'ed-move', { icon: 'down', sm: true, title: 'Move down', arg: cp + '|1', disabled: j === t.conditions.length - 1 }) + btn('', 'ed-del', { icon: 'trash', sm: true, kind: 'danger', title: 'Remove condition', arg: cp }) + '</span>';
-        if (c.type === 'time') return '<div class="nh-cond"><span class="nh-cond-kind">' + I('clock') + 'Time</span><span class="nh-inline"><span>between</span><input type="time" class="nh-input" data-path="' + cp + '.timeRange.startAt" data-kind="str" data-focus-key="' + cp + 's" value="' + esc(c.timeRange.startAt) + '"' + inv(cp + '.timeRange.startAt') + ' aria-label="From"><span>and</span><input type="time" class="nh-input" data-path="' + cp + '.timeRange.endAt" data-kind="str" data-focus-key="' + cp + 'e" value="' + esc(c.timeRange.endAt) + '"' + inv(cp + '.timeRange.endAt') + ' aria-label="To">' + (c.timeRange.startAt > c.timeRange.endAt && c.timeRange.endAt ? chip('overnight', 'info', 'moon') : '') + '</span>' + tools + err(cp + '.timeRange.startAt') + err(cp + '.timeRange.endAt') + '</div>';
-        const e = d && d.exposes[c.name], ops = !e || e.type === 'numeric' ? ['=', '<', '<=', '>', '>='] : ['='];
-        return '<div class="nh-cond"><span class="nh-cond-kind">' + I(c.name ? meta(c.name).icon : 'filter') + 'Value</span><span class="nh-inline">' +
-          sel(srcEx.map((x) => ({ v: x.name, t: meta(x.name).label + '  (now ' + fmt(x) + ')' })), c.name, 'data-path="' + cp + '.name" data-kind="str" data-reset="' + cp + '.value"' + inv(cp + '.name') + ' aria-label="Expose"', 'Expose…') +
-          sel(ops.map((o) => ({ v: o, t: o })), c.equality, 'data-path="' + cp + '.equality" data-kind="str" aria-label="Operator" class="is-op"') + valueInput(d, c.name, c.value, cp + '.value') + '</span>' + tools + err(cp + '.name') + err(cp + '.value') + '</div>';
-      }).join('');
-      const acts = t.actions.map((x, k) => {
-        const ap = tp + '.actions.' + k, td = dev(x.id);
-        const typeSel = seg([{ v: 'trigger', t: 'Set' }, { v: 'step', t: 'Step' }, { v: 'preset', t: 'Cycle' }], x.type, 'ed-act-type', 'Action type').replace(/data-arg="/g, 'data-path="' + ap + '" data-arg="');
-        const filt = x.type === 'step' ? (e) => e.type === 'numeric' && isWritable(e) && e.category === 'measurement' : x.type === 'preset' ? isPreset : (e) => isWritable(e) && e.category !== 'config';
-        const opts = td ? Object.values(td.exposes).filter(filt).map((e) => ({ v: e.name, t: meta(e.name).label })) : [];
-        let body = '';
-        if (x.type === 'trigger') {
-          body = x.exposes.map((r2, n) => { const rp = ap + '.exposes.' + n; return '<div class="nh-set-row"><span class="nh-inline">' + sel(opts, r2.name, 'data-path="' + rp + '.name" data-kind="str" data-reset="' + rp + '.data"' + inv(rp + '.name') + ' aria-label="Expose"', 'Expose…') + '<span>=</span>' + valueInput(td, r2.name, r2.data, rp + '.data') + btn('', 'ed-del', { icon: 'close', sm: true, title: 'Remove value', arg: rp }) + '</span>' + err(rp + '.name') + err(rp + '.data') + '</div>'; }).join('') + err(ap + '.exposes') +
-            '<div class="nh-inline nh-act-opts">' + btn('Add value', 'ed-add-row', { icon: 'plus', sm: true, arg: ap, disabled: !x.id }) +
-            (x.exposes.length > 1 ? '<span class="nh-muted">Publish</span>' + seg([{ v: 'batch', t: 'Together' }, { v: 'single', t: 'One by one' }], x.publishMode || 'batch', 'ed-publish', 'Publish mode').replace(/data-arg="/g, 'data-path="' + ap + '.publishMode" data-arg="') : '') +
-            '<label class="nh-check"><input type="checkbox" data-act-check="ed-delay" data-path="' + ap + '"' + (x.delay && x.delay.value ? ' checked' : '') + '> Wait first</label>' +
-            (x.delay && x.delay.value ? '<input class="nh-input is-num" type="number" min="1" data-path="' + ap + '.delay.value" data-kind="num" data-focus-key="' + ap + 'dv" value="' + x.delay.value + '" aria-label="Delay">' + sel([{ v: 'seconds', t: 'seconds' }, { v: 'minutes', t: 'minutes' }, { v: 'hours', t: 'hours' }], x.delay.unit, 'data-path="' + ap + '.delay.unit" data-kind="str" aria-label="Delay unit"') : '') + '</div>';
-        } else if (x.type === 'step') {
-          body = '<div class="nh-inline">' + sel(opts, x.property, 'data-path="' + ap + '.property" data-kind="str" data-sync-steps="1"' + inv(ap + '.property') + ' aria-label="Numeric expose"', 'Numeric expose…') +
-            seg([{ v: '+', t: '+' }, { v: '-', t: '−' }, { v: '*', t: '×' }], (x.steps[0] && x.steps[0].operator) || '+', 'ed-step-op', 'Operator').replace(/data-arg="/g, 'data-path="' + ap + '" data-arg="') +
-            '<input class="nh-input is-num" type="number" data-path="' + ap + '.data" data-kind="num" data-focus-key="' + ap + 'd" value="' + esc(x.data == null ? '' : x.data) + '"' + inv(ap + '.data') + ' aria-label="Amount"></div>' + err(ap + '.property') + err(ap + '.data');
-        } else {
-          const pe = td && td.exposes[x.property];
-          body = '<div class="nh-inline">' + sel(opts, x.property, 'data-path="' + ap + '.property" data-kind="str"' + inv(ap + '.property') + ' aria-label="Preset expose"', 'Expose with presets…') + (pe && pe.values ? '<span class="nh-muted">cycles</span>' + Object.keys(pe.values).map((k2) => chip(titleCase(k2), 'muted')).join('<span class="nh-arrow">→</span>') : '') + '</div>' + err(ap + '.property');
-        }
-        return '<div class="nh-act"><div class="nh-act-head"><span class="nh-act-n">' + (k + 1) + '</span>' + typeSel +
-          sel(devOpts(x.type === 'preset' ? S.devices.filter((z) => Object.values(z.exposes).some(isPreset)) : writableDevs), x.id, 'data-path="' + ap + '.id" data-kind="str" data-reset-act="1"' + inv(ap + '.id') + ' aria-label="Target device"', 'Target device…') +
-          '<span class="nh-reorder">' + btn('', 'ed-move', { icon: 'up', sm: true, title: 'Move up', arg: ap + '|-1', disabled: k === 0 }) + btn('', 'ed-move', { icon: 'down', sm: true, title: 'Move down', arg: ap + '|1', disabled: k === t.actions.length - 1 }) + btn('', 'ed-del', { icon: 'trash', sm: true, kind: 'danger', title: 'Remove action', arg: ap }) + '</span></div>' + err(ap + '.id') + '<div class="nh-act-body">' + body + '</div></div>';
-      }).join('');
+      const col = S.collapsed[i], te = P.trigErrs(i);
       return '<section class="nh-trig' + (col ? ' is-collapsed' : '') + (te.length ? ' has-err' : '') + '" aria-label="Trigger ' + (i + 1) + '"><div class="nh-trig-head"><button type="button" class="nh-trig-toggle" data-act="ed-collapse" data-arg="' + i + '" aria-expanded="' + !col + '">' + I(col ? 'chevronR' : 'chevronD') + '<b>Trigger ' + (i + 1) + '</b></button>' +
-        '<p class="nh-sentence" data-region="sent-' + i + '">' + esc(describeTrigger(a, t)) + '</p><span class="nh-trig-tools">' +
-        (te.length ? chip(te.length + ' to fix', 'danger', 'error') : chip('Valid', 'ok', 'check')) +
-        (canManual(t) ? btn(S.running[a.id + i] ? 'Running…' : 'Run', 'ed-run', { icon: 'play', sm: true, arg: i, disabled: S.running[a.id + i] || S.conn !== 'connected', title: 'Run this trigger now (POST /api/automation/trigger)' }) : '') +
-        btn('', 'ed-dup', { icon: 'copy', sm: true, title: 'Duplicate trigger', arg: i }) + btn('', 'ed-del', { icon: 'trash', sm: true, kind: 'danger', title: 'Delete trigger', arg: tp }) + '</span></div>' +
+        P.sentence(i) + '<span class="nh-trig-tools">' + P.trigTools(i) + '</span></div>' +
         (col ? '' : '<div class="nh-flow">' +
-          '<div class="nh-block is-when"><div class="nh-block-label"><span>When</span></div><div class="nh-block-body"><div class="nh-inline">' + seg([{ v: 'deviceTrigger', t: 'Device changes' }, { v: 'manualTrigger', t: 'Manual only' }], t.type, 'ed-trig-type', 'Trigger type').replace(/data-arg="/g, 'data-path="' + tp + '.type" data-arg="') + '</div>' +
-          '<div class="nh-inline"><span class="nh-src">' + I(d ? devIcon(d) : 'devices') + esc(d ? d.friendly_name : a.friendlyname) + '</span>' + sel(srcEx.map((x) => ({ v: x.name, t: meta(x.name).label + '  (now ' + fmt(x) + ')' })), t.name, 'data-path="' + tp + '.name" data-kind="str"' + inv(tp + '.name') + ' aria-label="Source expose"', 'Which expose?') + '<span class="nh-muted">changes</span></div>' + err(tp + '.name') + '</div></div>' +
-          '<div class="nh-block is-if"><div class="nh-block-label"><span>If</span></div><div class="nh-block-body">' + (conds || '<p class="nh-muted">No conditions — always continue.</p>') + '<div class="nh-inline">' + btn('Value condition', 'ed-add-cond', { icon: 'plus', sm: true, arg: tp + '|expose' }) + btn('Time window', 'ed-add-cond', { icon: 'clock', sm: true, arg: tp + '|time' }) + '</div></div></div>' +
-          '<div class="nh-block is-then"><div class="nh-block-label"><span>Then</span></div><div class="nh-block-body">' + acts + err(tp + '.actions') + '<div class="nh-inline">' + btn('Add action', 'ed-add-act', { icon: 'plus', sm: true, arg: tp }) + (t.actions.length > 1 ? '<span class="nh-muted">Actions run in order.</span>' : '') + '</div></div></div></div>') +
-        (tw.length ? '<ul class="nh-warn-list">' + tw.map((w) => '<li>' + I('warn') + esc(w.m) + '</li>').join('') + '</ul>' : '') + '</section>';
+          '<div class="nh-block is-when"><div class="nh-block-label"><span>When</span></div><div class="nh-block-body">' + P.whenBody(i) + '</div></div>' +
+          '<div class="nh-block is-if"><div class="nh-block-label"><span>If</span></div><div class="nh-block-body">' + (t.conditions.map((c, j) => P.condRow(i, j)).join('') || '<p class="nh-muted">No conditions — always continue.</p>') + P.condAdd(i) + '</div></div>' +
+          '<div class="nh-block is-then"><div class="nh-block-label"><span>Then</span></div><div class="nh-block-body">' + t.actions.map((x, k) => P.actRow(i, k)).join('') + P.err(P.tp(i) + '.actions') + P.actAdd(i) + '</div></div></div>') +
+        P.warnList(i) + '</section>';
     }).join('');
-    const sch = a.schedules, en = sch.find((s) => s.type === 'enable'), di = sch.find((s) => s.type === 'disable');
-    const pct = (hm) => { const p = hm.split(':'); return ((+p[0] * 60 + +p[1]) / 1440) * 100; };
-    let band = '';
-    if (en && di) { const s = pct(en.startAt), e = pct(di.startAt); band = s < e ? '<span class="nh-tl-on" style="left:' + s + '%;width:' + (e - s) + '%"></span>' : '<span class="nh-tl-on" style="left:0;width:' + e + '%"></span><span class="nh-tl-on" style="left:' + s + '%;width:' + (100 - s) + '%"></span>'; }
-    const nowP = ((new Date().getHours() * 60 + new Date().getMinutes()) / 1440) * 100;
     return '<div class="nh-editor"><div class="nh-editor-main">' +
-      '<div class="nh-page-head"><div><a class="nh-back" href="#/automations">' + I('chevronL') + 'Automations</a><h1 class="nh-h1">' + esc(a.friendlyname) + '</h1><p class="nh-sub">Source device · ' + (d ? protoChip(d) : '') + ' ' + esc(a.triggers.length + ' trigger' + (a.triggers.length === 1 ? '' : 's')) + '</p></div></div>' +
+      '<div class="nh-page-head"><div>' + P.back() + '<h1 class="nh-h1">' + esc(a.friendlyname) + '</h1><p class="nh-sub">Source device · ' + (d ? protoChip(d) : '') + ' ' + esc(a.triggers.length + ' trigger' + (a.triggers.length === 1 ? '' : 's')) + '</p></div></div>' +
       (trig || empty('automation', 'No triggers', 'Add a trigger to decide what this device reacts to.')) +
       '<button type="button" class="nh-add-trig" data-act="ed-add-trig">' + I('plus') + '<span>Add trigger</span></button></div>' +
       '<aside class="nh-editor-side">' +
-      '<section class="nh-card"><div class="nh-card-head"><h2 class="nh-card-title">Details</h2></div><div class="nh-card-body nh-form">' +
-      '<div class="nh-field"><label>Device</label><div>' + esc(a.friendlyname) + ' <code class="nh-muted">' + esc(a.id) + '</code></div></div>' +
-      '<div class="nh-field"><label for="ed-desc">Description</label><input id="ed-desc" class="nh-input" data-path="description" data-kind="str" data-focus-key="desc" value="' + esc(a.description) + '"></div>' +
-      '<div class="nh-field is-row"><label>Enabled</label>' + toggle(a.enabled, 'ed-enabled', '', { label: 'Enabled' }) + '</div></div></section>' +
-      '<section class="nh-card"><div class="nh-card-head"><h2 class="nh-card-title">' + I('calendar') + 'Schedule</h2></div><div class="nh-card-body">' +
-      '<div class="nh-timeline" aria-label="24 hour schedule">' + band + sch.map((s) => '<span class="nh-tl-mark is-' + s.type + '" style="left:' + pct(s.startAt) + '%" title="' + s.type + ' at ' + s.startAt + '"></span>').join('') + '<span class="nh-tl-now" style="left:' + nowP + '%" title="now"></span></div><div class="nh-axis-row"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div>' +
-      ['enable', 'disable'].map((ty) => { const s = sch.find((x) => x.type === ty); return '<div class="nh-sched-row"><span class="nh-sched-t is-' + ty + '">' + (ty === 'enable' ? 'Enable at' : 'Disable at') + '</span>' + (s ? '<input type="time" class="nh-input" data-sched="' + ty + '" value="' + s.startAt + '" aria-label="' + ty + ' time">' + btn('', 'ed-sched-del', { icon: 'close', sm: true, title: 'Remove', arg: ty }) : btn('Add', 'ed-sched-add', { icon: 'plus', sm: true, arg: ty })) + '</div>'; }).join('') +
-      '<p class="nh-help">Hub timezone: ' + esc(Intl.DateTimeFormat().resolvedOptions().timeZone) + '</p></div></section>' +
-      '<section class="nh-card"><div class="nh-card-head"><h2 class="nh-card-title">' + I('check') + 'Checks</h2></div><div class="nh-card-body" data-region="checks">' + checksHtml(v) + '</div></section></aside>' +
-      '<div class="nh-savebar" data-region="savebar">' + savebarHtml(v) + '</div>' +
-      (S.jsonOpen ? '<section class="nh-card nh-json-card"><div class="nh-card-head"><h2 class="nh-card-title">' + I('code') + 'saveAutomation payload</h2><span class="nh-card-meta">read-only · exact shape sent over WS</span></div><pre class="nh-json" data-region="json">' + esc(JSON.stringify(a, null, 2)) + '</pre></section>' : '') + '</div>';
+      '<section class="nh-card"><div class="nh-card-head"><h2 class="nh-card-title">Details</h2></div><div class="nh-card-body">' + P.details() + '</div></section>' +
+      '<section class="nh-card"><div class="nh-card-head"><h2 class="nh-card-title">' + I('calendar') + 'Schedule</h2></div><div class="nh-card-body">' + P.schedule() + '</div></section>' +
+      '<section class="nh-card"><div class="nh-card-head"><h2 class="nh-card-title">' + I('check') + 'Checks</h2></div><div class="nh-card-body">' + P.checks() + '</div></section></aside>' +
+      P.savebar() + P.json() + '</div>';
   }
   const checksHtml = (v) => (v.errs.length ? '<p class="nh-err-sum">' + I('error') + v.errs.length + ' issue' + (v.errs.length > 1 ? 's' : '') + ' to fix before saving</p>' : '<p class="nh-ok-sum">' + I('check') + 'Ready to save</p>') + (v.warns.length ? '<p class="nh-warn-sum">' + I('warn') + v.warns.length + ' warning' + (v.warns.length > 1 ? 's' : '') + '</p>' : '');
   const savebarHtml = (v) => '<span class="nh-dirty">' + (dirty() ? I('edit') + 'Unsaved changes' : I('check') + 'All changes saved') + '</span>' + btn(S.jsonOpen ? 'Hide JSON' : 'View JSON', 'ed-json', { icon: 'code', kind: 'ghost' }) + btn('Discard', 'ed-discard', { disabled: !dirty() }) + btn(v.errs.length ? 'Fix ' + v.errs.length + ' to save' : 'Save', 'ed-save', { kind: 'primary', icon: 'check', disabled: !dirty() || v.errs.length > 0 });
@@ -1681,7 +1889,7 @@ window.NH_DESIGN_FOR = function (id, extra) {
     const selS = fk && document.activeElement.selectionStart, cont = $('.nh-content'), sc = cont ? cont.scrollTop : 0;
     const app = $('#app');
     if (!S.authed || r.name === 'login') app.innerHTML = V.login() + '<div class="nh-toast-host" aria-live="polite">' + S.toasts.map(toastHtml).join('') + '</div>';
-    else app.innerHTML = shell((V[r.name] || V.overview)(r));
+    else app.innerHTML = shellFn((V[r.name] || V.overview)(r));
     const c2 = $('.nh-content'); if (c2) c2.scrollTop = sc;
     if (fk) { const el = $('[data-focus-key="' + fk + '"]'); if (el) { el.focus(); try { if (selS != null && el.setSelectionRange) el.setSelectionRange(selS, selS); } catch (e) { /* type=number */ } } }
   }
@@ -1782,6 +1990,27 @@ window.NH_DESIGN_FOR = function (id, extra) {
     setTimeout(() => { S.typing = false; c.messages.push({ role: 'assistant', content: 'Three devices report weak Zigbee links (< 50 LQI): Attic room temperature sensor (14), Attic room power socket (36) and Attic smoke alarm (40). Bedroom radiator valve is offline (last 8 LQI). Adding a mains-powered router in the attic would likely help.' }); render(); const m = $('[data-region="msgs"]'); if (m) m.scrollTop = m.scrollHeight; }, 1400);
   }
 
+
+  /* ------------------------------------------------------------------ design layouts
+     A design may replace the shell, any view and add actions (designs/<id>.js). */
+  let shellFn = shell;
+  const overlays = () => customiser() + '<div class="nh-toast-host" aria-live="polite">' + S.toasts.map(toastHtml).join('') + '</div>' + dialogHtml();
+  const connText = () => (S.conn === 'connected' ? 'Connected' : S.conn === 'connecting' ? 'Reconnecting… (attempt ' + S.attempt + '/10)' : 'Disconnected');
+  const banners = () => '<div class="nh-banners">' + (S.conn !== 'connected' ? '<div class="nh-banner is-' + (S.conn === 'connecting' ? 'warn' : 'danger') + '" role="status">' + I(S.conn === 'connecting' ? 'refresh' : 'offline') + '<span><b>' + esc(connText()) + '.</b> Live values may be stale and device controls are disabled until the hub reconnects.</span>' + (S.conn === 'disconnected' ? btn('Reconnect', 'conn-reconnect', { sm: true }) : '') + '</div>' : '') +
+    (S.permit ? '<div class="nh-banner is-info" role="status">' + I('join') + '<span><b>Permit join is open</b> for Zigbee devices — <span data-permit>' + fmtTimer(S.permit) + '</span> remaining.</span>' + btn('Stop', 'permit-stop', { sm: true }) + '</div>' : '') + '</div>';
+  const connBtn = () => '<button type="button" class="nh-conn is-' + S.conn + '" data-act="conn-cycle" title="Hub connection (click to simulate)"><span class="nh-dot"></span><span class="nh-conn-txt">' + esc(connText()) + '</span></button>';
+  const roomsOf = () => { const G = S.cfg.hub.dashboardGroups; return Object.keys(G).map((g) => { const items = []; const ids = []; Object.values(G[g].deviceGroup).forEach((dg) => { ids.push(dg.deviceId); dg.exposes.forEach((x) => items.push([dg.deviceId, x])); }); return { name: g, items, ids }; }); };
+  if (typeof window.NH_LAYOUT === 'function') {
+    const ctx = { S, DATA, DESIGN, NAV, I, esc, clone, $, $$, btn, chip, toggle, seg, sel, empty, pageHead, statusChip, protoChip, signalChip, powerChip, devIcon, meta, fmt, fmtRaw, titleCase,
+      timeAgo, clock, tile, tileState, shortName, dcard, exposeRow, lineChart, binaryChart, spark, series, feedHtml, describeTrigger, condText, actText, validate, dirty: () => dirty(), autoStatus, canManual,
+      edParts, editorHtml, V: Object.assign({}, V), DV, A, route, go, dev, devCfg, isOnline, isDisabled, lqiOf, battOf, canControl, capability, protocol, PROTOCOLS, viewTitle, customiser, appearanceForm,
+      overlays, banners, connBtn, connText, fmtTimer, pkey, isWritable, isPreset, stateExposeOf, getP, setP, toast, openDialog, sendCommand, roomsOf, render: () => render(), defaultShell: shell };
+    const L = window.NH_LAYOUT(ctx) || {};
+    if (L.shell) shellFn = L.shell;
+    Object.assign(V, L.views || {});
+    Object.assign(A, L.actions || {});
+    if (L.live) L.live.forEach((x) => LIVE.indexOf(x) < 0 && LIVE.push(x));
+  }
   document.addEventListener('click', (ev) => {
     const el = ev.target.closest('[data-act]'); if (!el || el.disabled) return;
     const fn = A[el.dataset.act]; if (!fn) return;

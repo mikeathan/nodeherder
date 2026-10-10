@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NodeHerder · Phosphor design sample</title>
+<title>NodeHerder · Floorplan design sample</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=VT323&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap">
 <style>
 /* NodeHerder samples — structure + components. Skins (../designs/*.css) only set tokens
    and add chrome. Every colour below is a --nh-* token (design-system.md). */
@@ -524,122 +524,209 @@ button.nh-tile-ic:hover:not(:disabled) { box-shadow: 0 0 0 3px var(--nh-accent-s
 
 </style>
 <style>
-/* 3 · Phosphor — 80s CRT terminal. Dark = phosphor on black; light = green-bar printout. */
+/* 2 · Floorplan — drafting paper, ink walls, yellow only for "on". */
 :root {
-  --nh-font-ui: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace; --nh-font-mono: var(--nh-font-ui);
-  --nh-font-display: 'VT323', 'IBM Plex Mono', monospace; --nh-area-w: 18rem;
-  --nh-shadow-1: none; --nh-shadow-2: 0 0 0 1px var(--nh-accent), 0 0 30px color-mix(in srgb, var(--nh-accent) 25%, transparent);
-  --nh-border-w: 1px;
+  --nh-font-ui: 'Barlow', 'Segoe UI', system-ui, sans-serif; --nh-font-display: 'Barlow Condensed', 'Barlow', sans-serif;
+  --nh-ok: #2f8a57; --nh-warn: #c98a12; --nh-danger: #d2463d; --nh-info: #2f6db3;
+  --nh-shadow-1: none; --nh-shadow-2: 0 12px 40px rgb(20 35 60 / 0.22);
+}
+[data-mode='light'] {
+  --nh-bg: #f5f8fc; --nh-surface: #ffffff; --nh-surface-2: #eef3f9; --nh-border: #d5dfec; --nh-border-strong: #8fa6c6;
+  --nh-text: #1d2b45; --nh-text-muted: #56688a; --nh-accent: #1f4f99; --nh-accent-contrast: #ffffff;
+  --fp-room: #e6edf6; --fp-wall: #1d2b45; --fp-line: #c3d1e4; --fp-live: #f2c230; --fp-live-ink: #3a2c00; --fp-garden: #e3efe0;
+  --nh-on: #c99a06; --nh-console-bg: #1d2b45;
 }
 [data-mode='dark'] {
-  --nh-bg: #0d0900; --nh-surface: #140e02; --nh-surface-2: #22170480; --nh-text: #ffc24a; --nh-text-muted: #b98a2c;
-  --nh-border: #4a3510; --nh-border-strong: #7a5a1c; --nh-accent: #ffb000; --nh-accent-contrast: #0d0900;
-  --nh-ok: #ffd36b; --nh-warn: #ff8c1a; --nh-danger: #ff5a36; --nh-info: #ffc24a; --nh-kind-zigbee: currentColor; --nh-kind-wifi: currentColor;
-  --nh-console-bg: #0a0700; --nh-console-text: var(--nh-text); --nh-toast-bg: var(--nh-surface); --nh-toast-text: var(--nh-text); --nh-knob: var(--nh-bg);
-  --nh-glow: 0 0 6px color-mix(in srgb, var(--nh-accent) 55%, transparent);
+  --nh-bg: #102033; --nh-surface: #16293f; --nh-surface-2: #1c3350; --nh-border: #2a4566; --nh-border-strong: #4d6a91;
+  --nh-text: #e6eef9; --nh-text-muted: #9fb3cf; --nh-accent: #8fb8ff; --nh-accent-contrast: #0c1a2c;
+  --fp-room: #15304f; --fp-wall: #cfdcef; --fp-line: #23405f; --fp-live: #f2c230; --fp-live-ink: #2b2000; --fp-garden: #183829;
+  --nh-on: #f2c230;
 }
-[data-mode='dark'][data-preset='green'] { --nh-bg: #010d03; --nh-surface: #031407; --nh-text: #57ff7f; --nh-text-muted: #2fb851; --nh-border: #0f4a1d; --nh-border-strong: #1d7a33; --nh-accent: #33ff66; --nh-accent-contrast: #010d03; --nh-ok: #8dffa8; --nh-warn: #d7ff3a; --nh-danger: #ff6b4a; --nh-info: #57ff7f; --nh-console-bg: #010a02; }
-[data-mode='dark'][data-preset='ice'] { --nh-bg: #00090f; --nh-surface: #021219; --nh-text: #9be7ff; --nh-text-muted: #4fa6c4; --nh-border: #0d3a4d; --nh-border-strong: #1b6683; --nh-accent: #7fdbff; --nh-accent-contrast: #00090f; --nh-ok: #b7f5ff; --nh-warn: #ffd166; --nh-danger: #ff6f91; --nh-info: #9be7ff; --nh-console-bg: #00070c; }
-[data-mode='light'] {
-  --nh-bg: #f2f5ea; --nh-surface: #fbfcf6; --nh-surface-2: #e3ecd5; --nh-text: #1f2a1c; --nh-text-muted: #55634f;
-  --nh-border: #b9c9a8; --nh-border-strong: #7f9870; --nh-accent: #2c6e2f; --nh-accent-contrast: #fbfcf6;
-  --nh-ok: #2c6e2f; --nh-warn: #9a6a00; --nh-danger: #b3261e; --nh-info: #2c5f8a; --nh-glow: none; --nh-console-bg: #1f2a1c; --nh-console-text: #c9e7b8;
+[data-preset='sepia'][data-mode='light'] { --nh-bg: #f7f4ee; --fp-room: #efe8dc; --fp-wall: #3b2f22; --fp-line: #dccfba; --nh-text: #2f271d; --nh-accent: #7a4b1c; --nh-border-strong: #b8a585; }
+[data-preset='sepia'][data-mode='dark'] { --nh-bg: #1d1914; --nh-surface: #26201a; --fp-room: #2c251d; --fp-wall: #e3d6c1; --nh-accent: #e3b376; --nh-accent-contrast: #1d1914; }
+[data-preset='mint'][data-mode='light'] { --fp-room: #e4f1ec; --fp-wall: #163a33; --nh-accent: #136b5a; --nh-text: #163a33; --fp-line: #c2ddd4; }
+[data-preset='mint'][data-mode='dark'] { --nh-bg: #0f2420; --nh-surface: #143029; --fp-room: #183a32; --fp-wall: #cfe9e0; --nh-accent: #6fd6bd; --nh-accent-contrast: #0f2420; }
+body { background-color: var(--nh-bg); }
+[data-effects='on'] body { background-image: linear-gradient(var(--fp-line) 1px, transparent 1px), linear-gradient(90deg, var(--fp-line) 1px, transparent 1px); background-size: 24px 24px; background-position: -1px -1px; }
+.nh-h1 { font-family: var(--nh-font-display); font-weight: 600; font-size: 2rem; letter-spacing: 0.01em; text-wrap: balance; }
+
+/* shell: top tabs, bottom tabs on phones */
+.fp-app { display: grid; grid-template-rows: auto auto minmax(0, 1fr); height: 100dvh; }
+.fp-top { display: flex; align-items: center; gap: 1rem; padding: 0.5rem 1rem; background: var(--nh-surface); border-bottom: 2px solid var(--fp-wall); }
+.fp-brand { display: flex; align-items: center; gap: 0.45rem; text-decoration: none; font-family: var(--nh-font-display); font-weight: 700; font-size: 1.25rem; }
+.fp-brand .nh-ic { width: 1.6rem; height: 1.6rem; color: var(--nh-accent); }
+.fp-tabs { display: flex; gap: 0.15rem; overflow-x: auto; flex: 1; }
+.fp-tab { display: flex; align-items: center; gap: 0.4rem; padding: 0.45rem 0.75rem; border-radius: var(--nh-radius-m); text-decoration: none; color: var(--nh-text-muted); font-weight: 600; white-space: nowrap; }
+.fp-tab:hover { color: var(--nh-text); background: var(--nh-surface-2); }
+.fp-tab.is-active { color: var(--nh-text); background: var(--fp-room); box-shadow: inset 0 -2px 0 var(--fp-wall); }
+.fp-top-actions { display: flex; align-items: center; gap: 0.35rem; }
+.fp-content { overflow: auto; padding: 1.25rem 1.5rem 6rem; outline: none; }
+@media (max-width: 860px) {
+  .fp-top { flex-wrap: wrap; } .fp-top-actions .nh-conn-txt, .fp-top-actions .nh-btn:not(.is-icon) span { display: none; }
+  .fp-tabs { position: fixed; z-index: 50; left: 0; right: 0; bottom: 0; background: var(--nh-surface); border-top: 2px solid var(--fp-wall); padding: 0.25rem; }
+  .fp-tab { flex-direction: column; gap: 0.1rem; font-size: 0.7rem; padding: 0.35rem 0.6rem; }
+  .fp-content { padding: 1rem 1rem 6rem; }
+  .nh-toast-host { bottom: 5rem; }
 }
-[data-mode='light'][data-preset='amber'] { --nh-accent: #8a5200; --nh-surface-2: #f1e7cf; --nh-bg: #f7f2e4; --nh-border: #d6c59b; --nh-border-strong: #a88b4f; }
-[data-mode='light'][data-preset='ice'] { --nh-accent: #155e75; --nh-surface-2: #dbecf1; --nh-bg: #eef5f7; --nh-border: #a9c9d3; --nh-border-strong: #6b98a6; }
-body { letter-spacing: 0.01em; text-shadow: var(--nh-glow); }
-.nh-ic { stroke-width: 1.6; filter: drop-shadow(var(--nh-glow, none)); }
-.nh-h1, .nh-area-head h2, .nh-card-title, .nh-brand-name, .nh-stat-num, .nh-dialog-head h2, .nh-login-card h1 { font-family: var(--nh-font-display); font-weight: 400; letter-spacing: 0.04em; text-transform: uppercase; }
-.nh-h1 { font-size: 2.3rem; line-height: 1; } .nh-card-title { font-size: 1.35rem; } .nh-area-head h2 { font-size: 1.45rem; } .nh-stat-num { font-size: 2.6rem; }
-.nh-h1::before { content: '> '; color: var(--nh-text-muted); }
-.nh-h1::after { content: '_'; animation: nh-blink 1.1s steps(1) infinite; }
-@keyframes nh-blink { 50% { opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .nh-h1::after { animation: none; } }
-.nh-brand-logo { border-radius: 0; background: transparent; color: var(--nh-accent); border: 1px solid var(--nh-accent); }
-.nh-brand-name { font-size: 1.6rem; } .nh-brand-name b { font-weight: 400; }
-.nh-nav { background: var(--nh-bg); border-bottom: 1px solid var(--nh-border-strong); }
-.nh-nav-key { display: inline; color: var(--nh-text-muted); }
-.nh-nav-ic { display: none; }
-.nh-nav-item { text-transform: uppercase; font-size: 0.85rem; min-height: 2.6rem; }
-.nh-nav-item.is-active { background: var(--nh-accent); color: var(--nh-accent-contrast); text-shadow: none; }
-.nh-nav-item.is-active .nh-nav-key { color: var(--nh-accent-contrast); }
-.nh-header { background: var(--nh-bg); border-bottom: 1px dashed var(--nh-border-strong); min-height: 2.8rem; }
-.nh-header-title { text-transform: uppercase; letter-spacing: 0.08em; }
-.nh-card, .nh-dcard, .nh-trig, .nh-chart, .nh-table-wrap, .nh-chat-side, .nh-chat-main, .nh-auto, .nh-stat, .nh-dialog, .nh-pop, .nh-login-card { border: 1px solid var(--nh-border-strong); background: var(--nh-surface); }
-.nh-card-head, .nh-dcard-head, .nh-trig-head, .nh-dialog-head { border-bottom: 1px dashed var(--nh-border-strong); }
-.nh-card-title::before { content: '┌─'; color: var(--nh-text-muted); }
-.nh-btn { text-transform: uppercase; font-family: var(--nh-font-ui); letter-spacing: 0.05em; background: transparent; border-color: var(--nh-border-strong); }
-.nh-btn:not(.is-icon)::before { content: '['; color: var(--nh-text-muted); } .nh-btn:not(.is-icon)::after { content: ']'; color: var(--nh-text-muted); }
-.nh-btn.is-primary { text-shadow: none; } .nh-btn.is-primary::before, .nh-btn.is-primary::after { color: inherit; }
-.nh-btn:hover:not(:disabled) { background: var(--nh-accent); color: var(--nh-accent-contrast); text-shadow: none; }
-.nh-chip { border-radius: 0; background: transparent; border: 1px solid var(--nh-border-strong); text-transform: uppercase; font-size: 0.7rem; }
-.nh-chip.is-ok, .nh-chip.is-accent { border-color: var(--nh-accent); }
-.nh-chip.is-danger { border-color: var(--nh-danger); color: var(--nh-danger); } .nh-chip.is-warn { border-color: var(--nh-warn); color: var(--nh-warn); }
-.nh-toggle { width: 3.6rem; border-radius: 0; background: transparent; border-color: var(--nh-border-strong); }
-.nh-toggle-knob { display: none; }
-.nh-toggle-txt { position: static; width: auto; height: auto; clip: auto; overflow: visible; width: 100%; text-align: center; font-size: 0.75rem; font-weight: 700; }
-.nh-toggle[aria-checked='true'] { background: var(--nh-accent); color: var(--nh-accent-contrast); text-shadow: none; }
-.nh-toggle[aria-checked='false'] { color: var(--nh-text-muted); }
-.nh-seg { border-radius: 0; background: transparent; } .nh-seg button { text-transform: uppercase; font-size: 0.75rem; }
-.nh-seg button[aria-pressed='true'] { text-shadow: none; }
-.nh-input, .nh-select { border-radius: 0; background: var(--nh-bg); font-family: var(--nh-font-ui); }
-.nh-tile { border-radius: 0; background: var(--nh-surface); box-shadow: none; border: 1px solid var(--nh-border-strong); }
-.nh-tile-ic { border-radius: 0; background: transparent; border: 1px solid var(--nh-border); color: var(--nh-text); }
-.nh-tile.is-on { background: var(--nh-accent); color: var(--nh-accent-contrast); text-shadow: none; }
-.nh-tile.is-on .nh-tile-value { color: var(--nh-accent-contrast); }
-.nh-tile.is-on .nh-tile-ic { background: transparent; color: var(--nh-accent-contrast); border-color: var(--nh-accent-contrast); }
-.nh-tile.is-on .nh-ic { filter: none; }
-.nh-tile.is-on .nh-spark path { stroke: var(--nh-accent-contrast); }
-.nh-tile.is-alert { background: var(--nh-danger); color: var(--nh-bg); }
-.kind-temp, .kind-humidity, .kind-energy, .kind-power, .kind-light, .kind-switch, .kind-motion, .kind-contact, .kind-air { --nh-kc: var(--nh-accent); }
-.nh-dcard-ic, .nh-dev-ic, .nh-auto-ic, .nh-dev-hero, .nh-msg-av { border-radius: 0; background: transparent; border: 1px solid var(--nh-border-strong); }
-.nh-block-label span { border-radius: 0; text-shadow: none; }
-.nh-block.is-when, .nh-block.is-if, .nh-block.is-then { --nh-bc: var(--nh-accent); --nh-bc-text: var(--nh-accent-contrast); }
-.nh-block-label::after { background: repeating-linear-gradient(var(--nh-border-strong) 0 4px, transparent 4px 8px); }
-.nh-act-n { border-radius: 0; background: var(--nh-accent); color: var(--nh-accent-contrast); }
-.nh-cond, .nh-act { background: transparent; border-style: dashed; }
-.nh-msg-b { border-radius: 0; border: 1px solid var(--nh-border); background: transparent; }
-.nh-msg.is-user .nh-msg-b { text-shadow: none; }
-.nh-msg.is-assistant .nh-msg-b::before { content: 'HERDER> '; color: var(--nh-text-muted); }
-.nh-console { border-radius: 0; }
-.nh-log-row .nh-lvl { color: inherit !important; }
-.lvl-error .nh-lvl, .lvl-fatal .nh-lvl { background: var(--nh-danger); color: var(--nh-bg) !important; padding: 0 0.2rem; }
-.nh-timeline, .nh-bin { border-radius: 0; }
-.ch-area { fill: color-mix(in srgb, var(--nh-accent) 12%, transparent); }
-.nh-dot { border-radius: 0; }
-.nh-swatch, .nh-design-opt, .nh-vtab, .nh-conv, .nh-alert, .nh-banner, .nh-toast { border-radius: 0; }
-.nh-tab { text-transform: uppercase; }
-.nh-tab[aria-selected='true'] { background: var(--nh-accent); color: var(--nh-accent-contrast); text-shadow: none; }
-.nh-dialog-backdrop { background: rgb(0 0 0 / 0.7); }
-/* CRT effects (off under reduced motion / user toggle) */
-[data-effects='on'][data-mode='dark'] body::after { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 300; background: repeating-linear-gradient(to bottom, rgb(0 0 0 / 0.18) 0 1px, transparent 1px 3px); mix-blend-mode: multiply; }
-[data-effects='on'][data-mode='dark'] body::before { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 299; background: radial-gradient(ellipse at center, transparent 60%, rgb(0 0 0 / 0.45) 100%); }
-[data-effects='on'][data-mode='light'] .nh-content { background: repeating-linear-gradient(to bottom, color-mix(in srgb, var(--nh-accent) 7%, transparent) 0 2.6rem, transparent 2.6rem 5.2rem); }
-[data-effects='off'] body { text-shadow: none; } [data-effects='off'] .nh-ic { filter: none; }
-@media (prefers-contrast: more) { body { text-shadow: none; } body::before, body::after { display: none; } }
+
+/* the plan */
+.fp-home { display: grid; grid-template-columns: minmax(0, 1fr) 24rem; gap: 1.25rem; align-items: start; }
+.fp-canvas-head { margin-bottom: 0.75rem; }
+.fp-plan { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: repeat(9, minmax(3.8rem, 1fr)); gap: 0;
+  grid-template-areas: 'attic attic attic attic attic attic bed bed bed bed garden garden' 'attic attic attic attic attic attic bed bed bed bed garden garden' 'attic attic attic attic attic attic bed bed bed bed garden garden'
+    'living living living living living living living kitchen kitchen kitchen garden garden' 'living living living living living living living kitchen kitchen kitchen garden garden' 'living living living living living living living kitchen kitchen kitchen garden garden'
+    'garage garage garage garage hall hall hall kitchen kitchen kitchen garden garden' 'garage garage garage garage hall hall hall kitchen kitchen kitchen garden garden' 'garage garage garage garage hall hall hall kitchen kitchen kitchen garden garden';
+  border: 4px solid var(--fp-wall); border-right-width: 0; background: var(--nh-surface); position: relative; max-width: 64rem; }
+.fp-plan::before { content: ''; grid-area: hall; background: repeating-linear-gradient(45deg, transparent 0 7px, var(--fp-line) 7px 8px); border-right: 3px solid var(--fp-wall); border-top: 3px solid var(--fp-wall); }
+.area-attic { grid-area: attic; } .area-bed { grid-area: bed; } .area-living { grid-area: living; } .area-kitchen { grid-area: kitchen; } .area-garage { grid-area: garage; } .area-garden { grid-area: garden; }
+.fp-room { position: relative; background: var(--fp-room); border-right: 3px solid var(--fp-wall); border-bottom: 3px solid var(--fp-wall); display: flex; flex-direction: column; min-width: 0; transition: background var(--nh-motion); }
+.area-garage, .area-kitchen { border-bottom: 0; } .area-living { border-bottom: 3px solid var(--fp-wall); }
+.area-garden { background: var(--fp-garden); border: 0; border-left: 4px solid var(--fp-wall); margin: -4px -4px -4px 0; background-image: radial-gradient(circle, color-mix(in srgb, var(--nh-ok) 35%, transparent) 1.5px, transparent 2px); background-size: 14px 14px; }
+.fp-room.is-sel { background: color-mix(in srgb, var(--nh-accent) 14%, var(--fp-room)); box-shadow: inset 0 0 0 3px var(--nh-accent); }
+.fp-room.is-warn .fp-room-read em { color: var(--nh-warn); } .fp-room.is-bad .fp-room-read em { color: var(--nh-danger); }
+.fp-room-hit { all: unset; cursor: pointer; display: flex; flex-direction: column; gap: 0.1rem; padding: 0.6rem 0.75rem 0.3rem; }
+.fp-room-hit:focus-visible { outline: 3px solid var(--nh-focus); outline-offset: -3px; }
+.fp-room-name { font-family: var(--nh-font-display); font-size: 1.15rem; font-weight: 600; }
+.fp-room-read { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem; color: var(--nh-text-muted); font-variant-numeric: tabular-nums; }
+.fp-room-read b { font-size: 1.45rem; color: var(--nh-text); font-weight: 600; }
+.fp-room-read em { flex-basis: 100%; display: flex; align-items: center; gap: 0.25rem; font-style: normal; font-size: 0.8rem; font-weight: 600; }
+.fp-pins { display: flex; flex-wrap: wrap; gap: 0.4rem; padding: 0.3rem 0.75rem 0.75rem; margin-top: auto; }
+.fp-pin { width: 2.5rem; height: 2.5rem; border-radius: 50%; border: 2px solid var(--fp-wall); background: var(--nh-surface); color: var(--fp-wall); display: grid; place-items: center; cursor: pointer; padding: 0; transition: background var(--nh-motion), transform 80ms; }
+.fp-pin:hover { transform: scale(1.06); }
+.fp-pin.is-on { background: var(--fp-live); color: var(--fp-live-ink); border-color: var(--fp-live-ink); box-shadow: 0 0 0 4px color-mix(in srgb, var(--fp-live) 35%, transparent); }
+.fp-pin.is-off { border-style: dashed; opacity: 0.55; }
+.fp-pin.is-pending { animation: nh-pulse 0.8s infinite; }
+.fp-plan.is-mini { grid-template-rows: repeat(9, 2.2rem); max-width: 40rem; }
+.fp-plan.is-mini .fp-room.is-ok { background: color-mix(in srgb, var(--nh-ok) 16%, var(--fp-room)); } .fp-plan.is-mini .fp-room.is-warn { background: color-mix(in srgb, var(--nh-warn) 28%, var(--fp-room)); } .fp-plan.is-mini .fp-room.is-bad { background: color-mix(in srgb, var(--nh-danger) 26%, var(--fp-room)); }
+.fp-plan.is-mini .fp-room-read b { font-size: 1rem; }
+.fp-legend { display: flex; flex-wrap: wrap; gap: 1rem; list-style: none; padding: 0; margin: 0.75rem 0 0; color: var(--nh-text-muted); font-size: 0.85rem; }
+.fp-legend li { display: flex; align-items: center; gap: 0.4rem; }
+.fp-legend i { width: 0.9rem; height: 0.9rem; border-radius: 50%; border: 2px solid var(--fp-wall); background: var(--nh-surface); }
+.fp-legend i.is-on { background: var(--fp-live); } .fp-legend i.is-off { border-style: dashed; opacity: 0.6; } .fp-legend i.is-warn { background: var(--nh-warn); }
+.fp-insp { position: sticky; top: 0; background: var(--nh-surface); border: 2px solid var(--fp-wall); border-radius: var(--nh-radius-m); max-height: calc(100dvh - 8rem); overflow: auto; }
+.fp-insp-head { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; border-bottom: 2px solid var(--fp-wall); }
+.fp-insp-head h2 { font-family: var(--nh-font-display); font-size: 1.5rem; font-weight: 600; }
+.fp-insp-dev + .fp-insp-dev { border-top: 1px solid var(--nh-border); }
+.fp-insp-name { display: flex; align-items: center; gap: 0.5rem; padding: 0.7rem 1rem 0.2rem; text-decoration: none; font-weight: 600; }
+.fp-insp-name:hover span { text-decoration: underline; }
+.fp-insp .nh-row { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+@media (max-width: 1100px) {
+  .fp-home { grid-template-columns: minmax(0, 1fr); }
+  .fp-insp { position: fixed; z-index: 70; left: 0; right: 0; bottom: 0; max-height: 70dvh; border-radius: var(--nh-radius-l) var(--nh-radius-l) 0 0; box-shadow: var(--nh-shadow-2); transform: translateY(105%); transition: transform var(--nh-motion); overscroll-behavior: contain; }
+  .has-sheet .fp-insp { transform: none; }
+}
+@media (max-width: 640px) { .fp-plan { grid-template-rows: repeat(9, minmax(3rem, auto)); } .fp-room-name { font-size: 0.95rem; } .fp-room-read b { font-size: 1.05rem; } .fp-pin { width: 2.2rem; height: 2.2rem; } .fp-pins { padding: 0.2rem 0.4rem 0.5rem; gap: 0.25rem; } .fp-room-hit { padding: 0.4rem; } }
+
+/* health */
+.fp-health { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 2rem; }
+.fp-health h2 { font-family: var(--nh-font-display); font-size: 1.35rem; font-weight: 600; margin: 0 0 0.5rem; }
+.fp-health .fp-plan { margin-top: 0.75rem; }
+.fp-counts { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: 0.75rem; margin-top: 1rem; max-width: 40rem; }
+.fp-count { display: flex; flex-direction: column; padding: 0.6rem 0.8rem; border-left: 4px solid var(--nh-ok); background: var(--nh-surface); text-decoration: none; }
+.fp-count b { font-size: 1.6rem; font-variant-numeric: tabular-nums; font-family: var(--nh-font-display); } .fp-count span { color: var(--nh-text-muted); }
+.fp-count.is-warn { border-left-color: var(--nh-warn); }
+.fp-attn { list-style: none; margin: 0 0 1.5rem; padding: 0; border-top: 1px solid var(--nh-border); }
+.fp-attn a { display: flex; gap: 0.7rem; align-items: center; padding: 0.6rem 0; border-bottom: 1px solid var(--nh-border); text-decoration: none; }
+.fp-attn a > span { display: flex; flex-direction: column; } .fp-attn small { color: var(--nh-text-muted); }
+.fp-health-side .nh-feed { border: 1px solid var(--nh-border); background: var(--nh-surface); }
+@media (max-width: 1000px) { .fp-health { grid-template-columns: minmax(0, 1fr); } }
+
+/* devices by room */
+.fp-lane { margin-bottom: 1.75rem; }
+.fp-lane h2 { font-family: var(--nh-font-display); font-weight: 600; font-size: 1.35rem; display: flex; gap: 0.5rem; align-items: baseline; margin: 0 0 0.5rem; padding-bottom: 0.3rem; border-bottom: 2px solid var(--fp-wall); }
+.fp-lane h2 small { color: var(--nh-text-muted); font-size: 0.9rem; }
+.fp-lane-row { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(17rem, 19rem); gap: 1rem; overflow-x: auto; padding-bottom: 0.5rem; align-items: start; scroll-snap-type: x proximity; }
+.fp-lane-row > * { scroll-snap-align: start; }
+.nh-dcard { border: 2px solid var(--fp-wall); border-radius: var(--nh-radius-m); }
+
+/* find */
+.fp-find { display: grid; grid-template-columns: 16rem minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+.fp-facets { position: sticky; top: 0; display: flex; flex-direction: column; gap: 1rem; }
+.fp-facets .nh-search { max-width: none; }
+.fp-facet { border: 0; border-top: 2px solid var(--fp-wall); padding: 0.5rem 0 0; margin: 0; }
+.fp-facet legend { font-family: var(--nh-font-display); font-weight: 600; font-size: 1.1rem; padding-right: 0.5rem; }
+.fp-res { list-style: none; margin: 0.75rem 0 0; padding: 0; border-top: 2px solid var(--fp-wall); }
+.fp-res li { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1rem; padding: 0.6rem 0; border-bottom: 1px solid var(--nh-border); }
+.fp-res a { display: flex; align-items: center; gap: 0.7rem; flex: 1 1 18rem; min-width: 0; text-decoration: none; }
+.fp-res-ic { display: grid; place-items: center; width: 2.4rem; height: 2.4rem; border-radius: 50%; border: 2px solid var(--fp-wall); flex: none; }
+.fp-res-t { display: flex; flex-direction: column; min-width: 0; } .fp-res-t small { color: var(--nh-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fp-res a:hover b { text-decoration: underline; }
+.fp-res-chips { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+@media (max-width: 860px) { .fp-find { grid-template-columns: minmax(0, 1fr); } .fp-facets { position: static; } }
+
+/* device: one page with in-page sections */
+.fp-dev-hero { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-start; padding-bottom: 1rem; border-bottom: 2px solid var(--fp-wall); }
+.fp-dev-hero > div:nth-child(2) { flex: 1; min-width: 14rem; }
+.fp-dev-ic { display: grid; place-items: center; width: 4.5rem; height: 4.5rem; border-radius: 50%; border: 3px solid var(--fp-wall); background: var(--fp-room); }
+.fp-dev-ic .nh-ic { width: 2.2rem; height: 2.2rem; }
+.fp-crumb { margin: 0; color: var(--nh-text-muted); font-size: 0.9rem; } .fp-crumb a { color: var(--nh-accent); }
+.fp-dev-body { display: grid; grid-template-columns: 10rem minmax(0, 1fr); gap: 1.5rem; margin-top: 1rem; }
+.fp-dev-nav { position: sticky; top: 0; align-self: start; display: flex; flex-direction: column; gap: 0.2rem; }
+.fp-dev-nav a { padding: 0.4rem 0.6rem; border-left: 3px solid var(--nh-border); text-decoration: none; color: var(--nh-text-muted); font-weight: 600; }
+.fp-dev-nav a:hover { border-left-color: var(--fp-wall); color: var(--nh-text); }
+.fp-dev-sec { scroll-margin-top: 1rem; margin-bottom: 2rem; }
+.fp-dev-sec > h2 { font-family: var(--nh-font-display); font-weight: 600; font-size: 1.5rem; margin: 0 0 0.75rem; }
+@media (max-width: 760px) { .fp-dev-body { grid-template-columns: minmax(0, 1fr); } .fp-dev-nav { position: static; flex-direction: row; overflow-x: auto; } }
+
+/* rules */
+.fp-rules { margin-bottom: 1.75rem; }
+.fp-rules > h2 { font-family: var(--nh-font-display); font-weight: 600; font-size: 1.35rem; margin: 0 0 0.25rem; padding-bottom: 0.3rem; border-bottom: 2px solid var(--fp-wall); }
+.fp-rule { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; padding: 0.9rem 0; border-bottom: 1px solid var(--nh-border); }
+.fp-rule-pic { display: flex; align-items: center; text-decoration: none; }
+.fp-node { display: grid; place-items: center; width: 2.6rem; height: 2.6rem; border-radius: 50%; border: 2px solid var(--fp-wall); background: var(--nh-surface); }
+.fp-node.is-target { margin-left: -0.4rem; background: var(--fp-room); }
+.fp-wire { width: 2.2rem; height: 2px; background: var(--fp-wall); position: relative; margin-right: 0.6rem; }
+.fp-wire::after { content: ''; position: absolute; right: -2px; top: -4px; border: 5px solid transparent; border-left-color: var(--fp-wall); }
+.fp-rule-t { flex: 1 1 18rem; min-width: 0; } .fp-rule-t a { text-decoration: none; } .fp-rule-t a:hover b { text-decoration: underline; }
+.fp-rule-t p { margin: 0.2rem 0 0; color: var(--nh-text-muted); font-size: 0.9rem; max-width: 60ch; }
+.fp-rule-side { display: flex; align-items: center; gap: 0.5rem; }
+
+/* wizard */
+.fp-wiz { max-width: 56rem; }
+.fp-trigtabs { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; margin: 1rem 0 0.75rem; }
+.fp-trigtabs [role='tab'] { display: inline-flex; gap: 0.3rem; align-items: center; padding: 0.4rem 0.8rem; border: 2px solid var(--fp-wall); background: var(--nh-surface); border-radius: 99px; font: inherit; font-weight: 600; cursor: pointer; color: var(--nh-text); }
+.fp-trigtabs [role='tab'][aria-selected='true'] { background: var(--fp-wall); color: var(--nh-bg); }
+.fp-trigtabs [role='tab'] .nh-ic { color: var(--nh-danger); width: 1rem; }
+.fp-steps { display: grid; grid-template-columns: repeat(5, 1fr); list-style: none; padding: 0; margin: 0 0 1rem; counter-reset: s; }
+.fp-steps button { all: unset; box-sizing: border-box; cursor: pointer; width: 100%; display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 0.5rem; border-bottom: 4px solid var(--nh-border); font-weight: 600; color: var(--nh-text-muted); }
+.fp-steps button:focus-visible { outline: 2px solid var(--nh-focus); }
+.fp-steps span { display: grid; place-items: center; width: 1.7rem; height: 1.7rem; border-radius: 50%; border: 2px solid currentColor; font-size: 0.85rem; flex: none; }
+.fp-steps .is-done { color: var(--nh-text); border-bottom-color: var(--nh-ok); } .fp-steps .is-done span { background: var(--nh-ok); border-color: var(--nh-ok); color: #fff; }
+.fp-steps [aria-current='step'] { color: var(--nh-text); border-bottom-color: var(--fp-wall); } .fp-steps [aria-current='step'] span { background: var(--fp-wall); color: var(--nh-bg); border-color: var(--fp-wall); }
+.fp-steps .has-err span { border-color: var(--nh-danger); color: var(--nh-danger); background: transparent; }
+.fp-step-body { display: flex; flex-direction: column; gap: 0.75rem; padding: 1.25rem; background: var(--nh-surface); border: 2px solid var(--fp-wall); border-radius: var(--nh-radius-m); min-height: 14rem; }
+.fp-q { font-family: var(--nh-font-display); font-size: 1.45rem; font-weight: 600; margin: 0; }
+.fp-two { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; } @media (max-width: 760px) { .fp-two { grid-template-columns: 1fr; } .fp-steps { grid-template-columns: repeat(5, auto); overflow-x: auto; } .fp-steps button { font-size: 0.8rem; } }
+.fp-review { padding: 0.6rem 0; border-bottom: 1px solid var(--nh-border); } .fp-review .nh-sentence { font-style: normal; color: var(--nh-text); font-size: 1rem; margin-top: 0.2rem; }
+.fp-wiz-nav { display: flex; justify-content: space-between; margin: 1rem 0; }
+.fp-wiz .nh-savebar { bottom: -5.25rem; }
+.fp-app { grid-template-columns: minmax(0, 1fr); }
+.fp-tabs { min-width: 0; }
+.fp-facets .nh-search { flex: none; }
 
 </style>
 </head>
 <body>
 <div id="app"><p style="padding:2rem;font-family:system-ui">Loading NodeHerder sample… (JavaScript required)</p></div>
 <script>
-/* Registry of the five sample designs (used by the gallery and the in-page design switcher). */
+/* Registry of the sample designs (gallery + in-page design switcher). Round 2: Hearth kept,
+   four structurally different directions added — see ../design-directions.md. */
 window.NH_DESIGNS = [
-  { n: 1, id: 'hearth', name: 'Hearth', file: 'hearth.html', short: 'Lovelace-inspired · warm, rounded, friendly',
-    blurb: 'Home Assistant–style areas and tiles with a soft 70s living-room palette. Sidebar + top bar. Best for wall tablets and family use.',
+  { n: 1, id: 'hearth', name: 'Hearth', file: 'hearth.html', short: 'Areas of soft tiles · sidebar',
+    blurb: 'Home Assistant–style areas and tiles with a warm palette. Sidebar and top bar; When / If / Then flow editor.',
     shell: 'sidebar', defaults: { mode: 'system', accent: 'preset', density: 'comfortable', radius: 14, fontScale: 100, preset: 'daylight', effects: true } },
-  { n: 2, id: 'mesh', name: 'Mesh', file: 'mesh.html', short: 'Zigbee2MQTT-inspired · dense, data-first',
-    blurb: 'Operations console: stat strip, activity feed, dashed device cards, compact tables with LQI/battery chips. Best for power users.',
-    shell: 'sidebar', defaults: { mode: 'dark', accent: 'preset', density: 'compact', radius: 6, fontScale: 100, preset: 'night', effects: true } },
-  { n: 3, id: 'phosphor', name: 'Phosphor', file: 'phosphor.html', short: '80s terminal · monospace, phosphor glow',
-    blurb: 'CRT terminal look with function-key tabs, inverse-video tiles and ASCII framing. Amber, green or ice phosphor; light mode is green-bar paper.',
-    shell: 'tabs', defaults: { mode: 'dark', accent: 'preset', density: 'comfortable', radius: 0, fontScale: 105, preset: 'amber', effects: true } },
-  { n: 4, id: 'studio', name: 'Studio', file: 'studio.html', short: 'Braun/Rams hardware · warm neutrals, orange',
-    blurb: 'Industrial-design calm: hardware rocker switches, inset LCD readouts, rail navigation that becomes a bottom dock on phones.',
-    shell: 'dock', defaults: { mode: 'light', accent: 'preset', density: 'comfortable', radius: 10, fontScale: 100, preset: 'braun', effects: true } },
-  { n: 5, id: 'platinum', name: 'Platinum', file: 'platinum.html', short: '90s desktop OS · bevels, title bars',
-    blurb: 'Classic desktop windows: menu bar navigation, striped title bars, bevelled controls and pinstripe desktop. Nostalgic but crisp.',
-    shell: 'menubar', defaults: { mode: 'light', accent: 'preset', density: 'comfortable', radius: 3, fontScale: 100, preset: 'platinum', effects: true } },
+  { n: 2, id: 'floorplan', name: 'Floorplan', file: 'floorplan.html', short: 'The house plan is the home page',
+    blurb: 'Rooms drawn as a floor plan with switch pins; a room inspector slides in. Faceted device finder, rules as device-to-device diagrams, step-by-step wizard editor.',
+    shell: 'custom', defaults: { mode: 'light', accent: 'preset', density: 'comfortable', radius: 8, fontScale: 100, preset: 'blueprint', effects: true } },
+  { n: 3, id: 'workbench', name: 'Workbench', file: 'workbench.html', short: 'IDE-style explorer, tabs and inspector',
+    blurb: 'For the owner who configures everything: explorer tree, open tabs, property grids with type and access mode, status bar and a live log panel. Outline + inspector + JSON editor.',
+    shell: 'custom', defaults: { mode: 'dark', accent: 'preset', density: 'compact', radius: 4, fontScale: 100, preset: 'graphite', effects: false } },
+  { n: 4, id: 'brief', name: 'Brief', file: 'brief.html', short: 'The house written as sentences · command bar',
+    blurb: 'One calm column. Home reads like a note about the house, with inline switches; Ctrl K finds any device, room or action. Rules are edited as fill-in-the-blanks sentences.',
+    shell: 'custom', defaults: { mode: 'light', accent: 'preset', density: 'comfortable', radius: 10, fontScale: 105, preset: 'paper', effects: false } },
+  { n: 5, id: 'deck', name: 'Deck', file: 'deck.html', short: 'Wall-tablet panel · big dials · room pager',
+    blurb: 'Readable from across the room: clock strip, one room per page, temperature dial and big light buttons, bottom dock. Rules are a node canvas with an inspector drawer.',
+    shell: 'custom', defaults: { mode: 'dark', accent: 'preset', density: 'spacious', radius: 22, fontScale: 100, preset: 'lagoon', effects: true } },
 ];
 window.NH_DESIGN_FOR = function (id, extra) {
   const d = window.NH_DESIGNS.find((x) => x.id === id);
@@ -648,7 +735,7 @@ window.NH_DESIGN_FOR = function (id, extra) {
 
 </script>
 <script>window.NH_DESIGN_FOR_ALL = (id, x) => NH_DESIGN_FOR(id, Object.assign({ defaultRoute: '#/all' }, x));</script>
-<script>window.NH_DESIGN = NH_DESIGN_FOR_ALL('phosphor', {"presets": [{"id": "amber", "name": "Amber", "swatch": ["#0d0900", "#ffb000"]}, {"id": "green", "name": "Green", "swatch": ["#010d03", "#33ff66"]}, {"id": "ice", "name": "Ice", "swatch": ["#00090f", "#7fdbff"]}], "accents": ["#ffb000", "#33ff66", "#7fdbff", "#ff6ec7", "#ffffff", "#c3a6ff"], "effectsLabel": "scanlines / green-bar"});</script>
+<script>window.NH_DESIGN = NH_DESIGN_FOR_ALL('floorplan', {"presets": [{"id": "blueprint", "name": "Blueprint", "swatch": ["#f5f8fc", "#1d2b45"]}, {"id": "sepia", "name": "Sepia", "swatch": ["#f7f4ee", "#3b2f22"]}, {"id": "mint", "name": "Mint", "swatch": ["#e4f1ec", "#163a33"]}], "accents": ["#1f4f99", "#136b5a", "#a1430f", "#6a3fb5", "#b0245c", "#1d2b45"], "effectsLabel": "graph paper"});</script>
 <script>
 /* NodeHerder design samples — stroke icon set (24×24, currentColor). Hand-drawn for the
    samples so they work offline; production would keep @mdi/js via the capability registry. */
@@ -944,6 +1031,145 @@ window.NH_DESIGN_FOR = function (id, extra) {
 
   window.NH_DATA = { devices, appConfig, automations, logs, conversations, mcpStatus, version: '0.12.16-dev', user: { name: 'mike', email: 'owner@home.lan' } };
 })();
+
+</script>
+<script>
+/* 2 · Floorplan — the house plan is the home page; rooms open an inspector; wizard editor. */
+window.NH_LAYOUT = function (c) {
+  const { S, I, esc, btn, chip, toggle, seg, empty, dev, meta, fmt, tile, exposeRow, roomsOf, timeAgo, statusChip, protoChip, signalChip, powerChip, devIcon, isOnline, isDisabled, lqiOf, battOf, protocol, describeTrigger, autoStatus, canManual } = c;
+  // Plan geometry: grid areas on a 12 × 9 plan. Garden sits outside the walls.
+  const PLAN = { 'Attic room': 'attic', Bedroom: 'bed', 'Living room': 'living', Kitchen: 'kitchen', Garage: 'garage', Garden: 'garden' };
+  const TABS = [['home', 'Plan', 'home'], ['overview', 'Health', 'overview'], ['devices', 'Devices', 'devices'], ['list', 'Find', 'search'], ['automations', 'Rules', 'automation'], ['assistant', 'Ask', 'sparkles'], ['console', 'Log', 'terminal'], ['settings', 'Settings', 'cog'], ['components', 'Parts', 'components'], ['all', 'All pages', 'stack']];
+  S.room = S.room || 'Living room';
+  S.wiz = S.wiz || { i: 0, step: 0 };
+  const roomOfDevice = (id) => roomsOf().filter((r) => r.ids.indexOf(id) >= 0).map((r) => r.name);
+  const roomStatus = (r) => {
+    const ds = r.ids.map(dev).filter(Boolean);
+    if (ds.some((d) => !isOnline(d))) return 'bad';
+    if (ds.some((d) => (lqiOf(d) != null && lqiOf(d) < 50) || (battOf(d) != null && battOf(d) < 20))) return 'warn';
+    return 'ok';
+  };
+  const reading = (r, n) => { const it = r.items.find((x) => x[1] === n || (n === 'temperature' && x[1] === 'local_temperature')); if (!it) return ''; const d = dev(it[0]); return d && isOnline(d) ? fmt(d.exposes[it[1]]) : ''; };
+
+  function shell(view) {
+    const r = c.route(), cur = r.name === 'device' ? 'devices' : r.name === 'automation' ? 'automations' : r.name;
+    return '<button type="button" class="nh-skip" data-act="skip">Skip to content</button><div class="fp-app">' +
+      '<header class="fp-top"><a class="fp-brand" href="#/home">' + I('hub') + '<span>NodeHerder</span></a>' +
+      '<nav class="fp-tabs" aria-label="Main">' + TABS.map((t) => '<a href="#/' + t[0] + '" class="fp-tab' + (cur === t[0] ? ' is-active' : '') + '"' + (cur === t[0] ? ' aria-current="page"' : '') + '>' + I(t[2]) + '<span>' + t[1] + '</span></a>').join('') + '</nav>' +
+      '<div class="fp-top-actions">' + (S.permit ? '<button type="button" class="nh-chip is-accent" data-act="permit">' + I('join') + '<span>Joining <span data-permit>' + c.fmtTimer(S.permit) + '</span></span></button>' : btn('Add device', 'permit', { icon: 'join', sm: true, title: 'Permit join (Zigbee)' })) +
+      c.connBtn() + btn('', 'mode-toggle', { icon: document.documentElement.dataset.mode === 'dark' ? 'sun' : 'moon', title: 'Light or dark' }) + btn('', 'pop', { icon: 'palette', title: 'Appearance' }) + btn('', 'logout', { icon: 'logout', title: 'Sign out' }) + '</div></header>' +
+      c.banners() + '<main class="nh-content fp-content" id="nh-content" tabindex="-1">' + view + '</main></div>' + c.overlays();
+  }
+
+  function planHtml(mini) {
+    return '<div class="fp-plan' + (mini ? ' is-mini' : '') + '" role="group" aria-label="House plan">' + roomsOf().map((r) => {
+      const area = PLAN[r.name] || 'extra', st = roomStatus(r), t = reading(r, 'temperature'), h = reading(r, 'humidity');
+      const pins = mini ? '' : '<div class="fp-pins">' + r.items.map((it) => {
+        const d = dev(it[0]), e = d && d.exposes[it[1]]; if (!e) return '';
+        const ts = c.tileState(d, e), on = ts.on && isOnline(d) && !isDisabled(d), act = ts.actionable && c.canControl(d), pend = ts.target && S.pending[c.pkey(d.id, ts.target.name)] !== undefined;
+        return '<button type="button" class="fp-pin kind-' + meta(it[1]).kind + (on ? ' is-on' : '') + (!isOnline(d) ? ' is-off' : '') + (pend ? ' is-pending' : '') + '" data-act="' + (act ? 'tile-toggle' : 'fp-room') + '" data-arg="' + esc(act ? c.pkey(d.id, ts.target.name) : r.name) + '" title="' + esc(d.friendly_name + ' · ' + meta(it[1]).label + ': ' + fmt(e)) + '" aria-label="' + esc((act ? 'Switch ' : '') + d.friendly_name + ' ' + meta(it[1]).label + ', ' + fmt(e)) + '">' + I(meta(it[1]).icon) + '</button>';
+      }).join('') + '</div>';
+      return '<div class="fp-room area-' + area + ' is-' + st + (S.room === r.name && !mini ? ' is-sel' : '') + '"><button type="button" class="fp-room-hit" data-act="fp-room" data-arg="' + esc(r.name) + '" aria-pressed="' + (S.room === r.name) + '"><span class="fp-room-name">' + esc(r.name) + '</span><span class="fp-room-read">' + (t ? '<b>' + esc(t) + '</b>' : '') + (h ? '<span>' + esc(h) + '</span>' : '') + (st !== 'ok' ? '<em>' + I(st === 'bad' ? 'offline' : 'warn') + (st === 'bad' ? 'device offline' : 'needs attention') + '</em>' : '') + '</span></button>' + pins + '</div>';
+    }).join('') + '<div class="fp-door" aria-hidden="true"></div></div>';
+  }
+  function inspector() {
+    const r = roomsOf().find((x) => x.name === S.room); if (!r) return '';
+    const seen = {}, rows = [];
+    r.ids.forEach((id) => { const d = dev(id); if (!d || seen[id]) return; seen[id] = 1;
+      rows.push('<section class="fp-insp-dev"><a href="#/device/' + encodeURIComponent(id) + '" class="fp-insp-name">' + I(devIcon(d)) + '<span>' + esc(d.friendly_name) + '</span>' + (isOnline(d) ? '' : chip('Offline', 'danger', 'offline')) + (isDisabled(d) ? chip('Disabled', 'muted', 'disabled') : '') + '</a>' +
+        '<div class="nh-rows">' + Object.values(d.exposes).filter((e) => e.category === 'measurement').map((e) => exposeRow(d, e, false)).join('') + '</div></section>'); });
+    return '<aside class="fp-insp" aria-label="' + esc(r.name) + '"><div class="fp-insp-head"><h2>' + esc(r.name) + '</h2>' + btn('', 'fp-close', { icon: 'close', title: 'Close room' }) + '</div>' + rows.join('') + '</aside>';
+  }
+
+  const views = {};
+  views.home = () => '<div class="fp-home' + (S.roomOpen ? ' has-sheet' : '') + '"><div class="fp-canvas"><div class="fp-canvas-head"><h1 class="nh-h1">Plan</h1><p class="nh-sub">Tap a room to open it. Tap a switch pin to turn it on or off.</p></div>' + planHtml(false) +
+    '<ul class="fp-legend"><li><i class="is-on"></i>On</li><li><i></i>Off or reading</li><li><i class="is-off"></i>Offline</li><li><i class="is-warn"></i>Weak signal or battery</li></ul></div>' + inspector() + '</div>';
+
+  views.overview = () => {
+    const ds = S.devices, off = ds.filter((d) => !isOnline(d)), weak = ds.filter((d) => lqiOf(d) != null && lqiOf(d) < 50), low = ds.filter((d) => battOf(d) != null && battOf(d) < 20);
+    const line = (n, label, href, kind) => '<a class="fp-count is-' + kind + '" href="' + href + '"><b>' + n + '</b><span>' + label + '</span></a>';
+    return '<div class="fp-health"><div><h1 class="nh-h1">House health</h1><p class="nh-sub">Rooms are shaded by their worst device.</p>' + planHtml(true) +
+      '<div class="fp-counts">' + line(ds.length - off.length + ' / ' + ds.length, 'online', '#/list', off.length ? 'warn' : 'ok') + line(weak.length, 'weak Zigbee links', '#/list/sort=lqi', weak.length ? 'warn' : 'ok') + line(low.length, 'low batteries', '#/list/sort=battery', low.length ? 'warn' : 'ok') + line(ds.filter((d) => d.connection_type === 'http').length, 'Wi-Fi devices', '#/list/proto=http', 'ok') + '</div></div>' +
+      '<div class="fp-health-side"><h2>Needs a look</h2><ul class="fp-attn">' + ds.filter((d) => !isOnline(d) || isDisabled(d) || weak.includes(d) || low.includes(d)).map((d) => '<li><a href="#/device/' + encodeURIComponent(d.id) + '">' + I(devIcon(d)) + '<span><b>' + esc(d.friendly_name) + '</b><small>' + esc((roomOfDevice(d.id)[0] || 'No room') + ', ' + (!isOnline(d) ? 'offline since ' + timeAgo(d.last_seen) : isDisabled(d) ? 'disabled' : low.includes(d) ? 'battery ' + Math.round(battOf(d)) + ' %' : 'signal ' + lqiOf(d) + ' LQI')) + '</small></span></a></li>').join('') + '</ul>' +
+      '<h2>Just happened</h2><div class="nh-feed" data-region="feed">' + c.feedHtml(8) + '</div></div></div>';
+  };
+
+  views.devices = () => {
+    const rooms = roomsOf(), used = {};
+    const lane = (name, ids) => '<section class="fp-lane"><h2>' + esc(name) + '<small>' + ids.length + '</small></h2><div class="fp-lane-row">' + ids.map((id) => c.dcard(dev(id))).join('') + '</div></section>';
+    const out = rooms.map((r) => { const ids = r.ids.filter((id, i, a) => a.indexOf(id) === i && dev(id)); ids.forEach((id) => (used[id] = 1)); return lane(r.name, ids); });
+    const rest = S.devices.filter((d) => !used[d.id]).map((d) => d.id);
+    return c.pageHead('Devices by room', 'Scroll each room sideways. Devices not placed in a room are at the end.', '') + out.join('') + (rest.length ? lane('Not in a room', rest) : '');
+  };
+
+  views.list = (r) => {
+    const L = S.list;
+    if (r.a) { r.a.split('&').forEach((kv) => { const p = kv.split('='); if (p[0] === 'sort') { L.sort = p[1]; L.dir = 1; } else if (L[p[0]] !== undefined) L[p[0]] = p[1]; }); history.replaceState(null, '', '#/list'); }
+    const match = (d, k, v) => v === 'all' || (k === 'proto' ? d.connection_type === v : k === 'power' ? d.power_source === v : v === 'online' ? isOnline(d) && !isDisabled(d) : v === 'offline' ? !isOnline(d) : isDisabled(d));
+    const base = S.devices.filter((d) => !L.q || (d.friendly_name + ' ' + d.id + ' ' + d.description).toLowerCase().includes(L.q.toLowerCase()));
+    const ds = base.filter((d) => ['proto', 'power', 'status'].every((k) => match(d, k, L[k])));
+    const key = { friendly_name: (d) => d.friendly_name.toLowerCase(), lqi: (d) => (lqiOf(d) == null ? 999 : lqiOf(d)), battery: (d) => (battOf(d) == null ? 999 : battOf(d)), last_seen: (d) => -new Date(d.last_seen).getTime() }[L.sort];
+    ds.sort((a, b) => (key(a) > key(b) ? 1 : key(a) < key(b) ? -1 : 0) * L.dir);
+    const facet = (title, k, opts) => '<fieldset class="fp-facet"><legend>' + title + '</legend>' + opts.map((o) => { const n = base.filter((d) => match(d, k, o[0])).length; return '<label class="nh-check"><input type="radio" name="fp-' + k + '" data-act="list-filter-' + k + '" data-arg="' + o[0] + '"' + (L[k] === o[0] ? ' checked' : '') + '> ' + o[1] + ' <small class="nh-muted">' + n + '</small></label>'; }).join('') + '</fieldset>';
+    return '<div class="fp-find"><aside class="fp-facets"><label class="nh-search">' + I('search') + '<input class="nh-input" type="search" placeholder="Name, address or model…" value="' + esc(L.q) + '" data-bind="list-q" data-focus-key="list-q" aria-label="Search devices"></label>' +
+      facet('Connection', 'proto', [['all', 'Any'], ['mqtt', 'Zigbee'], ['http', 'Wi-Fi · HTTP']]) + facet('Power', 'power', [['all', 'Any'], ['mains', 'Mains'], ['battery', 'Battery']]) + facet('Status', 'status', [['all', 'Any'], ['online', 'Online'], ['offline', 'Offline'], ['disabled', 'Disabled']]) +
+      '<fieldset class="fp-facet"><legend>Sort by</legend>' + seg([{ v: 'friendly_name', t: 'Name' }, { v: 'lqi', t: 'Signal' }, { v: 'battery', t: 'Battery' }, { v: 'last_seen', t: 'Recent' }], L.sort, 'list-sort', 'Sort') + '</fieldset></aside>' +
+      '<section class="fp-results"><h1 class="nh-h1">' + ds.length + ' of ' + S.devices.length + ' devices</h1>' +
+      (ds.length ? '<ul class="fp-res">' + ds.map((d) => '<li><a href="#/device/' + encodeURIComponent(d.id) + '"><span class="fp-res-ic">' + I(devIcon(d)) + '</span><span class="fp-res-t"><b>' + esc(d.friendly_name) + '</b><small>' + esc((roomOfDevice(d.id).join(', ') || 'No room') + ' — ' + d.description) + '</small></span></a><span class="fp-res-chips">' + protoChip(d) + (signalChip(d) || '') + powerChip(d) + statusChip(d) + '</span></li>').join('') + '</ul>' : empty('search', 'Nothing matches', 'Clear the search or pick "Any" in the filters.', btn('Clear filters', 'list-clear', { kind: 'primary' }))) + '</section></div>';
+  };
+
+  views.device = (r) => {
+    const d = dev(r.a); if (!d) return empty('question', 'Device not found', 'It may have been removed or renamed.', '<a class="nh-btn is-primary" href="#/list">Find a device</a>');
+    const sup = protocol(d.connection_type).supports, secs = [['about', 'About'], ['controls', 'Controls'], ['settings', 'Settings'], ['metrics', 'History']];
+    return '<div class="fp-dev"><header class="fp-dev-hero"><span class="fp-dev-ic">' + I(devIcon(d)) + '</span><div><p class="fp-crumb"><a href="#/home">Plan</a> / ' + esc(roomOfDevice(d.id)[0] || 'No room') + '</p><h1 class="nh-h1">' + esc(d.friendly_name) + '</h1><p class="nh-sub">' + esc(d.description) + '</p><div class="nh-chips">' + statusChip(d) + protoChip(d) + signalChip(d) + powerChip(d) + '</div></div>' +
+      '<div class="nh-page-actions">' + btn('Rename', 'dev-rename', { icon: 'edit', arg: d.id, disabled: !sup.rename }) + btn('Interview', 'dev-interview', { icon: 'refresh', arg: d.id, disabled: !sup.interview }) + btn('Remove', 'dev-remove', { icon: 'trash', arg: d.id, kind: 'danger', disabled: !sup.remove }) + '</div></header>' +
+      '<div class="fp-dev-body"><nav class="fp-dev-nav" aria-label="Sections">' + secs.map((s) => '<a href="#" data-act="all-jump" data-arg="sec-' + s[0] + '">' + s[1] + '</a>').join('') + '</nav><div>' +
+      secs.map((s) => '<section class="fp-dev-sec" id="sec-' + s[0] + '"><h2>' + s[1] + '</h2>' + c.DV[s[0]](d) + '</section>').join('') + '</div></div></div>';
+  };
+
+  views.automations = () => {
+    const A = S.automations, byRoom = {};
+    A.forEach((a, i) => { const k = roomOfDevice(a.id)[0] || 'No room'; (byRoom[k] = byRoom[k] || []).push([a, i]); });
+    return c.pageHead('Rules', 'Each rule belongs to the device that starts it.', btn('New rule', 'auto-create', { icon: 'plus', kind: 'primary' })) +
+      Object.keys(byRoom).map((k) => '<section class="fp-rules"><h2>' + esc(k) + '</h2>' + byRoom[k].map(([a, i]) => {
+        const src = dev(a.id), targets = []; a.triggers.forEach((t) => t.actions.forEach((x) => targets.indexOf(x.id) < 0 && targets.push(x.id)));
+        const st = autoStatus(a), m = a.triggers.findIndex(canManual);
+        return '<article class="fp-rule"><a class="fp-rule-pic" href="#/automation/' + encodeURIComponent(a.id) + '" aria-label="Edit ' + esc(a.friendlyname) + '"><span class="fp-node">' + I(src ? devIcon(src) : 'devices') + '</span><span class="fp-wire"></span>' + targets.map((id) => { const t = dev(id); return '<span class="fp-node is-target" title="' + esc(t ? t.friendly_name : id) + '">' + I(t ? devIcon(t) : 'devices') + '</span>'; }).join('') + '</a>' +
+          '<div class="fp-rule-t"><a href="#/automation/' + encodeURIComponent(a.id) + '"><b>' + esc(a.description || a.friendlyname) + '</b></a><p>' + esc(describeTrigger(a, a.triggers[0])) + (a.triggers.length > 1 ? ' And ' + (a.triggers.length - 1) + ' more.' : '') + '</p></div>' +
+          '<div class="fp-rule-side">' + chip(st.text, st.kind, st.icon, st.title) + (m >= 0 ? btn('Run', 'auto-run', { icon: 'play', sm: true, arg: i + '|' + m }) : '') + toggle(a.enabled, 'auto-enable', i, { label: 'Enabled' }) + btn('', 'auto-delete', { icon: 'trash', sm: true, kind: 'danger', title: 'Delete rule', arg: i }) + '</div></article>';
+      }).join('') + '</section>').join('');
+  };
+
+  // Wizard editor: real sequence, so steps are numbered.
+  const STEPS = ['Start', 'Only if', 'Do this', 'Schedule', 'Review'];
+  views.automation = (r) => {
+    c.V.automation(r); // prepares S.draft
+    if (!S.draft) return empty('question', 'Rule not found', '', '<a class="nh-btn is-primary" href="#/automations">Back to rules</a>');
+    const P = c.edParts(), a = P.a, n = a.triggers.length;
+    if (S.wiz.i >= n) S.wiz.i = Math.max(0, n - 1);
+    const i = S.wiz.i, t = a.triggers[i], st = S.wiz.step;
+    const stepBody = !t ? empty('automation', 'No triggers yet', 'Add a trigger to choose what starts this rule.', btn('Add trigger', 'ed-add-trig', { icon: 'plus', kind: 'primary' })) :
+      st === 0 ? '<p class="fp-q">What should start this rule?</p>' + P.whenBody(i) :
+      st === 1 ? '<p class="fp-q">Should it only run in some situations?</p>' + (t.conditions.map((x, j) => P.condRow(i, j)).join('') || '<p class="nh-muted">No conditions. The rule runs every time.</p>') + P.condAdd(i) :
+      st === 2 ? '<p class="fp-q">What should happen? Actions run in order.</p>' + t.actions.map((x, k) => P.actRow(i, k)).join('') + P.err(P.tp(i) + '.actions') + P.actAdd(i) :
+      st === 3 ? '<p class="fp-q">When is this rule allowed to run?</p><div class="fp-two"><div>' + P.schedule() + '</div><div>' + P.details() + '</div></div>' :
+      '<p class="fp-q">Check the rule, then save.</p>' + a.triggers.map((x, k) => '<div class="fp-review"><b>Trigger ' + (k + 1) + '</b>' + P.sentence(k) + P.warnList(k) + '</div>').join('') + P.checks() + btn(S.jsonOpen ? 'Hide payload' : 'Show payload', 'ed-json', { icon: 'code', kind: 'ghost', sm: true }) + P.json();
+    const errsAt = (s) => !t ? 0 : P.trigErrs(i).filter((e) => (s === 0 ? /\.name$/.test(e.p) && e.p.split('.').length === 3 : s === 1 ? e.p.indexOf('.conditions') > 0 : s === 2 ? e.p.indexOf('.actions') > 0 : false)).length;
+    return '<div class="fp-wiz"><header>' + P.back() + '<h1 class="nh-h1">' + esc(a.friendlyname) + '</h1><p class="nh-sub">' + esc(a.description || 'No description') + '</p></header>' +
+      '<div class="fp-trigtabs" role="tablist" aria-label="Triggers">' + a.triggers.map((x, k) => '<button type="button" role="tab" aria-selected="' + (k === i) + '" data-act="fp-trig" data-arg="' + k + '">Trigger ' + (k + 1) + (P.trigErrs(k).length ? ' ' + I('error') : '') + '</button>').join('') + btn('', 'ed-add-trig', { icon: 'plus', sm: true, title: 'Add trigger' }) + (t ? P.trigTools(i).replace(/data-act="ed-del"/, 'data-act="ed-del"') : '') + '</div>' +
+      '<ol class="fp-steps">' + STEPS.map((s, k) => '<li><button type="button" data-act="fp-step" data-arg="' + k + '" aria-current="' + (k === st ? 'step' : 'false') + '" class="' + (k < st ? 'is-done' : '') + (errsAt(k) ? ' has-err' : '') + '"><span>' + (k + 1) + '</span>' + s + '</button></li>').join('') + '</ol>' +
+      '<section class="fp-step-body">' + stepBody + '</section>' +
+      '<div class="fp-wiz-nav">' + btn('Back', 'fp-step', { icon: 'chevronL', arg: Math.max(0, st - 1), disabled: st === 0 }) + (st < 4 ? btn('Next: ' + STEPS[st + 1], 'fp-step', { kind: 'primary', arg: st + 1 }) : '') + '</div>' + P.savebar() + '</div>';
+  };
+
+  const actions = {
+    'fp-room': (n) => { S.room = n; S.roomOpen = true; c.render(); },
+    'fp-close': () => { S.roomOpen = false; c.render(); },
+    'fp-step': (k) => { S.wiz.step = +k; c.render(); },
+    'fp-trig': (k) => { S.wiz.i = +k; c.render(); },
+  };
+  return { shell, views, actions };
+};
 
 </script>
 <script>
@@ -1502,7 +1728,8 @@ window.NH_DESIGN_FOR = function (id, extra) {
     return editorHtml();
   };
   const dirty = () => S.draft && JSON.stringify(S.draft) !== JSON.stringify(S.original);
-  function editorHtml() {
+  // Editor building blocks shared by every design's editor layout (same data-path contract).
+  function edParts() {
     const a = S.draft, d = dev(a.id), v = validate(a), E = {};
     v.errs.forEach((e) => (E[e.p] = e.m));
     const err = (p) => (E[p] ? '<span class="nh-err" id="err-' + p.replace(/\./g, '-') + '">' + I('error') + esc(E[p]) + '</span>' : '');
@@ -1510,6 +1737,7 @@ window.NH_DESIGN_FOR = function (id, extra) {
     const srcEx = d ? Object.values(d.exposes).filter((e) => e.category !== 'config') : [];
     const writableDevs = S.devices.filter((x) => Object.values(x.exposes).some((e) => isWritable(e) && e.category !== 'config'));
     const devOpts = (list) => list.map((x) => ({ v: x.id, t: x.friendly_name + (isOnline(x) ? '' : ' (offline)') }));
+    const withPath = (html, p) => html.replace(/data-arg="/g, 'data-path="' + p + '" data-arg="');
     function valueInput(dv, exName, val, path) {
       const e = dv && dv.exposes[exName], attrs = 'data-path="' + path + '" data-focus-key="' + path + '"' + inv(path);
       if (!e) return '<input class="nh-input" disabled placeholder="value" ' + attrs + '>';
@@ -1520,74 +1748,92 @@ window.NH_DESIGN_FOR = function (id, extra) {
       if (e.type === 'numeric') return '<span class="nh-unit-input"><input class="nh-input is-num" type="number" data-kind="num" ' + attrs + ' value="' + esc(val == null ? '' : val) + '"' + (e.attributes ? ' min="' + e.attributes.value_min + '" max="' + e.attributes.value_max + '"' : '') + ' aria-label="Value">' + (e.unit ? '<em>' + esc(e.unit) + '</em>' : '') + '</span>';
       return '<input class="nh-input" data-kind="str" ' + attrs + ' value="' + esc(val == null ? '' : val) + '" aria-label="Value">';
     }
+    const P = { a, d, v, E, err, inv, srcEx, valueInput, withPath };
+    P.tp = (i) => 'triggers.' + i;
+    P.trigType = (i) => withPath(seg([{ v: 'deviceTrigger', t: 'Device changes' }, { v: 'manualTrigger', t: 'Manual only' }], a.triggers[i].type, 'ed-trig-type', 'Trigger type'), P.tp(i) + '.type');
+    P.srcSelect = (i) => sel(srcEx.map((x) => ({ v: x.name, t: meta(x.name).label + '  (now ' + fmt(x) + ')' })), a.triggers[i].name, 'data-path="' + P.tp(i) + '.name" data-kind="str"' + inv(P.tp(i) + '.name') + ' aria-label="Source expose"', 'Which expose?');
+    P.srcChip = () => '<span class="nh-src">' + I(d ? devIcon(d) : 'devices') + esc(d ? d.friendly_name : a.friendlyname) + '</span>';
+    P.whenBody = (i) => '<div class="nh-inline">' + P.trigType(i) + '</div><div class="nh-inline">' + P.srcChip() + P.srcSelect(i) + '<span class="nh-muted">changes</span></div>' + err(P.tp(i) + '.name');
+    P.condTools = (i, j) => { const cp = P.tp(i) + '.conditions.' + j, n = a.triggers[i].conditions.length; return '<span class="nh-reorder">' + btn('', 'ed-move', { icon: 'up', sm: true, title: 'Move up', arg: cp + '|-1', disabled: j === 0 }) + btn('', 'ed-move', { icon: 'down', sm: true, title: 'Move down', arg: cp + '|1', disabled: j === n - 1 }) + btn('', 'ed-del', { icon: 'trash', sm: true, kind: 'danger', title: 'Remove condition', arg: cp }) + '</span>'; };
+    P.condFields = (i, j) => {
+      const c = a.triggers[i].conditions[j], cp = P.tp(i) + '.conditions.' + j;
+      if (c.type === 'time') return '<span class="nh-inline"><span>between</span><input type="time" class="nh-input" data-path="' + cp + '.timeRange.startAt" data-kind="str" data-focus-key="' + cp + 's" value="' + esc(c.timeRange.startAt) + '"' + inv(cp + '.timeRange.startAt') + ' aria-label="From"><span>and</span><input type="time" class="nh-input" data-path="' + cp + '.timeRange.endAt" data-kind="str" data-focus-key="' + cp + 'e" value="' + esc(c.timeRange.endAt) + '"' + inv(cp + '.timeRange.endAt') + ' aria-label="To">' + (c.timeRange.startAt > c.timeRange.endAt && c.timeRange.endAt ? chip('overnight', 'info', 'moon') : '') + '</span>' + err(cp + '.timeRange.startAt') + err(cp + '.timeRange.endAt');
+      const e = d && d.exposes[c.name], ops = !e || e.type === 'numeric' ? ['=', '<', '<=', '>', '>='] : ['='];
+      return '<span class="nh-inline">' + sel(srcEx.map((x) => ({ v: x.name, t: meta(x.name).label + '  (now ' + fmt(x) + ')' })), c.name, 'data-path="' + cp + '.name" data-kind="str" data-reset="' + cp + '.value"' + inv(cp + '.name') + ' aria-label="Expose"', 'Expose…') +
+        sel(ops.map((o) => ({ v: o, t: o })), c.equality, 'data-path="' + cp + '.equality" data-kind="str" aria-label="Operator" class="is-op"') + valueInput(d, c.name, c.value, cp + '.value') + '</span>' + err(cp + '.name') + err(cp + '.value');
+    };
+    P.condKind = (c) => '<span class="nh-cond-kind">' + I(c.type === 'time' ? 'clock' : c.name ? meta(c.name).icon : 'filter') + (c.type === 'time' ? 'Time' : 'Value') + '</span>';
+    P.condRow = (i, j) => { const f = P.condFields(i, j), k = f.indexOf('<span class="nh-err"'); return '<div class="nh-cond">' + P.condKind(a.triggers[i].conditions[j]) + (k < 0 ? f + P.condTools(i, j) : f.slice(0, k) + P.condTools(i, j) + f.slice(k)) + '</div>'; };
+    P.condAdd = (i) => '<div class="nh-inline">' + btn('Value condition', 'ed-add-cond', { icon: 'plus', sm: true, arg: P.tp(i) + '|expose' }) + btn('Time window', 'ed-add-cond', { icon: 'clock', sm: true, arg: P.tp(i) + '|time' }) + '</div>';
+    P.actType = (i, k) => withPath(seg([{ v: 'trigger', t: 'Set' }, { v: 'step', t: 'Step' }, { v: 'preset', t: 'Cycle' }], a.triggers[i].actions[k].type, 'ed-act-type', 'Action type'), P.tp(i) + '.actions.' + k);
+    P.actTarget = (i, k) => { const x = a.triggers[i].actions[k], ap = P.tp(i) + '.actions.' + k; return sel(devOpts(x.type === 'preset' ? S.devices.filter((z) => Object.values(z.exposes).some(isPreset)) : writableDevs), x.id, 'data-path="' + ap + '.id" data-kind="str" data-reset-act="1"' + inv(ap + '.id') + ' aria-label="Target device"', 'Target device…'); };
+    P.actTools = (i, k) => { const ap = P.tp(i) + '.actions.' + k, n = a.triggers[i].actions.length; return '<span class="nh-reorder">' + btn('', 'ed-move', { icon: 'up', sm: true, title: 'Move up', arg: ap + '|-1', disabled: k === 0 }) + btn('', 'ed-move', { icon: 'down', sm: true, title: 'Move down', arg: ap + '|1', disabled: k === n - 1 }) + btn('', 'ed-del', { icon: 'trash', sm: true, kind: 'danger', title: 'Remove action', arg: ap }) + '</span>'; };
+    P.actBody = (i, k) => {
+      const x = a.triggers[i].actions[k], ap = P.tp(i) + '.actions.' + k, td = dev(x.id);
+      const filt = x.type === 'step' ? (e) => e.type === 'numeric' && isWritable(e) && e.category === 'measurement' : x.type === 'preset' ? isPreset : (e) => isWritable(e) && e.category !== 'config';
+      const opts = td ? Object.values(td.exposes).filter(filt).map((e) => ({ v: e.name, t: meta(e.name).label })) : [];
+      if (x.type === 'trigger') {
+        return x.exposes.map((r2, n) => { const rp = ap + '.exposes.' + n; return '<div class="nh-set-row"><span class="nh-inline">' + sel(opts, r2.name, 'data-path="' + rp + '.name" data-kind="str" data-reset="' + rp + '.data"' + inv(rp + '.name') + ' aria-label="Expose"', 'Expose…') + '<span>=</span>' + valueInput(td, r2.name, r2.data, rp + '.data') + btn('', 'ed-del', { icon: 'close', sm: true, title: 'Remove value', arg: rp }) + '</span>' + err(rp + '.name') + err(rp + '.data') + '</div>'; }).join('') + err(ap + '.exposes') +
+          '<div class="nh-inline nh-act-opts">' + btn('Add value', 'ed-add-row', { icon: 'plus', sm: true, arg: ap, disabled: !x.id }) +
+          (x.exposes.length > 1 ? '<span class="nh-muted">Publish</span>' + withPath(seg([{ v: 'batch', t: 'Together' }, { v: 'single', t: 'One by one' }], x.publishMode || 'batch', 'ed-publish', 'Publish mode'), ap + '.publishMode') : '') +
+          '<label class="nh-check"><input type="checkbox" data-act-check="ed-delay" data-path="' + ap + '"' + (x.delay && x.delay.value ? ' checked' : '') + '> Wait first</label>' +
+          (x.delay && x.delay.value ? '<input class="nh-input is-num" type="number" min="1" data-path="' + ap + '.delay.value" data-kind="num" data-focus-key="' + ap + 'dv" value="' + x.delay.value + '" aria-label="Delay">' + sel([{ v: 'seconds', t: 'seconds' }, { v: 'minutes', t: 'minutes' }, { v: 'hours', t: 'hours' }], x.delay.unit, 'data-path="' + ap + '.delay.unit" data-kind="str" aria-label="Delay unit"') : '') + '</div>';
+      }
+      if (x.type === 'step') return '<div class="nh-inline">' + sel(opts, x.property, 'data-path="' + ap + '.property" data-kind="str" data-sync-steps="1"' + inv(ap + '.property') + ' aria-label="Numeric expose"', 'Numeric expose…') +
+        withPath(seg([{ v: '+', t: '+' }, { v: '-', t: '−' }, { v: '*', t: '×' }], (x.steps[0] && x.steps[0].operator) || '+', 'ed-step-op', 'Operator'), ap) +
+        '<input class="nh-input is-num" type="number" data-path="' + ap + '.data" data-kind="num" data-focus-key="' + ap + 'd" value="' + esc(x.data == null ? '' : x.data) + '"' + inv(ap + '.data') + ' aria-label="Amount"></div>' + err(ap + '.property') + err(ap + '.data');
+      const pe = td && td.exposes[x.property];
+      return '<div class="nh-inline">' + sel(opts, x.property, 'data-path="' + ap + '.property" data-kind="str"' + inv(ap + '.property') + ' aria-label="Preset expose"', 'Expose with presets…') + (pe && pe.values ? '<span class="nh-muted">cycles</span>' + Object.keys(pe.values).map((k2) => chip(titleCase(k2), 'muted')).join('<span class="nh-arrow">→</span>') : '') + '</div>' + err(ap + '.property');
+    };
+    P.actRow = (i, k) => '<div class="nh-act"><div class="nh-act-head"><span class="nh-act-n">' + (k + 1) + '</span>' + P.actType(i, k) + P.actTarget(i, k) + P.actTools(i, k) + '</div>' + err(P.tp(i) + '.actions.' + k + '.id') + '<div class="nh-act-body">' + P.actBody(i, k) + '</div></div>';
+    P.actAdd = (i) => '<div class="nh-inline">' + btn('Add action', 'ed-add-act', { icon: 'plus', sm: true, arg: P.tp(i) }) + (a.triggers[i].actions.length > 1 ? '<span class="nh-muted">Actions run in order.</span>' : '') + '</div>';
+    P.trigErrs = (i) => v.errs.filter((e) => e.p.indexOf(P.tp(i)) === 0 && (e.p.length === P.tp(i).length || e.p[P.tp(i).length] === '.'));
+    P.trigWarns = (i) => v.warns.filter((w) => w.p.indexOf(P.tp(i)) === 0 && (w.p.length === P.tp(i).length || w.p[P.tp(i).length] === '.'));
+    P.trigTools = (i) => { const t = a.triggers[i], te = P.trigErrs(i); return (te.length ? chip(te.length + ' to fix', 'danger', 'error') : chip('Valid', 'ok', 'check')) +
+      (canManual(t) ? btn(S.running[a.id + i] ? 'Running…' : 'Run', 'ed-run', { icon: 'play', sm: true, arg: i, disabled: S.running[a.id + i] || S.conn !== 'connected', title: 'Run this trigger now (POST /api/automation/trigger)' }) : '') +
+      btn('', 'ed-dup', { icon: 'copy', sm: true, title: 'Duplicate trigger', arg: i }) + btn('', 'ed-del', { icon: 'trash', sm: true, kind: 'danger', title: 'Delete trigger', arg: P.tp(i) }); };
+    P.warnList = (i) => { const tw = P.trigWarns(i); return tw.length ? '<ul class="nh-warn-list">' + tw.map((w) => '<li>' + I('warn') + esc(w.m) + '</li>').join('') + '</ul>' : ''; };
+    P.sentence = (i) => '<p class="nh-sentence" data-region="sent-' + i + '">' + esc(describeTrigger(a, a.triggers[i])) + '</p>';
+    P.details = () => '<div class="nh-form"><div class="nh-field"><label>Device</label><div>' + esc(a.friendlyname) + ' <code class="nh-muted">' + esc(a.id) + '</code></div></div>' +
+      '<div class="nh-field"><label for="ed-desc">Description</label><input id="ed-desc" class="nh-input" data-path="description" data-kind="str" data-focus-key="desc" value="' + esc(a.description) + '"></div>' +
+      '<div class="nh-field is-row"><label>Enabled</label>' + toggle(a.enabled, 'ed-enabled', '', { label: 'Enabled' }) + '</div></div>';
+    P.schedule = () => {
+      const sch = a.schedules, en = sch.find((s) => s.type === 'enable'), di = sch.find((s) => s.type === 'disable');
+      const pct = (hm) => { const p = hm.split(':'); return ((+p[0] * 60 + +p[1]) / 1440) * 100; };
+      let band = '';
+      if (en && di) { const s = pct(en.startAt), e = pct(di.startAt); band = s < e ? '<span class="nh-tl-on" style="left:' + s + '%;width:' + (e - s) + '%"></span>' : '<span class="nh-tl-on" style="left:0;width:' + e + '%"></span><span class="nh-tl-on" style="left:' + s + '%;width:' + (100 - s) + '%"></span>'; }
+      const nowP = ((new Date().getHours() * 60 + new Date().getMinutes()) / 1440) * 100;
+      return '<div class="nh-timeline" aria-label="24 hour schedule">' + band + sch.map((s) => '<span class="nh-tl-mark is-' + s.type + '" style="left:' + pct(s.startAt) + '%" title="' + s.type + ' at ' + s.startAt + '"></span>').join('') + '<span class="nh-tl-now" style="left:' + nowP + '%" title="now"></span></div><div class="nh-axis-row"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div>' +
+        ['enable', 'disable'].map((ty) => { const s = sch.find((x) => x.type === ty); return '<div class="nh-sched-row"><span class="nh-sched-t is-' + ty + '">' + (ty === 'enable' ? 'Enable at' : 'Disable at') + '</span>' + (s ? '<input type="time" class="nh-input" data-sched="' + ty + '" value="' + s.startAt + '" aria-label="' + ty + ' time">' + btn('', 'ed-sched-del', { icon: 'close', sm: true, title: 'Remove', arg: ty }) : btn('Add', 'ed-sched-add', { icon: 'plus', sm: true, arg: ty })) + '</div>'; }).join('') +
+        '<p class="nh-help">Hub timezone: ' + esc(Intl.DateTimeFormat().resolvedOptions().timeZone) + '</p>';
+    };
+    P.checks = () => '<div data-region="checks">' + checksHtml(v) + '</div>';
+    P.savebar = () => '<div class="nh-savebar" data-region="savebar">' + savebarHtml(v) + '</div>';
+    P.json = () => (S.jsonOpen ? '<section class="nh-card nh-json-card"><div class="nh-card-head"><h2 class="nh-card-title">' + I('code') + 'saveAutomation payload</h2><span class="nh-card-meta">read-only · exact shape sent over WS</span></div><pre class="nh-json" data-region="json">' + esc(JSON.stringify(a, null, 2)) + '</pre></section>' : '');
+    P.back = () => '<a class="nh-back" href="#/automations">' + I('chevronL') + 'Automations</a>';
+    return P;
+  }
+  function editorHtml() {
+    const P = edParts(), a = P.a, d = P.d;
     const trig = a.triggers.map((t, i) => {
-      const tp = 'triggers.' + i, col = S.collapsed[i], tw = v.warns.filter((w) => w.p.indexOf(tp) === 0), te = v.errs.filter((e) => e.p.indexOf(tp) === 0);
-      const conds = t.conditions.map((c, j) => {
-        const cp = tp + '.conditions.' + j;
-        const tools = '<span class="nh-reorder">' + btn('', 'ed-move', { icon: 'up', sm: true, title: 'Move up', arg: cp + '|-1', disabled: j === 0 }) + btn('', 'ed-move', { icon: 'down', sm: true, title: 'Move down', arg: cp + '|1', disabled: j === t.conditions.length - 1 }) + btn('', 'ed-del', { icon: 'trash', sm: true, kind: 'danger', title: 'Remove condition', arg: cp }) + '</span>';
-        if (c.type === 'time') return '<div class="nh-cond"><span class="nh-cond-kind">' + I('clock') + 'Time</span><span class="nh-inline"><span>between</span><input type="time" class="nh-input" data-path="' + cp + '.timeRange.startAt" data-kind="str" data-focus-key="' + cp + 's" value="' + esc(c.timeRange.startAt) + '"' + inv(cp + '.timeRange.startAt') + ' aria-label="From"><span>and</span><input type="time" class="nh-input" data-path="' + cp + '.timeRange.endAt" data-kind="str" data-focus-key="' + cp + 'e" value="' + esc(c.timeRange.endAt) + '"' + inv(cp + '.timeRange.endAt') + ' aria-label="To">' + (c.timeRange.startAt > c.timeRange.endAt && c.timeRange.endAt ? chip('overnight', 'info', 'moon') : '') + '</span>' + tools + err(cp + '.timeRange.startAt') + err(cp + '.timeRange.endAt') + '</div>';
-        const e = d && d.exposes[c.name], ops = !e || e.type === 'numeric' ? ['=', '<', '<=', '>', '>='] : ['='];
-        return '<div class="nh-cond"><span class="nh-cond-kind">' + I(c.name ? meta(c.name).icon : 'filter') + 'Value</span><span class="nh-inline">' +
-          sel(srcEx.map((x) => ({ v: x.name, t: meta(x.name).label + '  (now ' + fmt(x) + ')' })), c.name, 'data-path="' + cp + '.name" data-kind="str" data-reset="' + cp + '.value"' + inv(cp + '.name') + ' aria-label="Expose"', 'Expose…') +
-          sel(ops.map((o) => ({ v: o, t: o })), c.equality, 'data-path="' + cp + '.equality" data-kind="str" aria-label="Operator" class="is-op"') + valueInput(d, c.name, c.value, cp + '.value') + '</span>' + tools + err(cp + '.name') + err(cp + '.value') + '</div>';
-      }).join('');
-      const acts = t.actions.map((x, k) => {
-        const ap = tp + '.actions.' + k, td = dev(x.id);
-        const typeSel = seg([{ v: 'trigger', t: 'Set' }, { v: 'step', t: 'Step' }, { v: 'preset', t: 'Cycle' }], x.type, 'ed-act-type', 'Action type').replace(/data-arg="/g, 'data-path="' + ap + '" data-arg="');
-        const filt = x.type === 'step' ? (e) => e.type === 'numeric' && isWritable(e) && e.category === 'measurement' : x.type === 'preset' ? isPreset : (e) => isWritable(e) && e.category !== 'config';
-        const opts = td ? Object.values(td.exposes).filter(filt).map((e) => ({ v: e.name, t: meta(e.name).label })) : [];
-        let body = '';
-        if (x.type === 'trigger') {
-          body = x.exposes.map((r2, n) => { const rp = ap + '.exposes.' + n; return '<div class="nh-set-row"><span class="nh-inline">' + sel(opts, r2.name, 'data-path="' + rp + '.name" data-kind="str" data-reset="' + rp + '.data"' + inv(rp + '.name') + ' aria-label="Expose"', 'Expose…') + '<span>=</span>' + valueInput(td, r2.name, r2.data, rp + '.data') + btn('', 'ed-del', { icon: 'close', sm: true, title: 'Remove value', arg: rp }) + '</span>' + err(rp + '.name') + err(rp + '.data') + '</div>'; }).join('') + err(ap + '.exposes') +
-            '<div class="nh-inline nh-act-opts">' + btn('Add value', 'ed-add-row', { icon: 'plus', sm: true, arg: ap, disabled: !x.id }) +
-            (x.exposes.length > 1 ? '<span class="nh-muted">Publish</span>' + seg([{ v: 'batch', t: 'Together' }, { v: 'single', t: 'One by one' }], x.publishMode || 'batch', 'ed-publish', 'Publish mode').replace(/data-arg="/g, 'data-path="' + ap + '.publishMode" data-arg="') : '') +
-            '<label class="nh-check"><input type="checkbox" data-act-check="ed-delay" data-path="' + ap + '"' + (x.delay && x.delay.value ? ' checked' : '') + '> Wait first</label>' +
-            (x.delay && x.delay.value ? '<input class="nh-input is-num" type="number" min="1" data-path="' + ap + '.delay.value" data-kind="num" data-focus-key="' + ap + 'dv" value="' + x.delay.value + '" aria-label="Delay">' + sel([{ v: 'seconds', t: 'seconds' }, { v: 'minutes', t: 'minutes' }, { v: 'hours', t: 'hours' }], x.delay.unit, 'data-path="' + ap + '.delay.unit" data-kind="str" aria-label="Delay unit"') : '') + '</div>';
-        } else if (x.type === 'step') {
-          body = '<div class="nh-inline">' + sel(opts, x.property, 'data-path="' + ap + '.property" data-kind="str" data-sync-steps="1"' + inv(ap + '.property') + ' aria-label="Numeric expose"', 'Numeric expose…') +
-            seg([{ v: '+', t: '+' }, { v: '-', t: '−' }, { v: '*', t: '×' }], (x.steps[0] && x.steps[0].operator) || '+', 'ed-step-op', 'Operator').replace(/data-arg="/g, 'data-path="' + ap + '" data-arg="') +
-            '<input class="nh-input is-num" type="number" data-path="' + ap + '.data" data-kind="num" data-focus-key="' + ap + 'd" value="' + esc(x.data == null ? '' : x.data) + '"' + inv(ap + '.data') + ' aria-label="Amount"></div>' + err(ap + '.property') + err(ap + '.data');
-        } else {
-          const pe = td && td.exposes[x.property];
-          body = '<div class="nh-inline">' + sel(opts, x.property, 'data-path="' + ap + '.property" data-kind="str"' + inv(ap + '.property') + ' aria-label="Preset expose"', 'Expose with presets…') + (pe && pe.values ? '<span class="nh-muted">cycles</span>' + Object.keys(pe.values).map((k2) => chip(titleCase(k2), 'muted')).join('<span class="nh-arrow">→</span>') : '') + '</div>' + err(ap + '.property');
-        }
-        return '<div class="nh-act"><div class="nh-act-head"><span class="nh-act-n">' + (k + 1) + '</span>' + typeSel +
-          sel(devOpts(x.type === 'preset' ? S.devices.filter((z) => Object.values(z.exposes).some(isPreset)) : writableDevs), x.id, 'data-path="' + ap + '.id" data-kind="str" data-reset-act="1"' + inv(ap + '.id') + ' aria-label="Target device"', 'Target device…') +
-          '<span class="nh-reorder">' + btn('', 'ed-move', { icon: 'up', sm: true, title: 'Move up', arg: ap + '|-1', disabled: k === 0 }) + btn('', 'ed-move', { icon: 'down', sm: true, title: 'Move down', arg: ap + '|1', disabled: k === t.actions.length - 1 }) + btn('', 'ed-del', { icon: 'trash', sm: true, kind: 'danger', title: 'Remove action', arg: ap }) + '</span></div>' + err(ap + '.id') + '<div class="nh-act-body">' + body + '</div></div>';
-      }).join('');
+      const col = S.collapsed[i], te = P.trigErrs(i);
       return '<section class="nh-trig' + (col ? ' is-collapsed' : '') + (te.length ? ' has-err' : '') + '" aria-label="Trigger ' + (i + 1) + '"><div class="nh-trig-head"><button type="button" class="nh-trig-toggle" data-act="ed-collapse" data-arg="' + i + '" aria-expanded="' + !col + '">' + I(col ? 'chevronR' : 'chevronD') + '<b>Trigger ' + (i + 1) + '</b></button>' +
-        '<p class="nh-sentence" data-region="sent-' + i + '">' + esc(describeTrigger(a, t)) + '</p><span class="nh-trig-tools">' +
-        (te.length ? chip(te.length + ' to fix', 'danger', 'error') : chip('Valid', 'ok', 'check')) +
-        (canManual(t) ? btn(S.running[a.id + i] ? 'Running…' : 'Run', 'ed-run', { icon: 'play', sm: true, arg: i, disabled: S.running[a.id + i] || S.conn !== 'connected', title: 'Run this trigger now (POST /api/automation/trigger)' }) : '') +
-        btn('', 'ed-dup', { icon: 'copy', sm: true, title: 'Duplicate trigger', arg: i }) + btn('', 'ed-del', { icon: 'trash', sm: true, kind: 'danger', title: 'Delete trigger', arg: tp }) + '</span></div>' +
+        P.sentence(i) + '<span class="nh-trig-tools">' + P.trigTools(i) + '</span></div>' +
         (col ? '' : '<div class="nh-flow">' +
-          '<div class="nh-block is-when"><div class="nh-block-label"><span>When</span></div><div class="nh-block-body"><div class="nh-inline">' + seg([{ v: 'deviceTrigger', t: 'Device changes' }, { v: 'manualTrigger', t: 'Manual only' }], t.type, 'ed-trig-type', 'Trigger type').replace(/data-arg="/g, 'data-path="' + tp + '.type" data-arg="') + '</div>' +
-          '<div class="nh-inline"><span class="nh-src">' + I(d ? devIcon(d) : 'devices') + esc(d ? d.friendly_name : a.friendlyname) + '</span>' + sel(srcEx.map((x) => ({ v: x.name, t: meta(x.name).label + '  (now ' + fmt(x) + ')' })), t.name, 'data-path="' + tp + '.name" data-kind="str"' + inv(tp + '.name') + ' aria-label="Source expose"', 'Which expose?') + '<span class="nh-muted">changes</span></div>' + err(tp + '.name') + '</div></div>' +
-          '<div class="nh-block is-if"><div class="nh-block-label"><span>If</span></div><div class="nh-block-body">' + (conds || '<p class="nh-muted">No conditions — always continue.</p>') + '<div class="nh-inline">' + btn('Value condition', 'ed-add-cond', { icon: 'plus', sm: true, arg: tp + '|expose' }) + btn('Time window', 'ed-add-cond', { icon: 'clock', sm: true, arg: tp + '|time' }) + '</div></div></div>' +
-          '<div class="nh-block is-then"><div class="nh-block-label"><span>Then</span></div><div class="nh-block-body">' + acts + err(tp + '.actions') + '<div class="nh-inline">' + btn('Add action', 'ed-add-act', { icon: 'plus', sm: true, arg: tp }) + (t.actions.length > 1 ? '<span class="nh-muted">Actions run in order.</span>' : '') + '</div></div></div></div>') +
-        (tw.length ? '<ul class="nh-warn-list">' + tw.map((w) => '<li>' + I('warn') + esc(w.m) + '</li>').join('') + '</ul>' : '') + '</section>';
+          '<div class="nh-block is-when"><div class="nh-block-label"><span>When</span></div><div class="nh-block-body">' + P.whenBody(i) + '</div></div>' +
+          '<div class="nh-block is-if"><div class="nh-block-label"><span>If</span></div><div class="nh-block-body">' + (t.conditions.map((c, j) => P.condRow(i, j)).join('') || '<p class="nh-muted">No conditions — always continue.</p>') + P.condAdd(i) + '</div></div>' +
+          '<div class="nh-block is-then"><div class="nh-block-label"><span>Then</span></div><div class="nh-block-body">' + t.actions.map((x, k) => P.actRow(i, k)).join('') + P.err(P.tp(i) + '.actions') + P.actAdd(i) + '</div></div></div>') +
+        P.warnList(i) + '</section>';
     }).join('');
-    const sch = a.schedules, en = sch.find((s) => s.type === 'enable'), di = sch.find((s) => s.type === 'disable');
-    const pct = (hm) => { const p = hm.split(':'); return ((+p[0] * 60 + +p[1]) / 1440) * 100; };
-    let band = '';
-    if (en && di) { const s = pct(en.startAt), e = pct(di.startAt); band = s < e ? '<span class="nh-tl-on" style="left:' + s + '%;width:' + (e - s) + '%"></span>' : '<span class="nh-tl-on" style="left:0;width:' + e + '%"></span><span class="nh-tl-on" style="left:' + s + '%;width:' + (100 - s) + '%"></span>'; }
-    const nowP = ((new Date().getHours() * 60 + new Date().getMinutes()) / 1440) * 100;
     return '<div class="nh-editor"><div class="nh-editor-main">' +
-      '<div class="nh-page-head"><div><a class="nh-back" href="#/automations">' + I('chevronL') + 'Automations</a><h1 class="nh-h1">' + esc(a.friendlyname) + '</h1><p class="nh-sub">Source device · ' + (d ? protoChip(d) : '') + ' ' + esc(a.triggers.length + ' trigger' + (a.triggers.length === 1 ? '' : 's')) + '</p></div></div>' +
+      '<div class="nh-page-head"><div>' + P.back() + '<h1 class="nh-h1">' + esc(a.friendlyname) + '</h1><p class="nh-sub">Source device · ' + (d ? protoChip(d) : '') + ' ' + esc(a.triggers.length + ' trigger' + (a.triggers.length === 1 ? '' : 's')) + '</p></div></div>' +
       (trig || empty('automation', 'No triggers', 'Add a trigger to decide what this device reacts to.')) +
       '<button type="button" class="nh-add-trig" data-act="ed-add-trig">' + I('plus') + '<span>Add trigger</span></button></div>' +
       '<aside class="nh-editor-side">' +
-      '<section class="nh-card"><div class="nh-card-head"><h2 class="nh-card-title">Details</h2></div><div class="nh-card-body nh-form">' +
-      '<div class="nh-field"><label>Device</label><div>' + esc(a.friendlyname) + ' <code class="nh-muted">' + esc(a.id) + '</code></div></div>' +
-      '<div class="nh-field"><label for="ed-desc">Description</label><input id="ed-desc" class="nh-input" data-path="description" data-kind="str" data-focus-key="desc" value="' + esc(a.description) + '"></div>' +
-      '<div class="nh-field is-row"><label>Enabled</label>' + toggle(a.enabled, 'ed-enabled', '', { label: 'Enabled' }) + '</div></div></section>' +
-      '<section class="nh-card"><div class="nh-card-head"><h2 class="nh-card-title">' + I('calendar') + 'Schedule</h2></div><div class="nh-card-body">' +
-      '<div class="nh-timeline" aria-label="24 hour schedule">' + band + sch.map((s) => '<span class="nh-tl-mark is-' + s.type + '" style="left:' + pct(s.startAt) + '%" title="' + s.type + ' at ' + s.startAt + '"></span>').join('') + '<span class="nh-tl-now" style="left:' + nowP + '%" title="now"></span></div><div class="nh-axis-row"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div>' +
-      ['enable', 'disable'].map((ty) => { const s = sch.find((x) => x.type === ty); return '<div class="nh-sched-row"><span class="nh-sched-t is-' + ty + '">' + (ty === 'enable' ? 'Enable at' : 'Disable at') + '</span>' + (s ? '<input type="time" class="nh-input" data-sched="' + ty + '" value="' + s.startAt + '" aria-label="' + ty + ' time">' + btn('', 'ed-sched-del', { icon: 'close', sm: true, title: 'Remove', arg: ty }) : btn('Add', 'ed-sched-add', { icon: 'plus', sm: true, arg: ty })) + '</div>'; }).join('') +
-      '<p class="nh-help">Hub timezone: ' + esc(Intl.DateTimeFormat().resolvedOptions().timeZone) + '</p></div></section>' +
-      '<section class="nh-card"><div class="nh-card-head"><h2 class="nh-card-title">' + I('check') + 'Checks</h2></div><div class="nh-card-body" data-region="checks">' + checksHtml(v) + '</div></section></aside>' +
-      '<div class="nh-savebar" data-region="savebar">' + savebarHtml(v) + '</div>' +
-      (S.jsonOpen ? '<section class="nh-card nh-json-card"><div class="nh-card-head"><h2 class="nh-card-title">' + I('code') + 'saveAutomation payload</h2><span class="nh-card-meta">read-only · exact shape sent over WS</span></div><pre class="nh-json" data-region="json">' + esc(JSON.stringify(a, null, 2)) + '</pre></section>' : '') + '</div>';
+      '<section class="nh-card"><div class="nh-card-head"><h2 class="nh-card-title">Details</h2></div><div class="nh-card-body">' + P.details() + '</div></section>' +
+      '<section class="nh-card"><div class="nh-card-head"><h2 class="nh-card-title">' + I('calendar') + 'Schedule</h2></div><div class="nh-card-body">' + P.schedule() + '</div></section>' +
+      '<section class="nh-card"><div class="nh-card-head"><h2 class="nh-card-title">' + I('check') + 'Checks</h2></div><div class="nh-card-body">' + P.checks() + '</div></section></aside>' +
+      P.savebar() + P.json() + '</div>';
   }
   const checksHtml = (v) => (v.errs.length ? '<p class="nh-err-sum">' + I('error') + v.errs.length + ' issue' + (v.errs.length > 1 ? 's' : '') + ' to fix before saving</p>' : '<p class="nh-ok-sum">' + I('check') + 'Ready to save</p>') + (v.warns.length ? '<p class="nh-warn-sum">' + I('warn') + v.warns.length + ' warning' + (v.warns.length > 1 ? 's' : '') + '</p>' : '');
   const savebarHtml = (v) => '<span class="nh-dirty">' + (dirty() ? I('edit') + 'Unsaved changes' : I('check') + 'All changes saved') + '</span>' + btn(S.jsonOpen ? 'Hide JSON' : 'View JSON', 'ed-json', { icon: 'code', kind: 'ghost' }) + btn('Discard', 'ed-discard', { disabled: !dirty() }) + btn(v.errs.length ? 'Fix ' + v.errs.length + ' to save' : 'Save', 'ed-save', { kind: 'primary', icon: 'check', disabled: !dirty() || v.errs.length > 0 });
@@ -1725,7 +1971,7 @@ window.NH_DESIGN_FOR = function (id, extra) {
     const selS = fk && document.activeElement.selectionStart, cont = $('.nh-content'), sc = cont ? cont.scrollTop : 0;
     const app = $('#app');
     if (!S.authed || r.name === 'login') app.innerHTML = V.login() + '<div class="nh-toast-host" aria-live="polite">' + S.toasts.map(toastHtml).join('') + '</div>';
-    else app.innerHTML = shell((V[r.name] || V.overview)(r));
+    else app.innerHTML = shellFn((V[r.name] || V.overview)(r));
     const c2 = $('.nh-content'); if (c2) c2.scrollTop = sc;
     if (fk) { const el = $('[data-focus-key="' + fk + '"]'); if (el) { el.focus(); try { if (selS != null && el.setSelectionRange) el.setSelectionRange(selS, selS); } catch (e) { /* type=number */ } } }
   }
@@ -1826,6 +2072,27 @@ window.NH_DESIGN_FOR = function (id, extra) {
     setTimeout(() => { S.typing = false; c.messages.push({ role: 'assistant', content: 'Three devices report weak Zigbee links (< 50 LQI): Attic room temperature sensor (14), Attic room power socket (36) and Attic smoke alarm (40). Bedroom radiator valve is offline (last 8 LQI). Adding a mains-powered router in the attic would likely help.' }); render(); const m = $('[data-region="msgs"]'); if (m) m.scrollTop = m.scrollHeight; }, 1400);
   }
 
+
+  /* ------------------------------------------------------------------ design layouts
+     A design may replace the shell, any view and add actions (designs/<id>.js). */
+  let shellFn = shell;
+  const overlays = () => customiser() + '<div class="nh-toast-host" aria-live="polite">' + S.toasts.map(toastHtml).join('') + '</div>' + dialogHtml();
+  const connText = () => (S.conn === 'connected' ? 'Connected' : S.conn === 'connecting' ? 'Reconnecting… (attempt ' + S.attempt + '/10)' : 'Disconnected');
+  const banners = () => '<div class="nh-banners">' + (S.conn !== 'connected' ? '<div class="nh-banner is-' + (S.conn === 'connecting' ? 'warn' : 'danger') + '" role="status">' + I(S.conn === 'connecting' ? 'refresh' : 'offline') + '<span><b>' + esc(connText()) + '.</b> Live values may be stale and device controls are disabled until the hub reconnects.</span>' + (S.conn === 'disconnected' ? btn('Reconnect', 'conn-reconnect', { sm: true }) : '') + '</div>' : '') +
+    (S.permit ? '<div class="nh-banner is-info" role="status">' + I('join') + '<span><b>Permit join is open</b> for Zigbee devices — <span data-permit>' + fmtTimer(S.permit) + '</span> remaining.</span>' + btn('Stop', 'permit-stop', { sm: true }) + '</div>' : '') + '</div>';
+  const connBtn = () => '<button type="button" class="nh-conn is-' + S.conn + '" data-act="conn-cycle" title="Hub connection (click to simulate)"><span class="nh-dot"></span><span class="nh-conn-txt">' + esc(connText()) + '</span></button>';
+  const roomsOf = () => { const G = S.cfg.hub.dashboardGroups; return Object.keys(G).map((g) => { const items = []; const ids = []; Object.values(G[g].deviceGroup).forEach((dg) => { ids.push(dg.deviceId); dg.exposes.forEach((x) => items.push([dg.deviceId, x])); }); return { name: g, items, ids }; }); };
+  if (typeof window.NH_LAYOUT === 'function') {
+    const ctx = { S, DATA, DESIGN, NAV, I, esc, clone, $, $$, btn, chip, toggle, seg, sel, empty, pageHead, statusChip, protoChip, signalChip, powerChip, devIcon, meta, fmt, fmtRaw, titleCase,
+      timeAgo, clock, tile, tileState, shortName, dcard, exposeRow, lineChart, binaryChart, spark, series, feedHtml, describeTrigger, condText, actText, validate, dirty: () => dirty(), autoStatus, canManual,
+      edParts, editorHtml, V: Object.assign({}, V), DV, A, route, go, dev, devCfg, isOnline, isDisabled, lqiOf, battOf, canControl, capability, protocol, PROTOCOLS, viewTitle, customiser, appearanceForm,
+      overlays, banners, connBtn, connText, fmtTimer, pkey, isWritable, isPreset, stateExposeOf, getP, setP, toast, openDialog, sendCommand, roomsOf, render: () => render(), defaultShell: shell };
+    const L = window.NH_LAYOUT(ctx) || {};
+    if (L.shell) shellFn = L.shell;
+    Object.assign(V, L.views || {});
+    Object.assign(A, L.actions || {});
+    if (L.live) L.live.forEach((x) => LIVE.indexOf(x) < 0 && LIVE.push(x));
+  }
   document.addEventListener('click', (ev) => {
     const el = ev.target.closest('[data-act]'); if (!el || el.disabled) return;
     const fn = A[el.dataset.act]; if (!fn) return;

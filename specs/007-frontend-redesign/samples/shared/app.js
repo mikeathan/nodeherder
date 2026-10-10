@@ -553,7 +553,8 @@
     return editorHtml();
   };
   const dirty = () => S.draft && JSON.stringify(S.draft) !== JSON.stringify(S.original);
-  function editorHtml() {
+  // Editor building blocks shared by every design's editor layout (same data-path contract).
+  function edParts() {
     const a = S.draft, d = dev(a.id), v = validate(a), E = {};
     v.errs.forEach((e) => (E[e.p] = e.m));
     const err = (p) => (E[p] ? '<span class="nh-err" id="err-' + p.replace(/\./g, '-') + '">' + I('error') + esc(E[p]) + '</span>' : '');
@@ -561,6 +562,7 @@
     const srcEx = d ? Object.values(d.exposes).filter((e) => e.category !== 'config') : [];
     const writableDevs = S.devices.filter((x) => Object.values(x.exposes).some((e) => isWritable(e) && e.category !== 'config'));
     const devOpts = (list) => list.map((x) => ({ v: x.id, t: x.friendly_name + (isOnline(x) ? '' : ' (offline)') }));
+    const withPath = (html, p) => html.replace(/data-arg="/g, 'data-path="' + p + '" data-arg="');
     function valueInput(dv, exName, val, path) {
       const e = dv && dv.exposes[exName], attrs = 'data-path="' + path + '" data-focus-key="' + path + '"' + inv(path);
       if (!e) return '<input class="nh-input" disabled placeholder="value" ' + attrs + '>';
@@ -571,74 +573,92 @@
       if (e.type === 'numeric') return '<span class="nh-unit-input"><input class="nh-input is-num" type="number" data-kind="num" ' + attrs + ' value="' + esc(val == null ? '' : val) + '"' + (e.attributes ? ' min="' + e.attributes.value_min + '" max="' + e.attributes.value_max + '"' : '') + ' aria-label="Value">' + (e.unit ? '<em>' + esc(e.unit) + '</em>' : '') + '</span>';
       return '<input class="nh-input" data-kind="str" ' + attrs + ' value="' + esc(val == null ? '' : val) + '" aria-label="Value">';
     }
+    const P = { a, d, v, E, err, inv, srcEx, valueInput, withPath };
+    P.tp = (i) => 'triggers.' + i;
+    P.trigType = (i) => withPath(seg([{ v: 'deviceTrigger', t: 'Device changes' }, { v: 'manualTrigger', t: 'Manual only' }], a.triggers[i].type, 'ed-trig-type', 'Trigger type'), P.tp(i) + '.type');
+    P.srcSelect = (i) => sel(srcEx.map((x) => ({ v: x.name, t: meta(x.name).label + '  (now ' + fmt(x) + ')' })), a.triggers[i].name, 'data-path="' + P.tp(i) + '.name" data-kind="str"' + inv(P.tp(i) + '.name') + ' aria-label="Source expose"', 'Which expose?');
+    P.srcChip = () => '<span class="nh-src">' + I(d ? devIcon(d) : 'devices') + esc(d ? d.friendly_name : a.friendlyname) + '</span>';
+    P.whenBody = (i) => '<div class="nh-inline">' + P.trigType(i) + '</div><div class="nh-inline">' + P.srcChip() + P.srcSelect(i) + '<span class="nh-muted">changes</span></div>' + err(P.tp(i) + '.name');
+    P.condTools = (i, j) => { const cp = P.tp(i) + '.conditions.' + j, n = a.triggers[i].conditions.length; return '<span class="nh-reorder">' + btn('', 'ed-move', { icon: 'up', sm: true, title: 'Move up', arg: cp + '|-1', disabled: j === 0 }) + btn('', 'ed-move', { icon: 'down', sm: true, title: 'Move down', arg: cp + '|1', disabled: j === n - 1 }) + btn('', 'ed-del', { icon: 'trash', sm: true, kind: 'danger', title: 'Remove condition', arg: cp }) + '</span>'; };
+    P.condFields = (i, j) => {
+      const c = a.triggers[i].conditions[j], cp = P.tp(i) + '.conditions.' + j;
+      if (c.type === 'time') return '<span class="nh-inline"><span>between</span><input type="time" class="nh-input" data-path="' + cp + '.timeRange.startAt" data-kind="str" data-focus-key="' + cp + 's" value="' + esc(c.timeRange.startAt) + '"' + inv(cp + '.timeRange.startAt') + ' aria-label="From"><span>and</span><input type="time" class="nh-input" data-path="' + cp + '.timeRange.endAt" data-kind="str" data-focus-key="' + cp + 'e" value="' + esc(c.timeRange.endAt) + '"' + inv(cp + '.timeRange.endAt') + ' aria-label="To">' + (c.timeRange.startAt > c.timeRange.endAt && c.timeRange.endAt ? chip('overnight', 'info', 'moon') : '') + '</span>' + err(cp + '.timeRange.startAt') + err(cp + '.timeRange.endAt');
+      const e = d && d.exposes[c.name], ops = !e || e.type === 'numeric' ? ['=', '<', '<=', '>', '>='] : ['='];
+      return '<span class="nh-inline">' + sel(srcEx.map((x) => ({ v: x.name, t: meta(x.name).label + '  (now ' + fmt(x) + ')' })), c.name, 'data-path="' + cp + '.name" data-kind="str" data-reset="' + cp + '.value"' + inv(cp + '.name') + ' aria-label="Expose"', 'Expose…') +
+        sel(ops.map((o) => ({ v: o, t: o })), c.equality, 'data-path="' + cp + '.equality" data-kind="str" aria-label="Operator" class="is-op"') + valueInput(d, c.name, c.value, cp + '.value') + '</span>' + err(cp + '.name') + err(cp + '.value');
+    };
+    P.condKind = (c) => '<span class="nh-cond-kind">' + I(c.type === 'time' ? 'clock' : c.name ? meta(c.name).icon : 'filter') + (c.type === 'time' ? 'Time' : 'Value') + '</span>';
+    P.condRow = (i, j) => { const f = P.condFields(i, j), k = f.indexOf('<span class="nh-err"'); return '<div class="nh-cond">' + P.condKind(a.triggers[i].conditions[j]) + (k < 0 ? f + P.condTools(i, j) : f.slice(0, k) + P.condTools(i, j) + f.slice(k)) + '</div>'; };
+    P.condAdd = (i) => '<div class="nh-inline">' + btn('Value condition', 'ed-add-cond', { icon: 'plus', sm: true, arg: P.tp(i) + '|expose' }) + btn('Time window', 'ed-add-cond', { icon: 'clock', sm: true, arg: P.tp(i) + '|time' }) + '</div>';
+    P.actType = (i, k) => withPath(seg([{ v: 'trigger', t: 'Set' }, { v: 'step', t: 'Step' }, { v: 'preset', t: 'Cycle' }], a.triggers[i].actions[k].type, 'ed-act-type', 'Action type'), P.tp(i) + '.actions.' + k);
+    P.actTarget = (i, k) => { const x = a.triggers[i].actions[k], ap = P.tp(i) + '.actions.' + k; return sel(devOpts(x.type === 'preset' ? S.devices.filter((z) => Object.values(z.exposes).some(isPreset)) : writableDevs), x.id, 'data-path="' + ap + '.id" data-kind="str" data-reset-act="1"' + inv(ap + '.id') + ' aria-label="Target device"', 'Target device…'); };
+    P.actTools = (i, k) => { const ap = P.tp(i) + '.actions.' + k, n = a.triggers[i].actions.length; return '<span class="nh-reorder">' + btn('', 'ed-move', { icon: 'up', sm: true, title: 'Move up', arg: ap + '|-1', disabled: k === 0 }) + btn('', 'ed-move', { icon: 'down', sm: true, title: 'Move down', arg: ap + '|1', disabled: k === n - 1 }) + btn('', 'ed-del', { icon: 'trash', sm: true, kind: 'danger', title: 'Remove action', arg: ap }) + '</span>'; };
+    P.actBody = (i, k) => {
+      const x = a.triggers[i].actions[k], ap = P.tp(i) + '.actions.' + k, td = dev(x.id);
+      const filt = x.type === 'step' ? (e) => e.type === 'numeric' && isWritable(e) && e.category === 'measurement' : x.type === 'preset' ? isPreset : (e) => isWritable(e) && e.category !== 'config';
+      const opts = td ? Object.values(td.exposes).filter(filt).map((e) => ({ v: e.name, t: meta(e.name).label })) : [];
+      if (x.type === 'trigger') {
+        return x.exposes.map((r2, n) => { const rp = ap + '.exposes.' + n; return '<div class="nh-set-row"><span class="nh-inline">' + sel(opts, r2.name, 'data-path="' + rp + '.name" data-kind="str" data-reset="' + rp + '.data"' + inv(rp + '.name') + ' aria-label="Expose"', 'Expose…') + '<span>=</span>' + valueInput(td, r2.name, r2.data, rp + '.data') + btn('', 'ed-del', { icon: 'close', sm: true, title: 'Remove value', arg: rp }) + '</span>' + err(rp + '.name') + err(rp + '.data') + '</div>'; }).join('') + err(ap + '.exposes') +
+          '<div class="nh-inline nh-act-opts">' + btn('Add value', 'ed-add-row', { icon: 'plus', sm: true, arg: ap, disabled: !x.id }) +
+          (x.exposes.length > 1 ? '<span class="nh-muted">Publish</span>' + withPath(seg([{ v: 'batch', t: 'Together' }, { v: 'single', t: 'One by one' }], x.publishMode || 'batch', 'ed-publish', 'Publish mode'), ap + '.publishMode') : '') +
+          '<label class="nh-check"><input type="checkbox" data-act-check="ed-delay" data-path="' + ap + '"' + (x.delay && x.delay.value ? ' checked' : '') + '> Wait first</label>' +
+          (x.delay && x.delay.value ? '<input class="nh-input is-num" type="number" min="1" data-path="' + ap + '.delay.value" data-kind="num" data-focus-key="' + ap + 'dv" value="' + x.delay.value + '" aria-label="Delay">' + sel([{ v: 'seconds', t: 'seconds' }, { v: 'minutes', t: 'minutes' }, { v: 'hours', t: 'hours' }], x.delay.unit, 'data-path="' + ap + '.delay.unit" data-kind="str" aria-label="Delay unit"') : '') + '</div>';
+      }
+      if (x.type === 'step') return '<div class="nh-inline">' + sel(opts, x.property, 'data-path="' + ap + '.property" data-kind="str" data-sync-steps="1"' + inv(ap + '.property') + ' aria-label="Numeric expose"', 'Numeric expose…') +
+        withPath(seg([{ v: '+', t: '+' }, { v: '-', t: '−' }, { v: '*', t: '×' }], (x.steps[0] && x.steps[0].operator) || '+', 'ed-step-op', 'Operator'), ap) +
+        '<input class="nh-input is-num" type="number" data-path="' + ap + '.data" data-kind="num" data-focus-key="' + ap + 'd" value="' + esc(x.data == null ? '' : x.data) + '"' + inv(ap + '.data') + ' aria-label="Amount"></div>' + err(ap + '.property') + err(ap + '.data');
+      const pe = td && td.exposes[x.property];
+      return '<div class="nh-inline">' + sel(opts, x.property, 'data-path="' + ap + '.property" data-kind="str"' + inv(ap + '.property') + ' aria-label="Preset expose"', 'Expose with presets…') + (pe && pe.values ? '<span class="nh-muted">cycles</span>' + Object.keys(pe.values).map((k2) => chip(titleCase(k2), 'muted')).join('<span class="nh-arrow">→</span>') : '') + '</div>' + err(ap + '.property');
+    };
+    P.actRow = (i, k) => '<div class="nh-act"><div class="nh-act-head"><span class="nh-act-n">' + (k + 1) + '</span>' + P.actType(i, k) + P.actTarget(i, k) + P.actTools(i, k) + '</div>' + err(P.tp(i) + '.actions.' + k + '.id') + '<div class="nh-act-body">' + P.actBody(i, k) + '</div></div>';
+    P.actAdd = (i) => '<div class="nh-inline">' + btn('Add action', 'ed-add-act', { icon: 'plus', sm: true, arg: P.tp(i) }) + (a.triggers[i].actions.length > 1 ? '<span class="nh-muted">Actions run in order.</span>' : '') + '</div>';
+    P.trigErrs = (i) => v.errs.filter((e) => e.p.indexOf(P.tp(i)) === 0 && (e.p.length === P.tp(i).length || e.p[P.tp(i).length] === '.'));
+    P.trigWarns = (i) => v.warns.filter((w) => w.p.indexOf(P.tp(i)) === 0 && (w.p.length === P.tp(i).length || w.p[P.tp(i).length] === '.'));
+    P.trigTools = (i) => { const t = a.triggers[i], te = P.trigErrs(i); return (te.length ? chip(te.length + ' to fix', 'danger', 'error') : chip('Valid', 'ok', 'check')) +
+      (canManual(t) ? btn(S.running[a.id + i] ? 'Running…' : 'Run', 'ed-run', { icon: 'play', sm: true, arg: i, disabled: S.running[a.id + i] || S.conn !== 'connected', title: 'Run this trigger now (POST /api/automation/trigger)' }) : '') +
+      btn('', 'ed-dup', { icon: 'copy', sm: true, title: 'Duplicate trigger', arg: i }) + btn('', 'ed-del', { icon: 'trash', sm: true, kind: 'danger', title: 'Delete trigger', arg: P.tp(i) }); };
+    P.warnList = (i) => { const tw = P.trigWarns(i); return tw.length ? '<ul class="nh-warn-list">' + tw.map((w) => '<li>' + I('warn') + esc(w.m) + '</li>').join('') + '</ul>' : ''; };
+    P.sentence = (i) => '<p class="nh-sentence" data-region="sent-' + i + '">' + esc(describeTrigger(a, a.triggers[i])) + '</p>';
+    P.details = () => '<div class="nh-form"><div class="nh-field"><label>Device</label><div>' + esc(a.friendlyname) + ' <code class="nh-muted">' + esc(a.id) + '</code></div></div>' +
+      '<div class="nh-field"><label for="ed-desc">Description</label><input id="ed-desc" class="nh-input" data-path="description" data-kind="str" data-focus-key="desc" value="' + esc(a.description) + '"></div>' +
+      '<div class="nh-field is-row"><label>Enabled</label>' + toggle(a.enabled, 'ed-enabled', '', { label: 'Enabled' }) + '</div></div>';
+    P.schedule = () => {
+      const sch = a.schedules, en = sch.find((s) => s.type === 'enable'), di = sch.find((s) => s.type === 'disable');
+      const pct = (hm) => { const p = hm.split(':'); return ((+p[0] * 60 + +p[1]) / 1440) * 100; };
+      let band = '';
+      if (en && di) { const s = pct(en.startAt), e = pct(di.startAt); band = s < e ? '<span class="nh-tl-on" style="left:' + s + '%;width:' + (e - s) + '%"></span>' : '<span class="nh-tl-on" style="left:0;width:' + e + '%"></span><span class="nh-tl-on" style="left:' + s + '%;width:' + (100 - s) + '%"></span>'; }
+      const nowP = ((new Date().getHours() * 60 + new Date().getMinutes()) / 1440) * 100;
+      return '<div class="nh-timeline" aria-label="24 hour schedule">' + band + sch.map((s) => '<span class="nh-tl-mark is-' + s.type + '" style="left:' + pct(s.startAt) + '%" title="' + s.type + ' at ' + s.startAt + '"></span>').join('') + '<span class="nh-tl-now" style="left:' + nowP + '%" title="now"></span></div><div class="nh-axis-row"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div>' +
+        ['enable', 'disable'].map((ty) => { const s = sch.find((x) => x.type === ty); return '<div class="nh-sched-row"><span class="nh-sched-t is-' + ty + '">' + (ty === 'enable' ? 'Enable at' : 'Disable at') + '</span>' + (s ? '<input type="time" class="nh-input" data-sched="' + ty + '" value="' + s.startAt + '" aria-label="' + ty + ' time">' + btn('', 'ed-sched-del', { icon: 'close', sm: true, title: 'Remove', arg: ty }) : btn('Add', 'ed-sched-add', { icon: 'plus', sm: true, arg: ty })) + '</div>'; }).join('') +
+        '<p class="nh-help">Hub timezone: ' + esc(Intl.DateTimeFormat().resolvedOptions().timeZone) + '</p>';
+    };
+    P.checks = () => '<div data-region="checks">' + checksHtml(v) + '</div>';
+    P.savebar = () => '<div class="nh-savebar" data-region="savebar">' + savebarHtml(v) + '</div>';
+    P.json = () => (S.jsonOpen ? '<section class="nh-card nh-json-card"><div class="nh-card-head"><h2 class="nh-card-title">' + I('code') + 'saveAutomation payload</h2><span class="nh-card-meta">read-only · exact shape sent over WS</span></div><pre class="nh-json" data-region="json">' + esc(JSON.stringify(a, null, 2)) + '</pre></section>' : '');
+    P.back = () => '<a class="nh-back" href="#/automations">' + I('chevronL') + 'Automations</a>';
+    return P;
+  }
+  function editorHtml() {
+    const P = edParts(), a = P.a, d = P.d;
     const trig = a.triggers.map((t, i) => {
-      const tp = 'triggers.' + i, col = S.collapsed[i], tw = v.warns.filter((w) => w.p.indexOf(tp) === 0), te = v.errs.filter((e) => e.p.indexOf(tp) === 0);
-      const conds = t.conditions.map((c, j) => {
-        const cp = tp + '.conditions.' + j;
-        const tools = '<span class="nh-reorder">' + btn('', 'ed-move', { icon: 'up', sm: true, title: 'Move up', arg: cp + '|-1', disabled: j === 0 }) + btn('', 'ed-move', { icon: 'down', sm: true, title: 'Move down', arg: cp + '|1', disabled: j === t.conditions.length - 1 }) + btn('', 'ed-del', { icon: 'trash', sm: true, kind: 'danger', title: 'Remove condition', arg: cp }) + '</span>';
-        if (c.type === 'time') return '<div class="nh-cond"><span class="nh-cond-kind">' + I('clock') + 'Time</span><span class="nh-inline"><span>between</span><input type="time" class="nh-input" data-path="' + cp + '.timeRange.startAt" data-kind="str" data-focus-key="' + cp + 's" value="' + esc(c.timeRange.startAt) + '"' + inv(cp + '.timeRange.startAt') + ' aria-label="From"><span>and</span><input type="time" class="nh-input" data-path="' + cp + '.timeRange.endAt" data-kind="str" data-focus-key="' + cp + 'e" value="' + esc(c.timeRange.endAt) + '"' + inv(cp + '.timeRange.endAt') + ' aria-label="To">' + (c.timeRange.startAt > c.timeRange.endAt && c.timeRange.endAt ? chip('overnight', 'info', 'moon') : '') + '</span>' + tools + err(cp + '.timeRange.startAt') + err(cp + '.timeRange.endAt') + '</div>';
-        const e = d && d.exposes[c.name], ops = !e || e.type === 'numeric' ? ['=', '<', '<=', '>', '>='] : ['='];
-        return '<div class="nh-cond"><span class="nh-cond-kind">' + I(c.name ? meta(c.name).icon : 'filter') + 'Value</span><span class="nh-inline">' +
-          sel(srcEx.map((x) => ({ v: x.name, t: meta(x.name).label + '  (now ' + fmt(x) + ')' })), c.name, 'data-path="' + cp + '.name" data-kind="str" data-reset="' + cp + '.value"' + inv(cp + '.name') + ' aria-label="Expose"', 'Expose…') +
-          sel(ops.map((o) => ({ v: o, t: o })), c.equality, 'data-path="' + cp + '.equality" data-kind="str" aria-label="Operator" class="is-op"') + valueInput(d, c.name, c.value, cp + '.value') + '</span>' + tools + err(cp + '.name') + err(cp + '.value') + '</div>';
-      }).join('');
-      const acts = t.actions.map((x, k) => {
-        const ap = tp + '.actions.' + k, td = dev(x.id);
-        const typeSel = seg([{ v: 'trigger', t: 'Set' }, { v: 'step', t: 'Step' }, { v: 'preset', t: 'Cycle' }], x.type, 'ed-act-type', 'Action type').replace(/data-arg="/g, 'data-path="' + ap + '" data-arg="');
-        const filt = x.type === 'step' ? (e) => e.type === 'numeric' && isWritable(e) && e.category === 'measurement' : x.type === 'preset' ? isPreset : (e) => isWritable(e) && e.category !== 'config';
-        const opts = td ? Object.values(td.exposes).filter(filt).map((e) => ({ v: e.name, t: meta(e.name).label })) : [];
-        let body = '';
-        if (x.type === 'trigger') {
-          body = x.exposes.map((r2, n) => { const rp = ap + '.exposes.' + n; return '<div class="nh-set-row"><span class="nh-inline">' + sel(opts, r2.name, 'data-path="' + rp + '.name" data-kind="str" data-reset="' + rp + '.data"' + inv(rp + '.name') + ' aria-label="Expose"', 'Expose…') + '<span>=</span>' + valueInput(td, r2.name, r2.data, rp + '.data') + btn('', 'ed-del', { icon: 'close', sm: true, title: 'Remove value', arg: rp }) + '</span>' + err(rp + '.name') + err(rp + '.data') + '</div>'; }).join('') + err(ap + '.exposes') +
-            '<div class="nh-inline nh-act-opts">' + btn('Add value', 'ed-add-row', { icon: 'plus', sm: true, arg: ap, disabled: !x.id }) +
-            (x.exposes.length > 1 ? '<span class="nh-muted">Publish</span>' + seg([{ v: 'batch', t: 'Together' }, { v: 'single', t: 'One by one' }], x.publishMode || 'batch', 'ed-publish', 'Publish mode').replace(/data-arg="/g, 'data-path="' + ap + '.publishMode" data-arg="') : '') +
-            '<label class="nh-check"><input type="checkbox" data-act-check="ed-delay" data-path="' + ap + '"' + (x.delay && x.delay.value ? ' checked' : '') + '> Wait first</label>' +
-            (x.delay && x.delay.value ? '<input class="nh-input is-num" type="number" min="1" data-path="' + ap + '.delay.value" data-kind="num" data-focus-key="' + ap + 'dv" value="' + x.delay.value + '" aria-label="Delay">' + sel([{ v: 'seconds', t: 'seconds' }, { v: 'minutes', t: 'minutes' }, { v: 'hours', t: 'hours' }], x.delay.unit, 'data-path="' + ap + '.delay.unit" data-kind="str" aria-label="Delay unit"') : '') + '</div>';
-        } else if (x.type === 'step') {
-          body = '<div class="nh-inline">' + sel(opts, x.property, 'data-path="' + ap + '.property" data-kind="str" data-sync-steps="1"' + inv(ap + '.property') + ' aria-label="Numeric expose"', 'Numeric expose…') +
-            seg([{ v: '+', t: '+' }, { v: '-', t: '−' }, { v: '*', t: '×' }], (x.steps[0] && x.steps[0].operator) || '+', 'ed-step-op', 'Operator').replace(/data-arg="/g, 'data-path="' + ap + '" data-arg="') +
-            '<input class="nh-input is-num" type="number" data-path="' + ap + '.data" data-kind="num" data-focus-key="' + ap + 'd" value="' + esc(x.data == null ? '' : x.data) + '"' + inv(ap + '.data') + ' aria-label="Amount"></div>' + err(ap + '.property') + err(ap + '.data');
-        } else {
-          const pe = td && td.exposes[x.property];
-          body = '<div class="nh-inline">' + sel(opts, x.property, 'data-path="' + ap + '.property" data-kind="str"' + inv(ap + '.property') + ' aria-label="Preset expose"', 'Expose with presets…') + (pe && pe.values ? '<span class="nh-muted">cycles</span>' + Object.keys(pe.values).map((k2) => chip(titleCase(k2), 'muted')).join('<span class="nh-arrow">→</span>') : '') + '</div>' + err(ap + '.property');
-        }
-        return '<div class="nh-act"><div class="nh-act-head"><span class="nh-act-n">' + (k + 1) + '</span>' + typeSel +
-          sel(devOpts(x.type === 'preset' ? S.devices.filter((z) => Object.values(z.exposes).some(isPreset)) : writableDevs), x.id, 'data-path="' + ap + '.id" data-kind="str" data-reset-act="1"' + inv(ap + '.id') + ' aria-label="Target device"', 'Target device…') +
-          '<span class="nh-reorder">' + btn('', 'ed-move', { icon: 'up', sm: true, title: 'Move up', arg: ap + '|-1', disabled: k === 0 }) + btn('', 'ed-move', { icon: 'down', sm: true, title: 'Move down', arg: ap + '|1', disabled: k === t.actions.length - 1 }) + btn('', 'ed-del', { icon: 'trash', sm: true, kind: 'danger', title: 'Remove action', arg: ap }) + '</span></div>' + err(ap + '.id') + '<div class="nh-act-body">' + body + '</div></div>';
-      }).join('');
+      const col = S.collapsed[i], te = P.trigErrs(i);
       return '<section class="nh-trig' + (col ? ' is-collapsed' : '') + (te.length ? ' has-err' : '') + '" aria-label="Trigger ' + (i + 1) + '"><div class="nh-trig-head"><button type="button" class="nh-trig-toggle" data-act="ed-collapse" data-arg="' + i + '" aria-expanded="' + !col + '">' + I(col ? 'chevronR' : 'chevronD') + '<b>Trigger ' + (i + 1) + '</b></button>' +
-        '<p class="nh-sentence" data-region="sent-' + i + '">' + esc(describeTrigger(a, t)) + '</p><span class="nh-trig-tools">' +
-        (te.length ? chip(te.length + ' to fix', 'danger', 'error') : chip('Valid', 'ok', 'check')) +
-        (canManual(t) ? btn(S.running[a.id + i] ? 'Running…' : 'Run', 'ed-run', { icon: 'play', sm: true, arg: i, disabled: S.running[a.id + i] || S.conn !== 'connected', title: 'Run this trigger now (POST /api/automation/trigger)' }) : '') +
-        btn('', 'ed-dup', { icon: 'copy', sm: true, title: 'Duplicate trigger', arg: i }) + btn('', 'ed-del', { icon: 'trash', sm: true, kind: 'danger', title: 'Delete trigger', arg: tp }) + '</span></div>' +
+        P.sentence(i) + '<span class="nh-trig-tools">' + P.trigTools(i) + '</span></div>' +
         (col ? '' : '<div class="nh-flow">' +
-          '<div class="nh-block is-when"><div class="nh-block-label"><span>When</span></div><div class="nh-block-body"><div class="nh-inline">' + seg([{ v: 'deviceTrigger', t: 'Device changes' }, { v: 'manualTrigger', t: 'Manual only' }], t.type, 'ed-trig-type', 'Trigger type').replace(/data-arg="/g, 'data-path="' + tp + '.type" data-arg="') + '</div>' +
-          '<div class="nh-inline"><span class="nh-src">' + I(d ? devIcon(d) : 'devices') + esc(d ? d.friendly_name : a.friendlyname) + '</span>' + sel(srcEx.map((x) => ({ v: x.name, t: meta(x.name).label + '  (now ' + fmt(x) + ')' })), t.name, 'data-path="' + tp + '.name" data-kind="str"' + inv(tp + '.name') + ' aria-label="Source expose"', 'Which expose?') + '<span class="nh-muted">changes</span></div>' + err(tp + '.name') + '</div></div>' +
-          '<div class="nh-block is-if"><div class="nh-block-label"><span>If</span></div><div class="nh-block-body">' + (conds || '<p class="nh-muted">No conditions — always continue.</p>') + '<div class="nh-inline">' + btn('Value condition', 'ed-add-cond', { icon: 'plus', sm: true, arg: tp + '|expose' }) + btn('Time window', 'ed-add-cond', { icon: 'clock', sm: true, arg: tp + '|time' }) + '</div></div></div>' +
-          '<div class="nh-block is-then"><div class="nh-block-label"><span>Then</span></div><div class="nh-block-body">' + acts + err(tp + '.actions') + '<div class="nh-inline">' + btn('Add action', 'ed-add-act', { icon: 'plus', sm: true, arg: tp }) + (t.actions.length > 1 ? '<span class="nh-muted">Actions run in order.</span>' : '') + '</div></div></div></div>') +
-        (tw.length ? '<ul class="nh-warn-list">' + tw.map((w) => '<li>' + I('warn') + esc(w.m) + '</li>').join('') + '</ul>' : '') + '</section>';
+          '<div class="nh-block is-when"><div class="nh-block-label"><span>When</span></div><div class="nh-block-body">' + P.whenBody(i) + '</div></div>' +
+          '<div class="nh-block is-if"><div class="nh-block-label"><span>If</span></div><div class="nh-block-body">' + (t.conditions.map((c, j) => P.condRow(i, j)).join('') || '<p class="nh-muted">No conditions — always continue.</p>') + P.condAdd(i) + '</div></div>' +
+          '<div class="nh-block is-then"><div class="nh-block-label"><span>Then</span></div><div class="nh-block-body">' + t.actions.map((x, k) => P.actRow(i, k)).join('') + P.err(P.tp(i) + '.actions') + P.actAdd(i) + '</div></div></div>') +
+        P.warnList(i) + '</section>';
     }).join('');
-    const sch = a.schedules, en = sch.find((s) => s.type === 'enable'), di = sch.find((s) => s.type === 'disable');
-    const pct = (hm) => { const p = hm.split(':'); return ((+p[0] * 60 + +p[1]) / 1440) * 100; };
-    let band = '';
-    if (en && di) { const s = pct(en.startAt), e = pct(di.startAt); band = s < e ? '<span class="nh-tl-on" style="left:' + s + '%;width:' + (e - s) + '%"></span>' : '<span class="nh-tl-on" style="left:0;width:' + e + '%"></span><span class="nh-tl-on" style="left:' + s + '%;width:' + (100 - s) + '%"></span>'; }
-    const nowP = ((new Date().getHours() * 60 + new Date().getMinutes()) / 1440) * 100;
     return '<div class="nh-editor"><div class="nh-editor-main">' +
-      '<div class="nh-page-head"><div><a class="nh-back" href="#/automations">' + I('chevronL') + 'Automations</a><h1 class="nh-h1">' + esc(a.friendlyname) + '</h1><p class="nh-sub">Source device · ' + (d ? protoChip(d) : '') + ' ' + esc(a.triggers.length + ' trigger' + (a.triggers.length === 1 ? '' : 's')) + '</p></div></div>' +
+      '<div class="nh-page-head"><div>' + P.back() + '<h1 class="nh-h1">' + esc(a.friendlyname) + '</h1><p class="nh-sub">Source device · ' + (d ? protoChip(d) : '') + ' ' + esc(a.triggers.length + ' trigger' + (a.triggers.length === 1 ? '' : 's')) + '</p></div></div>' +
       (trig || empty('automation', 'No triggers', 'Add a trigger to decide what this device reacts to.')) +
       '<button type="button" class="nh-add-trig" data-act="ed-add-trig">' + I('plus') + '<span>Add trigger</span></button></div>' +
       '<aside class="nh-editor-side">' +
-      '<section class="nh-card"><div class="nh-card-head"><h2 class="nh-card-title">Details</h2></div><div class="nh-card-body nh-form">' +
-      '<div class="nh-field"><label>Device</label><div>' + esc(a.friendlyname) + ' <code class="nh-muted">' + esc(a.id) + '</code></div></div>' +
-      '<div class="nh-field"><label for="ed-desc">Description</label><input id="ed-desc" class="nh-input" data-path="description" data-kind="str" data-focus-key="desc" value="' + esc(a.description) + '"></div>' +
-      '<div class="nh-field is-row"><label>Enabled</label>' + toggle(a.enabled, 'ed-enabled', '', { label: 'Enabled' }) + '</div></div></section>' +
-      '<section class="nh-card"><div class="nh-card-head"><h2 class="nh-card-title">' + I('calendar') + 'Schedule</h2></div><div class="nh-card-body">' +
-      '<div class="nh-timeline" aria-label="24 hour schedule">' + band + sch.map((s) => '<span class="nh-tl-mark is-' + s.type + '" style="left:' + pct(s.startAt) + '%" title="' + s.type + ' at ' + s.startAt + '"></span>').join('') + '<span class="nh-tl-now" style="left:' + nowP + '%" title="now"></span></div><div class="nh-axis-row"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div>' +
-      ['enable', 'disable'].map((ty) => { const s = sch.find((x) => x.type === ty); return '<div class="nh-sched-row"><span class="nh-sched-t is-' + ty + '">' + (ty === 'enable' ? 'Enable at' : 'Disable at') + '</span>' + (s ? '<input type="time" class="nh-input" data-sched="' + ty + '" value="' + s.startAt + '" aria-label="' + ty + ' time">' + btn('', 'ed-sched-del', { icon: 'close', sm: true, title: 'Remove', arg: ty }) : btn('Add', 'ed-sched-add', { icon: 'plus', sm: true, arg: ty })) + '</div>'; }).join('') +
-      '<p class="nh-help">Hub timezone: ' + esc(Intl.DateTimeFormat().resolvedOptions().timeZone) + '</p></div></section>' +
-      '<section class="nh-card"><div class="nh-card-head"><h2 class="nh-card-title">' + I('check') + 'Checks</h2></div><div class="nh-card-body" data-region="checks">' + checksHtml(v) + '</div></section></aside>' +
-      '<div class="nh-savebar" data-region="savebar">' + savebarHtml(v) + '</div>' +
-      (S.jsonOpen ? '<section class="nh-card nh-json-card"><div class="nh-card-head"><h2 class="nh-card-title">' + I('code') + 'saveAutomation payload</h2><span class="nh-card-meta">read-only · exact shape sent over WS</span></div><pre class="nh-json" data-region="json">' + esc(JSON.stringify(a, null, 2)) + '</pre></section>' : '') + '</div>';
+      '<section class="nh-card"><div class="nh-card-head"><h2 class="nh-card-title">Details</h2></div><div class="nh-card-body">' + P.details() + '</div></section>' +
+      '<section class="nh-card"><div class="nh-card-head"><h2 class="nh-card-title">' + I('calendar') + 'Schedule</h2></div><div class="nh-card-body">' + P.schedule() + '</div></section>' +
+      '<section class="nh-card"><div class="nh-card-head"><h2 class="nh-card-title">' + I('check') + 'Checks</h2></div><div class="nh-card-body">' + P.checks() + '</div></section></aside>' +
+      P.savebar() + P.json() + '</div>';
   }
   const checksHtml = (v) => (v.errs.length ? '<p class="nh-err-sum">' + I('error') + v.errs.length + ' issue' + (v.errs.length > 1 ? 's' : '') + ' to fix before saving</p>' : '<p class="nh-ok-sum">' + I('check') + 'Ready to save</p>') + (v.warns.length ? '<p class="nh-warn-sum">' + I('warn') + v.warns.length + ' warning' + (v.warns.length > 1 ? 's' : '') + '</p>' : '');
   const savebarHtml = (v) => '<span class="nh-dirty">' + (dirty() ? I('edit') + 'Unsaved changes' : I('check') + 'All changes saved') + '</span>' + btn(S.jsonOpen ? 'Hide JSON' : 'View JSON', 'ed-json', { icon: 'code', kind: 'ghost' }) + btn('Discard', 'ed-discard', { disabled: !dirty() }) + btn(v.errs.length ? 'Fix ' + v.errs.length + ' to save' : 'Save', 'ed-save', { kind: 'primary', icon: 'check', disabled: !dirty() || v.errs.length > 0 });
@@ -776,7 +796,7 @@
     const selS = fk && document.activeElement.selectionStart, cont = $('.nh-content'), sc = cont ? cont.scrollTop : 0;
     const app = $('#app');
     if (!S.authed || r.name === 'login') app.innerHTML = V.login() + '<div class="nh-toast-host" aria-live="polite">' + S.toasts.map(toastHtml).join('') + '</div>';
-    else app.innerHTML = shell((V[r.name] || V.overview)(r));
+    else app.innerHTML = shellFn((V[r.name] || V.overview)(r));
     const c2 = $('.nh-content'); if (c2) c2.scrollTop = sc;
     if (fk) { const el = $('[data-focus-key="' + fk + '"]'); if (el) { el.focus(); try { if (selS != null && el.setSelectionRange) el.setSelectionRange(selS, selS); } catch (e) { /* type=number */ } } }
   }
@@ -877,6 +897,27 @@
     setTimeout(() => { S.typing = false; c.messages.push({ role: 'assistant', content: 'Three devices report weak Zigbee links (< 50 LQI): Attic room temperature sensor (14), Attic room power socket (36) and Attic smoke alarm (40). Bedroom radiator valve is offline (last 8 LQI). Adding a mains-powered router in the attic would likely help.' }); render(); const m = $('[data-region="msgs"]'); if (m) m.scrollTop = m.scrollHeight; }, 1400);
   }
 
+
+  /* ------------------------------------------------------------------ design layouts
+     A design may replace the shell, any view and add actions (designs/<id>.js). */
+  let shellFn = shell;
+  const overlays = () => customiser() + '<div class="nh-toast-host" aria-live="polite">' + S.toasts.map(toastHtml).join('') + '</div>' + dialogHtml();
+  const connText = () => (S.conn === 'connected' ? 'Connected' : S.conn === 'connecting' ? 'Reconnecting… (attempt ' + S.attempt + '/10)' : 'Disconnected');
+  const banners = () => '<div class="nh-banners">' + (S.conn !== 'connected' ? '<div class="nh-banner is-' + (S.conn === 'connecting' ? 'warn' : 'danger') + '" role="status">' + I(S.conn === 'connecting' ? 'refresh' : 'offline') + '<span><b>' + esc(connText()) + '.</b> Live values may be stale and device controls are disabled until the hub reconnects.</span>' + (S.conn === 'disconnected' ? btn('Reconnect', 'conn-reconnect', { sm: true }) : '') + '</div>' : '') +
+    (S.permit ? '<div class="nh-banner is-info" role="status">' + I('join') + '<span><b>Permit join is open</b> for Zigbee devices — <span data-permit>' + fmtTimer(S.permit) + '</span> remaining.</span>' + btn('Stop', 'permit-stop', { sm: true }) + '</div>' : '') + '</div>';
+  const connBtn = () => '<button type="button" class="nh-conn is-' + S.conn + '" data-act="conn-cycle" title="Hub connection (click to simulate)"><span class="nh-dot"></span><span class="nh-conn-txt">' + esc(connText()) + '</span></button>';
+  const roomsOf = () => { const G = S.cfg.hub.dashboardGroups; return Object.keys(G).map((g) => { const items = []; const ids = []; Object.values(G[g].deviceGroup).forEach((dg) => { ids.push(dg.deviceId); dg.exposes.forEach((x) => items.push([dg.deviceId, x])); }); return { name: g, items, ids }; }); };
+  if (typeof window.NH_LAYOUT === 'function') {
+    const ctx = { S, DATA, DESIGN, NAV, I, esc, clone, $, $$, btn, chip, toggle, seg, sel, empty, pageHead, statusChip, protoChip, signalChip, powerChip, devIcon, meta, fmt, fmtRaw, titleCase,
+      timeAgo, clock, tile, tileState, shortName, dcard, exposeRow, lineChart, binaryChart, spark, series, feedHtml, describeTrigger, condText, actText, validate, dirty: () => dirty(), autoStatus, canManual,
+      edParts, editorHtml, V: Object.assign({}, V), DV, A, route, go, dev, devCfg, isOnline, isDisabled, lqiOf, battOf, canControl, capability, protocol, PROTOCOLS, viewTitle, customiser, appearanceForm,
+      overlays, banners, connBtn, connText, fmtTimer, pkey, isWritable, isPreset, stateExposeOf, getP, setP, toast, openDialog, sendCommand, roomsOf, render: () => render(), defaultShell: shell };
+    const L = window.NH_LAYOUT(ctx) || {};
+    if (L.shell) shellFn = L.shell;
+    Object.assign(V, L.views || {});
+    Object.assign(A, L.actions || {});
+    if (L.live) L.live.forEach((x) => LIVE.indexOf(x) < 0 && LIVE.push(x));
+  }
   document.addEventListener('click', (ev) => {
     const el = ev.target.closest('[data-act]'); if (!el || el.disabled) return;
     const fn = A[el.dataset.act]; if (!fn) return;

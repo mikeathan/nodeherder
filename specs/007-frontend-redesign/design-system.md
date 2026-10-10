@@ -41,13 +41,13 @@ Domain tokens map sensor kinds to roles so icon colours stay consistent across s
 
 | Setting | Values | Effect |
 | --- | --- | --- |
-| `design` | `hearth` `mesh` `phosphor` `studio` `platinum` (+ `legacy` during rollout) | Token set + shell layout |
+| `design` | `hearth` `floorplan` `workbench` `brief` `deck` (+ `legacy` during rollout) | Token set + shell and page layouts |
 | `mode` | `system` `light` `dark` | `data-mode`; system follows `prefers-color-scheme` |
 | `accent` | preset swatch or `#rrggbb` | Generates accent scale; contrast-checked, auto picks `--nh-accent-contrast` |
 | `density` | `compact` `comfortable` `spacious` | `--nh-space` 0.75/1/1.25 and `--nh-tile-h` |
 | `radius` | `0`…`20` px | `--nh-radius-*` |
 | `fontScale` | 90 %…125 % | `--nh-fs-base` |
-| `preset` | per-design named palettes (e.g. Phosphor: amber, green, ice) | Overrides primitives |
+| `preset` | per-design named palettes (e.g. Deck: lagoon, ember, frost) | Overrides primitives |
 | `effects` | on/off | Retro texture (scanlines, pinstripes, grain); forced off for reduced motion/contrast |
 
 Rules: invalid stored values fall back silently to defaults; storage contains no

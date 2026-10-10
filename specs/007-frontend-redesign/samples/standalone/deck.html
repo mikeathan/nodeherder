@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NodeHerder · Platinum design sample</title>
+<title>NodeHerder · Deck design sample</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Pixelify+Sans:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap">
 <style>
 /* NodeHerder samples — structure + components. Skins (../designs/*.css) only set tokens
    and add chrome. Every colour below is a --nh-* token (design-system.md). */
@@ -524,109 +524,161 @@ button.nh-tile-ic:hover:not(:disabled) { box-shadow: 0 0 0 3px var(--nh-accent-s
 
 </style>
 <style>
-/* 5 · Platinum — 90s desktop OS: menu bar, striped title bars, bevels, pinstripes. */
+/* 5 · Deck — wall tablet. Lexend, big numerals, ≥ 64 px targets; lamp amber means light. */
 :root {
-  --nh-font-ui: 'IBM Plex Sans', 'Segoe UI', Tahoma, Geneva, system-ui, sans-serif; --nh-font-display: 'Pixelify Sans', 'IBM Plex Sans', sans-serif;
-  --nh-area-w: 18rem; --nh-shadow-1: none; --nh-shadow-2: 3px 3px 0 rgb(0 0 0 / 0.35);
-  --nh-ok: #1e7a34; --nh-warn: #a86400; --nh-danger: #c0161d; --nh-info: #2a55b8;
-}
-[data-mode='light'] {
-  --nh-bg: #c9c9c9; --nh-surface: #e6e6e6; --nh-surface-2: #d6d6d6; --nh-border: #9a9a9a; --nh-border-strong: #5f5f5f;
-  --nh-text: #111111; --nh-text-muted: #4a4a4a; --nh-accent: #2f5fd0; --nh-accent-contrast: #ffffff;
-  --nh-hi: #ffffff; --nh-lo: #7a7a7a; --nh-title-a: #d8d8d8; --nh-title-b: #a9a9a9; --nh-input-bg: #ffffff; --nh-nav-bg: #eeeeee; --nh-console-bg: #000080; --nh-console-text: #ffffff;
+  --nh-font-ui: 'Lexend', 'Segoe UI', system-ui, sans-serif; --nh-font-display: var(--nh-font-ui);
+  --nh-ok: #5fd39a; --nh-warn: #ffc65c; --nh-danger: #ff7a7a; --nh-info: #6fd3e8;
+  --nh-shadow-1: none; --nh-shadow-2: 0 18px 50px rgb(0 0 0 / 0.35);
+  --nh-kind-light: var(--dk-lamp); --nh-kind-switch: var(--dk-lamp); --nh-kind-temp: var(--dk-climate); --nh-kind-humidity: var(--dk-climate);
 }
 [data-mode='dark'] {
-  --nh-bg: #2a2a2e; --nh-surface: #3a3a40; --nh-surface-2: #313136; --nh-border: #57575f; --nh-border-strong: #8a8a94;
-  --nh-text: #ececf0; --nh-text-muted: #b4b4bc; --nh-accent: #6f9bff; --nh-accent-contrast: #0d1430;
-  --nh-hi: #5c5c66; --nh-lo: #18181b; --nh-title-a: #4a4a52; --nh-title-b: #2f2f35; --nh-input-bg: #26262a; --nh-nav-bg: #3a3a40;
+  --nh-bg: #13252c; --nh-surface: #1b343d; --nh-surface-2: #24444f; --nh-border: #2c505c; --nh-border-strong: #3d6875;
+  --nh-text: #eaf4f4; --nh-text-muted: #9fc0c4; --nh-accent: #6fd3e8; --nh-accent-contrast: #0b1b20; --dk-lamp: #ffb547; --dk-lamp-ink: #2b1a00; --dk-climate: #6fd3e8;
+  --dk-glass: rgb(255 255 255 / 0.04); --nh-console-bg: #0d1b20;
 }
-[data-preset='graphite'][data-mode='light'] { --nh-accent: #5d5d74; --nh-bg: #bdbdc2; }
-[data-preset='graphite'][data-mode='dark'] { --nh-accent: #a7a7c0; }
-[data-preset='bondi'][data-mode='light'] { --nh-accent: #0e7f93; --nh-bg: #b9d9de; --nh-title-a: #cfe9ed; --nh-title-b: #8fc3cc; }
-[data-preset='bondi'][data-mode='dark'] { --nh-accent: #3fc7dc; --nh-accent-contrast: #021619; }
-[data-preset='tangerine'][data-mode='light'] { --nh-accent: #c05a00; --nh-bg: #e3cdb6; --nh-title-a: #f1dfcc; --nh-title-b: #d5b391; }
-[data-preset='tangerine'][data-mode='dark'] { --nh-accent: #ff9d45; --nh-accent-contrast: #1f0e00; }
-/* bevel helpers */
-.nh-btn, .nh-seg, .nh-chip, .nh-toggle, .nh-stat, .nh-tile { box-shadow: inset 1px 1px 0 var(--nh-hi), inset -1px -1px 0 var(--nh-lo); border-color: var(--nh-border-strong); }
-.nh-btn:active:not(:disabled), .nh-seg button[aria-pressed='true'] { box-shadow: inset 1px 1px 0 var(--nh-lo), inset -1px -1px 0 var(--nh-hi); transform: none; }
-.nh-input, .nh-select, .nh-timeline, .nh-console, .nh-json, .nh-feed, .nh-msgs { box-shadow: inset 1px 1px 0 var(--nh-lo), inset -1px -1px 0 var(--nh-hi); }
-.nh-btn { background: var(--nh-surface); font-weight: 500; }
-.nh-btn.is-primary { outline: 1px solid var(--nh-text); outline-offset: 1px; }
-.nh-chip { border-radius: 2px; background: var(--nh-surface); border: 1px solid var(--nh-border); }
-/* menu bar */
-.nh-nav { background: var(--nh-nav-bg); border-bottom: 1px solid var(--nh-border-strong); box-shadow: inset 0 -1px 0 var(--nh-hi); min-height: 2.3rem; font-size: 0.875rem; }
-.nh-brand { font-family: var(--nh-font-display); }
-.nh-brand-logo { width: 1.5rem; height: 1.5rem; border-radius: 3px; }
-.nh-brand-name { font-size: 0.95rem; font-weight: 600; }
-.nh-nav-item { min-height: 2.3rem; padding: 0 0.7rem; }
-.nh-nav-item .nh-nav-ic { display: none; }
-.nh-nav-item:hover, .nh-nav-item.is-active { background: var(--nh-accent); color: var(--nh-accent-contrast); font-weight: 500; }
-/* the main area is one big window */
-.nh-main { margin: 0.8rem; border: 1px solid var(--nh-border-strong); background: var(--nh-surface); box-shadow: var(--nh-shadow-2), inset 1px 1px 0 var(--nh-hi); min-height: 0; }
-.nh-header, .nh-card-head, .nh-dialog-head, .nh-trig-head, .nh-dcard-head, .nh-pop-head { background: repeating-linear-gradient(to bottom, var(--nh-title-a) 0 1px, var(--nh-title-b) 1px 2px); border-bottom: 1px solid var(--nh-border-strong); }
-.nh-header { min-height: 2.2rem; padding: 0 0.6rem; }
-.nh-header-title { flex: 1; justify-content: center; font-family: var(--nh-font-display); font-size: 0.95rem; }
-.nh-header-title > span:last-child { background: var(--nh-surface); padding: 0 0.6rem; }
-.nh-window-dots { display: inline-flex; gap: 0.25rem; order: -1; position: absolute; left: 0.6rem; }
-.nh-header { position: relative; }
-.nh-window-dots i { width: 0.8rem; height: 0.8rem; border: 1px solid var(--nh-border-strong); background: var(--nh-surface); box-shadow: inset 1px 1px 0 var(--nh-hi), inset -1px -1px 0 var(--nh-lo); }
-.nh-dialog-head .nh-window-dots { position: static; }
-.nh-header-actions .nh-btn, .nh-conn { height: 1.7rem; min-height: 1.7rem; }
-.nh-header-actions .nh-btn.is-icon { width: 1.9rem; }
-.nh-conn { border-radius: 2px; background: var(--nh-surface); box-shadow: inset 1px 1px 0 var(--nh-hi), inset -1px -1px 0 var(--nh-lo); }
-.nh-content { background: var(--nh-surface); }
-.nh-card, .nh-dcard, .nh-trig, .nh-chart, .nh-table-wrap, .nh-chat-side, .nh-chat-main, .nh-auto, .nh-dialog, .nh-pop, .nh-login-card { border: 1px solid var(--nh-border-strong); box-shadow: 2px 2px 0 rgb(0 0 0 / 0.25), inset 1px 1px 0 var(--nh-hi); background: var(--nh-surface); }
-.nh-card-head, .nh-dialog-head { padding: 0.3rem 0.6rem; }
-.nh-card-title, .nh-dialog-head h2 { font-family: var(--nh-font-display); font-size: 0.9rem; font-weight: 500; background: var(--nh-surface); padding: 0 0.5rem; margin: 0 auto; }
-.nh-dialog-head h2 { flex: 0 1 auto; }
-.nh-card-title .nh-ic { display: none; }
-.nh-h1 { font-family: var(--nh-font-display); font-weight: 500; font-size: 1.7rem; }
-.nh-tile { background: var(--nh-surface); border-radius: 3px; }
-.nh-tile.is-on { background: color-mix(in srgb, var(--nh-accent) 14%, var(--nh-surface)); }
-.nh-tile-ic { border-radius: 3px; border: 1px solid var(--nh-border); background: var(--nh-input-bg, var(--nh-surface)); }
-.nh-area-head h2 { font-family: var(--nh-font-display); font-weight: 500; }
-.nh-areas .nh-area { background: var(--nh-surface-2); border: 1px solid var(--nh-border-strong); padding: 0.6rem; box-shadow: inset 1px 1px 0 var(--nh-hi), inset -1px -1px 0 var(--nh-lo); }
-.nh-toggle { border-radius: 2px; background: var(--nh-input-bg); }
-.nh-toggle-knob { border-radius: 1px; background: var(--nh-surface); box-shadow: inset 1px 1px 0 var(--nh-hi), inset -1px -1px 0 var(--nh-lo), 0 0 0 1px var(--nh-border-strong); }
-.nh-seg { border-radius: 2px; } .nh-seg button[aria-pressed='true'] { background: var(--nh-accent); color: var(--nh-accent-contrast); }
-.nh-tab { border: 1px solid var(--nh-border-strong); border-bottom: 0; margin-right: 2px; border-radius: 4px 4px 0 0; background: var(--nh-surface-2); color: var(--nh-text); }
-.nh-tab[aria-selected='true'] { background: var(--nh-surface); color: var(--nh-text); border-bottom: 1px solid var(--nh-surface); }
-.nh-block-label span { border-radius: 2px; box-shadow: inset 1px 1px 0 rgb(255 255 255 / 0.35), inset -1px -1px 0 rgb(0 0 0 / 0.35); }
-.nh-act-n { border-radius: 2px; }
-.nh-cond, .nh-act { background: var(--nh-surface-2); border-radius: 2px; }
-.nh-msg-b { border-radius: 4px; border: 1px solid var(--nh-border-strong); background: #ffffe1; color: #111; }
-[data-mode='dark'] .nh-msg-b { background: #3c3c30; color: var(--nh-text); }
-.nh-msg.is-user .nh-msg-b { background: var(--nh-accent); color: var(--nh-accent-contrast); }
-.nh-toast { border-radius: 2px; background: var(--nh-surface); color: var(--nh-text); border: 1px solid var(--nh-border-strong); box-shadow: 3px 3px 0 rgb(0 0 0 / 0.35); }
-.nh-dialog-backdrop { background: rgb(0 0 0 / 0.25); }
-.nh-stat { border-radius: 3px; background: var(--nh-surface); }
-.nh-stat-num { font-family: var(--nh-font-display); font-weight: 500; }
-[data-effects='on'] body { background-image: repeating-linear-gradient(to bottom, rgb(255 255 255 / 0.18) 0 1px, transparent 1px 3px); }
-[data-effects='on'][data-mode='dark'] body { background-image: repeating-linear-gradient(to bottom, rgb(255 255 255 / 0.03) 0 1px, transparent 1px 3px); }
-@media (max-width: 860px) { .nh-main { margin: 0; border: 0; box-shadow: none; } .nh-window-dots { display: none; } }
+[data-mode='light'] {
+  --nh-bg: #e6eef0; --nh-surface: #f7fbfb; --nh-surface-2: #dbe7ea; --nh-border: #c9dadd; --nh-border-strong: #9bb8bd;
+  --nh-text: #13252c; --nh-text-muted: #4b6a70; --nh-accent: #1d6fa3; --nh-accent-contrast: #ffffff; --dk-lamp: #e0901a; --dk-lamp-ink: #2b1a00; --dk-climate: #1d7fa3; --dk-glass: rgb(255 255 255 / 0.6);
+}
+[data-preset='ember'][data-mode='dark'] { --nh-bg: #24170f; --nh-surface: #301f14; --nh-surface-2: #3d281a; --nh-border: #4d3423; --nh-border-strong: #6b4a33; --nh-text: #fbefe5; --nh-text-muted: #d2b6a0; --nh-accent: #ff8a3d; --nh-accent-contrast: #24170f; --dk-lamp: #ffc35c; --dk-climate: #8fd3c4; }
+[data-preset='ember'][data-mode='light'] { --nh-bg: #f4ebe3; --nh-surface: #fffaf5; --nh-accent: #b4521a; }
+[data-preset='frost'][data-mode='dark'] { --nh-bg: #182433; --nh-surface: #1f2f42; --nh-surface-2: #283c53; --nh-accent: #9cc9ff; --dk-climate: #9cc9ff; }
+body { font-weight: 300; }
+b, strong, h1, h2 { font-weight: 500; }
+[data-effects='on'] body { background-image: radial-gradient(60rem 40rem at 10% -10%, color-mix(in srgb, var(--dk-climate) 18%, transparent), transparent 70%), radial-gradient(50rem 40rem at 110% 110%, color-mix(in srgb, var(--dk-lamp) 14%, transparent), transparent 70%); background-attachment: fixed; }
+.dk-app { display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; height: 100dvh; }
+.dk-strip { display: flex; align-items: center; gap: 1rem; padding: 0.8rem 1.5rem; }
+.dk-clock { display: flex; align-items: baseline; gap: 0.8rem; } .dk-clock b { font-size: 2.6rem; font-weight: 300; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; } .dk-clock span { color: var(--nh-text-muted); }
+.dk-out { display: flex; align-items: center; gap: 0.4rem; color: var(--nh-text-muted); padding-left: 1rem; border-left: 1px solid var(--nh-border); } .dk-out b { color: var(--nh-text); }
+.dk-gap { flex: 1; }
+.dk-pill { display: inline-flex; align-items: center; gap: 0.4rem; height: 2.6rem; padding: 0 1rem; border-radius: 99px; border: 1px solid var(--nh-border-strong); background: var(--dk-glass); color: var(--nh-text); font: inherit; cursor: pointer; }
+.dk-pill.is-hot { background: var(--dk-lamp); color: var(--dk-lamp-ink); border-color: transparent; }
+.dk-strip .nh-btn.is-icon { width: 2.6rem; height: 2.6rem; border-radius: 50%; background: var(--dk-glass); }
+.dk-strip .nh-conn { height: 2.6rem; background: var(--dk-glass); }
+.dk-content { overflow: auto; padding: 0.5rem 1.5rem 2rem; outline: none; }
+.dk-dock { display: flex; justify-content: center; gap: 0.3rem; padding: 0.5rem; margin: 0 auto 0.8rem; background: var(--nh-surface); border: 1px solid var(--nh-border); border-radius: 26px; max-width: calc(100vw - 1rem); overflow-x: auto; }
+.dk-dock a { display: flex; flex-direction: column; align-items: center; gap: 0.2rem; min-width: 4.6rem; padding: 0.55rem 0.4rem; border-radius: 18px; text-decoration: none; color: var(--nh-text-muted); font-size: 0.78rem; }
+.dk-dock a .nh-ic { width: 1.6rem; height: 1.6rem; } .dk-dock a:hover { color: var(--nh-text); background: var(--nh-surface-2); }
+.dk-dock a[aria-current='page'] { background: var(--nh-accent); color: var(--nh-accent-contrast); }
+@media (max-width: 760px) { .dk-strip { flex-wrap: wrap; padding: 0.6rem 1rem; } .dk-clock b { font-size: 1.9rem; } .dk-clock span, .dk-out { display: none; } .dk-pill span, .dk-strip .nh-conn-txt { display: none; } .dk-content { padding: 0.5rem 1rem 1rem; } .dk-dock { margin: 0; border-radius: 0; justify-content: flex-start; max-width: none; } .dk-dock a { min-width: 4rem; } .nh-toast-host { bottom: 6rem; } }
+
+/* rooms */
+.dk-pager { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 1.25rem; overflow-x: auto; }
+.dk-pager [role='tab'] { border: 0; background: none; color: var(--nh-text-muted); font: inherit; font-size: 1.25rem; padding: 0.4rem 0.9rem; border-radius: 99px; cursor: pointer; white-space: nowrap; }
+.dk-pager [role='tab'][aria-selected='true'] { color: var(--nh-text); background: var(--nh-surface-2); font-weight: 500; }
+.dk-pager .nh-btn.is-icon { width: 3rem; height: 3rem; border-radius: 50%; flex: none; }
+.dk-room { display: grid; grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+.dk-room.no-climate { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 900px) { .dk-room { grid-template-columns: minmax(0, 1fr); } }
+.dk-climate { background: var(--nh-surface); border: 1px solid var(--nh-border); border-radius: var(--nh-radius-l); padding: 1.25rem; }
+.dk-dial { position: relative; margin: 0; display: grid; place-items: center; }
+.dk-dial svg { width: 100%; max-width: 17rem; }
+.dk-dial circle { fill: none; stroke-width: 12; stroke-linecap: round; }
+.dk-track { stroke: var(--nh-surface-2); } .dk-arc { stroke: var(--nh-kc, var(--nh-accent)); filter: drop-shadow(0 0 8px color-mix(in srgb, var(--nh-kc, var(--nh-accent)) 50%, transparent)); }
+.dk-dial figcaption { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 2rem; }
+.dk-dial figcaption b { font-size: 2.6rem; font-weight: 300; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1.1; } .dk-dial figcaption span { color: var(--nh-text-muted); font-size: 0.95rem; }
+.dk-dial.is-off { padding: 3rem 1rem; gap: 0.4rem; color: var(--nh-text-muted); } .dk-dial.is-off .nh-ic { width: 2.5rem; height: 2.5rem; color: var(--nh-danger); }
+.kind-ok { --nh-kc: var(--nh-ok); } .kind-signal { --nh-kc: var(--nh-accent); } .kind-battery { --nh-kc: var(--dk-lamp); } .kind-switch { --nh-kc: var(--dk-lamp); }
+.dk-buttons { display: grid; grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr)); gap: 1rem; }
+.dk-big { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem; min-height: 9.5rem; padding: 1.1rem; border-radius: var(--nh-radius-l); border: 1px solid var(--nh-border); background: var(--nh-surface); color: var(--nh-text); font: inherit; text-align: left; text-decoration: none; cursor: pointer; transition: background var(--nh-motion), transform 80ms; }
+.dk-big:active { transform: scale(0.98); }
+.dk-big b { font-size: 1.1rem; margin-top: auto; } .dk-big > span:last-child { color: var(--nh-text-muted); }
+.dk-big-ic { position: relative; display: grid; place-items: center; width: 3.6rem; height: 3.6rem; border-radius: 50%; background: var(--nh-surface-2); color: var(--nh-kc, var(--nh-text-muted)); }
+.dk-big-ic > .nh-ic { width: 1.7rem; height: 1.7rem; }
+.dk-ring { position: absolute; inset: -6px; width: calc(100% + 12px); height: calc(100% + 12px); transform: rotate(-90deg); }
+.dk-ring circle { fill: none; stroke: var(--dk-lamp-ink); stroke-width: 6; stroke-linecap: round; opacity: 0.55; }
+.dk-big.is-on { background: var(--dk-lamp); border-color: transparent; color: var(--dk-lamp-ink); box-shadow: 0 10px 40px color-mix(in srgb, var(--dk-lamp) 35%, transparent); }
+.dk-big.is-on > span:last-child { color: var(--dk-lamp-ink); opacity: 0.8; }
+.dk-big.is-on .dk-big-ic { background: rgb(255 255 255 / 0.45); color: var(--dk-lamp-ink); }
+.dk-big.is-pending { animation: nh-pulse 0.8s infinite; }
+.dk-big.is-off { opacity: 0.6; }
+/* status */
+.dk-gauges { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+.dk-gauges .dk-dial { background: var(--nh-surface); border: 1px solid var(--nh-border); border-radius: var(--nh-radius-l); padding: 1rem; }
+.dk-gauges .dk-dial figcaption b { font-size: 2rem; }
+.dk-h2 { font-size: 1.3rem; margin: 0 0 0.75rem; }
+.dk-rows { display: flex; flex-direction: column; gap: 0.5rem; }
+.dk-row { display: flex; align-items: center; gap: 1rem; min-height: 4.2rem; padding: 0.6rem 1.1rem; border-radius: var(--nh-radius-m); background: var(--nh-surface); border: 1px solid var(--nh-border); text-decoration: none; }
+.dk-row > .nh-ic:first-child { width: 1.7rem; height: 1.7rem; color: var(--nh-accent); } .dk-row b { font-size: 1.05rem; } .dk-row span { color: var(--nh-text-muted); flex: 1; text-align: right; }
+.dk-row:hover { background: var(--nh-surface-2); }
+.dk-letter { margin: 1rem 0 0.25rem 0.4rem; font-size: 1.4rem; color: var(--nh-text-muted); font-weight: 300; }
+@media (max-width: 640px) { .dk-row { flex-wrap: wrap; } .dk-row span { flex-basis: 100%; text-align: left; } }
+.dk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: 1rem; }
+.dk-sq { aspect-ratio: 1; display: flex; flex-direction: column; justify-content: flex-end; gap: 0.2rem; padding: 1rem; border-radius: var(--nh-radius-l); background: var(--nh-surface); border: 1px solid var(--nh-border); text-decoration: none; position: relative; }
+.dk-sq > .nh-ic { position: absolute; top: 1rem; left: 1rem; width: 2rem; height: 2rem; color: var(--nh-accent); } .dk-sq b { font-size: 1rem; } .dk-sq span { color: var(--nh-text-muted); font-size: 0.9rem; }
+.dk-sq.is-on { background: var(--dk-lamp); color: var(--dk-lamp-ink); border-color: transparent; } .dk-sq.is-on > .nh-ic, .dk-sq.is-on span { color: var(--dk-lamp-ink); }
+.dk-sq.is-off { opacity: 0.55; } .dk-sq:hover { border-color: var(--nh-accent); }
+/* device panel */
+.dk-dev-head { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.25rem; } .dk-dev-head h1 { font-size: 2rem; font-weight: 400; margin: 0; } .dk-dev-head p { margin: 0; color: var(--nh-text-muted); }
+.dk-dev-head .nh-btn { width: 3rem; height: 3rem; border-radius: 50%; }
+.dk-dev-ctl { display: flex; flex-wrap: wrap; gap: 1.25rem; align-items: stretch; margin-bottom: 2rem; }
+.dk-power { width: 11rem; min-height: 15rem; border-radius: var(--nh-radius-l); border: 1px solid var(--nh-border); background: var(--nh-surface); color: var(--nh-text); font: inherit; font-size: 1.4rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.6rem; cursor: pointer; }
+.dk-power .nh-ic { width: 3.5rem; height: 3.5rem; } .dk-power.is-on { background: var(--dk-lamp); color: var(--dk-lamp-ink); border-color: transparent; box-shadow: 0 10px 40px color-mix(in srgb, var(--dk-lamp) 35%, transparent); }
+.dk-power:disabled { opacity: 0.5; cursor: not-allowed; } .dk-power.is-pending { animation: nh-pulse 0.8s infinite; }
+.dk-vslider { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; width: 8rem; padding: 1rem 0.5rem; border-radius: var(--nh-radius-l); background: var(--nh-surface); border: 1px solid var(--nh-border); color: var(--nh-text-muted); }
+.dk-vslider input { writing-mode: vertical-lr; direction: rtl; height: 10rem; width: 3rem; accent-color: var(--nh-kc, var(--dk-lamp)); }
+.dk-vs-val { font-size: 1.3rem; color: var(--nh-text); font-variant-numeric: tabular-nums; }
+.dk-reads { display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: 1rem; flex: 1; min-width: 16rem; align-content: start; }
+.dk-read { display: flex; flex-direction: column; gap: 0.2rem; padding: 1rem; border-radius: var(--nh-radius-l); background: var(--nh-surface); border: 1px solid var(--nh-border); }
+.dk-read .nh-ic { width: 1.6rem; height: 1.6rem; color: var(--nh-kc, var(--nh-accent)); } .dk-read b { font-size: 1.7rem; font-weight: 300; font-variant-numeric: tabular-nums; } .dk-read span { color: var(--nh-text-muted); font-size: 0.9rem; }
+.dk-dev-more { display: grid; gap: 2rem; } .dk-actions { display: flex; gap: 0.5rem; }
+.dk-content .nh-card, .dk-content .nh-chart { background: var(--nh-surface); border-radius: var(--nh-radius-l); }
+/* rules */
+.dk-rules { display: grid; grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); gap: 1rem; }
+.dk-rule { display: flex; flex-direction: column; border-radius: var(--nh-radius-l); background: var(--nh-surface); border: 1px solid var(--nh-border); overflow: hidden; }
+.dk-rule-main { flex: 1; display: flex; flex-direction: column; gap: 0.4rem; padding: 1.1rem; text-decoration: none; } .dk-rule-main > .nh-ic { width: 2rem; height: 2rem; color: var(--nh-accent); }
+.dk-rule-main b { font-size: 1.15rem; } .dk-rule-main span { color: var(--nh-text-muted); font-size: 0.92rem; }
+.dk-rule-foot { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.1rem; border-top: 1px solid var(--nh-border); } .dk-rule-foot .nh-toggle { margin-left: auto; transform: scale(1.25); transform-origin: right; }
+.dk-rule.is-new { align-items: center; justify-content: center; gap: 0.5rem; min-height: 10rem; border-style: dashed; color: var(--nh-text-muted); font: inherit; cursor: pointer; } .dk-rule.is-new .nh-ic { width: 2rem; height: 2rem; }
+/* node canvas editor */
+.dk-ed-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1rem; } .dk-ed-head h1 { font-size: 1.7rem; font-weight: 400; margin: 0; flex: 1; } .dk-ed-head .nh-back { flex-basis: 100%; margin: 0; }
+.dk-ed-tools { display: flex; align-items: center; gap: 0.5rem; }
+.dk-trigs { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin: 1rem 0 0.5rem; }
+.dk-trigs [role='tab'] { display: inline-flex; gap: 0.3rem; align-items: center; min-height: 2.6rem; padding: 0 1.1rem; border-radius: 99px; border: 1px solid var(--nh-border-strong); background: var(--nh-surface); color: var(--nh-text); font: inherit; cursor: pointer; }
+.dk-trigs [role='tab'][aria-selected='true'] { background: var(--nh-accent); color: var(--nh-accent-contrast); border-color: transparent; }
+.dk-trigs [role='tab'] .nh-ic { color: var(--nh-danger); width: 1rem; }
+.dk-ed .nh-sentence { font-style: normal; font-size: 1.05rem; color: var(--nh-text-muted); margin: 0.25rem 0 1rem; }
+.dk-ed-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.25rem; align-items: start; }
+.dk-ed.has-drawer .dk-ed-body { grid-template-columns: minmax(0, 1fr) minmax(20rem, 28rem); }
+@media (max-width: 1100px) { .dk-ed.has-drawer .dk-ed-body { grid-template-columns: minmax(0, 1fr); } }
+.dk-canvas { display: grid; grid-template-columns: minmax(9rem, 1fr) 60px minmax(10rem, 1.3fr) 60px minmax(11rem, 1.5fr); padding: 1.25rem; border-radius: var(--nh-radius-l); background: var(--nh-surface); border: 1px solid var(--nh-border); overflow-x: auto; background-image: radial-gradient(circle, var(--nh-border) 1px, transparent 1.4px); background-size: 20px 20px; }
+.dk-wirecol { position: relative; } .dk-wires { position: absolute; inset: 0 0 auto 0; width: 100%; } .dk-wires path { fill: none; stroke: var(--nh-border-strong); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.dk-node { display: flex; flex-direction: column; justify-content: center; gap: 0.15rem; padding: 0.6rem 0.9rem; border-radius: 16px; border: 2px solid var(--nh-border-strong); background: var(--nh-bg); color: var(--nh-text); font: inherit; text-align: left; cursor: pointer; overflow: hidden; }
+.dk-node b { font-size: 0.85rem; } .dk-node span { font-size: 0.85rem; color: var(--nh-text-muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.dk-node.is-when { border-color: var(--nh-accent); } .dk-node.is-when b { color: var(--nh-accent); }
+.dk-node.is-if { border-color: var(--dk-climate); } .dk-node.is-then { border-color: var(--dk-lamp); } .dk-node.is-then b { color: var(--dk-lamp); }
+.dk-node.is-sel { box-shadow: 0 0 0 4px color-mix(in srgb, var(--nh-accent) 40%, transparent); }
+.dk-node.has-err { border-color: var(--nh-danger); border-style: dashed; }
+.dk-add, .dk-pass { display: flex; align-items: center; justify-content: center; gap: 0.3rem; border-radius: 16px; border: 2px dashed var(--nh-border); background: none; color: var(--nh-text-muted); font: inherit; cursor: pointer; }
+.dk-pass { cursor: default; border-style: solid; font-style: italic; }
+.dk-drawer { position: sticky; top: 0; display: flex; flex-direction: column; gap: 0.6rem; padding: 1rem; border-radius: var(--nh-radius-l); background: var(--nh-surface); border: 1px solid var(--nh-border-strong); box-shadow: var(--nh-shadow-2); }
+.dk-drawer-head { display: flex; align-items: center; justify-content: space-between; } .dk-drawer-head h2 { font-size: 1.3rem; margin: 0; }
+.dk-ed [data-region='checks'] { margin-top: 1rem; } .dk-ed .nh-savebar { bottom: -1.5rem; margin-top: 0.75rem; }
+.nh-btn { min-height: 2.75rem; } .nh-btn.is-sm { min-height: 2.25rem; }
 
 </style>
 </head>
 <body>
 <div id="app"><p style="padding:2rem;font-family:system-ui">Loading NodeHerder sample… (JavaScript required)</p></div>
 <script>
-/* Registry of the five sample designs (used by the gallery and the in-page design switcher). */
+/* Registry of the sample designs (gallery + in-page design switcher). Round 2: Hearth kept,
+   four structurally different directions added — see ../design-directions.md. */
 window.NH_DESIGNS = [
-  { n: 1, id: 'hearth', name: 'Hearth', file: 'hearth.html', short: 'Lovelace-inspired · warm, rounded, friendly',
-    blurb: 'Home Assistant–style areas and tiles with a soft 70s living-room palette. Sidebar + top bar. Best for wall tablets and family use.',
+  { n: 1, id: 'hearth', name: 'Hearth', file: 'hearth.html', short: 'Areas of soft tiles · sidebar',
+    blurb: 'Home Assistant–style areas and tiles with a warm palette. Sidebar and top bar; When / If / Then flow editor.',
     shell: 'sidebar', defaults: { mode: 'system', accent: 'preset', density: 'comfortable', radius: 14, fontScale: 100, preset: 'daylight', effects: true } },
-  { n: 2, id: 'mesh', name: 'Mesh', file: 'mesh.html', short: 'Zigbee2MQTT-inspired · dense, data-first',
-    blurb: 'Operations console: stat strip, activity feed, dashed device cards, compact tables with LQI/battery chips. Best for power users.',
-    shell: 'sidebar', defaults: { mode: 'dark', accent: 'preset', density: 'compact', radius: 6, fontScale: 100, preset: 'night', effects: true } },
-  { n: 3, id: 'phosphor', name: 'Phosphor', file: 'phosphor.html', short: '80s terminal · monospace, phosphor glow',
-    blurb: 'CRT terminal look with function-key tabs, inverse-video tiles and ASCII framing. Amber, green or ice phosphor; light mode is green-bar paper.',
-    shell: 'tabs', defaults: { mode: 'dark', accent: 'preset', density: 'comfortable', radius: 0, fontScale: 105, preset: 'amber', effects: true } },
-  { n: 4, id: 'studio', name: 'Studio', file: 'studio.html', short: 'Braun/Rams hardware · warm neutrals, orange',
-    blurb: 'Industrial-design calm: hardware rocker switches, inset LCD readouts, rail navigation that becomes a bottom dock on phones.',
-    shell: 'dock', defaults: { mode: 'light', accent: 'preset', density: 'comfortable', radius: 10, fontScale: 100, preset: 'braun', effects: true } },
-  { n: 5, id: 'platinum', name: 'Platinum', file: 'platinum.html', short: '90s desktop OS · bevels, title bars',
-    blurb: 'Classic desktop windows: menu bar navigation, striped title bars, bevelled controls and pinstripe desktop. Nostalgic but crisp.',
-    shell: 'menubar', defaults: { mode: 'light', accent: 'preset', density: 'comfortable', radius: 3, fontScale: 100, preset: 'platinum', effects: true } },
+  { n: 2, id: 'floorplan', name: 'Floorplan', file: 'floorplan.html', short: 'The house plan is the home page',
+    blurb: 'Rooms drawn as a floor plan with switch pins; a room inspector slides in. Faceted device finder, rules as device-to-device diagrams, step-by-step wizard editor.',
+    shell: 'custom', defaults: { mode: 'light', accent: 'preset', density: 'comfortable', radius: 8, fontScale: 100, preset: 'blueprint', effects: true } },
+  { n: 3, id: 'workbench', name: 'Workbench', file: 'workbench.html', short: 'IDE-style explorer, tabs and inspector',
+    blurb: 'For the owner who configures everything: explorer tree, open tabs, property grids with type and access mode, status bar and a live log panel. Outline + inspector + JSON editor.',
+    shell: 'custom', defaults: { mode: 'dark', accent: 'preset', density: 'compact', radius: 4, fontScale: 100, preset: 'graphite', effects: false } },
+  { n: 4, id: 'brief', name: 'Brief', file: 'brief.html', short: 'The house written as sentences · command bar',
+    blurb: 'One calm column. Home reads like a note about the house, with inline switches; Ctrl K finds any device, room or action. Rules are edited as fill-in-the-blanks sentences.',
+    shell: 'custom', defaults: { mode: 'light', accent: 'preset', density: 'comfortable', radius: 10, fontScale: 105, preset: 'paper', effects: false } },
+  { n: 5, id: 'deck', name: 'Deck', file: 'deck.html', short: 'Wall-tablet panel · big dials · room pager',
+    blurb: 'Readable from across the room: clock strip, one room per page, temperature dial and big light buttons, bottom dock. Rules are a node canvas with an inspector drawer.',
+    shell: 'custom', defaults: { mode: 'dark', accent: 'preset', density: 'spacious', radius: 22, fontScale: 100, preset: 'lagoon', effects: true } },
 ];
 window.NH_DESIGN_FOR = function (id, extra) {
   const d = window.NH_DESIGNS.find((x) => x.id === id);
@@ -635,7 +687,7 @@ window.NH_DESIGN_FOR = function (id, extra) {
 
 </script>
 <script>window.NH_DESIGN_FOR_ALL = (id, x) => NH_DESIGN_FOR(id, Object.assign({ defaultRoute: '#/all' }, x));</script>
-<script>window.NH_DESIGN = NH_DESIGN_FOR_ALL('platinum', {"presets": [{"id": "platinum", "name": "Platinum", "swatch": ["#c9c9c9", "#2f5fd0"]}, {"id": "graphite", "name": "Graphite", "swatch": ["#bdbdc2", "#5d5d74"]}, {"id": "bondi", "name": "Bondi", "swatch": ["#b9d9de", "#0e7f93"]}, {"id": "tangerine", "name": "Tangerine", "swatch": ["#e3cdb6", "#c05a00"]}], "accents": ["#2f5fd0", "#0e7f93", "#c05a00", "#7b2fbf", "#1e7a34", "#c0161d"], "effectsLabel": "pinstripes"});</script>
+<script>window.NH_DESIGN = NH_DESIGN_FOR_ALL('deck', {"presets": [{"id": "lagoon", "name": "Lagoon", "swatch": ["#13252c", "#ffb547"]}, {"id": "ember", "name": "Ember", "swatch": ["#24170f", "#ff8a3d"]}, {"id": "frost", "name": "Frost", "swatch": ["#e6eef0", "#1d6fa3"]}], "accents": ["#ffb547", "#6fd3e8", "#ff7a8a", "#9be37a", "#c9a6ff", "#ffffff"], "effectsLabel": "glass + glow"});</script>
 <script>
 /* NodeHerder design samples — stroke icon set (24×24, currentColor). Hand-drawn for the
    samples so they work offline; production would keep @mdi/js via the capability registry. */
@@ -931,6 +983,117 @@ window.NH_DESIGN_FOR = function (id, extra) {
 
   window.NH_DATA = { devices, appConfig, automations, logs, conversations, mcpStatus, version: '0.12.16-dev', user: { name: 'mike', email: 'owner@home.lan' } };
 })();
+
+</script>
+<script>
+/* 5 · Deck — wall-tablet panel: clock strip, one room per page, big dials and buttons, node-canvas editor. */
+window.NH_LAYOUT = function (c) {
+  const { S, I, esc, btn, chip, toggle, empty, dev, meta, fmt, roomsOf, timeAgo, devIcon, isOnline, isDisabled, lqiOf, battOf, protocol, capability, canControl, pkey, stateExposeOf, describeTrigger, autoStatus, canManual, condText, actText, $$ } = c;
+  S.deckRoom = S.deckRoom || 0; S.deckSel = S.deckSel || null; S.deckTrig = S.deckTrig || 0;
+  const DOCK = [['home', 'Rooms', 'home'], ['overview', 'Status', 'gauge'], ['devices', 'Devices', 'devices'], ['list', 'List', 'list'], ['automations', 'Rules', 'automation'], ['assistant', 'Ask', 'sparkles'], ['console', 'Log', 'terminal'], ['settings', 'Settings', 'cog'], ['components', 'Parts', 'components'], ['all', 'All', 'stack']];
+  const now = () => { const d = new Date(); return { t: d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), d: d.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' }) }; };
+  setInterval(() => $$('[data-clock]').forEach((n) => (n.textContent = now().t)), 15000);
+
+  // signature element: 270° dial
+  function dial(value, min, max, label, sub, kind) {
+    const v = Math.max(min, Math.min(max, value)), f = (v - min) / (max - min), R = 70, C = 2 * Math.PI * R, arc = C * 0.75;
+    return '<figure class="dk-dial kind-' + kind + '"><svg viewBox="0 0 180 180" role="img" aria-label="' + esc(label + ' ' + sub) + '"><circle cx="90" cy="90" r="' + R + '" class="dk-track" stroke-dasharray="' + arc + ' ' + C + '" transform="rotate(135 90 90)"/><circle cx="90" cy="90" r="' + R + '" class="dk-arc" stroke-dasharray="' + arc * f + ' ' + C + '" transform="rotate(135 90 90)"/></svg><figcaption><b>' + esc(label) + '</b><span>' + sub + '</span></figcaption></figure>';
+  }
+  function shell(view) {
+    const r = c.route(), cur = r.name === 'device' ? 'devices' : r.name === 'automation' ? 'automations' : r.name, g = c.dev('0x00158d000611e5f5'), n = now();
+    return '<button type="button" class="nh-skip" data-act="skip">Skip to content</button><div class="dk-app"><header class="dk-strip"><div class="dk-clock"><b data-clock>' + n.t + '</b><span>' + esc(n.d) + '</span></div>' +
+      '<div class="dk-out">' + I('thermometer') + '<span>Garden <b>' + esc(g && isOnline(g) ? fmt(g.exposes.temperature) : '—') + '</b></span></div><span class="dk-gap"></span>' +
+      (S.permit ? '<button type="button" class="dk-pill is-hot" data-act="permit-stop">' + I('join') + 'Joining <span data-permit>' + c.fmtTimer(S.permit) + '</span></button>' : '<button type="button" class="dk-pill" data-act="permit">' + I('join') + 'Add device</button>') +
+      c.connBtn() + btn('', 'mode-toggle', { icon: document.documentElement.dataset.mode === 'dark' ? 'sun' : 'moon', title: 'Light or dark' }) + btn('', 'pop', { icon: 'palette', title: 'Appearance' }) + btn('', 'logout', { icon: 'logout', title: 'Sign out' }) + '</header>' +
+      c.banners() + '<main class="nh-content dk-content" id="nh-content" tabindex="-1">' + view + '</main>' +
+      '<nav class="dk-dock" aria-label="Main">' + DOCK.map((d) => '<a href="#/' + d[0] + '"' + (cur === d[0] ? ' aria-current="page"' : '') + '>' + I(d[2]) + '<span>' + d[1] + '</span></a>').join('') + '</nav></div>' + c.overlays();
+  }
+  function bigButton(d, e, label) {
+    const st = capability(e) === 'switch' ? e : stateExposeOf(d), k = st && pkey(d.id, st.name), pend = k && S.pending[k] !== undefined;
+    const on = st && (st.data === st.values.on) && isOnline(d) && !isDisabled(d), ctl = st && canControl(d);
+    const br = d.exposes.brightness, ring = br && on ? '<svg class="dk-ring" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44" pathLength="100" stroke-dasharray="' + Math.round((br.data / 254) * 100) + ' 100"/></svg>' : '';
+    const stateTxt = !isOnline(d) ? 'Offline' : isDisabled(d) ? 'Disabled' : pend ? 'Sending…' : st ? (on ? 'On' : 'Off') + (br && on ? ', ' + fmt(br) : '') : fmt(e);
+    return (ctl ? '<button type="button" class="dk-big kind-' + meta(e.name).kind + (on ? ' is-on' : '') + (pend ? ' is-pending' : '') + '" data-act="tile-toggle" data-arg="' + esc(k) + '" aria-pressed="' + !!on + '">' : '<a class="dk-big kind-' + meta(e.name).kind + (isOnline(d) ? '' : ' is-off') + '" href="#/device/' + encodeURIComponent(d.id) + '">') +
+      '<span class="dk-big-ic">' + ring + I(st ? (br ? 'bulb' : devIcon(d)) : meta(e.name).icon) + '</span><b>' + esc(label) + '</b><span>' + esc(stateTxt) + '</span>' + (ctl ? '</button>' : '</a>');
+  }
+  const views = {};
+  views.home = () => {
+    const rooms = roomsOf(); if (!rooms.length) return empty('home', 'No rooms yet', 'Rooms come from dashboard groups.');
+    const i = ((S.deckRoom % rooms.length) + rooms.length) % rooms.length, r = rooms[i];
+    const t = r.items.find((x) => x[1] === 'temperature' || x[1] === 'local_temperature' || x[1] === 'current_heating_setpoint'), h = r.items.find((x) => x[1] === 'humidity');
+    const td = t && dev(t[0]), hd = h && dev(h[0]);
+    const climate = td ? (isOnline(td) ? dial(td.exposes[t[1]].data, 5, 35, fmt(td.exposes[t[1]]), hd && isOnline(hd) ? esc(fmt(hd.exposes.humidity)) + ' humidity' : esc(meta(t[1]).label), 'temp') : '<div class="dk-dial is-off">' + I('offline') + '<b>Offline</b><span>' + esc(td.friendly_name) + '</span></div>') : '';
+    const seen = {}, buttons = [];
+    r.items.forEach((it) => { if (t && it[0] === t[0] && it[1] === t[1]) return; if (h && it[0] === h[0] && it[1] === 'humidity') return; const d = dev(it[0]), e = d && d.exposes[it[1]]; if (!e) return; const st = stateExposeOf(d); const key = st ? d.id : it.join(); if (seen[key]) return; seen[key] = 1; buttons.push(bigButton(d, e, st ? c.shortName(d, r.name) : e.description || meta(it[1]).label)); });
+    return '<div class="dk-pager" role="tablist" aria-label="Rooms">' + btn('', 'dk-room', { icon: 'chevronL', title: 'Previous room', arg: i - 1 }) + rooms.map((x, k) => '<button type="button" role="tab" aria-selected="' + (k === i) + '" data-act="dk-room" data-arg="' + k + '">' + esc(x.name) + '</button>').join('') + btn('', 'dk-room', { icon: 'chevronR', title: 'Next room', arg: i + 1 }) + '</div>' +
+      '<section class="dk-room' + (climate ? '' : ' no-climate') + '" aria-label="' + esc(r.name) + '">' + (climate ? '<div class="dk-climate">' + climate + '</div>' : '') + '<div class="dk-buttons">' + buttons.join('') + '</div></section>';
+  };
+  views.overview = () => {
+    const ds = S.devices, on = ds.filter(isOnline).length, z = ds.map(lqiOf).filter((x) => x != null), bat = ds.filter((d) => battOf(d) != null), auto = S.automations;
+    const avg = Math.round(z.reduce((a, b) => a + b, 0) / z.length);
+    const attn = ds.filter((d) => !isOnline(d) || (lqiOf(d) != null && lqiOf(d) < 50) || (battOf(d) != null && battOf(d) < 20));
+    return '<div class="dk-gauges">' + dial(on, 0, ds.length, on + '/' + ds.length, 'devices online', 'ok') + dial(avg, 0, 255, String(avg), 'average link quality', 'signal') + dial(bat.filter((d) => battOf(d) >= 20).length, 0, bat.length, bat.filter((d) => battOf(d) >= 20).length + '/' + bat.length, 'batteries healthy', 'battery') + dial(auto.filter((a) => a.enabled).length, 0, auto.length, auto.filter((a) => a.enabled).length + '/' + auto.length, 'rules enabled', 'switch') + '</div>' +
+      '<h2 class="dk-h2">Needs a look</h2><div class="dk-rows">' + attn.map((d) => '<a class="dk-row" href="#/device/' + encodeURIComponent(d.id) + '">' + I(devIcon(d)) + '<b>' + esc(d.friendly_name) + '</b><span>' + esc(!isOnline(d) ? 'Offline since ' + timeAgo(d.last_seen) : battOf(d) != null && battOf(d) < 20 ? 'Battery ' + Math.round(battOf(d)) + ' %' : 'Weak signal, ' + lqiOf(d) + ' LQI') + '</span>' + I('chevronR') + '</a>').join('') + '</div>';
+  };
+  views.devices = () => '<div class="dk-grid">' + S.devices.slice().sort((a, b) => a.friendly_name.localeCompare(b.friendly_name)).map((d) => { const st = stateExposeOf(d), m = Object.values(d.exposes).find((e) => e.category === 'measurement' && capability(e) !== 'switch');
+    return '<a class="dk-sq' + (isOnline(d) ? '' : ' is-off') + (st && st.data === st.values.on && isOnline(d) ? ' is-on' : '') + '" href="#/device/' + encodeURIComponent(d.id) + '">' + I(devIcon(d)) + '<b>' + esc(d.friendly_name) + '</b><span>' + esc(!isOnline(d) ? 'Offline' : isDisabled(d) ? 'Disabled' : st ? (st.data === st.values.on ? 'On' : 'Off') : m ? fmt(m) : protocol(d.connection_type).label) + '</span></a>'; }).join('') + '</div>';
+  views.list = () => { const ds = S.devices.slice().sort((a, b) => a.friendly_name.localeCompare(b.friendly_name, undefined, { sensitivity: 'base' })); let last = '';
+    return '<div class="dk-rows">' + ds.map((d) => { const L = d.friendly_name[0].toUpperCase(), head = L !== last ? '<h2 class="dk-letter">' + L + '</h2>' : ''; last = L; return head + '<a class="dk-row" href="#/device/' + encodeURIComponent(d.id) + '">' + I(devIcon(d)) + '<b>' + esc(d.friendly_name) + '</b><span>' + esc(protocol(d.connection_type).label + ', ' + (lqiOf(d) != null ? lqiOf(d) + ' LQI' : d.exposes.rssi ? d.exposes.rssi.data + ' dBm' : '') + (battOf(d) != null ? ', battery ' + Math.round(battOf(d)) + ' %' : '') + ', ' + (isOnline(d) ? timeAgo(d.last_seen) : 'offline')) + '</span>' + I('chevronR') + '</a>'; }).join('') + '</div>'; };
+  views.device = (r) => {
+    const d = dev(r.a); if (!d) return empty('question', 'Device not found', '');
+    const st = stateExposeOf(d), br = d.exposes.brightness, sup = protocol(d.connection_type).supports, k = st && pkey(d.id, st.name), pend = k && S.pending[k] !== undefined, ctl = canControl(d);
+    const reads = Object.values(d.exposes).filter((e) => e.category === 'measurement' && capability(e) !== 'switch' && capability(e) !== 'slider');
+    return '<div class="dk-dev"><header class="dk-dev-head"><a class="nh-btn is-icon" href="#/devices" aria-label="Back">' + I('chevronL') + '</a><div><h1>' + esc(d.friendly_name) + '</h1><p>' + esc(d.description) + ' — ' + esc(protocol(d.connection_type).label) + (isOnline(d) ? ', ' + esc(timeAgo(d.last_seen)) : ', offline') + '</p></div></header>' +
+      '<div class="dk-dev-ctl">' + (st ? '<button type="button" class="dk-power' + (st.data === st.values.on ? ' is-on' : '') + (pend ? ' is-pending' : '') + '" data-act="tile-toggle" data-arg="' + esc(k) + '" aria-pressed="' + (st.data === st.values.on) + '"' + (ctl && !pend ? '' : ' disabled') + '>' + I('power') + '<span>' + (pend ? 'Sending…' : st.data === st.values.on ? 'On' : 'Off') + '</span></button>' : '') +
+      Object.values(d.exposes).filter((e) => capability(e) === 'slider').map((e) => { const kk = pkey(d.id, e.name), p = S.pending[kk], v = p !== undefined ? p : e.data; return '<label class="dk-vslider kind-' + meta(e.name).kind + '"><span class="dk-vs-val">' + esc(fmt(e, v)) + '</span><input type="range" min="' + e.attributes.value_min + '" max="' + e.attributes.value_max + '" value="' + v + '" data-bind="expose-slide" data-arg="' + esc(kk) + '"' + (ctl ? '' : ' disabled') + ' aria-label="' + esc(meta(e.name).label) + '"><span>' + esc(meta(e.name).label) + '</span></label>'; }).join('') +
+      '<div class="dk-reads">' + reads.map((e) => '<div class="dk-read kind-' + meta(e.name).kind + '">' + I(meta(e.name).icon) + '<b>' + esc(fmt(e)) + '</b><span>' + esc(e.description || meta(e.name).label) + '</span></div>').join('') + '</div></div>' +
+      '<div class="dk-dev-more"><section><h2 class="dk-h2">History</h2>' + c.DV.metrics(d) + '</section><section><h2 class="dk-h2">Settings</h2>' + c.DV.settings(d) + '</section><section><h2 class="dk-h2">Device</h2>' + c.DV.about(d) + '<p class="dk-actions">' + btn('Rename', 'dev-rename', { arg: d.id, disabled: !sup.rename }) + btn('Interview', 'dev-interview', { arg: d.id, disabled: !sup.interview }) + btn('Remove', 'dev-remove', { arg: d.id, kind: 'danger', disabled: !sup.remove }) + '</p></section></div></div>';
+  };
+  views.automations = () => '<div class="dk-rules">' + S.automations.map((a, i) => { const src = dev(a.id), st = autoStatus(a), m = a.triggers.findIndex(canManual);
+    return '<article class="dk-rule' + (a.enabled ? ' is-on' : '') + '"><a href="#/automation/' + encodeURIComponent(a.id) + '" class="dk-rule-main">' + I(src ? devIcon(src) : 'automation') + '<b>' + esc(a.description || a.friendlyname) + '</b><span>' + esc(describeTrigger(a, a.triggers[0])) + '</span></a><div class="dk-rule-foot">' + chip(st.text, st.kind, st.icon, st.title) + (m >= 0 ? btn('Run', 'auto-run', { icon: 'play', arg: i + '|' + m }) : '') + toggle(a.enabled, 'auto-enable', i, { label: 'Enabled' }) + '</div></article>'; }).join('') + '<button type="button" class="dk-rule is-new" data-act="auto-create">' + I('plus') + '<b>New rule</b></button></div>';
+
+  // Node canvas: When → If nodes → Then nodes, wired with SVG; tap a node to edit it in the drawer.
+  const NH = 88, GAP = 18;
+  views.automation = (r) => {
+    c.V.automation(r);
+    if (!S.draft) return empty('question', 'Rule not found', '');
+    const P = c.edParts(), a = P.a, n = a.triggers.length;
+    if (S.deckTrig >= n) S.deckTrig = Math.max(0, n - 1);
+    const i = S.deckTrig, t = a.triggers[i];
+    let canvas = '';
+    if (t) {
+      const errs = P.trigErrs(i), cs = t.conditions, as = t.actions, rows = Math.max(1, cs.length + 1, as.length + 1), H = rows * (NH + GAP);
+      const y = (k) => k * (NH + GAP) + NH / 2;
+      const node = (key, cls, title, text, bad, col, k) => '<button type="button" class="dk-node ' + cls + (S.deckSel === key ? ' is-sel' : '') + (bad ? ' has-err' : '') + '" style="grid-column:' + col + ';grid-row:' + (k + 1) + '" data-act="dk-sel" data-arg="' + key + '"><b>' + title + '</b><span>' + esc(text) + '</span></button>';
+      const ifN = cs.map((x, j) => node('c' + j, 'is-if', x.type === 'time' ? 'Time window' : 'Only if', condText(a, x), errs.some((e) => e.p.indexOf('.conditions.' + j) > 0), 3, j)).join('') + '<button type="button" class="dk-add" style="grid-column:3;grid-row:' + (cs.length + 1) + '" data-act="ed-add-cond" data-arg="' + P.tp(i) + '|expose">' + I('plus') + 'Condition</button>';
+      const thenN = as.map((x, k) => node('a' + k, 'is-then', (k + 1) + '. ' + { trigger: 'Set', step: 'Step', preset: 'Cycle' }[x.type], actText(x), errs.some((e) => e.p.indexOf('.actions.' + k) > 0), 5, k)).join('') + '<button type="button" class="dk-add" style="grid-column:5;grid-row:' + (as.length + 1) + '" data-act="ed-add-act" data-arg="' + P.tp(i) + '">' + I('plus') + 'Action</button>';
+      const wire = (fromYs, toYs) => '<svg class="dk-wires" viewBox="0 0 60 ' + H + '" preserveAspectRatio="none" aria-hidden="true" style="height:' + H + 'px">' + fromYs.flatMap((fy) => toYs.map((ty) => '<path d="M0 ' + fy + ' C 30 ' + fy + ', 30 ' + ty + ', 60 ' + ty + '"/>')).join('') + '</svg>';
+      const ifYs = cs.length ? cs.map((x, j) => y(j)) : [y(0)], thenYs = as.length ? as.map((x, k) => y(k)) : [y(0)];
+      canvas = '<div class="dk-canvas" style="grid-template-rows:repeat(' + rows + ',' + NH + 'px);row-gap:' + GAP + 'px">' +
+        node('when', 'is-when', t.type === 'manualTrigger' ? 'Run by hand' : 'When', (t.name ? meta(t.name).label : 'choose…') + ' changes', errs.some((e) => /\.name$/.test(e.p) && e.p.split('.').length === 3), 1, 0) +
+        '<div class="dk-wirecol" style="grid-column:2;grid-row:1 / span ' + rows + '">' + wire([y(0)], cs.length ? ifYs : [y(0)]) + '</div>' +
+        (cs.length ? ifN : '<div class="dk-pass" style="grid-column:3;grid-row:1">always</div>' + '<button type="button" class="dk-add" style="grid-column:3;grid-row:2" data-act="ed-add-cond" data-arg="' + P.tp(i) + '|expose">' + I('plus') + 'Condition</button>') +
+        '<div class="dk-wirecol" style="grid-column:4;grid-row:1 / span ' + rows + '">' + wire(cs.length ? [ifYs[ifYs.length - 1]] : [y(0)], thenYs) + '</div>' + thenN + '</div>';
+    }
+    const k = S.deckSel, m = k && /^(when|c(\d+)|a(\d+)|details|schedule)$/.exec(k);
+    let drawer = '';
+    if (m && (t || k === 'details' || k === 'schedule')) {
+      const body = k === 'when' ? P.whenBody(i) : k === 'details' ? P.details() : k === 'schedule' ? P.schedule() : m[2] != null && t.conditions[+m[2]] ? P.condRow(i, +m[2]) : m[3] != null && t.actions[+m[3]] ? P.actRow(i, +m[3]) : '';
+      if (body) drawer = '<aside class="dk-drawer" aria-label="Edit node"><div class="dk-drawer-head"><h2>' + esc(k === 'when' ? 'When' : k === 'details' ? 'Details' : k === 'schedule' ? 'Schedule' : m[2] != null ? 'Condition' : 'Action') + '</h2>' + btn('', 'dk-sel', { icon: 'close', title: 'Close', arg: '' }) + '</div>' + body + (t && !/details|schedule/.test(k) ? P.warnList(i) : '') + '</aside>';
+      else S.deckSel = null;
+    }
+    return '<div class="dk-ed' + (drawer ? ' has-drawer' : '') + '"><header class="dk-ed-head">' + P.back() + '<h1>' + esc(a.description || a.friendlyname) + '</h1><div class="dk-ed-tools">' + btn('Details', 'dk-sel', { icon: 'info', arg: 'details' }) + btn('Schedule', 'dk-sel', { icon: 'calendar', arg: 'schedule' }) + toggle(a.enabled, 'ed-enabled', '', { label: 'Enabled' }) + '</div></header>' +
+      '<div class="dk-trigs" role="tablist">' + a.triggers.map((x, kk) => '<button type="button" role="tab" aria-selected="' + (kk === i) + '" data-act="dk-trig" data-arg="' + kk + '">Trigger ' + (kk + 1) + (P.trigErrs(kk).length ? ' ' + I('error') : '') + '</button>').join('') + btn('Add trigger', 'ed-add-trig', { icon: 'plus' }) + (t ? '<span class="dk-gap"></span>' + P.trigTools(i) : '') + '</div>' +
+      (t ? P.sentence(i) : '') + '<div class="dk-ed-body">' + (canvas || empty('automation', 'No triggers', 'Add a trigger to start.')) + drawer + '</div>' + P.checks() + P.savebar() + P.json() + '</div>';
+  };
+  const actions = {
+    'dk-room': (k) => { S.deckRoom = +k; c.render(); },
+    'dk-sel': (k) => { S.deckSel = k || null; c.render(); },
+    'dk-trig': (k) => { S.deckTrig = +k; S.deckSel = null; c.render(); },
+  };
+  document.addEventListener('keydown', (ev) => { if (c.route().name === 'home' && !S.dialog && /^Arrow(Left|Right)$/.test(ev.key) && !/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) { S.deckRoom += ev.key === 'ArrowLeft' ? -1 : 1; c.render(); } });
+  return { shell, views, actions };
+};
 
 </script>
 <script>
@@ -1489,7 +1652,8 @@ window.NH_DESIGN_FOR = function (id, extra) {
     return editorHtml();
   };
   const dirty = () => S.draft && JSON.stringify(S.draft) !== JSON.stringify(S.original);
-  function editorHtml() {
+  // Editor building blocks shared by every design's editor layout (same data-path contract).
+  function edParts() {
     const a = S.draft, d = dev(a.id), v = validate(a), E = {};
     v.errs.forEach((e) => (E[e.p] = e.m));
     const err = (p) => (E[p] ? '<span class="nh-err" id="err-' + p.replace(/\./g, '-') + '">' + I('error') + esc(E[p]) + '</span>' : '');
@@ -1497,6 +1661,7 @@ window.NH_DESIGN_FOR = function (id, extra) {
     const srcEx = d ? Object.values(d.exposes).filter((e) => e.category !== 'config') : [];
     const writableDevs = S.devices.filter((x) => Object.values(x.exposes).some((e) => isWritable(e) && e.category !== 'config'));
     const devOpts = (list) => list.map((x) => ({ v: x.id, t: x.friendly_name + (isOnline(x) ? '' : ' (offline)') }));
+    const withPath = (html, p) => html.replace(/data-arg="/g, 'data-path="' + p + '" data-arg="');
     function valueInput(dv, exName, val, path) {
       const e = dv && dv.exposes[exName], attrs = 'data-path="' + path + '" data-focus-key="' + path + '"' + inv(path);
       if (!e) return '<input class="nh-input" disabled placeholder="value" ' + attrs + '>';
@@ -1507,74 +1672,92 @@ window.NH_DESIGN_FOR = function (id, extra) {
       if (e.type === 'numeric') return '<span class="nh-unit-input"><input class="nh-input is-num" type="number" data-kind="num" ' + attrs + ' value="' + esc(val == null ? '' : val) + '"' + (e.attributes ? ' min="' + e.attributes.value_min + '" max="' + e.attributes.value_max + '"' : '') + ' aria-label="Value">' + (e.unit ? '<em>' + esc(e.unit) + '</em>' : '') + '</span>';
       return '<input class="nh-input" data-kind="str" ' + attrs + ' value="' + esc(val == null ? '' : val) + '" aria-label="Value">';
     }
+    const P = { a, d, v, E, err, inv, srcEx, valueInput, withPath };
+    P.tp = (i) => 'triggers.' + i;
+    P.trigType = (i) => withPath(seg([{ v: 'deviceTrigger', t: 'Device changes' }, { v: 'manualTrigger', t: 'Manual only' }], a.triggers[i].type, 'ed-trig-type', 'Trigger type'), P.tp(i) + '.type');
+    P.srcSelect = (i) => sel(srcEx.map((x) => ({ v: x.name, t: meta(x.name).label + '  (now ' + fmt(x) + ')' })), a.triggers[i].name, 'data-path="' + P.tp(i) + '.name" data-kind="str"' + inv(P.tp(i) + '.name') + ' aria-label="Source expose"', 'Which expose?');
+    P.srcChip = () => '<span class="nh-src">' + I(d ? devIcon(d) : 'devices') + esc(d ? d.friendly_name : a.friendlyname) + '</span>';
+    P.whenBody = (i) => '<div class="nh-inline">' + P.trigType(i) + '</div><div class="nh-inline">' + P.srcChip() + P.srcSelect(i) + '<span class="nh-muted">changes</span></div>' + err(P.tp(i) + '.name');
+    P.condTools = (i, j) => { const cp = P.tp(i) + '.conditions.' + j, n = a.triggers[i].conditions.length; return '<span class="nh-reorder">' + btn('', 'ed-move', { icon: 'up', sm: true, title: 'Move up', arg: cp + '|-1', disabled: j === 0 }) + btn('', 'ed-move', { icon: 'down', sm: true, title: 'Move down', arg: cp + '|1', disabled: j === n - 1 }) + btn('', 'ed-del', { icon: 'trash', sm: true, kind: 'danger', title: 'Remove condition', arg: cp }) + '</span>'; };
+    P.condFields = (i, j) => {
+      const c = a.triggers[i].conditions[j], cp = P.tp(i) + '.conditions.' + j;
+      if (c.type === 'time') return '<span class="nh-inline"><span>between</span><input type="time" class="nh-input" data-path="' + cp + '.timeRange.startAt" data-kind="str" data-focus-key="' + cp + 's" value="' + esc(c.timeRange.startAt) + '"' + inv(cp + '.timeRange.startAt') + ' aria-label="From"><span>and</span><input type="time" class="nh-input" data-path="' + cp + '.timeRange.endAt" data-kind="str" data-focus-key="' + cp + 'e" value="' + esc(c.timeRange.endAt) + '"' + inv(cp + '.timeRange.endAt') + ' aria-label="To">' + (c.timeRange.startAt > c.timeRange.endAt && c.timeRange.endAt ? chip('overnight', 'info', 'moon') : '') + '</span>' + err(cp + '.timeRange.startAt') + err(cp + '.timeRange.endAt');
+      const e = d && d.exposes[c.name], ops = !e || e.type === 'numeric' ? ['=', '<', '<=', '>', '>='] : ['='];
+      return '<span class="nh-inline">' + sel(srcEx.map((x) => ({ v: x.name, t: meta(x.name).label + '  (now ' + fmt(x) + ')' })), c.name, 'data-path="' + cp + '.name" data-kind="str" data-reset="' + cp + '.value"' + inv(cp + '.name') + ' aria-label="Expose"', 'Expose…') +
+        sel(ops.map((o) => ({ v: o, t: o })), c.equality, 'data-path="' + cp + '.equality" data-kind="str" aria-label="Operator" class="is-op"') + valueInput(d, c.name, c.value, cp + '.value') + '</span>' + err(cp + '.name') + err(cp + '.value');
+    };
+    P.condKind = (c) => '<span class="nh-cond-kind">' + I(c.type === 'time' ? 'clock' : c.name ? meta(c.name).icon : 'filter') + (c.type === 'time' ? 'Time' : 'Value') + '</span>';
+    P.condRow = (i, j) => { const f = P.condFields(i, j), k = f.indexOf('<span class="nh-err"'); return '<div class="nh-cond">' + P.condKind(a.triggers[i].conditions[j]) + (k < 0 ? f + P.condTools(i, j) : f.slice(0, k) + P.condTools(i, j) + f.slice(k)) + '</div>'; };
+    P.condAdd = (i) => '<div class="nh-inline">' + btn('Value condition', 'ed-add-cond', { icon: 'plus', sm: true, arg: P.tp(i) + '|expose' }) + btn('Time window', 'ed-add-cond', { icon: 'clock', sm: true, arg: P.tp(i) + '|time' }) + '</div>';
+    P.actType = (i, k) => withPath(seg([{ v: 'trigger', t: 'Set' }, { v: 'step', t: 'Step' }, { v: 'preset', t: 'Cycle' }], a.triggers[i].actions[k].type, 'ed-act-type', 'Action type'), P.tp(i) + '.actions.' + k);
+    P.actTarget = (i, k) => { const x = a.triggers[i].actions[k], ap = P.tp(i) + '.actions.' + k; return sel(devOpts(x.type === 'preset' ? S.devices.filter((z) => Object.values(z.exposes).some(isPreset)) : writableDevs), x.id, 'data-path="' + ap + '.id" data-kind="str" data-reset-act="1"' + inv(ap + '.id') + ' aria-label="Target device"', 'Target device…'); };
+    P.actTools = (i, k) => { const ap = P.tp(i) + '.actions.' + k, n = a.triggers[i].actions.length; return '<span class="nh-reorder">' + btn('', 'ed-move', { icon: 'up', sm: true, title: 'Move up', arg: ap + '|-1', disabled: k === 0 }) + btn('', 'ed-move', { icon: 'down', sm: true, title: 'Move down', arg: ap + '|1', disabled: k === n - 1 }) + btn('', 'ed-del', { icon: 'trash', sm: true, kind: 'danger', title: 'Remove action', arg: ap }) + '</span>'; };
+    P.actBody = (i, k) => {
+      const x = a.triggers[i].actions[k], ap = P.tp(i) + '.actions.' + k, td = dev(x.id);
+      const filt = x.type === 'step' ? (e) => e.type === 'numeric' && isWritable(e) && e.category === 'measurement' : x.type === 'preset' ? isPreset : (e) => isWritable(e) && e.category !== 'config';
+      const opts = td ? Object.values(td.exposes).filter(filt).map((e) => ({ v: e.name, t: meta(e.name).label })) : [];
+      if (x.type === 'trigger') {
+        return x.exposes.map((r2, n) => { const rp = ap + '.exposes.' + n; return '<div class="nh-set-row"><span class="nh-inline">' + sel(opts, r2.name, 'data-path="' + rp + '.name" data-kind="str" data-reset="' + rp + '.data"' + inv(rp + '.name') + ' aria-label="Expose"', 'Expose…') + '<span>=</span>' + valueInput(td, r2.name, r2.data, rp + '.data') + btn('', 'ed-del', { icon: 'close', sm: true, title: 'Remove value', arg: rp }) + '</span>' + err(rp + '.name') + err(rp + '.data') + '</div>'; }).join('') + err(ap + '.exposes') +
+          '<div class="nh-inline nh-act-opts">' + btn('Add value', 'ed-add-row', { icon: 'plus', sm: true, arg: ap, disabled: !x.id }) +
+          (x.exposes.length > 1 ? '<span class="nh-muted">Publish</span>' + withPath(seg([{ v: 'batch', t: 'Together' }, { v: 'single', t: 'One by one' }], x.publishMode || 'batch', 'ed-publish', 'Publish mode'), ap + '.publishMode') : '') +
+          '<label class="nh-check"><input type="checkbox" data-act-check="ed-delay" data-path="' + ap + '"' + (x.delay && x.delay.value ? ' checked' : '') + '> Wait first</label>' +
+          (x.delay && x.delay.value ? '<input class="nh-input is-num" type="number" min="1" data-path="' + ap + '.delay.value" data-kind="num" data-focus-key="' + ap + 'dv" value="' + x.delay.value + '" aria-label="Delay">' + sel([{ v: 'seconds', t: 'seconds' }, { v: 'minutes', t: 'minutes' }, { v: 'hours', t: 'hours' }], x.delay.unit, 'data-path="' + ap + '.delay.unit" data-kind="str" aria-label="Delay unit"') : '') + '</div>';
+      }
+      if (x.type === 'step') return '<div class="nh-inline">' + sel(opts, x.property, 'data-path="' + ap + '.property" data-kind="str" data-sync-steps="1"' + inv(ap + '.property') + ' aria-label="Numeric expose"', 'Numeric expose…') +
+        withPath(seg([{ v: '+', t: '+' }, { v: '-', t: '−' }, { v: '*', t: '×' }], (x.steps[0] && x.steps[0].operator) || '+', 'ed-step-op', 'Operator'), ap) +
+        '<input class="nh-input is-num" type="number" data-path="' + ap + '.data" data-kind="num" data-focus-key="' + ap + 'd" value="' + esc(x.data == null ? '' : x.data) + '"' + inv(ap + '.data') + ' aria-label="Amount"></div>' + err(ap + '.property') + err(ap + '.data');
+      const pe = td && td.exposes[x.property];
+      return '<div class="nh-inline">' + sel(opts, x.property, 'data-path="' + ap + '.property" data-kind="str"' + inv(ap + '.property') + ' aria-label="Preset expose"', 'Expose with presets…') + (pe && pe.values ? '<span class="nh-muted">cycles</span>' + Object.keys(pe.values).map((k2) => chip(titleCase(k2), 'muted')).join('<span class="nh-arrow">→</span>') : '') + '</div>' + err(ap + '.property');
+    };
+    P.actRow = (i, k) => '<div class="nh-act"><div class="nh-act-head"><span class="nh-act-n">' + (k + 1) + '</span>' + P.actType(i, k) + P.actTarget(i, k) + P.actTools(i, k) + '</div>' + err(P.tp(i) + '.actions.' + k + '.id') + '<div class="nh-act-body">' + P.actBody(i, k) + '</div></div>';
+    P.actAdd = (i) => '<div class="nh-inline">' + btn('Add action', 'ed-add-act', { icon: 'plus', sm: true, arg: P.tp(i) }) + (a.triggers[i].actions.length > 1 ? '<span class="nh-muted">Actions run in order.</span>' : '') + '</div>';
+    P.trigErrs = (i) => v.errs.filter((e) => e.p.indexOf(P.tp(i)) === 0 && (e.p.length === P.tp(i).length || e.p[P.tp(i).length] === '.'));
+    P.trigWarns = (i) => v.warns.filter((w) => w.p.indexOf(P.tp(i)) === 0 && (w.p.length === P.tp(i).length || w.p[P.tp(i).length] === '.'));
+    P.trigTools = (i) => { const t = a.triggers[i], te = P.trigErrs(i); return (te.length ? chip(te.length + ' to fix', 'danger', 'error') : chip('Valid', 'ok', 'check')) +
+      (canManual(t) ? btn(S.running[a.id + i] ? 'Running…' : 'Run', 'ed-run', { icon: 'play', sm: true, arg: i, disabled: S.running[a.id + i] || S.conn !== 'connected', title: 'Run this trigger now (POST /api/automation/trigger)' }) : '') +
+      btn('', 'ed-dup', { icon: 'copy', sm: true, title: 'Duplicate trigger', arg: i }) + btn('', 'ed-del', { icon: 'trash', sm: true, kind: 'danger', title: 'Delete trigger', arg: P.tp(i) }); };
+    P.warnList = (i) => { const tw = P.trigWarns(i); return tw.length ? '<ul class="nh-warn-list">' + tw.map((w) => '<li>' + I('warn') + esc(w.m) + '</li>').join('') + '</ul>' : ''; };
+    P.sentence = (i) => '<p class="nh-sentence" data-region="sent-' + i + '">' + esc(describeTrigger(a, a.triggers[i])) + '</p>';
+    P.details = () => '<div class="nh-form"><div class="nh-field"><label>Device</label><div>' + esc(a.friendlyname) + ' <code class="nh-muted">' + esc(a.id) + '</code></div></div>' +
+      '<div class="nh-field"><label for="ed-desc">Description</label><input id="ed-desc" class="nh-input" data-path="description" data-kind="str" data-focus-key="desc" value="' + esc(a.description) + '"></div>' +
+      '<div class="nh-field is-row"><label>Enabled</label>' + toggle(a.enabled, 'ed-enabled', '', { label: 'Enabled' }) + '</div></div>';
+    P.schedule = () => {
+      const sch = a.schedules, en = sch.find((s) => s.type === 'enable'), di = sch.find((s) => s.type === 'disable');
+      const pct = (hm) => { const p = hm.split(':'); return ((+p[0] * 60 + +p[1]) / 1440) * 100; };
+      let band = '';
+      if (en && di) { const s = pct(en.startAt), e = pct(di.startAt); band = s < e ? '<span class="nh-tl-on" style="left:' + s + '%;width:' + (e - s) + '%"></span>' : '<span class="nh-tl-on" style="left:0;width:' + e + '%"></span><span class="nh-tl-on" style="left:' + s + '%;width:' + (100 - s) + '%"></span>'; }
+      const nowP = ((new Date().getHours() * 60 + new Date().getMinutes()) / 1440) * 100;
+      return '<div class="nh-timeline" aria-label="24 hour schedule">' + band + sch.map((s) => '<span class="nh-tl-mark is-' + s.type + '" style="left:' + pct(s.startAt) + '%" title="' + s.type + ' at ' + s.startAt + '"></span>').join('') + '<span class="nh-tl-now" style="left:' + nowP + '%" title="now"></span></div><div class="nh-axis-row"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div>' +
+        ['enable', 'disable'].map((ty) => { const s = sch.find((x) => x.type === ty); return '<div class="nh-sched-row"><span class="nh-sched-t is-' + ty + '">' + (ty === 'enable' ? 'Enable at' : 'Disable at') + '</span>' + (s ? '<input type="time" class="nh-input" data-sched="' + ty + '" value="' + s.startAt + '" aria-label="' + ty + ' time">' + btn('', 'ed-sched-del', { icon: 'close', sm: true, title: 'Remove', arg: ty }) : btn('Add', 'ed-sched-add', { icon: 'plus', sm: true, arg: ty })) + '</div>'; }).join('') +
+        '<p class="nh-help">Hub timezone: ' + esc(Intl.DateTimeFormat().resolvedOptions().timeZone) + '</p>';
+    };
+    P.checks = () => '<div data-region="checks">' + checksHtml(v) + '</div>';
+    P.savebar = () => '<div class="nh-savebar" data-region="savebar">' + savebarHtml(v) + '</div>';
+    P.json = () => (S.jsonOpen ? '<section class="nh-card nh-json-card"><div class="nh-card-head"><h2 class="nh-card-title">' + I('code') + 'saveAutomation payload</h2><span class="nh-card-meta">read-only · exact shape sent over WS</span></div><pre class="nh-json" data-region="json">' + esc(JSON.stringify(a, null, 2)) + '</pre></section>' : '');
+    P.back = () => '<a class="nh-back" href="#/automations">' + I('chevronL') + 'Automations</a>';
+    return P;
+  }
+  function editorHtml() {
+    const P = edParts(), a = P.a, d = P.d;
     const trig = a.triggers.map((t, i) => {
-      const tp = 'triggers.' + i, col = S.collapsed[i], tw = v.warns.filter((w) => w.p.indexOf(tp) === 0), te = v.errs.filter((e) => e.p.indexOf(tp) === 0);
-      const conds = t.conditions.map((c, j) => {
-        const cp = tp + '.conditions.' + j;
-        const tools = '<span class="nh-reorder">' + btn('', 'ed-move', { icon: 'up', sm: true, title: 'Move up', arg: cp + '|-1', disabled: j === 0 }) + btn('', 'ed-move', { icon: 'down', sm: true, title: 'Move down', arg: cp + '|1', disabled: j === t.conditions.length - 1 }) + btn('', 'ed-del', { icon: 'trash', sm: true, kind: 'danger', title: 'Remove condition', arg: cp }) + '</span>';
-        if (c.type === 'time') return '<div class="nh-cond"><span class="nh-cond-kind">' + I('clock') + 'Time</span><span class="nh-inline"><span>between</span><input type="time" class="nh-input" data-path="' + cp + '.timeRange.startAt" data-kind="str" data-focus-key="' + cp + 's" value="' + esc(c.timeRange.startAt) + '"' + inv(cp + '.timeRange.startAt') + ' aria-label="From"><span>and</span><input type="time" class="nh-input" data-path="' + cp + '.timeRange.endAt" data-kind="str" data-focus-key="' + cp + 'e" value="' + esc(c.timeRange.endAt) + '"' + inv(cp + '.timeRange.endAt') + ' aria-label="To">' + (c.timeRange.startAt > c.timeRange.endAt && c.timeRange.endAt ? chip('overnight', 'info', 'moon') : '') + '</span>' + tools + err(cp + '.timeRange.startAt') + err(cp + '.timeRange.endAt') + '</div>';
-        const e = d && d.exposes[c.name], ops = !e || e.type === 'numeric' ? ['=', '<', '<=', '>', '>='] : ['='];
-        return '<div class="nh-cond"><span class="nh-cond-kind">' + I(c.name ? meta(c.name).icon : 'filter') + 'Value</span><span class="nh-inline">' +
-          sel(srcEx.map((x) => ({ v: x.name, t: meta(x.name).label + '  (now ' + fmt(x) + ')' })), c.name, 'data-path="' + cp + '.name" data-kind="str" data-reset="' + cp + '.value"' + inv(cp + '.name') + ' aria-label="Expose"', 'Expose…') +
-          sel(ops.map((o) => ({ v: o, t: o })), c.equality, 'data-path="' + cp + '.equality" data-kind="str" aria-label="Operator" class="is-op"') + valueInput(d, c.name, c.value, cp + '.value') + '</span>' + tools + err(cp + '.name') + err(cp + '.value') + '</div>';
-      }).join('');
-      const acts = t.actions.map((x, k) => {
-        const ap = tp + '.actions.' + k, td = dev(x.id);
-        const typeSel = seg([{ v: 'trigger', t: 'Set' }, { v: 'step', t: 'Step' }, { v: 'preset', t: 'Cycle' }], x.type, 'ed-act-type', 'Action type').replace(/data-arg="/g, 'data-path="' + ap + '" data-arg="');
-        const filt = x.type === 'step' ? (e) => e.type === 'numeric' && isWritable(e) && e.category === 'measurement' : x.type === 'preset' ? isPreset : (e) => isWritable(e) && e.category !== 'config';
-        const opts = td ? Object.values(td.exposes).filter(filt).map((e) => ({ v: e.name, t: meta(e.name).label })) : [];
-        let body = '';
-        if (x.type === 'trigger') {
-          body = x.exposes.map((r2, n) => { const rp = ap + '.exposes.' + n; return '<div class="nh-set-row"><span class="nh-inline">' + sel(opts, r2.name, 'data-path="' + rp + '.name" data-kind="str" data-reset="' + rp + '.data"' + inv(rp + '.name') + ' aria-label="Expose"', 'Expose…') + '<span>=</span>' + valueInput(td, r2.name, r2.data, rp + '.data') + btn('', 'ed-del', { icon: 'close', sm: true, title: 'Remove value', arg: rp }) + '</span>' + err(rp + '.name') + err(rp + '.data') + '</div>'; }).join('') + err(ap + '.exposes') +
-            '<div class="nh-inline nh-act-opts">' + btn('Add value', 'ed-add-row', { icon: 'plus', sm: true, arg: ap, disabled: !x.id }) +
-            (x.exposes.length > 1 ? '<span class="nh-muted">Publish</span>' + seg([{ v: 'batch', t: 'Together' }, { v: 'single', t: 'One by one' }], x.publishMode || 'batch', 'ed-publish', 'Publish mode').replace(/data-arg="/g, 'data-path="' + ap + '.publishMode" data-arg="') : '') +
-            '<label class="nh-check"><input type="checkbox" data-act-check="ed-delay" data-path="' + ap + '"' + (x.delay && x.delay.value ? ' checked' : '') + '> Wait first</label>' +
-            (x.delay && x.delay.value ? '<input class="nh-input is-num" type="number" min="1" data-path="' + ap + '.delay.value" data-kind="num" data-focus-key="' + ap + 'dv" value="' + x.delay.value + '" aria-label="Delay">' + sel([{ v: 'seconds', t: 'seconds' }, { v: 'minutes', t: 'minutes' }, { v: 'hours', t: 'hours' }], x.delay.unit, 'data-path="' + ap + '.delay.unit" data-kind="str" aria-label="Delay unit"') : '') + '</div>';
-        } else if (x.type === 'step') {
-          body = '<div class="nh-inline">' + sel(opts, x.property, 'data-path="' + ap + '.property" data-kind="str" data-sync-steps="1"' + inv(ap + '.property') + ' aria-label="Numeric expose"', 'Numeric expose…') +
-            seg([{ v: '+', t: '+' }, { v: '-', t: '−' }, { v: '*', t: '×' }], (x.steps[0] && x.steps[0].operator) || '+', 'ed-step-op', 'Operator').replace(/data-arg="/g, 'data-path="' + ap + '" data-arg="') +
-            '<input class="nh-input is-num" type="number" data-path="' + ap + '.data" data-kind="num" data-focus-key="' + ap + 'd" value="' + esc(x.data == null ? '' : x.data) + '"' + inv(ap + '.data') + ' aria-label="Amount"></div>' + err(ap + '.property') + err(ap + '.data');
-        } else {
-          const pe = td && td.exposes[x.property];
-          body = '<div class="nh-inline">' + sel(opts, x.property, 'data-path="' + ap + '.property" data-kind="str"' + inv(ap + '.property') + ' aria-label="Preset expose"', 'Expose with presets…') + (pe && pe.values ? '<span class="nh-muted">cycles</span>' + Object.keys(pe.values).map((k2) => chip(titleCase(k2), 'muted')).join('<span class="nh-arrow">→</span>') : '') + '</div>' + err(ap + '.property');
-        }
-        return '<div class="nh-act"><div class="nh-act-head"><span class="nh-act-n">' + (k + 1) + '</span>' + typeSel +
-          sel(devOpts(x.type === 'preset' ? S.devices.filter((z) => Object.values(z.exposes).some(isPreset)) : writableDevs), x.id, 'data-path="' + ap + '.id" data-kind="str" data-reset-act="1"' + inv(ap + '.id') + ' aria-label="Target device"', 'Target device…') +
-          '<span class="nh-reorder">' + btn('', 'ed-move', { icon: 'up', sm: true, title: 'Move up', arg: ap + '|-1', disabled: k === 0 }) + btn('', 'ed-move', { icon: 'down', sm: true, title: 'Move down', arg: ap + '|1', disabled: k === t.actions.length - 1 }) + btn('', 'ed-del', { icon: 'trash', sm: true, kind: 'danger', title: 'Remove action', arg: ap }) + '</span></div>' + err(ap + '.id') + '<div class="nh-act-body">' + body + '</div></div>';
-      }).join('');
+      const col = S.collapsed[i], te = P.trigErrs(i);
       return '<section class="nh-trig' + (col ? ' is-collapsed' : '') + (te.length ? ' has-err' : '') + '" aria-label="Trigger ' + (i + 1) + '"><div class="nh-trig-head"><button type="button" class="nh-trig-toggle" data-act="ed-collapse" data-arg="' + i + '" aria-expanded="' + !col + '">' + I(col ? 'chevronR' : 'chevronD') + '<b>Trigger ' + (i + 1) + '</b></button>' +
-        '<p class="nh-sentence" data-region="sent-' + i + '">' + esc(describeTrigger(a, t)) + '</p><span class="nh-trig-tools">' +
-        (te.length ? chip(te.length + ' to fix', 'danger', 'error') : chip('Valid', 'ok', 'check')) +
-        (canManual(t) ? btn(S.running[a.id + i] ? 'Running…' : 'Run', 'ed-run', { icon: 'play', sm: true, arg: i, disabled: S.running[a.id + i] || S.conn !== 'connected', title: 'Run this trigger now (POST /api/automation/trigger)' }) : '') +
-        btn('', 'ed-dup', { icon: 'copy', sm: true, title: 'Duplicate trigger', arg: i }) + btn('', 'ed-del', { icon: 'trash', sm: true, kind: 'danger', title: 'Delete trigger', arg: tp }) + '</span></div>' +
+        P.sentence(i) + '<span class="nh-trig-tools">' + P.trigTools(i) + '</span></div>' +
         (col ? '' : '<div class="nh-flow">' +
-          '<div class="nh-block is-when"><div class="nh-block-label"><span>When</span></div><div class="nh-block-body"><div class="nh-inline">' + seg([{ v: 'deviceTrigger', t: 'Device changes' }, { v: 'manualTrigger', t: 'Manual only' }], t.type, 'ed-trig-type', 'Trigger type').replace(/data-arg="/g, 'data-path="' + tp + '.type" data-arg="') + '</div>' +
-          '<div class="nh-inline"><span class="nh-src">' + I(d ? devIcon(d) : 'devices') + esc(d ? d.friendly_name : a.friendlyname) + '</span>' + sel(srcEx.map((x) => ({ v: x.name, t: meta(x.name).label + '  (now ' + fmt(x) + ')' })), t.name, 'data-path="' + tp + '.name" data-kind="str"' + inv(tp + '.name') + ' aria-label="Source expose"', 'Which expose?') + '<span class="nh-muted">changes</span></div>' + err(tp + '.name') + '</div></div>' +
-          '<div class="nh-block is-if"><div class="nh-block-label"><span>If</span></div><div class="nh-block-body">' + (conds || '<p class="nh-muted">No conditions — always continue.</p>') + '<div class="nh-inline">' + btn('Value condition', 'ed-add-cond', { icon: 'plus', sm: true, arg: tp + '|expose' }) + btn('Time window', 'ed-add-cond', { icon: 'clock', sm: true, arg: tp + '|time' }) + '</div></div></div>' +
-          '<div class="nh-block is-then"><div class="nh-block-label"><span>Then</span></div><div class="nh-block-body">' + acts + err(tp + '.actions') + '<div class="nh-inline">' + btn('Add action', 'ed-add-act', { icon: 'plus', sm: true, arg: tp }) + (t.actions.length > 1 ? '<span class="nh-muted">Actions run in order.</span>' : '') + '</div></div></div></div>') +
-        (tw.length ? '<ul class="nh-warn-list">' + tw.map((w) => '<li>' + I('warn') + esc(w.m) + '</li>').join('') + '</ul>' : '') + '</section>';
+          '<div class="nh-block is-when"><div class="nh-block-label"><span>When</span></div><div class="nh-block-body">' + P.whenBody(i) + '</div></div>' +
+          '<div class="nh-block is-if"><div class="nh-block-label"><span>If</span></div><div class="nh-block-body">' + (t.conditions.map((c, j) => P.condRow(i, j)).join('') || '<p class="nh-muted">No conditions — always continue.</p>') + P.condAdd(i) + '</div></div>' +
+          '<div class="nh-block is-then"><div class="nh-block-label"><span>Then</span></div><div class="nh-block-body">' + t.actions.map((x, k) => P.actRow(i, k)).join('') + P.err(P.tp(i) + '.actions') + P.actAdd(i) + '</div></div></div>') +
+        P.warnList(i) + '</section>';
     }).join('');
-    const sch = a.schedules, en = sch.find((s) => s.type === 'enable'), di = sch.find((s) => s.type === 'disable');
-    const pct = (hm) => { const p = hm.split(':'); return ((+p[0] * 60 + +p[1]) / 1440) * 100; };
-    let band = '';
-    if (en && di) { const s = pct(en.startAt), e = pct(di.startAt); band = s < e ? '<span class="nh-tl-on" style="left:' + s + '%;width:' + (e - s) + '%"></span>' : '<span class="nh-tl-on" style="left:0;width:' + e + '%"></span><span class="nh-tl-on" style="left:' + s + '%;width:' + (100 - s) + '%"></span>'; }
-    const nowP = ((new Date().getHours() * 60 + new Date().getMinutes()) / 1440) * 100;
     return '<div class="nh-editor"><div class="nh-editor-main">' +
-      '<div class="nh-page-head"><div><a class="nh-back" href="#/automations">' + I('chevronL') + 'Automations</a><h1 class="nh-h1">' + esc(a.friendlyname) + '</h1><p class="nh-sub">Source device · ' + (d ? protoChip(d) : '') + ' ' + esc(a.triggers.length + ' trigger' + (a.triggers.length === 1 ? '' : 's')) + '</p></div></div>' +
+      '<div class="nh-page-head"><div>' + P.back() + '<h1 class="nh-h1">' + esc(a.friendlyname) + '</h1><p class="nh-sub">Source device · ' + (d ? protoChip(d) : '') + ' ' + esc(a.triggers.length + ' trigger' + (a.triggers.length === 1 ? '' : 's')) + '</p></div></div>' +
       (trig || empty('automation', 'No triggers', 'Add a trigger to decide what this device reacts to.')) +
       '<button type="button" class="nh-add-trig" data-act="ed-add-trig">' + I('plus') + '<span>Add trigger</span></button></div>' +
       '<aside class="nh-editor-side">' +
-      '<section class="nh-card"><div class="nh-card-head"><h2 class="nh-card-title">Details</h2></div><div class="nh-card-body nh-form">' +
-      '<div class="nh-field"><label>Device</label><div>' + esc(a.friendlyname) + ' <code class="nh-muted">' + esc(a.id) + '</code></div></div>' +
-      '<div class="nh-field"><label for="ed-desc">Description</label><input id="ed-desc" class="nh-input" data-path="description" data-kind="str" data-focus-key="desc" value="' + esc(a.description) + '"></div>' +
-      '<div class="nh-field is-row"><label>Enabled</label>' + toggle(a.enabled, 'ed-enabled', '', { label: 'Enabled' }) + '</div></div></section>' +
-      '<section class="nh-card"><div class="nh-card-head"><h2 class="nh-card-title">' + I('calendar') + 'Schedule</h2></div><div class="nh-card-body">' +
-      '<div class="nh-timeline" aria-label="24 hour schedule">' + band + sch.map((s) => '<span class="nh-tl-mark is-' + s.type + '" style="left:' + pct(s.startAt) + '%" title="' + s.type + ' at ' + s.startAt + '"></span>').join('') + '<span class="nh-tl-now" style="left:' + nowP + '%" title="now"></span></div><div class="nh-axis-row"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div>' +
-      ['enable', 'disable'].map((ty) => { const s = sch.find((x) => x.type === ty); return '<div class="nh-sched-row"><span class="nh-sched-t is-' + ty + '">' + (ty === 'enable' ? 'Enable at' : 'Disable at') + '</span>' + (s ? '<input type="time" class="nh-input" data-sched="' + ty + '" value="' + s.startAt + '" aria-label="' + ty + ' time">' + btn('', 'ed-sched-del', { icon: 'close', sm: true, title: 'Remove', arg: ty }) : btn('Add', 'ed-sched-add', { icon: 'plus', sm: true, arg: ty })) + '</div>'; }).join('') +
-      '<p class="nh-help">Hub timezone: ' + esc(Intl.DateTimeFormat().resolvedOptions().timeZone) + '</p></div></section>' +
-      '<section class="nh-card"><div class="nh-card-head"><h2 class="nh-card-title">' + I('check') + 'Checks</h2></div><div class="nh-card-body" data-region="checks">' + checksHtml(v) + '</div></section></aside>' +
-      '<div class="nh-savebar" data-region="savebar">' + savebarHtml(v) + '</div>' +
-      (S.jsonOpen ? '<section class="nh-card nh-json-card"><div class="nh-card-head"><h2 class="nh-card-title">' + I('code') + 'saveAutomation payload</h2><span class="nh-card-meta">read-only · exact shape sent over WS</span></div><pre class="nh-json" data-region="json">' + esc(JSON.stringify(a, null, 2)) + '</pre></section>' : '') + '</div>';
+      '<section class="nh-card"><div class="nh-card-head"><h2 class="nh-card-title">Details</h2></div><div class="nh-card-body">' + P.details() + '</div></section>' +
+      '<section class="nh-card"><div class="nh-card-head"><h2 class="nh-card-title">' + I('calendar') + 'Schedule</h2></div><div class="nh-card-body">' + P.schedule() + '</div></section>' +
+      '<section class="nh-card"><div class="nh-card-head"><h2 class="nh-card-title">' + I('check') + 'Checks</h2></div><div class="nh-card-body">' + P.checks() + '</div></section></aside>' +
+      P.savebar() + P.json() + '</div>';
   }
   const checksHtml = (v) => (v.errs.length ? '<p class="nh-err-sum">' + I('error') + v.errs.length + ' issue' + (v.errs.length > 1 ? 's' : '') + ' to fix before saving</p>' : '<p class="nh-ok-sum">' + I('check') + 'Ready to save</p>') + (v.warns.length ? '<p class="nh-warn-sum">' + I('warn') + v.warns.length + ' warning' + (v.warns.length > 1 ? 's' : '') + '</p>' : '');
   const savebarHtml = (v) => '<span class="nh-dirty">' + (dirty() ? I('edit') + 'Unsaved changes' : I('check') + 'All changes saved') + '</span>' + btn(S.jsonOpen ? 'Hide JSON' : 'View JSON', 'ed-json', { icon: 'code', kind: 'ghost' }) + btn('Discard', 'ed-discard', { disabled: !dirty() }) + btn(v.errs.length ? 'Fix ' + v.errs.length + ' to save' : 'Save', 'ed-save', { kind: 'primary', icon: 'check', disabled: !dirty() || v.errs.length > 0 });
@@ -1712,7 +1895,7 @@ window.NH_DESIGN_FOR = function (id, extra) {
     const selS = fk && document.activeElement.selectionStart, cont = $('.nh-content'), sc = cont ? cont.scrollTop : 0;
     const app = $('#app');
     if (!S.authed || r.name === 'login') app.innerHTML = V.login() + '<div class="nh-toast-host" aria-live="polite">' + S.toasts.map(toastHtml).join('') + '</div>';
-    else app.innerHTML = shell((V[r.name] || V.overview)(r));
+    else app.innerHTML = shellFn((V[r.name] || V.overview)(r));
     const c2 = $('.nh-content'); if (c2) c2.scrollTop = sc;
     if (fk) { const el = $('[data-focus-key="' + fk + '"]'); if (el) { el.focus(); try { if (selS != null && el.setSelectionRange) el.setSelectionRange(selS, selS); } catch (e) { /* type=number */ } } }
   }
@@ -1813,6 +1996,27 @@ window.NH_DESIGN_FOR = function (id, extra) {
     setTimeout(() => { S.typing = false; c.messages.push({ role: 'assistant', content: 'Three devices report weak Zigbee links (< 50 LQI): Attic room temperature sensor (14), Attic room power socket (36) and Attic smoke alarm (40). Bedroom radiator valve is offline (last 8 LQI). Adding a mains-powered router in the attic would likely help.' }); render(); const m = $('[data-region="msgs"]'); if (m) m.scrollTop = m.scrollHeight; }, 1400);
   }
 
+
+  /* ------------------------------------------------------------------ design layouts
+     A design may replace the shell, any view and add actions (designs/<id>.js). */
+  let shellFn = shell;
+  const overlays = () => customiser() + '<div class="nh-toast-host" aria-live="polite">' + S.toasts.map(toastHtml).join('') + '</div>' + dialogHtml();
+  const connText = () => (S.conn === 'connected' ? 'Connected' : S.conn === 'connecting' ? 'Reconnecting… (attempt ' + S.attempt + '/10)' : 'Disconnected');
+  const banners = () => '<div class="nh-banners">' + (S.conn !== 'connected' ? '<div class="nh-banner is-' + (S.conn === 'connecting' ? 'warn' : 'danger') + '" role="status">' + I(S.conn === 'connecting' ? 'refresh' : 'offline') + '<span><b>' + esc(connText()) + '.</b> Live values may be stale and device controls are disabled until the hub reconnects.</span>' + (S.conn === 'disconnected' ? btn('Reconnect', 'conn-reconnect', { sm: true }) : '') + '</div>' : '') +
+    (S.permit ? '<div class="nh-banner is-info" role="status">' + I('join') + '<span><b>Permit join is open</b> for Zigbee devices — <span data-permit>' + fmtTimer(S.permit) + '</span> remaining.</span>' + btn('Stop', 'permit-stop', { sm: true }) + '</div>' : '') + '</div>';
+  const connBtn = () => '<button type="button" class="nh-conn is-' + S.conn + '" data-act="conn-cycle" title="Hub connection (click to simulate)"><span class="nh-dot"></span><span class="nh-conn-txt">' + esc(connText()) + '</span></button>';
+  const roomsOf = () => { const G = S.cfg.hub.dashboardGroups; return Object.keys(G).map((g) => { const items = []; const ids = []; Object.values(G[g].deviceGroup).forEach((dg) => { ids.push(dg.deviceId); dg.exposes.forEach((x) => items.push([dg.deviceId, x])); }); return { name: g, items, ids }; }); };
+  if (typeof window.NH_LAYOUT === 'function') {
+    const ctx = { S, DATA, DESIGN, NAV, I, esc, clone, $, $$, btn, chip, toggle, seg, sel, empty, pageHead, statusChip, protoChip, signalChip, powerChip, devIcon, meta, fmt, fmtRaw, titleCase,
+      timeAgo, clock, tile, tileState, shortName, dcard, exposeRow, lineChart, binaryChart, spark, series, feedHtml, describeTrigger, condText, actText, validate, dirty: () => dirty(), autoStatus, canManual,
+      edParts, editorHtml, V: Object.assign({}, V), DV, A, route, go, dev, devCfg, isOnline, isDisabled, lqiOf, battOf, canControl, capability, protocol, PROTOCOLS, viewTitle, customiser, appearanceForm,
+      overlays, banners, connBtn, connText, fmtTimer, pkey, isWritable, isPreset, stateExposeOf, getP, setP, toast, openDialog, sendCommand, roomsOf, render: () => render(), defaultShell: shell };
+    const L = window.NH_LAYOUT(ctx) || {};
+    if (L.shell) shellFn = L.shell;
+    Object.assign(V, L.views || {});
+    Object.assign(A, L.actions || {});
+    if (L.live) L.live.forEach((x) => LIVE.indexOf(x) < 0 && LIVE.push(x));
+  }
   document.addEventListener('click', (ev) => {
     const el = ev.target.closest('[data-act]'); if (!el || el.disabled) return;
     const fn = A[el.dataset.act]; if (!fn) return;

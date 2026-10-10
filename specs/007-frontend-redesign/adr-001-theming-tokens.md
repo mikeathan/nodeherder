@@ -30,7 +30,8 @@ dependency; accent scale generation is a ~40-line utility.
 ## Consequences
 
 + Runtime customisation, one place for colours, retro skins as CSS only.
-− Some skins (Phosphor, Platinum) need component-level overrides via `pt` classes.
+− Some directions (Floorplan, Deck) need component-level overrides via `pt` classes, and
+  each layout direction is a separate shell/route component set, not only tokens.
 − Two token systems coexist (PrimeVue's and `--nh-*`) — mitigated by mapping one way only.
 Operational cost: none at runtime; bundle expected smaller after removing the 660-line
 preset (verify NFR-03).

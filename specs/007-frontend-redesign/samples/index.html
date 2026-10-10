@@ -31,21 +31,21 @@
 <body>
 <main>
   <h1>NodeHerder redesign — design samples</h1>
-  <p class="lead">Five interactive, dependency-free prototypes for <a href="../spec.md">spec 007</a>. All share the same mock household
-  and screens, so you can compare look &amp; feel directly. Every sample has a live <b>Appearance</b> panel (palette icon, top right):
-  mode, palette, accent (incl. custom colour), density, corner radius, text size and retro effects. Switch designs from that panel
-  and you stay on the same screen. Mix-and-match is fine — tell me e.g. “Mesh layout with the Studio controls”.</p>
+  <p class="lead">Round 2. Hearth is kept from round 1; the other four are new directions with their own layout,
+  navigation, page structure and automation editor, not recolours. All five share the same mock household, so you can
+  compare them directly. Each has an <b>Appearance</b> panel (palette icon) for mode, palette, accent, density, corner
+  radius and text size. Open <b>All pages</b> to see every screen of a design on one scroll.</p>
   <div class="grid" id="grid"></div>
 
   <section>
-    <h3>What to try in each sample</h3>
+    <h3>What is different about each</h3>
     <ul>
-      <li><b>Home</b>: tap a tile icon to switch — it shows <i>Sending…</i> until confirmed. The Garage → Hallway Shelly plug simulates a 5 s command timeout. “Edit dashboard” adds/renames/removes areas and tiles.</li>
-      <li><b>Automations → any automation</b>: the new single-page When / If / Then editor. Remove a value or add an action to see inline validation, the live sentence summary, warnings, the JSON payload view and the unsaved-changes guard.</li>
-      <li><b>Device list</b>: search, protocol (Zigbee / Wi-Fi·HTTP), power and status filters, sortable columns; Zigbee-only actions are disabled for HTTP devices.</li>
-      <li><b>Overview</b>: Zigbee2MQTT-style counts and a live activity feed. Click the connection pill in the header to simulate reconnecting / offline.</li>
-      <li><b>Components</b>: every building block and state (tiles, chips, dialogs, toasts, empty/error/loading, tokens, icons).</li>
-      <li>Keyboard: <code>Alt+1…9</code> switches sections, <code>Esc</code> closes dialogs; all controls are focusable. Try a phone-width window too.</li>
+      <li><b>Hearth</b>: sidebar, areas of tiles, When / If / Then flow editor (unchanged from round 1).</li>
+      <li><b>Floorplan</b>: the home page is a drawn floor plan with switch pins; tap a room for its inspector. Devices grouped by room, a faceted finder, rules shown as device-to-device diagrams, and a five-step wizard editor.</li>
+      <li><b>Workbench</b>: IDE layout with an explorer tree, open tabs, property grids (type, access, category), a status bar and a live log panel. The editor is an outline, an inspector and the live JSON payload side by side.</li>
+      <li><b>Brief</b>: one calm column. Home is written as sentences with inline switches; <code>Ctrl&nbsp;K</code> opens a command palette for any device, room, rule or action. Rules are edited as fill-in-the-blanks sentences.</li>
+      <li><b>Deck</b>: wall-tablet panel with a clock strip, one room per page (arrow keys or the pager), big dials and light buttons, and a bottom dock. The editor is a node canvas; tap a node to edit it in a drawer.</li>
+      <li>All of them: switches show <i>Sending…</i> until the device confirms; the Hallway Shelly plug simulates a timeout. Click the connection pill to simulate reconnecting or offline.</li>
     </ul>
   </section>
   <section>

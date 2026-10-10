@@ -14,11 +14,11 @@ def read(rel):
 def inline(html):
     html = re.sub(r'<link rel="stylesheet" href="((?:shared|designs)/[^"]+)">',
                   lambda m: '<style>\n' + read(m.group(1)) + '\n</style>', html)
-    html = re.sub(r'<script src="(shared/[^"]+)"></script>',
+    html = re.sub(r'<script src="((?:shared|designs)/[^"]+)"></script>',
                   lambda m: '<script>\n' + read(m.group(1)).replace('</script', '<\\/script') + '\n</script>', html)
     return html
 
-for name in ['index', 'hearth', 'mesh', 'phosphor', 'studio', 'platinum']:
+for name in ['index', 'hearth', 'floorplan', 'workbench', 'brief', 'deck']:
     html = inline(read(name + '.html'))
     if name != 'index':
         html = html.replace("NH_DESIGN_FOR('", "NH_DESIGN_FOR_ALL('")

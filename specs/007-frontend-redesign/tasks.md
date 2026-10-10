@@ -11,6 +11,8 @@ Spec: [spec.md](spec.md) | Plan: [plan.md](plan.md) | Status: Phase 0 complete; 
 - [x] T003 — Build 5 static design samples (plus single-file `samples/standalone/*.html` with an All pages view) covering every FR-01 screen with customiser in
   `samples/`; IDs: AC-01, AC-02; done: rendered in headless Chromium for every design ×
   screen (see plan traceability).
+- [x] T003b — Round 2 after owner feedback (2026-10-10): keep Hearth, add four structurally
+  different designs (`design-directions.md`, `samples/designs/*.js`); done: verified in Chromium.
 - [ ] T004 — Owner review: choose design / combination; IDs: Q-01, SC-01; done: decision
   recorded in spec.
 
