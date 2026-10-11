@@ -157,6 +157,13 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
     setDashboardGroup(state, dashboardGroup: DashboardGroup) {
       state.appConfig.hub.dashboardGroups[dashboardGroup.name] = dashboardGroup;
     },
+    renameDashboardGroup(state, { oldName, newName }: { oldName: string; newName: string }) {
+      const groups = state.appConfig.hub.dashboardGroups;
+      const group = groups[oldName];
+      if (!group || oldName === newName) return;
+      delete groups[oldName];
+      groups[newName] = { ...group, name: newName };
+    },
     removeDashboardGroup(state, name: string) {
       delete state.appConfig.hub.dashboardGroups[name];
     },
@@ -228,7 +235,7 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
     },
 
     saveDeviceConfigDefaults({ commit, dispatch }, config: DeviceConfig) {
-      commit('setDeviceDeConfigfaults', config);
+      commit('setDeviceDefaults', config);
       dispatch(
         'ws/emit',
         {

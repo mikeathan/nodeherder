@@ -248,6 +248,7 @@ func cloneHubConfig(hub *HubConfig) *HubConfig {
 			if group != nil {
 				groupCopy := *group
 				groupCopy.DeviceGroup = maps.Clone(group.DeviceGroup)
+				groupCopy.Order = clonePointer(group.Order)
 				group = &groupCopy
 			}
 			copy.DashboardGroups[name] = group

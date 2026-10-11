@@ -1,132 +1,100 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import DevicePage from '../components/device/DevicePage.vue';
-import Dashboard from '../components/dashboards/DeviceDashboard.vue';
-import AutomationsViewer from '../components/automations/Viewer.vue';
-import AutomationsEditor from '../components/automations/Editor.vue';
-import AutomationsCreator from '../components/automations/Creator.vue';
-import Settings from '../components/hub/settings/Settings.vue';
-import ConsoleViewer from '../components/hub/console/ConsoleViewer.vue';
-import DeviceList from '../components/device-list/DeviceList.vue';
-import GroupDashboard from '../components/dashboards/GroupDashboard.vue';
-import DeviceView from '@/components/device/DeviceView.vue';
+import type { RouteRecordRaw } from 'vue-router';
 import LoginPage from '@/components/auth/LoginPage.vue';
-import AssistantView from '@/components/assistant/AssistantView.vue';
 import { store } from '@/store/index.js';
 import { RouteName } from '@/types/router';
-import type { RouteRecordRaw } from 'vue-router';
 
+declare module 'vue-router' {
+  interface RouteMeta {
+    /** Header and document title. */
+    title?: string;
+    public?: boolean;
+    requiresAuth?: boolean;
+    /** 'panel' renders the route full screen without the app shell (panel mode). */
+    layout?: 'app' | 'panel';
+  }
+}
+
+/* Paths are unchanged from the previous UI so bookmarks keep working; screens load on demand. */
 const routes: RouteRecordRaw[] = [
+  { path: '/', name: RouteName.Login, component: LoginPage, meta: { title: 'Sign in', public: true } },
   {
-    path: '/',
-    name: RouteName.Login,
-    component: LoginPage,
-    meta: {
-      title: 'Node-herder - Login',
-      public: true,
-    },
-  },
-  {
-    path: '/devicedashboard',
-    name: RouteName.Devices,
-    component: Dashboard,
-    meta: {
-      title: 'Node-herder - Device Dashboard',
-      requiresAuth: true,
-    },
+    path: '/overview',
+    name: RouteName.Overview,
+    component: () => import('@/components/overview/OverviewPage.vue'),
+    meta: { title: 'Overview', requiresAuth: true },
   },
   {
     path: '/groupdashboard',
     name: RouteName.GroupDashboard,
-    component: GroupDashboard,
-    meta: {
-      title: 'Node-herder - Groups Dashboard',
-      requiresAuth: true,
-    },
+    component: () => import('@/components/dashboards/GroupDashboard.vue'),
+    meta: { title: 'Home', requiresAuth: true },
+  },
+  {
+    path: '/devicedashboard',
+    name: RouteName.Devices,
+    component: () => import('@/components/dashboards/DeviceDashboard.vue'),
+    meta: { title: 'Devices', requiresAuth: true },
   },
   {
     path: '/devicelist',
     name: RouteName.DeviceList,
-    component: DeviceList,
-    meta: {
-      title: 'Node-herder - Device List',
-      requiresAuth: true,
-    },
-  },
-  {
-    path: '/viewer',
-    name: RouteName.Viewer,
-    component: AutomationsViewer,
-    meta: {
-      title: 'Node-herder - Automation viewer',
-      requiresAuth: true,
-    },
-  },
-  {
-    path: '/settings',
-    name: RouteName.Settings,
-    component: Settings,
-    meta: {
-      title: 'Node-herder - Settings',
-      requiresAuth: true,
-    },
-  },
-  {
-    path: '/consoleviewer',
-    name: RouteName.ConsoleViewer,
-    component: ConsoleViewer,
-    meta: {
-      title: 'Node-herder - Console viewer',
-      requiresAuth: true,
-    },
-  },
-  {
-    path: '/creator',
-    name: RouteName.Creator,
-    component: AutomationsCreator,
-    meta: {
-      title: 'Node-herder - Creator',
-      requiresAuth: true,
-    },
-  },
-  {
-    path: '/editor/:id',
-    name: RouteName.Editor,
-    component: AutomationsEditor,
-    props: true,
-    meta: {
-      title: 'Node-herder - Editor',
-      requiresAuth: true,
-    },
+    component: () => import('@/components/device-list/DeviceList.vue'),
+    meta: { title: 'Device list', requiresAuth: true },
   },
   {
     path: '/devicepage/:id',
     name: RouteName.DevicePage,
-    component: DevicePage,
+    component: () => import('@/components/device/DevicePage.vue'),
     props: true,
-    meta: {
-      title: 'Node-herder - Device page',
-      requiresAuth: true,
-    },
+    meta: { title: 'Device', requiresAuth: true },
+  },
+  // Kept for old links: the single-device view is now the device page.
+  { path: '/deviceview/:id', name: RouteName.DeviceView, redirect: (to) => ({ name: RouteName.DevicePage, params: { id: to.params.id } }) },
+  {
+    path: '/viewer',
+    name: RouteName.Viewer,
+    component: () => import('@/components/automations/AutomationList.vue'),
+    meta: { title: 'Automations', requiresAuth: true },
   },
   {
-    path: '/deviceview/:id',
-    name: RouteName.DeviceView,
-    component: DeviceView,
+    path: '/creator',
+    name: RouteName.Creator,
+    component: () => import('@/components/automations/AutomationCreator.vue'),
+    meta: { title: 'New automation', requiresAuth: true },
+  },
+  {
+    path: '/editor/:id',
+    name: RouteName.Editor,
+    component: () => import('@/components/automations/editor/AutomationEditor.vue'),
     props: true,
-    meta: {
-      title: 'Node-herder - Device view',
-      requiresAuth: true,
-    },
+    meta: { title: 'Automation', requiresAuth: true },
   },
   {
     path: '/assistant',
     name: RouteName.Assistant,
-    component: AssistantView,
-    meta: {
-      title: 'Node-herder - Assistant',
-      requiresAuth: true,
-    },
+    component: () => import('@/components/assistant/AssistantView.vue'),
+    meta: { title: 'Assistant', requiresAuth: true },
   },
+  {
+    path: '/consoleviewer',
+    name: RouteName.ConsoleViewer,
+    component: () => import('@/components/hub/console/ConsoleViewer.vue'),
+    meta: { title: 'Console', requiresAuth: true },
+  },
+  {
+    path: '/settings',
+    name: RouteName.Settings,
+    component: () => import('@/components/hub/settings/Settings.vue'),
+    meta: { title: 'Settings', requiresAuth: true },
+  },
+  {
+    path: '/panel',
+    name: RouteName.Panel,
+    component: () => import('@/components/panel/PanelMode.vue'),
+    meta: { title: 'Panel', requiresAuth: true, layout: 'panel' },
+  },
+  { path: '/:pathMatch(.*)*', redirect: { name: RouteName.GroupDashboard } },
 ];
 
 export const router = createRouter({
@@ -134,19 +102,19 @@ export const router = createRouter({
   routes,
 });
 
-router.beforeEach((to, from, next) => {
-  // document.title = to.meta.title || 'Node-herder';
+router.beforeEach((to) => {
   const isAuthenticated = store.getters['auth/isAuthenticated']();
   if (to.meta.requiresAuth && !isAuthenticated) {
-    console.log('Route requires auth and user is not authenticated, redirecting to login.');
-    return next({ name: 'login' });
+    return { name: RouteName.Login, query: to.fullPath !== '/' ? { redirect: to.fullPath } : undefined };
   }
+  if (to.meta.public && isAuthenticated && to.name === RouteName.Login) {
+    return { name: RouteName.GroupDashboard };
+  }
+  return true;
+});
 
-  if (to.meta.public && isAuthenticated && to.name === 'login') {
-    console.log('User is already authenticated, redirecting to group dashboard.');
-    return next({ name: 'groupdashboard' });
-  }
-  next();
+router.afterEach((to) => {
+  document.title = to.meta.title ? `${to.meta.title} · NodeHerder` : 'NodeHerder';
 });
 
 export default router;

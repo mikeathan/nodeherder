@@ -16,7 +16,7 @@ import {
   TriggerTypes,
   TimeCondition,
   PublishModes,
-} from '../types/automation.type.js';
+} from '@/types/automation.type';
 
 export const EqualityOperators: string[] = ['=', '<=', '>=', '>', '<'];
 export const NumericOperators: string[] = ['+', '-', '*'];

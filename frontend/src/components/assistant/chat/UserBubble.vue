@@ -96,7 +96,7 @@
     background-color: rgba(0, 0, 0, 0.06);
   }
 
-  html.dark .user-bubble {
+  :global([data-mode='dark']) .user-bubble {
     background-color: rgba(255, 255, 255, 0.08);
   }
 </style>

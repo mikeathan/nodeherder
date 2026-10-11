@@ -3,6 +3,9 @@ package settings
 type DashboardGroup struct {
 	Name        string                  `json:"name"`
 	DeviceGroup map[string]*DeviceGroup `json:"deviceGroup"`
+	// Order is the display position chosen by the user (spec 007 FR-09). Nil means
+	// "not ordered yet"; such groups are shown after ordered ones, by name.
+	Order *int `json:"order,omitempty"`
 }
 
 type DeviceGroup struct {
@@ -34,4 +37,3 @@ func (e *DashboardGroup) AddDeviceExpose(deviceId string, expose string) {
 	}
 	e.DeviceGroup[deviceId].AddExpose(expose)
 }
-

@@ -9,6 +9,7 @@
   import { getConsoleLevelSeverity } from '@/contracts/console';
   import Tag from 'primevue/tag';
   import Select from 'primevue/select';
+  import UiPageHeader from '@/components/ui/UiPageHeader.vue';
 
   const levelOptions = ref(['trace', 'debug', 'info', 'warn', 'error', 'fatal']);
 
@@ -60,11 +61,12 @@
 
 <style scoped>
   .message-container {
-    max-height: 600px;
+    max-height: calc(100dvh - 16rem);
+    min-height: 16rem;
     overflow-y: auto;
     padding: 0.5rem;
-    background: var(--surface-b);
-    border-radius: var(--border-radius);
+    background: var(--nh-surface-2);
+    border-radius: var(--nh-radius-m);
     border: 1px solid var(--surface-border);
   }
 
@@ -79,7 +81,7 @@
   }
 
   .log-entry:hover {
-    background: var(--surface-hover);
+    background: var(--nh-surface);
   }
 
   .log-meta {
@@ -124,7 +126,7 @@
       padding: 0.5rem;
       margin-bottom: 0.5rem;
       border: 1px solid var(--surface-border);
-      border-radius: var(--border-radius);
+      border-radius: var(--nh-radius-m);
     }
 
     .log-entry.debug {
@@ -150,13 +152,20 @@
       justify-content: space-between;
     }
   }
+  @media (max-width: 640px) {
+    .log-entry {
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+    .log-meta {
+      min-width: 0;
+    }
+  }
 </style>
 <template>
-  <Card>
-    <template #title>
-      <h2 class="m-0">Remote logger</h2>
-    </template>
-    <template #content>
+  <div>
+    <UiPageHeader title="Console" subtitle="Live log messages from the hub." />
+    <div class="nh-card nh-card-body">
       <div class="flex flex-wrap align-items-center gap-3 pb-3">
         <div class="flex align-items-center gap-2 bg-black-alpha-10 p-2 border-round">
           <Toggle
@@ -201,6 +210,6 @@
           <span>No logs available</span>
         </div>
       </div>
-    </template>
-  </Card>
+    </div>
+  </div>
 </template>

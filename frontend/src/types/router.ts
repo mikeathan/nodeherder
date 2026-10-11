@@ -1,5 +1,7 @@
 export enum RouteName {
   Login = 'login',
+  Overview = 'overview',
+  Panel = 'panel',
   Devices = 'devices',
   GroupDashboard = 'groupdashboard',
   DeviceList = 'devicelist',

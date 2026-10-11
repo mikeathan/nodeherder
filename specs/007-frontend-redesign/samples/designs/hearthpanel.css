@@ -1,0 +1,68 @@
+/* 6 · Hearth + Panel — Hearth styles (hearth.css) plus panel mode. Themes come from shared/themes.css. */
+:root { --hp-font: 'Lexend', 'Figtree', system-ui, sans-serif; }
+.hp-panel { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr) auto; height: 100dvh; font-family: var(--hp-font); font-weight: 300;
+  background: radial-gradient(60rem 40rem at 10% -10%, color-mix(in srgb, var(--dk-climate) 16%, transparent), transparent 70%), radial-gradient(50rem 40rem at 110% 110%, color-mix(in srgb, var(--dk-lamp) 12%, transparent), transparent 70%), var(--nh-bg); }
+.hp-panel b, .hp-panel h2 { font-weight: 500; }
+.hp-panel.is-embed { height: auto; border-radius: var(--nh-radius-l); overflow: hidden; }
+.hp-strip { display: flex; align-items: center; gap: 1rem; padding: 0.8rem 1.5rem; }
+.hp-logo { display: block; height: 3rem; flex: none; } .hp-logo .nh-logo-img { height: 3rem; max-height: none; }
+.hp-clock { display: flex; align-items: baseline; gap: 0.8rem; } .hp-clock b { font-size: 2.6rem; font-weight: 300; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; } .hp-clock span { color: var(--nh-text-muted); }
+.hp-out { display: flex; align-items: center; gap: 0.4rem; color: var(--nh-text-muted); padding-left: 1rem; border-left: 1px solid var(--nh-border); } .hp-out b { color: var(--nh-text); }
+.hp-gap { flex: 1; }
+.hp-strip .nh-btn.is-icon { width: 2.6rem; height: 2.6rem; border-radius: 50%; background: var(--dk-glass); }
+.hp-strip .nh-conn { height: 2.6rem; background: var(--dk-glass); }
+.hp-content { overflow: auto; padding: 0.5rem 1.5rem 1.5rem; outline: none; }
+.hp-dock { display: flex; justify-content: center; gap: 0.4rem; padding: 0.5rem; margin: 0 auto 0.9rem; background: var(--nh-surface); border: 1px solid var(--nh-border); border-radius: 26px; }
+.hp-dock button, .hp-dock a { display: flex; flex-direction: column; align-items: center; gap: 0.2rem; min-width: 5.5rem; min-height: 4rem; justify-content: center; padding: 0.4rem 0.8rem; border-radius: 18px; border: 0; background: none; color: var(--nh-text-muted); font: inherit; font-size: 0.85rem; text-decoration: none; cursor: pointer; }
+.hp-dock .nh-ic { width: 1.6rem; height: 1.6rem; } .hp-dock button:hover, .hp-dock a:hover { background: var(--nh-surface-2); color: var(--nh-text); }
+.hp-dock [aria-pressed='true'] { background: var(--nh-accent); color: var(--nh-accent-contrast); }
+.hp-pager { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 1.25rem; }
+.hp-pager-list { display: flex; gap: 0.2rem; overflow-x: auto; scroll-snap-type: x proximity; flex: 1; min-width: 0; }
+.hp-pager [role='tab'] { border: 0; background: none; color: var(--nh-text-muted); font: inherit; font-size: 1.25rem; padding: 0.5rem 1rem; border-radius: 99px; cursor: pointer; white-space: nowrap; scroll-snap-align: start; }
+.hp-pager [role='tab'][aria-selected='true'] { color: var(--nh-text); background: var(--nh-surface-2); font-weight: 500; }
+.hp-pager > .nh-btn.is-icon { width: 3rem; height: 3rem; border-radius: 50%; flex: none; }
+.hp-room { display: grid; grid-template-columns: minmax(15rem, 22rem) minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+.hp-room.no-climate { grid-template-columns: minmax(0, 1fr); }
+.hp-climate { background: var(--nh-surface); border: 1px solid var(--nh-border); border-radius: var(--nh-radius-l); padding: 1.25rem; }
+.hp-dial { position: relative; margin: 0; display: grid; place-items: center; }
+.hp-dial svg { width: 100%; max-width: 17rem; }
+.hp-dial circle { fill: none; stroke-width: 12; stroke-linecap: round; }
+.hp-track { stroke: var(--nh-surface-2); }
+.hp-arc { stroke: var(--hp-kc, var(--dk-climate)); filter: drop-shadow(0 0 8px color-mix(in srgb, var(--hp-kc, var(--dk-climate)) 50%, transparent)); }
+.hp-dial.kind-ok { --hp-kc: var(--nh-ok); } .hp-dial.kind-signal { --hp-kc: var(--nh-accent); } .hp-dial.kind-battery, .hp-dial.kind-switch { --hp-kc: var(--dk-lamp); }
+.hp-dial figcaption { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 2rem; }
+.hp-dial figcaption b { font-size: 2.6rem; font-weight: 300; font-variant-numeric: tabular-nums; line-height: 1.1; } .hp-dial figcaption span { color: var(--nh-text-muted); font-size: 0.95rem; }
+.hp-dial.is-off { padding: 3rem 1rem; gap: 0.4rem; color: var(--nh-text-muted); } .hp-dial.is-off .nh-ic { width: 2.5rem; height: 2.5rem; color: var(--nh-danger); }
+.hp-buttons { display: grid; grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr)); gap: 1rem; }
+.hp-big { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem; min-height: 9.5rem; padding: 1.1rem; border-radius: var(--nh-radius-l); border: 1px solid var(--nh-border); background: var(--nh-surface); color: var(--nh-text); font: inherit; text-align: left; text-decoration: none; cursor: pointer; transition: background var(--nh-motion), transform 80ms; }
+.hp-big:active { transform: scale(0.98); }
+.hp-big b { font-size: 1.1rem; margin-top: auto; } .hp-big > span:last-child { color: var(--nh-text-muted); }
+.hp-big-ic { position: relative; display: grid; place-items: center; width: 3.6rem; height: 3.6rem; border-radius: 50%; background: var(--nh-surface-2); color: var(--nh-kc, var(--nh-text-muted)); }
+.hp-big-ic > .nh-ic { width: 1.7rem; height: 1.7rem; }
+.hp-ring { position: absolute; inset: -6px; width: calc(100% + 12px); height: calc(100% + 12px); transform: rotate(-90deg); }
+.hp-ring circle { fill: none; stroke: #2b1a00; stroke-width: 6; stroke-linecap: round; opacity: 0.5; }
+.hp-big.is-on { background: var(--dk-lamp); border-color: transparent; color: #2b1a00; box-shadow: 0 10px 40px color-mix(in srgb, var(--dk-lamp) 35%, transparent); }
+.hp-big.is-on > span:last-child { color: #2b1a00; opacity: 0.8; } .hp-big.is-on .hp-big-ic { background: rgb(255 255 255 / 0.45); color: #2b1a00; }
+.hp-big.is-pending { animation: nh-pulse 0.8s infinite; } .hp-big.is-off { opacity: 0.6; }
+.hp-gauges { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+.hp-gauges .hp-dial { background: var(--nh-surface); border: 1px solid var(--nh-border); border-radius: var(--nh-radius-l); padding: 1rem; } .hp-gauges .hp-dial figcaption b { font-size: 2rem; }
+.hp-h2 { font-size: 1.3rem; margin: 0 0 0.75rem; }
+.hp-rows { display: flex; flex-direction: column; gap: 0.5rem; }
+.hp-row { display: flex; align-items: center; gap: 1rem; min-height: 4rem; padding: 0.6rem 1.1rem; border-radius: var(--nh-radius-m); background: var(--nh-surface); border: 1px solid var(--nh-border); text-decoration: none; }
+.hp-row > .nh-ic { width: 1.7rem; height: 1.7rem; color: var(--nh-accent); } .hp-row span { color: var(--nh-text-muted); margin-left: auto; text-align: right; }
+.hp-sep { border: 0; border-top: 1px solid var(--nh-border); margin: 1.5rem 0; }
+@media (max-width: 760px) {
+  .hp-strip { gap: 0.6rem; padding: 0.6rem 1rem; } .hp-clock b { font-size: 2rem; } .hp-clock span, .hp-out, .hp-strip .nh-conn-txt { display: none; }
+  .hp-logo, .hp-logo .nh-logo-img { height: 2.4rem; }
+  .hp-content { padding: 0.25rem 1rem 1rem; }
+  .hp-room { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+  .hp-climate { padding: 0.75rem; } .hp-dial svg { max-width: 12rem; } .hp-dial figcaption b { font-size: 2rem; }
+  .hp-buttons { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+  .hp-big { min-height: 8rem; padding: 0.9rem; }
+  .hp-pager [role='tab'] { font-size: 1.05rem; padding: 0.45rem 0.8rem; }
+  .hp-pager > .nh-btn.is-icon { width: 2.6rem; height: 2.6rem; }
+  .hp-gauges { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; } .hp-gauges .hp-dial figcaption b { font-size: 1.5rem; } .hp-gauges .hp-dial figcaption span { font-size: 0.8rem; }
+  .hp-row { flex-wrap: wrap; } .hp-row span { flex-basis: 100%; margin-left: 2.7rem; text-align: left; }
+  .hp-dock { margin: 0; border-radius: 0; border-width: 1px 0 0; padding-bottom: max(0.5rem, env(safe-area-inset-bottom)); }
+  .hp-dock button, .hp-dock a { flex: 1; min-width: 0; }
+}
