@@ -120,100 +120,81 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 		return
 	}
 
-	var updatePackage *devices.UpdatePackage
-	var hasChanges bool
-	var delta map[string]interface{}
+	live, delta, sampled := d.collectUpdate(payload)
+	d.restoreAvailability(live)
+	live.LastSeen = getLastSeen(payload)
+	d.device.SetLastSeen(live.LastSeen)
 
-	for name, newValue := range payload {
-
-		expose, ok := d.device.GetExpose(name)
-		if !ok {
-			utils.LogTracef("device %s: expose %s not found in device model, skipping", d.device.Id, name)
-			continue
-		}
-
-		// Deduplicate stateful properties to prevent automation feedback loops (echoes)
-		// and database spam from noisy sensors. Event values bypass this to ensure
-		// repeated physical triggers (like consecutive button clicks) are always processed.
-		if !expose.IsEventValue(newValue) && utils.ComparePayloadValues(expose.Data.Value(), newValue) {
-			utils.LogTracef("device %s: expose %s value unchanged, skipping", d.device.Id, name)
-			continue
-		}
-
-		// Lazy initialize delta and updatePackage only when a real change is detected
-		if delta == nil {
-			delta = make(map[string]interface{})
-		}
-		// TODO: needs refactoring to introduce a Filter-First approach
-		if updatePackage == nil {
-			updatePackage = devices.NewUpdatePackage(d.device.Id)
-		}
-
-		// always update in-memory state so reads (e.g. automation step
-		// calculations) see the latest value regardless of debounce
-		d.device.Exposes[name].Data.SetValue(newValue)
-		hasChanges = true
-		delta[name] = newValue
-
-		if d.debouncerService.DebounceExpose(expose) {
-			utils.LogTracef("device %s: expose %s is debounced, skipping", d.device.Id, name)
-			continue
-		}
-
-		utils.LogTracef("device %s: expose %s scheduled for update", d.device.Id, name)
-		updatePackage.Data[name] = newValue
-	}
-
-	// if we are here even with no expose changes, it still means that the device is online
-	if d.device.GetAvailability() == devices.OfflineAvailability {
-		d.device.SetAvailability(devices.OnlineAvailability)
-
-		// Lazy initialize updatePackage if it hasn't been created yet
-		if updatePackage == nil {
-			updatePackage = devices.NewUpdatePackage(d.device.Id)
-		}
-
-		// TODO: handle this below better
-		// -updatePackage contains Availability only if we have a change on Device Availability. else its ommited.
-		// thats because we use updatePackage for either measurement data or device availability change
-		// -if everything is debounced then we wont emit anything. so need to think about that
-		updatePackage.Availability = devices.OnlineAvailability // we handle it manually for now.
-
-		utils.LogInfof("device [%s] %s is online", d.device.Id, d.device.FriendlyName)
-		d.resetAvailabilityTimer()
-	}
-
-	lastSeen := getLastSeen(payload)
-	d.device.SetLastSeen(lastSeen)
-
-	// automation: only trigger when relevant exposes have changed
-	if hasChanges {
+	// Accepted state is visible to automation before any output callback.
+	if len(delta) > 0 {
 		d.attemptToTriggerAutomation(delta)
 	}
-
-	// storage + UI: only emit for non-debounced changes or availability changes
-	if updatePackage != nil && (updatePackage.HasData() || updatePackage.Availability != "") {
-		updatePackage.LastSeen = lastSeen
-
-		if updatePackage.HasData() {
-			d.attemptToStoreMetrics(updatePackage.Data)
-		}
-
-		// this will update device in store and emit ws event to connected clients
-		d.events.OnDeviceUpdated(d.device, updatePackage)
+	if len(sampled) > 0 {
+		d.attemptToStoreMetrics(sampled)
 	}
+	if live.HasData() || live.Availability != "" {
+		d.events.OnDeviceUpdated(d.device, live)
+	}
+}
+
+// collectUpdate separates device evidence, changed automation inputs and sampled
+// metrics. Writable same-value reports can confirm a command without retriggering
+// automation or consuming the metrics sampling window.
+func (d *DeviceLifetimeService) collectUpdate(payload map[string]interface{}) (*devices.UpdatePackage, map[string]interface{}, map[string]interface{}) {
+	live := devices.NewUpdatePackage(d.device.Id)
+	delta := make(map[string]interface{})
+	sampled := make(map[string]interface{})
+	for name, value := range payload {
+		expose, ok := d.device.GetExpose(name)
+		if !ok {
+			continue
+		}
+		changed := acceptExposeReport(expose, value)
+		if changed {
+			delta[name] = value
+			if !d.debouncerService.DebounceExpose(expose) {
+				sampled[name] = value
+			}
+		}
+		if changed || isWritableExpose(expose) {
+			live.Data[name] = value
+		}
+	}
+	return live, delta, sampled
+}
+
+func acceptExposeReport(expose *devices.Entity, value interface{}) bool {
+	if !expose.IsEventValue(value) && utils.ComparePayloadValues(expose.Data.Value(), value) {
+		return false
+	}
+	expose.Data.SetValue(value)
+	return true
+}
+
+func isWritableExpose(expose *devices.Entity) bool {
+	return expose.AccessMode == bridge.WriteAccessMode || expose.AccessMode == bridge.ReadWriteAccessMode
+}
+
+func (d *DeviceLifetimeService) restoreAvailability(live *devices.UpdatePackage) {
+	if d.device.GetAvailability() != devices.OfflineAvailability {
+		return
+	}
+	d.device.SetAvailability(devices.OnlineAvailability)
+	live.Availability = devices.OnlineAvailability
+	utils.LogInfof("device [%s] %s is online", d.device.Id, d.device.FriendlyName)
+	d.resetAvailabilityTimer()
 }
 
 // attemptToTriggerAutomation fires the automation engine if automation is
 // enabled for this device. Only triggers when relevant exposes have changed.
 func (d *DeviceLifetimeService) attemptToTriggerAutomation(delta map[string]interface{}) {
 	if !d.automationQueries.IsAutomationEnabled(d.device.Id) {
-		utils.LogDebugf("device %s: automation disabled, skipping", d.device.Id)
+		utils.LogTracef("device %s: automation disabled, skipping", d.device.Id)
 		return
 	}
 
 	if d.events.OnDeviceAutomationTriggered != nil {
-		utils.LogDebugf("device %s: triggering automation for changed exposes", d.device.Id)
+		utils.LogTracef("device %s: dispatching changed exposes to automation evaluation", d.device.Id)
 		d.events.OnDeviceAutomationTriggered(d.device, delta)
 	}
 }
@@ -223,7 +204,7 @@ func (d *DeviceLifetimeService) attemptToTriggerAutomation(delta map[string]inte
 func (d *DeviceLifetimeService) attemptToStoreMetrics(payload map[string]interface{}) {
 
 	if !d.configCache.IsMetricsEnabled(d.device.Id) {
-		utils.LogDebugf("device %s: metrics disabled, skipping storage", d.device.Id)
+		utils.LogTracef("device %s: metrics disabled, skipping storage", d.device.Id)
 		return
 	}
 
@@ -371,7 +352,7 @@ func getLastSeen(data map[string]interface{}) string {
 			return strVal
 		}
 	}
-	utils.LogDebug("lastSeen not in payload, using current time.")
+	utils.LogTrace("lastSeen not in payload, using current time.")
 	return getCurrentTime()
 }
 

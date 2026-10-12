@@ -109,16 +109,16 @@ func (s *appStore) AppConfig() *settings.AppConfigCache {
 
 func (s *appStore) StoreMetrics(friendlyName string, data map[string]any) error {
 	id := s.ResolveFriendlyName(friendlyName)
-	utils.LogDebugf("StoreMetrics: friendlyName=%s resolvedId=%s exposeCount=%d", friendlyName, id, len(data))
+	utils.LogTracef("StoreMetrics: friendlyName=%s resolvedId=%s exposeCount=%d", friendlyName, id, len(data))
 
 	config, err := s.config.GetDeviceConfig(id)
 	if err != nil {
-		utils.LogDebugf("StoreMetrics: config lookup failed for id=%s, skipping", id)
+		utils.LogTracef("StoreMetrics: config lookup failed for id=%s, skipping", id)
 		return nil
 	}
 
 	if !config.MetricsEnabled {
-		utils.LogDebugf("StoreMetrics: metrics disabled for id=%s, skipping", id)
+		utils.LogTracef("StoreMetrics: metrics disabled for id=%s, skipping", id)
 		return nil
 	}
 

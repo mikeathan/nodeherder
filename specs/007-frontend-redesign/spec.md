@@ -1,8 +1,9 @@
 # Spec: Frontend redesign and customisable design system
 
-ID: 007-frontend-redesign | Status: Approved direction, implementation in progress | Author: Claude Code | Updated: 2026-10-10
-Constitutions: parent/frontend/backend 1.0.0, proposed, not ratified. Components: frontend; one additive
-backend field (`DashboardGroup.order`, FR-09).
+ID: 007-frontend-redesign | Status: Main redesign merged; follow-up design proposed | Author: Claude Code / Codex | Updated: 2026-10-11
+Constitutions: parent/frontend/backend 1.0.0, proposed, not ratified. Components: frontend;
+original additive backend field (`DashboardGroup.order`, FR-09), with scoped backend query/
+device-pipeline investigation and any demonstrated fixes in the 2026-10-11 amendment.
 
 ## Problem, scope, exclusions
 
@@ -40,7 +41,9 @@ where a redesigned screen touches them (then they become tasks, see plan).
 
 ### US-01 — Choose a design direction (P1)
 
-Independent verification: open `samples/index.html` from a checkout without a build.
+Historical acceptance: the owner reviewed the prototype gallery before implementation.
+The prototypes were removed on 2026-10-12 after the main redesign was completed;
+AC-01/02 below preserve the original design-selection requirements.
 
 - AC-01: Given the branch is checked out, when the owner opens the sample gallery,
   then 5 distinct designs are available, each rendering every screen in FR-01 with
@@ -153,7 +156,7 @@ Independent verification: manual procedure on the implemented dashboard with moc
 
 | ID | Question | Consequence | Owner | Status |
 | --- | --- | --- | --- | --- |
-| Q-01 | Which sample (or mix) becomes the target design? | Blocks implementation phases 2+ | Owner | **Resolved 2026-10-10:** owner chose Hearth + Panel (`samples/hearthpanel.html`) and authorised implementation |
+| Q-01 | Which sample (or mix) becomes the target design? | Blocks implementation phases 2+ | Owner | **Resolved 2026-10-10:** owner chose the Hearth + Panel prototype and authorised implementation |
 | Q-02 | Are multiple actions per trigger supported by the backend engine? | Determines whether editor allows N actions | Maintainer | Code evidence: `backend/internal/automations/trigger.go` executes every action in order and joins errors; editor may allow N actions in order. Confirm intent. |
 | Q-03 | Should design/theme be per-browser only, or synced via appConfig? | Contract change if synced | Owner | Assumed per-browser |
 | Q-04 | May dashboard groups gain optional fields (order, icon, tile size)? | Backend contract change | Owner/maintainer | **Resolved 2026-10-10 for `order` only:** owner asked for drag-to-reorder areas; an optional integer `order` is added (FR-09). Icon/tile size remain out of scope. |
@@ -222,3 +225,180 @@ Independent verification: Playwright against the mock hub; Go unit test for the 
 - NFR-06: Critical flows (sign-in, Home toggle, area reorder, automation open/edit/save, panel
   toggle, device page) MUST have automated browser tests at 1280×800 and 390×844 that run in CI
   against the mock hub, never real devices (NH-05).
+
+## Amendment 2026-10-11 — entities, complete history redesign and code quality
+
+The main redesign merged in #54 (`fcdebca2`). The owner now requests entity rework,
+a complete replacement of history-chart UX, and CRAP-score remediation, refactoring,
+appropriate patterns, SOLID responsibilities and a single source of truth for everything
+touched. This turn authorises updated planning artifacts; it does not start implementation.
+Earlier decisions and completed evidence remain history. This amendment supersedes the
+original exclusion of metrics work for the paths needed by these outcomes.
+
+Scope includes Home entities, device cards/expose rows/controls, panel entities, the entity
+detail/history dialog, full device history and mini charts; shared formatting, capabilities,
+query state, chart transformations and renderer configuration; the review's reliability,
+contrast, editor and remaining-screen gaps. Backend query/error fixes are included only
+where required to make history correct. No storage migration, retention change, device
+protocol change, new charting/state framework or unrelated repository-wide cleanup.
+
+### US-10 — Consistent entities (P1)
+
+Independent verification: fixtures for every expose capability and mocked browser flows.
+
+- AC-28: Given the same entity on Home, Devices, the device page, Panel and its detail
+  dialog, each uses the same identity, label, metadata unit, binary meaning, availability,
+  disabled state and confirmed value. Unknown/removed exposes show an explicit fallback.
+- AC-29: Given a writable entity, all entry points use the same command lifecycle:
+  disabled with a reason when unavailable/disconnected, one outstanding command per expose,
+  pending distinct from confirmed, confirmation or 5-second timeout, rollback and an
+  announced error. Numeric zero remains controllable; missing data never becomes zero.
+- AC-30: Given entity details at 360/768/1280/1920px, current reading, available controls,
+  history, status and device navigation form one coherent layout with labelled keyboard
+  controls, focus containment/return and no horizontal page scrolling. History remains
+  available for chartable entities even when a brightness control also exists.
+
+### US-11 — Explore trustworthy history (P1)
+
+Independent verification: pure history tests, backend contract fixtures and browser tests.
+
+- AC-31: Given numeric history, users can select an entity, preset/custom range and an
+  explicitly labelled display timezone (browser zone or UTC), inspect exact timestamp/value/
+  unit, zoom and reset. The history layout and interactions are rebuilt, not merely recoloured.
+  Mini charts are compact views of the same history model, with an entry to full history.
+- AC-32: Given binary/state history, a proportional timeline shows actual state labels
+  and unknown periods; repeated stored events remain visible/countable. Event counts and
+  state-transition counts are labelled separately. Enum/event entities use an event list
+  when supported; unsupported series explain the limitation instead of disappearing.
+- AC-33: Given empty, missing, zero, malformed, sparse, duplicate-timestamp, out-of-order
+  or truncated samples, charts distinguish these cases. They never invent a leading binary
+  state, join across explicit missing samples or claim completeness for limited results.
+  Stats derive from validated source samples, not display decimation; averages state whether
+  sample-based, and unavailable stats/deltas are shown as unavailable.
+- AC-34: Given rapid range/entity changes or multiple history views, only the matching
+  request updates that query's state. Loading lasts until response/error/timeout; stale
+  responses, cancellation and closing a view cannot overwrite a newer selection.
+- AC-35: Given an offline hub, rate limit or failed query, history shows useful feedback
+  and explicit retry without confusing failure with no measurements. Optional auto-refresh
+  is read-only, pauses while hidden/offline, has bounded resources and cleans up on close.
+  Live device state and stored history remain distinguishable.
+- AC-36: Given light/dark themes, dense data and touch/keyboard use, full/mini charts have
+  readable axes/units, accessible names, visible focus, text summaries and a keyboard-usable
+  sample/event table. Tooltip content is text or deterministically escaped untrusted input.
+
+### US-12 — Reliable controls and maintainable implementation (P1)
+
+- AC-37: Given disconnected or failed automation/layout persistence, edits remain recoverable
+  and are not presented as saved; manual Run has a shared in-flight lock with no retries.
+  Invalid drafts cannot save; daily schedules validate times and label the actual scheduler
+  zone (currently Europe/London), with the specified timeline.
+- AC-38: Given each changed/new production function, before/after complexity, coverage and
+  CRAP evidence is recorded. New/changed functions meet NFR-07; removed functions identify
+  their replacements. Equivalent behaviour and meaningful failures remain tested.
+- AC-39: Given the finished follow-up, the Assistant and remaining dialogs match the shared
+  UI; required viewport, keyboard, screen-reader, reconnect, contrast and load evidence is
+  recorded accurately, distinguishing passed, failed and unrun checks.
+
+### US-13 — Timely illuminance readings (P1 investigation)
+
+Reported device: **Living room presence sensor**, expose **illuminance**. After changing
+light brightness the UI eventually changes, but appears delayed; elapsed time and the
+light's identity are not yet measured. This is a reported latency symptom, not a confirmed
+root cause or permission to command household devices during routine tests.
+
+- AC-40: Given a controlled illuminance-update replay, record timestamps at raw ingress,
+  accepted backend state, broadcast, browser receipt, store mutation and rendered value.
+  Separate sensor reporting cadence from backend sampling and UI latency. Replays cover
+  `illuminance` and `illuminance_lux`, rapid changes, a final change followed by silence,
+  zero, unchanged reports, offline/reconnect and effective per-device debounce settings.
+- AC-41: Given a diagnosed defect, add a failing regression before fixing it and record
+  the timing contract. Proposed browser-receipt-to-render target: ≤ 250ms at p95 over 20
+  controlled updates on a recorded browser. If a backend sampling change is needed, specify
+  a bounded latest-value delivery deadline and automation/metrics implications before
+  implementation. Do not manufacture illuminance from a brightness command or assume
+  illuminance equals lux without metadata evidence. If delay is solely sensor reporting,
+  record that result and provide truthful last-reported/stale feedback instead of a fake fix.
+
+### US-14 — Reliable brightness slider and explainable automation activity (P1)
+
+The owner also reports trouble changing brightness through the UI slider while the dial
+automation works. The affected light, gesture and observed result are not yet identified.
+Logs supplied for 2026-10-11 19:33:19…19:33:36 show repeated `triggering automation for
+changed exposes` on device `0xa4c13894070052fc`. Separate Attic air sensor metrics logs
+are not evidence that this device is the faulty light or that actions ran repeatedly.
+
+- AC-42: Given brightness slider operations by mouse, touch and keyboard, compare the UI
+  `deviceSetValue` payload, resolved target/expose, numeric type/range and MQTT command with
+  a working dial-automation fixture. Verify raw brightness vs displayed percentage, min/max/
+  step, release/commit semantics, exactly one command per committed gesture, pending/refused
+  commands, echoed/different/no confirmation, final-value rollback and ability to set zero.
+  Add a failing regression for any demonstrated defect before fixing it.
+- AC-43: Given the reported device's synthetic update stream, correlate accepted reports,
+  changed expose names, automation dispatches, conditions matched, actions actually executed
+  and outgoing/echoed commands. Determine whether repetition is normal sensor cadence,
+  duplicate delivery, unrelated-expose dispatch or a feedback loop. Debug dispatch logs must
+  not be presented as proof of action execution. Preserve repeated physical events and
+  ordered state; any loop/timing/logging change needs its own verified acceptance evidence
+  and must avoid persisting household values or adding noisy per-report logging.
+
+### Requirements and measurable success
+
+- FR-14: MUST provide one shared entity presentation/capability model and one device-command
+  path across all touched entity surfaces; AC-28…30.
+- FR-15: MUST rebuild full and mini history experiences with a shared typed history model,
+  correct semantics and accessible inspection; AC-31…36.
+- FR-16: MUST isolate history query identity/status and validate external samples before
+  state mutation; preserve existing consumers and document actual backend/mock contracts;
+  AC-33…35.
+- FR-17: MUST fix the review's persistence, manual-run, numeric rollback, schedule and
+  contrast gaps and finish remaining UI verification/layout work; AC-29, AC-36…39.
+- FR-18: MUST investigate delayed Living room presence sensor illuminance and remediate
+  any demonstrated application defect under an explicit timing contract; AC-40, AC-41.
+- FR-19: MUST investigate UI brightness-slider behaviour and reported repeated automation
+  dispatches, fixing demonstrated application defects without breaking the working dial
+  flow or suppressing legitimate repeated events; AC-42, AC-43.
+- NFR-07: Proposed gate: each new/changed production function has CRAP ≤ 30 and cyclomatic
+  complexity ≤ 10, using pinned tooling and a documented per-function coverage mapping.
+  High-score touched functions are remediated before merge; function scores cannot be hidden
+  by file averages, renaming, extraction into unmeasured helpers or coverage exclusions.
+  Touched decision logic additionally has ≥ 80% branch coverage and meaningful failure tests.
+  If a function cannot meet the gate, record a blocking scoped debt item; do not self-approve
+  an exception. Thresholds are planning assumptions, not existing repository policy.
+- NFR-08: Proposed history budgets: one concurrent network query per client; user-selection
+  debounce 300ms; timeout 10s; optional refresh no faster than every 10s; ≤ 10 cached query
+  entries, evicted on logout; ≤ 10,000 validated samples per series, with a 10,001st sample
+  detecting truncation; ≤ 1,000 rendered numeric points per series preserving extrema/gaps.
+  For a 10,000-point fixture, query normalization + stats + decimation takes ≤ 100ms at p95
+  over 20 warmed runs on a recorded runner; report machine/browser and raw timings.
+  These are client budgets, not claims of bounded backend storage scans.
+- SC-03: AC-28…43 and NFR-07…08 have recorded evidence, alongside remaining original gates,
+  before this follow-up is called complete.
+
+### Interfaces and assumptions for this amendment
+
+- Entity identity remains `(deviceId, exposeName)`; Vuex remains confirmed device truth.
+  No entity/chart household data is persisted in browser storage or logs.
+- Preferred history transport reuses existing `POST /api/metrics/query` through the API
+  helper, keeping legacy `loadMetrics` consumers compatible. See
+  [ADR-004](adr-004-history-and-quality.md) and [design](entities-and-history.md).
+- Proposed defaults: retain Hearth + Panel and ApexCharts; history presets 1h/6h/24h/7d/30d,
+  Today/Yesterday plus custom ranges; browser timezone default, UTC option; sample mean,
+  no implicit interpolation across gaps. Entities means all surfaces listed above.
+- No new backend aggregation, pagination, persisted layout schema, timezone configuration
+  or export/comparison features are assumed. Any need discovered for these updates the
+  contract/spec before dependent code. Query failure-vs-empty and range-boundary fixtures
+  are required preparation gates; their implementation evidence is pending.
+
+
+### Device-update repair contract (2026-10-12)
+
+The owner has requested implementation of the investigated issues. For AC-41/42,
+accepted changed exposes and repeated events reach the existing live-update callback
+before the ordered Update call returns, independent of metrics sampling. A final report
+followed by silence therefore does not need a later report or trailing timer. Writable
+same-value device reports are valid live confirmation evidence; they do not retrigger
+state automations or create duplicate sampled metrics. Read-only unchanged state remains
+deduplicated. Outgoing commands never count as confirmation. Existing measurement
+sampling intervals/overrides, command targets/payloads, seed/availability behavior and
+fresh ordered automation inputs remain compatible. Network/render deadlines are separate
+from this same-call processing contract. See [ADR-005](adr-005-live-device-updates.md).
