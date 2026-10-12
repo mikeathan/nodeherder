@@ -117,7 +117,7 @@ Owner feedback: keep Hearth and Deck, drop the rest. Deck does not work well on 
 especially automations; Hearth's automations need better spacing on phones; recent activity
 should be switchable; both layouts should share one set of themes; add the NodeHerder logo.
 
-Decision (recommended, built as `samples/hearthpanel.html`): one app. Hearth provides every
+Decision (implemented from the Hearth + Panel prototype, since removed): one app. Hearth provides every
 page and the single automation editor; Deck's look becomes **panel mode** (`#/panel`), a
 full-screen room view for wall tablets with an exit back to the app. Reasons: one editor and
 one set of pages to maintain and test; Deck's strength (glanceable rooms, big targets) is kept
@@ -125,7 +125,7 @@ where it is useful and its weak spots (dense editing on phones) are avoided.
 
 - Logo: `frontend/src/assets/images/nodeherder_logo.png` (cropped) at the top of the sidebar,
   in the phone header, on sign-in, and at the left of the panel clock strip.
-- Themes (`samples/shared/themes.css`, light + dark each): Daylight, Teak, Avocado (Hearth),
+- Themes (shared light and dark palettes in the prototype): Daylight, Teak, Avocado (Hearth),
   Lagoon, Ember, Frost (Deck), and new Fleece (from the logo's wool blues), Fjord, Plum,
   Graphite. Panel mode reads `--dk-lamp` and `--dk-climate` from the same theme.
 - Recent activity on Overview has a Show switch; off hides the feed and stops collecting it

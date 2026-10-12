@@ -310,8 +310,12 @@ func TestDeviceProcessorRapidPhysicalActions(t *testing.T) {
 				}
 				previous = want
 			}
-			if triggers != 120 || eventUpdates != 120 || numericUpdates != 0 {
-				t.Fatalf("automation/event/numeric updates = %d/%d/%d, want 120/120/0", triggers, eventUpdates, numericUpdates)
+			wantNumeric := 120 // live action_time reports bypass metrics sampling
+			if tc.confirm {
+				wantNumeric += 120
+			} // confirmed brightness, including same-value writable echoes
+			if triggers != 120 || eventUpdates != 120 || numericUpdates != wantNumeric {
+				t.Fatalf("automation/event/numeric updates = %d/%d/%d, want 120/120/%d", triggers, eventUpdates, numericUpdates, wantNumeric)
 			}
 			wantReported := float64(200)
 			if tc.confirm {

@@ -771,7 +771,7 @@ func (d *HubController) handleDeviceAvailabilityChanged(p *devices.UpdatePackage
 
 func (d *HubController) handleDeviceMeasurementsUpdated(device *devices.Device, payload map[string]interface{}) error {
 
-	utils.LogDebugf("handleDeviceMeasurementsUpdated: deviceId=%s friendlyName=%s keys=%d", device.Id, device.FriendlyName, len(payload))
+	utils.LogTracef("handleDeviceMeasurementsUpdated: deviceId=%s friendlyName=%s keys=%d", device.Id, device.FriendlyName, len(payload))
 
 	if err := d.store.StoreMetrics(device.FriendlyName, payload); err != nil {
 		return fmt.Errorf("store metrics: %w", err)

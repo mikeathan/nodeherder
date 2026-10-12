@@ -2,6 +2,7 @@ package services_test
 
 import (
 	"maps"
+	"node-herder/internal/automations"
 	"node-herder/internal/services"
 	"node-herder/mocks"
 	"node-herder/models/bridge"
@@ -10,6 +11,7 @@ import (
 	utils_test "node-herder/testing"
 	"node-herder/utils"
 	"reflect"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -24,7 +26,7 @@ func TestEntityValueAutomationReadSemantics(t *testing.T) {
 		values            []any
 		triggers, updates int
 	}{
-		{"fresh state before debounce", "brightness", bridge.NumericDataType, float64(0), []any{float64(1), float64(2), float64(2)}, 2, 1},
+		{"fresh state before debounce", "brightness", bridge.NumericDataType, float64(0), []any{float64(1), float64(2), float64(2)}, 2, 2},
 		{"identical physical events", "action", bridge.EnumDataType, "single", []any{"single", "single"}, 2, 2},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -369,14 +371,12 @@ func TestDeviceLifetimeService_UpdateWithDebouncer(t *testing.T) {
 	device := utils_test.CreateLightDevice("x01234", "testDevice", "brightness", 124.1)
 	device.Availability = devices.OnlineAvailability
 
-	var updates int
+	var updates, liveUpdates int
 	events := &devices.DeviceRequestEvents{
 		OnDeviceUpdated: func(d *devices.Device, p *devices.UpdatePackage) {
-			updates++
+			liveUpdates++
 		},
-		OnDeviceMeasurementsUpdated: func(d *devices.Device, p map[string]interface{}) {
-
-		},
+		OnDeviceMeasurementsUpdated: func(d *devices.Device, p map[string]interface{}) { updates++ },
 	}
 	now := time.Now()
 	mockClock := mocks.NewMockClock(func() time.Time {
@@ -384,6 +384,8 @@ func TestDeviceLifetimeService_UpdateWithDebouncer(t *testing.T) {
 	})
 	app := settings.NewAppConfig()
 	d1 := settings.NewDeviceConfig("x01234")
+	d1.MetricsEnabled = true
+	device.Exposes["brightness"].Category = bridge.MeasurementCategory
 	d1.DebounceOverrides = map[string]*utils.TimeInterval{
 		"brightness": utils.IntervalFromSeconds(3),
 	}
@@ -433,6 +435,7 @@ func TestDeviceLifetimeService_UpdateWithDebouncer(t *testing.T) {
 
 	for _, tc := range testCases {
 		updates = 0
+		liveUpdates = 0
 		mockClock.SetMockTime(tc.timestamp)
 
 		service.Update(tc.payload)
@@ -441,6 +444,9 @@ func TestDeviceLifetimeService_UpdateWithDebouncer(t *testing.T) {
 			t.Errorf("Device value not updated (should always be fresh). want %v, got %v", tc.payload["brightness"], device.Exposes["brightness"].Data.Value())
 		}
 
+		if liveUpdates != 1 {
+			t.Errorf("live updates = %d, want 1", liveUpdates)
+		}
 		expectedUpdates := 0
 		if tc.shouldUpdate {
 			expectedUpdates = 1
@@ -560,8 +566,8 @@ func TestDeviceLifetimeService_MetricsAvailabilityWithMetricsEnabled(t *testing.
 			expectedUpdates: 2,
 		},
 		{
-			payload:         map[string]interface{}{"battery": 12, "brightness": 120}, // debounced and no changes
-			expectedUpdates: 0,
+			payload:         map[string]interface{}{"battery": 12, "brightness": 120}, // live diagnostic change; no sampled metric
+			expectedUpdates: 1,
 		},
 		{
 			payload:         map[string]interface{}{"battery": 34, "linkquality": 12.5}, // 1st debounced and 2nd change
@@ -708,8 +714,8 @@ func TestDeviceLifetimeService_MetricsAvailabilityWithAutomationEnabled(t *testi
 			expectedUpdates: 2,
 		},
 		{
-			payload:         map[string]interface{}{"battery": 12, "brightness": 120}, // debounced and no changes
-			expectedUpdates: 0,
+			payload:         map[string]interface{}{"battery": 12, "brightness": 120}, // live diagnostic change; no sampled metric
+			expectedUpdates: 1,
 		},
 		{
 			payload:         map[string]interface{}{"battery": 34, "linkquality": 12.5}, // 1st debounced and 2nd change
@@ -862,7 +868,7 @@ func TestDeviceLifetimeService_NoisyValuesDebouncedCorrectly(t *testing.T) {
 	// This test simulates a noisy sensor (like linkquality bouncing between 80 and 81)
 	// and asserts that the debouncer correctly throttles even when values change.
 
-	updateCount := 0
+	updateCount, liveCount := 0, 0
 
 	brightness := utils_test.CreateEntity("brightness", "number", 80.0)
 	brightness.Category = bridge.MeasurementCategory
@@ -872,9 +878,9 @@ func TestDeviceLifetimeService_NoisyValuesDebouncedCorrectly(t *testing.T) {
 
 	events := &devices.DeviceRequestEvents{
 		OnDeviceUpdated: func(d *devices.Device, p *devices.UpdatePackage) {
-			updateCount++
+			liveCount++
 		},
-		OnDeviceMeasurementsUpdated: func(d *devices.Device, p map[string]interface{}) {},
+		OnDeviceMeasurementsUpdated: func(d *devices.Device, p map[string]interface{}) { updateCount++ },
 	}
 
 	now := time.Now()
@@ -884,6 +890,7 @@ func TestDeviceLifetimeService_NoisyValuesDebouncedCorrectly(t *testing.T) {
 
 	app := settings.NewAppConfig()
 	d1 := settings.NewDeviceConfig("x01234")
+	d1.MetricsEnabled = true
 	d1.DebounceOverrides = map[string]*utils.TimeInterval{
 		"brightness": utils.IntervalFromSeconds(60),
 	}
@@ -911,6 +918,10 @@ func TestDeviceLifetimeService_NoisyValuesDebouncedCorrectly(t *testing.T) {
 	// Only the initial update should have gone through; the rest are debounced
 	if updateCount != 1 {
 		t.Errorf("Expected 1 total update (noisy values should be debounced), got %d", updateCount)
+	}
+
+	if liveCount != 6 {
+		t.Errorf("live count = %d, want 6", liveCount)
 	}
 
 	// After 60s, the next changed value should go through
@@ -963,7 +974,7 @@ func TestDeviceLifetimeService_AutomationTriggersOnChanges(t *testing.T) {
 
 // Characterize the distinct seed/update contracts before extracting their output
 // handling: seed supplies the original payload, updates supply changed exposes,
-// and automation precedes sampled metrics/UI even inside a debounce window.
+// and automation precedes sampled metrics and live UI even inside a sampling window.
 func TestDeviceLifetimeService_SeedAndUpdateOutputSequence(t *testing.T) {
 	brightness := utils_test.CreateEntity("brightness", "numeric", 0.0)
 	brightness.Category = bridge.MeasurementCategory
@@ -1024,11 +1035,175 @@ func TestDeviceLifetimeService_SeedAndUpdateOutputSequence(t *testing.T) {
 		{"metrics", map[string]interface{}{"brightness": 10.0}},
 		{"added", nil},
 		{"automation", map[string]interface{}{"brightness": 11.0}},
+		{"updated", map[string]interface{}{"brightness": 11.0}},
 		{"automation", map[string]interface{}{"brightness": 12.0}},
 		{"metrics", map[string]interface{}{"brightness": 12.0}},
 		{"updated", map[string]interface{}{"brightness": 12.0}},
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("output sequence:\n got: %#v\nwant: %#v", got, want)
+	}
+}
+
+// Regression replays for the defects characterized before the live-update repair.
+// All devices, clocks and callbacks are synthetic; no MQTT connection is opened.
+type liveUpdateReplay struct {
+	now        time.Time
+	device     *devices.Device
+	service    *services.DeviceLifetimeService
+	broadcasts []float64
+	metrics    []float64
+	automation []float64
+}
+
+func newLiveUpdateReplay(property string, enabled bool, onAutomation func(*devices.Device, map[string]interface{})) *liveUpdateReplay {
+	r := &liveUpdateReplay{now: time.Date(2026, 10, 11, 0, 0, 0, 0, time.UTC)}
+	r.device = devices.NewDevice("investigation-sensor")
+	r.device.SetAvailability(devices.OnlineAvailability)
+	e := devices.NewEntity(property)
+	e.Type, e.Category = bridge.NumericDataType, bridge.MeasurementCategory
+	e.Data.SetValue(float64(0))
+	r.device.Exposes[property] = e
+	app := settings.NewAppConfig()
+	app.Hub.Devices.Defaults.MetricsEnabled = true
+	cache := settings.NewDeviceConfigCache(&mocks.NopSettingsrepo{}, app, &sync.RWMutex{})
+	events := &devices.DeviceRequestEvents{
+		OnDeviceUpdated: func(_ *devices.Device, p *devices.UpdatePackage) {
+			r.broadcasts = append(r.broadcasts, p.Data[property].(float64))
+		},
+		OnDeviceMeasurementsUpdated: func(_ *devices.Device, p map[string]interface{}) {
+			r.metrics = append(r.metrics, p[property].(float64))
+		},
+		OnDeviceAutomationTriggered: func(d *devices.Device, p map[string]interface{}) {
+			r.automation = append(r.automation, p[property].(float64))
+			if onAutomation != nil {
+				onAutomation(d, p)
+			}
+		},
+	}
+	clock := mocks.NewMockClock(func() time.Time { return r.now })
+	r.service = services.NewDeviceLifetimeService(r.device, events, cache,
+		mocks.NewMockAutomationDeviceQuerierWithValues(map[string]bool{r.device.Id: enabled}), clock)
+	return r
+}
+
+func (r *liveUpdateReplay) report(after time.Duration, property string, value float64) {
+	r.now = r.now.Add(after)
+	r.service.Update(map[string]interface{}{property: value})
+}
+
+func TestLiveNumericEchoBypassesMetricsSampling(t *testing.T) {
+	for _, property := range []string{"illuminance", "illuminance_lux", "brightness"} {
+		t.Run(property, func(t *testing.T) {
+			r := newLiveUpdateReplay(property, true, nil)
+			r.report(0, property, 100)
+			r.report(2*time.Second, property, 150)
+			r.report(2*time.Second, property, 200)
+			if got := r.device.Exposes[property].Data.Value(); got != float64(200) {
+				t.Fatalf("accepted state = %v, want 200", got)
+			}
+			if !reflect.DeepEqual(r.broadcasts, []float64{100, 150, 200}) || !reflect.DeepEqual(r.metrics, []float64{100}) {
+				t.Fatalf("broadcasts/metrics = %v/%v, want all live values and only first metric", r.broadcasts, r.metrics)
+			}
+			if !reflect.DeepEqual(r.automation, []float64{100, 150, 200}) {
+				t.Fatalf("automation state = %v, want all three fresh values", r.automation)
+			}
+			r.report(57*time.Second, property, 220) // t=61s, outside the sampling window
+			if !reflect.DeepEqual(r.broadcasts, []float64{100, 150, 200, 220}) || !reflect.DeepEqual(r.metrics, []float64{100, 220}) {
+				t.Fatalf("broadcasts after waiting = %v", r.broadcasts)
+			}
+			t.Log("all live reports delivered immediately; metrics retain the 60-second sampling window")
+		})
+	}
+}
+
+func TestLiveFinalValueDeliveredBeforeSilence(t *testing.T) {
+	r := newLiveUpdateReplay("illuminance", true, nil)
+	r.report(0, "illuminance", 100)
+	r.report(time.Second, "illuminance", 200)
+	if !reflect.DeepEqual(r.broadcasts, []float64{100, 200}) {
+		t.Fatalf("broadcasts = %v; want final live value before any later report", r.broadcasts)
+	}
+	if got := r.device.Exposes["illuminance"].Data.Value(); got != float64(200) {
+		t.Fatalf("accepted final value = %v, want 200", got)
+	}
+	r.report(2*time.Minute, "illuminance", 200)
+	if !reflect.DeepEqual(r.broadcasts, []float64{100, 200}) || !reflect.DeepEqual(r.metrics, []float64{100}) {
+		t.Fatalf("unchanged read-only state produced extra output: %v/%v", r.broadcasts, r.metrics)
+	}
+}
+
+type unmatchedPresenceTrigger struct {
+	automations.BaseTrigger
+	matches int
+}
+
+func (t *unmatchedPresenceTrigger) Process(automations.AutomationContext) error {
+	t.matches++
+	return nil
+}
+
+func TestRoutineDispatchDoesNotSpamDebugLogs(t *testing.T) {
+	utils.SetLogLevel("debug")
+	t.Cleanup(func() {
+		utils.EnableRemoteLoggerHook(false)
+		utils.RemoveRemoteLoggerHook()
+		utils.SetLogLevel("info")
+	})
+	var messages []string
+	utils.RegisterRemoteLoggerHook(mocks.NewMockRemoteLoggerEmitter(func(_ string, payload interface{}) error {
+		message := payload.(map[string]interface{})["message"].(string)
+		messages = append(messages, message)
+		return nil
+	}))
+	utils.EnableRemoteLoggerHook(true)
+	for _, enabled := range []bool{true, false} {
+		messages = nil
+		trigger := &unmatchedPresenceTrigger{BaseTrigger: automations.BaseTrigger{Name: "presence"}}
+		automation := automations.NewDevice("investigation-sensor")
+		automation.Triggers = automations.TriggerList{trigger}
+		r := newLiveUpdateReplay("illuminance", enabled, func(d *devices.Device, p map[string]interface{}) {
+			automation.Evaluate(automations.NewDeviceEvent(d, p))
+		})
+		for i := 1; i <= 100; i++ {
+			r.report(1600*time.Millisecond, "illuminance", float64(i))
+		}
+		needle := "triggering automation for changed exposes"
+		if !enabled {
+			needle = "automation disabled, skipping"
+		}
+		count := 0
+		for _, message := range messages {
+			if strings.Contains(message, needle) || strings.Contains(message, "dispatching changed exposes") {
+				count++
+			}
+		}
+		wantDispatches := 0
+		if enabled {
+			wantDispatches = 100
+		}
+		if count != 0 || trigger.matches != 0 || len(r.automation) != wantDispatches {
+			t.Fatalf("enabled=%v: debug lines=%d, trigger matches=%d; want 0/0", enabled, count, trigger.matches)
+		}
+		t.Logf("enabled=%v: 100 changed reports, 0 routine debug lines, %d automation dispatches, 0 trigger matches, %d sampled broadcasts", enabled, len(r.automation), len(r.broadcasts))
+	}
+}
+
+func TestLiveUnchangedWritableReportConfirmsWithoutRetriggering(t *testing.T) {
+	for _, mode := range []bridge.ExposeAccessMode{bridge.WriteAccessMode, bridge.ReadWriteAccessMode, bridge.ReadAccessMode, bridge.UnknownAccessMode} {
+		t.Run(mode, func(t *testing.T) {
+			r := newLiveUpdateReplay("brightness", true, nil)
+			r.device.Exposes["brightness"].AccessMode = mode
+			r.report(0, "brightness", 100)
+			r.report(time.Second, "brightness", 100)
+			r.report(time.Second, "brightness", 0)
+			want := []float64{100, 0}
+			if mode == bridge.WriteAccessMode || mode == bridge.ReadWriteAccessMode {
+				want = []float64{100, 100, 0}
+			}
+			if !reflect.DeepEqual(r.broadcasts, want) || !reflect.DeepEqual(r.automation, []float64{100, 0}) || !reflect.DeepEqual(r.metrics, []float64{100}) {
+				t.Fatalf("live/automation/metrics = %v/%v/%v", r.broadcasts, r.automation, r.metrics)
+			}
+		})
 	}
 }

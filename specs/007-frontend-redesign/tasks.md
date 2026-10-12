@@ -1,6 +1,29 @@
 # Tasks: Frontend redesign and customisable design system
 
-Spec: [spec.md](spec.md) | Plan: [plan.md](plan.md) | Status: Phase 0 complete; Q-01 resolved; implementation in progress
+Spec: [spec.md](spec.md) | Plan: [plan.md](plan.md) | Status: Main redesign merged; scoped backend repair implemented; follow-up open
+
+## Current status (2026-10-12)
+
+Main redesign merged as #54 (`fcdebca2`), implemented on
+`claude/eloquent-lovelace-rus03g`. Active repair on `investigate/ui-device-updates`:
+T206 backend portion implemented; frontend rollback/refusal/disconnect and browser latency/
+load evidence remain open. Broader entity/history work is deferred. Findings, measured
+quality, exact checks and limitations live in the [plan](plan.md#device-update-repair-2026-10-12);
+timing/compatibility live in [ADR-005](adr-005-live-device-updates.md).
+
+- [x] T206 backend — Separate live reports from sampled metrics; preserve fresh automation,
+  writable same-value confirmations, zero and repeated events; move routine chatter to trace.
+- [x] Verify backend regressions, ordered MQTT/dial scenarios, full tests/build/vet and
+  affected services/controllers/automations/store race checks on Go 1.24.8.
+- [ ] T201 remaining — Branch evidence, Vue source mapping/mounting, TS/Vue/mock tooling
+  and CI threshold gate. Generated reports remain temporary, not committed snapshots.
+- [ ] T203/T204 remaining — Live effective settings/metadata and browser/ingress timing;
+  controlled reproductions are complete, but deployment-specific uncertainties remain.
+- [ ] T206 remaining — Frontend numeric rollback/refusal/disconnect and confirmed feedback.
+- [ ] T213/T214 — Browser/load/accessibility evidence and final acceptance/rule review.
+
+These partial milestones do not complete the parent T201/T203/T204/T206 tasks, the wider
+follow-up or human review. Detailed dependencies and acceptance remain below.
 
 ## Phase 0 — Documentation and samples (authorised 2026-10-09)
 
@@ -8,64 +31,22 @@ Spec: [spec.md](spec.md) | Plan: [plan.md](plan.md) | Status: Phase 0 complete; 
   gate: NH-01/NH-04; done: file committed.
 - [x] T002 — Draft spec, plan, design system, device support, automation editor docs and
   ADR-001; gate: NH-01; done: files committed, open questions listed.
-- [x] T003 — Build 5 static design samples (plus single-file `samples/standalone/*.html` with an All pages view) covering every FR-01 screen with customiser in
-  `samples/`; IDs: AC-01, AC-02; done: rendered in headless Chromium for every design ×
+- [x] T003 — Build 5 static design samples (plus standalone HTML files with an All pages view)
+  covering every FR-01 screen with customiser; IDs: AC-01, AC-02; done: rendered in headless Chromium for every design ×
   screen (see plan traceability).
 - [x] T003b — Round 2 after owner feedback (2026-10-10): keep Hearth, add four structurally
-  different designs (`design-directions.md`, `samples/designs/*.js`); done: verified in Chromium.
+  different designs (`design-directions.md`, prototype layout modules); done: verified in Chromium.
 - [x] T003c — Round 3 (2026-10-10): Hearth + Panel merge with logo, shared themes, activity
   switch and phone editor layout; done: verified in Chromium (desktop + 375 px).
 - [x] T004 — Owner review: Hearth + Panel chosen 2026-10-10; done: Q-01 resolved in spec.
 
-## Phase 1 — Foundations (blocked: T004)
 
-- [ ] T010 — Token files + `useThemeSettings` (migration from `localStorage.theme`,
-  validation, system mode); IDs: FR-02, AC-18; Jest tests first.
-- [ ] T011 — PrimeVue preset mapped to tokens; remove hard-coded colours in touched
-  components; contrast check script; IDs: NFR-02; depends: T010.
-- [ ] T012 — `AppShell` variants + header status (connection text, permit-join chip);
-  IDs: AC-16, AC-17; depends: T011.
-- [ ] T013 — `components/ui/` primitives; IDs: FR-01; depends: T011.
-- [ ] T014 — Registries (`protocols`, `capabilities`) with Jest coverage incl. unknown
-  protocol; IDs: FR-07, FR-08, AC-07, AC-08.
-- [ ] T015 — `useDeviceCommand` pending/confirm/timeout with Jest; IDs: FR-04, AC-04.
-- [ ] T016 — Appearance settings tab + header quick customiser; IDs: AC-02, AC-18.
+## Original draft tasks (superseded)
 
-## Phase 2 — Dashboards (depends: Phase 1)
-
-- [ ] T020 — `selectors/network.ts` + `useActivityFeed` (bounded, memory only); IDs:
-  FR-05, AC-09, NFR-04; Jest + perf script.
-- [ ] T021 — Overview route; Home areas (replace GroupDashboard layout, keep contract);
-  fix missing `renameDashboardGroup` mutation and `alert()` usage with regression
-  tests; IDs: AC-03, AC-05, AC-06.
-- [ ] T022 — Devices dashboard + device list (search, filters, sort, chips); IDs: AC-07.
-
-## Phase 3 — Device page (depends: Phase 1)
-
-- [ ] T030 — Header with status/protocol chips; tabs About/Controls/Settings/Metrics;
-  capability-driven controls; protocol-gated actions; fix `setDeviceDeConfigfaults`
-  typo with regression test; IDs: AC-04, AC-07.
-
-## Phase 4 — Automations (depends: Phase 1)
-
-- [ ] T040 — `describeTrigger`, `validateAutomation`, `useAutomationDraft` with round-trip
-  fixtures from existing automations; IDs: AC-11, AC-11b, AC-14 (tests before UI).
-- [ ] T041 — Flow editor UI replacing panel stack; IDs: AC-10, AC-12, AC-15; depends: T040.
-- [ ] T042 — Run lock via `post()` helper; automations list redesign; IDs: AC-13.
-
-## Phase 5 — Remaining screens
-
-- [ ] T050 — Assistant, console, settings, login, dialogs, toasts, permit join; IDs:
-  FR-01, AC-16, AC-17.
-
-## Phase 6 — Handoff
-
-- [ ] T060 — Remove legacy preset/switch; bundle comparison; IDs: NFR-03.
-- [ ] T061 — `npm test -- --runInBand`, `npm run lint`, `npm run build`; viewport,
-  keyboard, offline/reconnect manual checks at 360/768/1280/1920; gate: NH-05; record
-  actual results in plan.
-- [ ] T062 — Final constitution check; update `docs/sdd/repository-map.md`; gates:
-  NH-01/04/05.
+T010…016, T020…022, T030, T040…042, T050 and T060 were superseded by the
+T100…110 implementation sequence below. T061's manual viewport/keyboard/screen-reader/
+offline checks carry into T213; T062's final rule/map review carries into T214.
+The draft is not a second active checklist; original acceptance remains in the spec/plan.
 
 ## Implementation (authorised 2026-10-10)
 
@@ -81,6 +62,125 @@ Spec: [spec.md](spec.md) | Plan: [plan.md](plan.md) | Status: Phase 0 complete; 
   list; device page; FR-01, FR-09, FR-12.
 - [x] T107 — Panel mode; FR-10.
 - [x] T108 — Automations list and single-page editor; FR-06, AC-10…15.
-- [ ] T109 — Assistant, console, settings + Appearance, dialogs, toasts.
+- [ ] T109 — Partial: Settings/Appearance and Console restyling are implemented.
+  Assistant and legacy dialog layouts still need the T212 follow-up.
 - [x] T110 — Update e2e page objects; full e2e at two viewports; CI job; docs.
-- [ ] T111 — Self-review of the full diff, constitution check, evidence in plan.
+- [ ] T111 — Final review and rule/acceptance evidence, carried into T214; human
+  review and proposed constitution/ADR approvals remain outstanding.
+
+## Follow-up preparation (investigation checkpoint, 2026-10-11)
+
+Investigation on `investigate/ui-device-updates` reproduced default sampling suppressing
+live broadcasts, slider confirmation timeouts and pre-match dispatch logs. Mouse/touch/
+keyboard reproductions passed; backend characterizations were converted to passing repair
+regressions on 2026-10-12. See [findings](plan.md#investigation-findings-2026-10-11).
+Live effective-configuration/timing evidence remains open; wider work is deferred.
+
+- [ ] T200 — Inventory actual consumers and touched functions in entity/chart, command,
+  automation, metrics store/service, mock JS and conditional Go paths; IDs: AC-38, NH-04;
+  done: versioned file/function inventory against `fcdebca2`, exclusions justified.
+- [ ] T201 — Establish pinned coverage/complexity/CRAP runner and CI design; include TS,
+  Vue script functions/callbacks and mock JS, and Go if changed; prove SFC source mapping
+  and Jest mounting compatibility, record dependency cost in ADR-004; IDs: AC-38, NFR-07;
+  depends: T200; done: reproducible baseline, exact commands/tool versions in
+  the plan, measured fixture proving gates fail correctly. No invented scores.
+- [ ] T202 — Capture backend HTTP raw numeric/binary/enum/error/empty/limit/boundary fixtures
+  from `internal/metrics/{query,services,storage}` and API; specify mock parity and verify
+  API/MCP consumers; IDs: FR-16, AC-33…35, BE-04/05; depends: T200; done: checked producer/
+  consumer types, required failure fixes and backend scan-cost assessment recorded.
+- [ ] T203 — Controlled delayed illuminance replay for Living room presence sensor; inspect
+  effective category/device/expose sampling, metadata and UI latency; include final update
+  followed by silence and unchanged next reports; paths: `device_lifetime.go`, settings
+  cache/config, controllers/WS, hub store/entity views; IDs: FR-18, AC-40/41, BE-02/03;
+  depends: T200; done: root-cause/timing evidence or documented sensor-only delay, failing
+  regression for application defect; timing ADR before any sampling/broadcast change.
+- [ ] T204 — Reproduce brightness slider failure with mouse/touch/keyboard and compare
+  target/expose/type/range/MQTT payload against working dial fixtures; correlate supplied
+  `0xa4c13894070052fc` dispatch logs with matched triggers/actions/echoes; paths: entity
+  controls/commands, hub/MQTT/controllers/automations; IDs: FR-19, AC-42/43, NH-02;
+  depends: T200; done: diagnosed cause or bounded unresolved evidence, failing regressions
+  for demonstrated defects, no assumption that dispatch logs prove action execution.
+- [ ] T205 — Mocked entity/full-history/mini-chart desktop and phone prototype; use existing
+  tokens, show numeric/state/event and empty/error/partial/offline states; IDs: AC-28…36;
+  depends: T200; done: reviewable artifacts and recorded layout choices, no real-device calls.
+
+## Follow-up implementation sequence (requires preparation gates)
+
+Every task below also maps to AC-38/NFR-07: all its touched functions meet the per-function
+gate with before/after evidence, meaningful failure coverage and tracked replacements.
+Do not defer refactoring to the final task or omit store/composable/Vue/mock/Go functions.
+
+- [ ] T206 — Fix diagnosed slider/illuminance defects and shared command rollback/refusal/
+  confirmation; preserve dial payloads, repeated events and automation order; paths from
+  T203/204 plus `useDeviceCommand`, `ExposeControl`; IDs: AC-29/40…43, FR-18/19;
+  depends: T201,T203,T204 and any timing ADR; done: failing regressions pass, controlled
+  latency/deadline and affected Go race results recorded; no unmeasured global debounce change.
+- [ ] T207 — Fix disconnected automation/layout persistence, preserve drafts and explain
+  failure, share manual-run lock, use API helper, validate draft/schedule times and add
+  Europe/London schedule timeline; paths: automation/dashboard store/composables, editor,
+  `automation-trigger.service.ts`; IDs: AC-37, FR-17; depends: T201; done: offline/error/
+  duplicate Run/schedule/invalid-save regression and browser evidence.
+- [ ] T208 — Shared typed entity presentation/capability and detail model; migrate Home,
+  device rows/cards/controls, Panel and legacy entity dialog to one model/command path;
+  consolidate formatter/unit/binary/icon semantics; IDs: FR-14, AC-28…30; depends:
+  T201,T205,T206; done: all surfaces agree, unknown/missing/zero/disabled/offline fixtures,
+  exact expose commands and keyboard/focus evidence.
+- [ ] T209 — History query correctness and service/store lifecycle: actual HTTP decoder,
+  generation/keyed status, abort/timeout/429/empty/error handling, budgets/cache cleanup;
+  update mock HTTP route and required backend error handling; paths: history service/
+  contract, metrics store, `useHistoryQuery`, Go query service/API; IDs: FR-16, AC-33…35,
+  NFR-08; depends: T201,T202; done: actual producer fixtures pass, obsolete replies cannot
+  overwrite views, storage failures are observable; compatible backend checks pass.
+- [ ] T210 — Pure history domain: timezone/range boundaries, numeric and state/event
+  normalization, gap/unknown policies, labelled stats and extrema-preserving decimation;
+  paths: `src/domain/history/`, entity metadata; IDs: AC-31…33, NFR-08; depends: T201,T202;
+  done: DST/zero/sparse/duplicate/out-of-order/partial/extrema/known-duration fixtures pass.
+- [ ] T211 — Completely rebuild full history and shared compact variants: toolbar,
+  inspection/zoom/reset, state timeline/event list, theme-reactive renderer, accessible
+  sample table, all query states; migrate entity dialog and `DeviceMetrics.vue`; IDs:
+  FR-15, AC-30…36; depends: T205,T208,T209,T210; done: full/mini semantic equality and
+  keyboard/touch/viewport evidence, no old chart implementation quietly retained in dialogs.
+- [ ] T212 — Remaining Assistant/dialog layout work and measured palette/contrast fixes;
+  remove unused legacy entity/chart/formatter paths only after all imports/consumers migrate;
+  IDs: AC-36/39, FR-17, T109; depends: T208,T211; done: visual/focus checks, palette/accents
+  AA assertions, import scan and build; no replacement semantics hidden by compatibility aliases.
+
+## Follow-up verification and handoff
+
+- [ ] T213 — Extend browser flows for edited automation payload, slider scale/gestures/
+  confirmation/timeout, panel toggles, history range races/failure/empty/partial and reconnect;
+  run frontend suites/lint/build/e2e, relevant Go test/build/vet/race, pinned quality gates,
+  p95 history/render budget, 100 tiles × 10 msg/s, gzip comparison; IDs: AC-28…43,
+  NFR-01…04/06…08, T061; depends: T206…212; done: exact environment/commands and actual
+  passed/failed/unrun results, plus 360/768/1280/1920 keyboard/screen-reader/mock screenshots.
+- [ ] T214 — Update plan, task status, quality/acceptance evidence, docs/repository
+  map; recheck every NH/FE and applicable BE rule and remaining original requirements;
+  IDs: SC-03, NH-01/04/05, T111; depends: T213; done: evidence-linked completion with
+  outstanding risks and actual human-review status, no invented approval or ratification.
+
+
+
+## Merged redesign checkpoint (historical)
+
+T100…110 delivered wire-contract/Jest tests, desktop/mobile browser harness, dashboard
+ordering, domain/theme layers, shared UI/composables, shell/login/Overview/Home/device
+screens, Panel mode and the single-page automation editor. Area order saves, unchanged
+automation round trips, activity switching and 11-screen overflow checks were covered.
+Full UI details and acceptance are retained in the spec/plan.
+
+Final pass removed legacy UI, popup OAuth and Roboto; adopted ADR-003 fonts; shortened
+tile labels with descriptions as tooltips; hid absent last-seen times; and animated mobile
+drawer closure. The intermediate checkpoint had 135 Jest tests; final verification had
+136 Jest tests and 26 browser tests at 1280×800/390×844, lint with no errors, frontend
+build and Go tests passing. Review on 2026-10-11 recorded seven existing lint warnings.
+Manual keyboard/screen-reader/offline checks at 360/768/1920, Assistant/dialog layouts,
+actual automation-edit/panel-command/reconnect browser coverage and human review remain
+follow-up work (T109/T111/T213). These historical checks do not prove current repair latency.
+
+## Completed artifact/document cleanup (2026-10-12)
+
+- [x] Remove completed-redesign prototype HTML/assets/generators and raw quality JSON/checker.
+- [x] Consolidate implementation progress here and investigation/quality evidence in the plan.
+- [x] Remove duplicate status/investigation/quality documents and update their references.
+- [x] Verify local links/references and `git diff --check`; no application suites rerun
+  for this documentation-only cleanup.

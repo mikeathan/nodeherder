@@ -1936,25 +1936,25 @@ func TestNewDeviceExposeValuesAreBroadcastedOnly(t *testing.T) {
 		broadcast  bool
 	}{
 		{deviceName: presenceDeviceName, key: "target_distance", value: 13.4, broadcast: true},
-		{deviceName: presenceDeviceName, key: "target_distance", value: 12.1, broadcast: false}, // diagnostics debounced
-		{deviceName: presenceDeviceName, key: "target_distance", value: 16.3, broadcast: false}, // diagnostics debounced
-		{deviceName: presenceDeviceName, key: "target_distance", value: 20.3, broadcast: false}, // diagnostics debounced
+		{deviceName: presenceDeviceName, key: "target_distance", value: 12.1, broadcast: true}, // live diagnostics bypass sampling
+		{deviceName: presenceDeviceName, key: "target_distance", value: 16.3, broadcast: true}, // live diagnostics bypass sampling
+		{deviceName: presenceDeviceName, key: "target_distance", value: 20.3, broadcast: true}, // live diagnostics bypass sampling
 
 		{deviceName: presenceDeviceName, key: "presence", value: true, broadcast: true},
 		{deviceName: presenceDeviceName, key: "presence", value: true, broadcast: false},
 		{deviceName: presenceDeviceName, key: "presence", value: false, broadcast: true},
 		{deviceName: presenceDeviceName, key: "presence", value: false, broadcast: false},
 		{deviceName: presenceDeviceName, key: "illuminance", value: 10, broadcast: true},
-		{deviceName: presenceDeviceName, key: "illuminance", value: 143, broadcast: false}, // debounced
-		{deviceName: presenceDeviceName, key: "illuminance", value: 142, broadcast: false}, // debounced
+		{deviceName: presenceDeviceName, key: "illuminance", value: 143, broadcast: true}, // live measurements bypass sampling
+		{deviceName: presenceDeviceName, key: "illuminance", value: 142, broadcast: true}, // live measurements bypass sampling
 		{deviceName: presenceDeviceName, key: "illuminance", value: 129, broadcast: true},
 		{deviceName: presenceDeviceName, key: "presence", value: false, broadcast: false},
 		{deviceName: presenceDeviceName, key: "presence", value: true, broadcast: true},
 		{deviceName: presenceDeviceName, key: "illuminance", value: 321, broadcast: true},
 		{deviceName: presenceDeviceName, key: "radar_sensitivity", value: 5, broadcast: true},
-		{deviceName: presenceDeviceName, key: "radar_sensitivity", value: 5, broadcast: false},
+		{deviceName: presenceDeviceName, key: "radar_sensitivity", value: 5, broadcast: true},
 		{deviceName: presenceDeviceName, key: "illuminance", value: 22, broadcast: true},
-		{deviceName: presenceDeviceName, key: "illuminance", value: 21, broadcast: false},
+		{deviceName: presenceDeviceName, key: "illuminance", value: 21, broadcast: true},
 	}
 
 	broadcastHandler := func(eventName string, data interface{}) error {
@@ -2389,8 +2389,8 @@ func awaitProbe(updates <-chan *devices.UpdatePackage, probe string) (states []a
 }
 
 // AC-01, AC-02 (SC-01): the UI toggle path with Zigbee2MQTT's stale-then-new
-// reply must end on the new state with exactly one state broadcast, in every
-// randomised trial, in both directions.
+// reply must end on the new state in arrival order. Spec 007 ADR-005 now forwards
+// both writable reports as confirmation evidence; automation still deduplicates state.
 func TestReplayStaleThenNewPairEndsOnNewState(t *testing.T) {
 	const trials = 2000
 	seed := time.Now().UnixNano()
@@ -2432,20 +2432,23 @@ func TestReplayStaleThenNewPairEndsOnNewState(t *testing.T) {
 			out.wrongFinal++
 			out.note("trial %d: want %s, broadcasts %v, stored %v", i, want, states, storedState)
 		}
-		if len(states) > 1 {
+		previous := map[string]string{"ON": "OFF", "OFF": "ON"}[want]
+		if len(states) != 2 || states[0] != previous || states[1] != want {
 			out.extraBroadcasts++
+			out.note("trial %d: want ordered [%s %s], got %v", i, previous, want, states)
 		}
 	}
 
 	t.Logf("trials=%d wrongFinal=%d extraStateBroadcasts=%d timeouts=%d", out.trials, out.wrongFinal, out.extraBroadcasts, out.timeouts)
 	if out.failed() {
-		t.Fatalf("stale-then-new replay failed: %d/%d wrong final state, %d with >1 state broadcast, %d timeouts; examples: %v",
+		t.Fatalf("stale-then-new replay failed: %d/%d wrong final state, %d with incorrect report sequence, %d timeouts; examples: %v",
 			out.wrongFinal, out.trials, out.extraBroadcasts, out.timeouts, out.examples)
 	}
 }
 
-// AC-02: an identical pair [S, S] yields at most one state broadcast and ends on S.
-func TestReplayIdenticalPairBroadcastsOnce(t *testing.T) {
+// Spec 007 ADR-005: identical writable reports both reach live consumers as
+// confirmation evidence; final state and automation deduplication stay unchanged.
+func TestReplayIdenticalWritablePairPreservesConfirmationReports(t *testing.T) {
 	const trials = 500
 	h := hubharness.New(t, []*devices.Device{newReplayLight()})
 	h.Seed(t, map[string]map[string]any{replayLightName: {"state": "OFF", "brightness": 120.0, "linkquality": 87.0}})
@@ -2473,9 +2476,9 @@ func TestReplayIdenticalPairBroadcastsOnce(t *testing.T) {
 			continue
 		}
 		stored, _ := h.Store.FindDeviceById(replayLightID)
-		if len(states) != 1 || states[0] != state || stored.Exposes["state"].Data.Value() != state {
+		if len(states) != 2 || states[0] != state || states[1] != state || stored.Exposes["state"].Data.Value() != state {
 			out.wrongFinal++
-			out.note("trial %d: want one %s broadcast, got %v", i, state, states)
+			out.note("trial %d: want two %s confirmation reports, got %v", i, state, states)
 		}
 	}
 	t.Logf("trials=%d wrong=%d timeouts=%d", out.trials, out.wrongFinal, out.timeouts)
