@@ -332,13 +332,13 @@ func (s *authDelegator) HandleOfflineStart(w http.ResponseWriter, r *http.Reques
 
 // HandleMode describes the sign-in path selected for this request without creating a session.
 func (s *authDelegator) HandleMode(w http.ResponseWriter, r *http.Request) {
-	mode := "google"
+	mode := AuthModeGoogle
 	if s.decide != nil && s.decide(r) {
-		mode = "local"
+		mode = AuthModeLocal
 	}
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(map[string]string{"mode": mode})
+	_ = json.NewEncoder(w).Encode(authModeResponse{Mode: mode})
 }
 
 func (s *authDelegator) RegisterRoutes(registrar RouteRegistrar) {

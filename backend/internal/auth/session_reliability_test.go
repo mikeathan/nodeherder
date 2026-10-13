@@ -62,12 +62,12 @@ func TestAuthModeAndLocalStartUseSamePolicy(t *testing.T) {
 			w := httptest.NewRecorder()
 			modeProvider.HandleMode(w, request)
 			var body struct {
-				Mode string `json:"mode"`
+				Mode auth.AuthMode `json:"mode"`
 			}
 			if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
 				t.Fatal(err)
 			}
-			if w.Code != 200 || body.Mode != tc.mode || w.Header().Get("Cache-Control") != "no-store" || len(w.Result().Cookies()) != 0 {
+			if w.Code != 200 || string(body.Mode) != tc.mode || w.Header().Get("Cache-Control") != "no-store" || len(w.Result().Cookies()) != 0 {
 				t.Fatalf("unexpected mode response: %d %s", w.Code, w.Body.String())
 			}
 			w = httptest.NewRecorder()
