@@ -113,3 +113,15 @@ managed output directory on every runner. This is a test portability correction 
 no application behavior changes; AC-05/NFR-02 remain covered by the same assertions.
 Full `npm run test:e2e`: PASS, all 42 desktop/mobile tests against the mock hub.
 `git diff --check`: PASS. GitHub CI will rerun after the follow-up commit.
+
+## Test ownership follow-up
+
+Move the Go session regressions into auth_test.go, the companion to auth.go, and
+move Vuex auth validation tests to src/__tests__/store/modules/auth/index.test.ts,
+matching src/store/modules/auth/index.ts. Preserve all test cases and assertions.
+Record the mandatory source-owner naming rule in root AGENTS.md so it applies to
+future repository work. This is mechanical test organization and documentation,
+with no production behavior changes (NH-01 lightweight path).
+Verification: `go test -count=1 ./internal/auth`: PASS; moved Jest auth/service
+suites: PASS (18 tests); `git diff --check`: PASS. Production checks were not rerun
+for this test-only relocation and documentation change.
