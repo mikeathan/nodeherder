@@ -102,3 +102,14 @@ Playwright startup failed while test-results was being recreated; sequential rer
 Rollout: backend first, then frontend. Sign in once after deployment to replace the old
 non-persistent cookie. Daily token expiry remains deliberate; no 30-day policy or renewal.
 
+
+## CI follow-up — portable browser artifacts
+
+PR #56 CI run 38445381427 failed only the desktop/mobile local-sign-in tests because
+the screenshot path /private/tmp exists on macOS but not on Ubuntu. The aggregate
+Run Tests job correctly propagated the E2E failure; the DeviceCard warning was unrelated.
+Use Playwright testInfo.outputPath('local-login.png') so artifacts belong to each test's
+managed output directory on every runner. This is a test portability correction with
+no application behavior changes; AC-05/NFR-02 remain covered by the same assertions.
+Full `npm run test:e2e`: PASS, all 42 desktop/mobile tests against the mock hub.
+`git diff --check`: PASS. GitHub CI will rerun after the follow-up commit.

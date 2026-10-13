@@ -16,7 +16,7 @@ test.describe('sign in', () => {
     await expect(local).toBeVisible();
     await expect(ui.login.signInButton(page)).toHaveCount(0);
     await expect(page.getByText('No Google account is needed.', { exact: false })).toBeVisible();
-    await page.screenshot({ path: `/private/tmp/nodeherder-local-login-${testInfo.project.name}.png` });
+    await page.screenshot({ path: testInfo.outputPath('local-login.png') });
     await local.focus();
     await expect(local).toBeFocused();
     await page.keyboard.press('Enter');
