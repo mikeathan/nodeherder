@@ -21,7 +21,7 @@ export const store = createStore<RootState>({
   plugins: [
     createPersistedState({
       key: 'nodeherder_auth',
-      paths: ['auth'],
+      paths: ['auth.authenticated', 'auth.user'],
     }),
     createPersistedState({
       key: 'nodeherder_assistant',

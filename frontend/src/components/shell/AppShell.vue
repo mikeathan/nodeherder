@@ -4,9 +4,9 @@
    * (confirm dialog, legacy dialogs, toasts, appearance). Routes with meta.layout = 'panel'
    * get the full screen (panel mode, FR-10) with the same hosts.
    */
-  import { computed, onMounted, ref, watch } from 'vue';
+  import { computed, ref, watch } from 'vue';
   import { useRoute } from 'vue-router';
-  import { startHubConnection } from '@/composables/useHubConnection';
+  import { useHubConnection } from '@/composables/useHubConnection';
   import { useActivityFeed } from '@/composables/useActivityFeed';
   import Notifications from '@/components/hub/alerts/Notifications.vue';
   import DialogHost from '@/components/dialogs/DialogHost.vue';
@@ -23,7 +23,7 @@
   const main = ref<HTMLElement | null>(null);
 
   useActivityFeed();
-  onMounted(startHubConnection);
+  useHubConnection();
 
   watch(
     () => route.fullPath,
@@ -40,6 +40,7 @@
 
 <template>
   <template v-if="isPanel">
+    <StatusBanners />
     <RouterView v-slot="{ Component }">
       <component :is="Component" @open-appearance="appearanceOpen = true" />
     </RouterView>

@@ -1,12 +1,11 @@
 /*
- * Sign-in session (spec 007 US-08, FR-11). Sign-in is an OAuth redirect: POST auth/login
- * returns the provider URL, the provider returns to /?auth=success with a session cookie, and
- * GET auth/me confirms the user. The previous UI's behaviour is kept; only the screens change.
+ * Sign-in session (spec 008). POST auth/login selects local or Google access;
+ * the redirect returns to /?auth=success with a cookie and auth/me confirms the user.
  */
 import { computed, ref } from 'vue';
 import type { RouteLocationNormalizedLoaded } from 'vue-router';
 import { store } from '@/store';
-import { getOAuthUrl, logout, restoreSession } from '@/services/auth.service';
+import { getOAuthUrl, logout } from '@/services/auth.service';
 import { navigatePostLogin, navigatePostLogout } from '@/router/navigation';
 import { User } from '@/types/auth.type';
 
@@ -18,8 +17,9 @@ const error = ref('');
 export function useSession() {
   const isAuthenticated = computed(() => store.getters['auth/isAuthenticated']() as boolean);
   const user = computed(() => store.getters['auth/user']() as User);
+  const validation = computed(() => store.getters['auth/validation']);
 
-  /** Leaves the app for the OAuth provider. */
+  /** Follows the hub's selected local/Google sign-in path. */
   async function signIn() {
     if (signingIn.value) return;
     signingIn.value = true;
@@ -38,13 +38,14 @@ export function useSession() {
     if (params.get(AUTH_RETURN_PARAM) !== 'success') return false;
     window.history.replaceState({}, document.title, window.location.pathname);
     signingIn.value = true;
-    const session = await restoreSession();
+    await store.dispatch('auth/restoreSession');
     signingIn.value = false;
-    if (session?.isAuthenticated) {
-      store.dispatch('auth/loginUser', session);
+    if (isAuthenticated.value) {
       navigatePostLogin(route, true);
     } else {
-      error.value = 'Sign-in did not complete. Please try again.';
+      error.value = validation.value === 'unavailable'
+        ? 'Could not reach the hub to check your session. Please retry.'
+        : 'Sign-in did not complete. Please try again.';
     }
     return true;
   }
@@ -54,9 +55,8 @@ export function useSession() {
    * storage, new tab after expiry of local state). Silent when there is none.
    */
   async function resumeSession(route?: RouteLocationNormalizedLoaded) {
-    const session = await restoreSession();
-    if (session?.isAuthenticated && !isAuthenticated.value) {
-      store.dispatch('auth/loginUser', session);
+    await store.dispatch('auth/restoreSession');
+    if (isAuthenticated.value) {
       navigatePostLogin(route, true);
     }
   }
@@ -70,5 +70,5 @@ export function useSession() {
     navigatePostLogout();
   }
 
-  return { isAuthenticated, user, signingIn, error, signIn, completeOAuthReturn, resumeSession, signOut };
+  return { isAuthenticated, user, validation, signingIn, error, signIn, completeOAuthReturn, resumeSession, signOut };
 }

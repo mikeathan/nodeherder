@@ -387,6 +387,7 @@ func TestOfflineOAuth_HandleOfflineStart(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/auth/offline/start", nil)
+	req.RemoteAddr = "127.0.0.1:12345"
 
 	delegator.HandleOfflineStart(w, req)
 
@@ -492,6 +493,7 @@ func TestAuthDelegator_RegisterRoutes(t *testing.T) {
 	provider.OAuth().RegisterRoutes(mockRegistrar)
 
 	expectedRoutes := []routeInfo{
+		{"GET", "/api/auth/mode", true},
 		{"POST", "/api/auth/login", true},
 		{"POST", "/api/auth/logout", true},
 		{"GET", "/api/auth/callback", true},

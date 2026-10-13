@@ -1,5 +1,5 @@
 import { describe, expect, test, beforeEach, afterEach, jest } from '@jest/globals';
-import { getOAuthUrl, logout, restoreSession } from '@/services/auth.service';
+import { getAuthMode, getOAuthUrl, logout, restoreSession } from '@/services/auth.service';
 
 // Sign-in contract (spec 007 FR-11): POST auth/login -> { url }; GET auth/me -> user; POST auth/logout.
 type Call = { url: string; init: RequestInit };
@@ -18,6 +18,7 @@ describe('auth service', () => {
   afterEach(() => {
     g.fetch = previous;
     jest.restoreAllMocks();
+    jest.useRealTimers();
   });
   const mockFetch = (status: number, body: unknown) => {
     g.fetch = jest.fn(async (url: string, init: RequestInit) => {
@@ -40,11 +41,43 @@ describe('auth service', () => {
     expect(calls[0].url).toBe('http://localhost:4001/auth/me');
   });
 
-  test('restoreSession returns null for 401 or incomplete user', async () => {
+  test('restoreSession returns null only when authentication is rejected', async () => {
     mockFetch(401, { error: 'no' });
     await expect(restoreSession()).resolves.toBeNull();
     mockFetch(200, { id: '1' });
-    await expect(restoreSession()).resolves.toBeNull();
+    await expect(restoreSession()).rejects.toThrow();
+  });
+
+  test.each([403, 500, 503])('restoreSession reports HTTP %i as unavailable', async (status) => {
+    mockFetch(status, {});
+    await expect(restoreSession()).rejects.toThrow();
+  });
+
+  test('network failure is distinguishable from a rejected session', async () => {
+    g.fetch = jest.fn(async () => { throw new TypeError('Network unavailable'); });
+    await expect(restoreSession()).rejects.toThrow('Network unavailable');
+  });
+
+  test('session check aborts after eight seconds and clears its timer', async () => {
+    jest.useFakeTimers();
+    g.fetch = jest.fn(async (_url: string, init: RequestInit) => new Promise((_resolve, reject) => {
+      init.signal?.addEventListener('abort', () => reject(new Error('Request aborted')), { once: true });
+    }));
+    const request = expect(restoreSession()).rejects.toThrow('Request aborted');
+    await jest.advanceTimersByTimeAsync(8000);
+    await request;
+    expect(jest.getTimerCount()).toBe(0);
+  });
+
+  test.each(['local', 'google'])('mode is validated: %s', async (mode) => {
+    mockFetch(200, { mode });
+    await expect(getAuthMode()).resolves.toBe(mode);
+    expect(calls[0].url).toBe('http://localhost:4001/auth/mode');
+  });
+
+  test('invalid mode is not guessed', async () => {
+    mockFetch(200, { mode: 'unknown' });
+    await expect(getAuthMode()).rejects.toThrow();
   });
 
   test('logout posts to auth/logout and reports success', async () => {

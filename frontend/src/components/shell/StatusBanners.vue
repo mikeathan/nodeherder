@@ -9,14 +9,22 @@
   import UiIcon from '@/components/ui/UiIcon.vue';
   import UiButton from '@/components/ui/UiButton.vue';
   import { connectionText } from './connection';
+  import { useSession } from '@/composables/useSession';
+  import { startHubConnection } from '@/composables/useHubConnection';
 
   const { connection, isConnected } = useHub();
   const permit = usePermitJoin();
+  const { validation } = useSession();
   const reconnect = () => store.dispatch('ws/connect');
 </script>
 
 <template>
   <div class="nh-banners" aria-live="polite">
+    <div v-if="validation === 'unavailable'" class="nh-banner is-warn" role="status">
+      <UiIcon name="offline" />
+      <span>Could not check your session with the hub. Your sign-in has been kept.</span>
+      <UiButton size="sm" @click="startHubConnection">Retry session check</UiButton>
+    </div>
     <div v-if="!isConnected" class="nh-banner" :class="connection === 'connecting' ? 'is-warn' : 'is-danger'" role="status">
       <UiIcon :name="connection === 'connecting' ? 'refresh' : 'offline'" />
       <span><b>{{ connectionText(connection) }}.</b> Values may be out of date and device controls are paused until the hub reconnects.</span>
