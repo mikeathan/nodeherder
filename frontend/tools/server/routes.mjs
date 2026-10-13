@@ -4,6 +4,9 @@ import { createMockToken } from './utils.mjs';
 import { getMetricsForDevice } from './metrics-mock.mjs';
 
 export function registerRoutes(app) {
+  app.get('/api/auth/mode', (req, res) => {
+    res.set('Cache-Control', 'no-store').json({ mode: 'google' });
+  });
   // Helpers for mock PKCE/state
   const base64Url = (buf) => buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
   const randomString = (len = 32) =>

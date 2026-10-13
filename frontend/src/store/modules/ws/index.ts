@@ -23,6 +23,7 @@ export const WSClientModule: Module<WSClientState, RootState> = {
 
   getters: {
     getConnectionStatus: (state) => state.connectionStatus,
+    getSocket: (state) => state.socket,
   },
 
   mutations: {

@@ -82,6 +82,15 @@ OFFLINE_STRICT_LOCAL=true
 Offline mode chooses the local login flow for requests the backend recognizes as local.
 Online login requires Google credentials.
 
+The sign-in screen asks the backend which mode applies to the current request:
+local access shows **Continue on local network**, without Google. Direct local sign-in
+is also restricted to requests eligible for that mode. Session cookies survive browser
+restarts until the token expires (24 hours); existing cookies become persistent after
+the next sign-in. Temporary connection/server failures keep cached sign-in and offer
+retry, including automatic checks when the browser returns to the foreground or online.
+Expired/rejected sessions still require sign-in. HTTPS and longer token lifetimes are
+not part of this change. Deploy the backend before the frontend for the new mode endpoint.
+
 For Google sign-in, create an OAuth client in
 [Google Cloud Console](https://console.cloud.google.com/). Set the actual frontend
 origin and authorized callback URI; development uses `http://localhost:4100` and

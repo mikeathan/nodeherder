@@ -56,7 +56,11 @@ func NewJWTService(cfg JWTConfig) *JWTService {
 }
 
 func (s *JWTService) GenerateJWT(userID, username string) (string, error) {
+	token, _, err := s.generateJWT(userID, username)
+	return token, err
+}
 
+func (s *JWTService) generateJWT(userID, username string) (string, time.Time, error) {
 	claims := Claims{
 		UserID:   userID,
 		Username: username,
@@ -68,7 +72,8 @@ func (s *JWTService) GenerateJWT(userID, username string) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(s.cfg.Secret)
+	signed, err := token.SignedString(s.cfg.Secret)
+	return signed, claims.ExpiresAt.Time, err
 }
 
 func (s *JWTService) ValidateJWT(tokenStr string) (*Claims, error) {
@@ -117,7 +122,12 @@ func setPKCECookie(w http.ResponseWriter, state, verifier string) {
 
 // setSessionCookie persists the user's session (JWT) with HttpOnly and SameSite=Lax.
 // Note: set Secure=true in production when served over HTTPS.
-func setSessionCookie(w http.ResponseWriter, token string) {
+func setSessionCookie(w http.ResponseWriter, token string, expiresAt time.Time) {
+	// Round up the remaining seconds; JWT validation enforces the precise expiry.
+	maxAge := int(time.Until(expiresAt).Seconds()) + 1
+	if maxAge <= 0 {
+		maxAge = -1
+	}
 	http.SetCookie(w, &http.Cookie{
 		Name:     CookieNameSession,
 		Value:    token,
@@ -125,6 +135,8 @@ func setSessionCookie(w http.ResponseWriter, token string) {
 		HttpOnly: true,
 		Secure:   false, // Set to true in production with HTTPS
 		SameSite: http.SameSiteLaxMode,
+		MaxAge:   maxAge,
+		Expires:  expiresAt,
 	})
 }
 

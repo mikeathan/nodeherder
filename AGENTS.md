@@ -35,6 +35,19 @@ read the linked skill as workflow guidance.
   `npm run lint` and `npm run build` for source changes; `npm run dev` for local UI.
 - Toolchains: `backend/go.mod`, `.nvmrc`. Additional checks: component constitutions.
 
+## Test file ownership
+
+Test files MUST belong to an identifiable production source file and use that source
+file's name. Add regressions to its existing companion test file; do not create separate
+feature-, issue-, or regression-named test files (for example, `session_reliability_test.go`
+or `auth-session.test.ts`).
+
+- Go: `auth.go` → `auth_test.go` in the same package directory.
+- Frontend unit tests: mirror the source path under `src/__tests__/`, for example
+  `src/store/modules/auth/index.ts` → `src/__tests__/store/modules/auth/index.test.ts`.
+
+Before adding a test file, identify its source owner and check for an existing companion.
+
 ## Done
 
 Behavior changes need spec → plan → tasks before implementation; templates:

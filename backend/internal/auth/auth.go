@@ -117,13 +117,13 @@ func (o *offlineOAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 
 func (o *offlineOAuth) HandleOfflineStart(w http.ResponseWriter, r *http.Request) {
 	// Create a local session for an offline user
-	token, err := o.jwtService.GenerateJWT("local", "Offline User")
+	token, expiresAt, err := o.jwtService.generateJWT("local", "Offline User")
 	if err != nil {
 		writeJSONAuthError(w, http.StatusInternalServerError, "failed to create session")
 		return
 	}
 
-	setSessionCookie(w, token)
+	setSessionCookie(w, token, expiresAt)
 
 	// Build the frontend success redirect URL from environment.
 	frontendURL, err := frontendAuthSuccessURL()
@@ -249,14 +249,14 @@ func (o *googleOAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// create JWT
-	jwt, err := o.jwtService.GenerateJWT(userID, userName)
+	jwt, expiresAt, err := o.jwtService.generateJWT(userID, userName)
 	if err != nil {
 		writeJSONAuthError(w, http.StatusInternalServerError, "Failed to create JWT: "+err.Error())
 		return
 	}
 
 	// Persist the authenticated session (JWT) as an HttpOnly cookie; SameSite=Lax works with top-level redirects.
-	setSessionCookie(w, jwt)
+	setSessionCookie(w, jwt, expiresAt)
 
 	// Build the frontend success redirect URL from environment.
 	frontendURL, err := frontendAuthSuccessURL()
@@ -319,6 +319,10 @@ func (s *authDelegator) HandleMe(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *authDelegator) HandleOfflineStart(w http.ResponseWriter, r *http.Request) {
+	if s.decide == nil || !s.decide(r) {
+		writeJSONAuthError(w, http.StatusForbidden, "local sign-in is not available for this request")
+		return
+	}
 	if h, ok := s.offline.(OfflineAuth); ok {
 		h.HandleOfflineStart(w, r)
 		return
@@ -326,8 +330,20 @@ func (s *authDelegator) HandleOfflineStart(w http.ResponseWriter, r *http.Reques
 	writeJSONAuthError(w, http.StatusNotFound, "offline start not available")
 }
 
+// HandleMode describes the sign-in path selected for this request without creating a session.
+func (s *authDelegator) HandleMode(w http.ResponseWriter, r *http.Request) {
+	mode := AuthModeGoogle
+	if s.decide != nil && s.decide(r) {
+		mode = AuthModeLocal
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(authModeResponse{Mode: mode})
+}
+
 func (s *authDelegator) RegisterRoutes(registrar RouteRegistrar) {
 	base := "/api/auth"
+	registrar.PublicGET(base+"/mode", http.HandlerFunc(s.HandleMode))
 	registrar.PublicPOST(base+"/login", http.HandlerFunc(s.HandleLogin))
 	registrar.PublicPOST(base+"/logout", http.HandlerFunc(s.HandleLogout))
 	registrar.PublicGET(base+"/callback", http.HandlerFunc(s.HandleCallback))

@@ -1,21 +1,59 @@
 <script setup lang="ts">
   /*
-   * Sign-in (spec 007 US-08, FR-11, AC-25/26). OAuth redirect only; the hub owns the session
-   * cookie. Handles the provider's return (/?auth=success) on mount.
+   * Sign-in (spec 008): the hub selects local or Google access and owns the cookie.
+   * Check an existing session before presenting sign-in; retry unavailable checks.
    */
-  import { onMounted } from 'vue';
+  import { computed, onMounted, onBeforeUnmount, ref } from 'vue';
   import { useRoute } from 'vue-router';
   import { useSession } from '@/composables/useSession';
   import AppLogo from '@/components/ui/AppLogo.vue';
   import UiIcon from '@/components/ui/UiIcon.vue';
   import GoogleIcon from '@/components/icons/GoogleIcon.vue';
+  import { getAuthMode } from '@/services/auth.service';
+  import type { AuthMode } from '@/services/auth.service';
 
   const route = useRoute();
-  const { signIn, signingIn, error, completeOAuthReturn, resumeSession } = useSession();
+  const { signIn, signingIn, error, validation, completeOAuthReturn, resumeSession } = useSession();
+  const mode = ref<AuthMode | null>(null);
+  const checking = ref(true);
+  const modeError = ref('');
+  const unavailable = computed(() => validation.value === 'unavailable' || !!modeError.value);
+  let active = true;
+  let started = false;
+
+  async function check() {
+    if (checking.value && started) return;
+    started = true;
+    checking.value = true;
+    mode.value = null;
+    modeError.value = '';
+    error.value = '';
+    const sessionCheck = async () => {
+      if (!(await completeOAuthReturn(route))) await resumeSession(route);
+    };
+    await Promise.all([
+      sessionCheck(),
+      getAuthMode().then((value) => { if (active) mode.value = value; }).catch(() => {
+        if (active) modeError.value = 'Could not check how to connect to the hub.';
+      }),
+    ]);
+    if (active) checking.value = false;
+  }
+  const recover = () => { if (unavailable.value) void check(); };
+  const visible = () => { if (document.visibilityState === 'visible') recover(); };
   const year = new Date().getFullYear();
 
-  onMounted(async () => {
-    if (!(await completeOAuthReturn(route))) await resumeSession(route);
+  onMounted(() => {
+    void check();
+    window.addEventListener('online', recover);
+    window.addEventListener('focus', recover);
+    document.addEventListener('visibilitychange', visible);
+  });
+  onBeforeUnmount(() => {
+    active = false;
+    window.removeEventListener('online', recover);
+    window.removeEventListener('focus', recover);
+    document.removeEventListener('visibilitychange', visible);
   });
 </script>
 
@@ -25,17 +63,27 @@
       <AppLogo :size="72" class="nh-login-logo" />
       <div>
         <h1 id="login-title">Welcome home</h1>
-        <p class="nh-muted">Sign in to see and control your devices.</p>
+        <p class="nh-muted">{{ mode === 'local' ? 'Connect to your hub on the local network.' : 'Connect to see and control your devices.' }}</p>
       </div>
 
-      <button type="button" class="nh-google" :disabled="signingIn" :aria-busy="signingIn || undefined" @click="signIn">
-        <span v-if="signingIn" class="nh-spin" aria-hidden="true" />
-        <GoogleIcon v-else class="nh-google-ic" aria-hidden="true" />
-        <span>{{ signingIn ? 'Signing in…' : 'Sign in with Google' }}</span>
-      </button>
-
-      <p v-if="error" class="nh-alert is-danger" role="alert"><UiIcon name="error" /><span>{{ error }}</span></p>
-      <p class="nh-login-note"><UiIcon name="secure" />You will be sent to Google to sign in, then brought back here.</p>
+      <p v-if="checking" role="status">Checking your session…</p>
+      <template v-else-if="unavailable">
+        <p class="nh-alert is-danger" role="alert">
+          <UiIcon name="offline" /><span>{{ modeError || 'Could not reach the hub to check your session.' }} Check your connection and retry.</span>
+        </p>
+        <button type="button" class="nh-google" @click="check">Retry connection</button>
+      </template>
+      <template v-else>
+        <button type="button" class="nh-google" :disabled="signingIn" :aria-busy="signingIn || undefined" @click="signIn">
+          <span v-if="signingIn" class="nh-spin" aria-hidden="true" />
+          <UiIcon v-else-if="mode === 'local'" name="home" />
+          <GoogleIcon v-else class="nh-google-ic" aria-hidden="true" />
+          <span>{{ signingIn ? 'Connecting…' : mode === 'local' ? 'Continue on local network' : 'Sign in with Google' }}</span>
+        </button>
+        <p v-if="error" class="nh-alert is-danger" role="alert"><UiIcon name="error" /><span>{{ error }}</span></p>
+        <p v-if="mode === 'local'" class="nh-login-note"><UiIcon name="home" />Local access uses the shared Offline User session. No Google account is needed.</p>
+        <p v-else class="nh-login-note"><UiIcon name="secure" />You will be sent to Google to sign in, then brought back here.</p>
+      </template>
     </main>
     <footer class="nh-login-foot">© {{ year }} NodeHerder</footer>
   </div>
