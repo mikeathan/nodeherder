@@ -4,6 +4,54 @@ import { MOCK } from './support/mock';
 
 // Spec 007 US-08 (AC-25, AC-26): OAuth redirect sign-in must keep working.
 test.describe('sign in', () => {
+  for (const flow of ['OAuth', 'cookie']) {
+    test(`${flow} handoff keeps one standalone login until the destination is ready`, async ({ page }, testInfo) => {
+      let release!: () => void;
+      const gate = new Promise<void>((resolve) => { release = resolve; });
+      let destinationRequested = false;
+      let modeChecks = 0;
+      page.on('request', (request) => {
+        if (request.url() === `${HUB_API}/auth/mode`) modeChecks += 1;
+      });
+      await page.addInitScript(() => {
+        const logins = new Set<Element>();
+        const observer = new MutationObserver(() => {
+          document.querySelectorAll('.nh-login').forEach((login) => logins.add(login));
+          document.documentElement.dataset.loginMounts = String(logins.size);
+        });
+        observer.observe(document, { childList: true, subtree: true });
+      });
+      await page.route('**/src/components/dashboards/GroupDashboard.vue', async (route) => {
+        destinationRequested = true;
+        await gate;
+        await route.continue();
+      });
+      try {
+        if (flow === 'OAuth') {
+          await signIn(page);
+        } else {
+          const response = await page.request.post(`${HUB_API}/auth/login`);
+          const { url } = await response.json();
+          await page.request.get(url); // Set the real mock cookie without mounting the app.
+          await page.goto('/');
+        }
+        await expect.poll(() => destinationRequested).toBe(true);
+        await expect(page.locator('.nh-login')).toHaveCount(1);
+        await expect(ui.shell.nav(page)).toHaveCount(0);
+        await expect(ui.login.signInButton(page)).toHaveCount(0);
+        await page.screenshot({ path: testInfo.outputPath('pending-handoff.png') });
+        release();
+        await expect(ui.home.groupTitles(page).first()).toBeVisible();
+        await expect(page.locator('.nh-login')).toHaveCount(0);
+        await expect(page.locator('html')).toHaveAttribute('data-login-mounts', '1');
+        expect(modeChecks).toBe(1);
+        await expect(page).toHaveURL(/\/groupdashboard$/);
+      } finally {
+        release();
+      }
+    });
+  }
+
   test('local access has local wording and completes without Google', async ({ page }, testInfo) => {
     await page.route(`${HUB_API}/auth/mode`, (route) => route.fulfill({ json: { mode: 'local' } }));
     await page.route(`${HUB_API}/auth/login`, (route) => route.fulfill({ json: { url: `${HUB_API}/auth/offline/start` } }));

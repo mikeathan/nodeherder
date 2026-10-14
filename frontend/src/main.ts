@@ -34,4 +34,5 @@ app.directive('click-outside', ClickOutside);
 app.use(store, key);
 app.use(router);
 app.component('ApexChart', VueApexCharts);
-app.mount('#app');
+// Session checks and OAuth cleanup need the resolved initial route.
+void router.isReady().then(() => app.mount('#app'));

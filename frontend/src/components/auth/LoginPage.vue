@@ -1,60 +1,11 @@
 <script setup lang="ts">
-  /*
-   * Sign-in (spec 008): the hub selects local or Google access and owns the cookie.
-   * Check an existing session before presenting sign-in; retry unavailable checks.
-   */
-  import { computed, onMounted, onBeforeUnmount, ref } from 'vue';
-  import { useRoute } from 'vue-router';
-  import { useSession } from '@/composables/useSession';
+  import { useLoginSession } from '@/composables/useLoginSession';
   import AppLogo from '@/components/ui/AppLogo.vue';
   import UiIcon from '@/components/ui/UiIcon.vue';
   import GoogleIcon from '@/components/icons/GoogleIcon.vue';
-  import { getAuthMode } from '@/services/auth.service';
-  import type { AuthMode } from '@/services/auth.service';
 
-  const route = useRoute();
-  const { signIn, signingIn, error, validation, completeOAuthReturn, resumeSession } = useSession();
-  const mode = ref<AuthMode | null>(null);
-  const checking = ref(true);
-  const modeError = ref('');
-  const unavailable = computed(() => validation.value === 'unavailable' || !!modeError.value);
-  let active = true;
-  let started = false;
-
-  async function check() {
-    if (checking.value && started) return;
-    started = true;
-    checking.value = true;
-    mode.value = null;
-    modeError.value = '';
-    error.value = '';
-    const sessionCheck = async () => {
-      if (!(await completeOAuthReturn(route))) await resumeSession(route);
-    };
-    await Promise.all([
-      sessionCheck(),
-      getAuthMode().then((value) => { if (active) mode.value = value; }).catch(() => {
-        if (active) modeError.value = 'Could not check how to connect to the hub.';
-      }),
-    ]);
-    if (active) checking.value = false;
-  }
-  const recover = () => { if (unavailable.value) void check(); };
-  const visible = () => { if (document.visibilityState === 'visible') recover(); };
+  const { mode, modeError, busy, statusText, unavailable, check, signIn, signingIn, error } = useLoginSession();
   const year = new Date().getFullYear();
-
-  onMounted(() => {
-    void check();
-    window.addEventListener('online', recover);
-    window.addEventListener('focus', recover);
-    document.addEventListener('visibilitychange', visible);
-  });
-  onBeforeUnmount(() => {
-    active = false;
-    window.removeEventListener('online', recover);
-    window.removeEventListener('focus', recover);
-    document.removeEventListener('visibilitychange', visible);
-  });
 </script>
 
 <template>
@@ -66,7 +17,7 @@
         <p class="nh-muted">{{ mode === 'local' ? 'Connect to your hub on the local network.' : 'Connect to see and control your devices.' }}</p>
       </div>
 
-      <p v-if="checking" role="status">Checking your session…</p>
+      <p v-if="busy" role="status">{{ statusText }}</p>
       <template v-else-if="unavailable">
         <p class="nh-alert is-danger" role="alert">
           <UiIcon name="offline" /><span>{{ modeError || 'Could not reach the hub to check your session.' }} Check your connection and retry.</span>
