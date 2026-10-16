@@ -40,7 +40,6 @@
 
 <template>
   <template v-if="isPanel">
-    <StatusBanners />
     <RouterView v-slot="{ Component }">
       <component :is="Component" @open-appearance="appearanceOpen = true" />
     </RouterView>

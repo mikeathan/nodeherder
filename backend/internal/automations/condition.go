@@ -20,6 +20,8 @@ var conditionTypeRegistry = map[ConditionType]reflect.Type{
 }
 
 type Condition interface {
+	// DependsOn declares device-state inputs without evaluating the condition.
+	DependsOn(property string) bool
 	Evaluate(ctx AutomationContext) bool
 	GetType() ConditionType
 	HasValueChanged(name string, ctx AutomationContext) bool
@@ -32,6 +34,11 @@ type BaseCondition struct {
 	Type             ConditionType          `json:"type"`
 	handlers         []ConditionHandler
 }
+
+// DependsOn returns false for conditions without device-state dependencies.
+// Time conditions inherit this behavior; incoming device updates do not represent
+// clock changes. Conditions with device inputs override this method.
+func (e *BaseCondition) DependsOn(property string) bool { return false }
 
 func (e *BaseCondition) Evaluate(ctx AutomationContext) bool {
 	return true
@@ -64,6 +71,9 @@ type ExposeCondition struct {
 	Name  string `json:"name"`
 	Value any    `json:"value"`
 }
+
+// DependsOn identifies the expose read by this condition.
+func (e *ExposeCondition) DependsOn(property string) bool { return e.Name == property }
 
 func (e *ExposeCondition) HasValueChanged(name string, ctx AutomationContext) bool {
 	return ctx.GetCurrentState(e.Name) != e.Value

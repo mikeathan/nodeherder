@@ -1,3 +1,5 @@
+export type SessionValidationStatus = 'idle' | 'checking' | 'authenticated' | 'signedOut' | 'unavailable';
+
 export type User = {
   id: string;
   username: string;

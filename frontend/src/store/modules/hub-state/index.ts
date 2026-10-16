@@ -1,8 +1,9 @@
-import { Module } from 'vuex';
-import { RootState } from '../../state';
-import { HubStateModuleState } from './state';
-import { Device, Devices, DeviceMap, DeviceUpdate, Expose } from '../../../types/device';
-import {
+import type { Module } from 'vuex';
+import type { RootState } from '../../state';
+import type { HubStateModuleState } from './state';
+import type { HubLoadStatus, HubStateSnapshot } from '@/types/hub.type';
+import type { Device, Devices, DeviceMap, DeviceUpdate, Expose } from '../../../types/device';
+import type {
   AppConfig,
   BridgeSettingsType,
   DashboardGroup,
@@ -13,7 +14,7 @@ import {
   LoggerSettingsType,
   MCPStatusType,
 } from '../../../types/settings.type';
-import { KeyValuePair } from '@/types/types.type';
+import type { KeyValuePair } from '@/types/types.type';
 import { createAppconfig } from '@/contracts/settings';
 
 export const HubStateModule: Module<HubStateModuleState, RootState> = {
@@ -23,10 +24,12 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
     deviceMap: {} as DeviceMap,
     appConfig: createAppconfig(),
     initialized: false,
+    loadStatus: 'idle',
     mcpStatus: null as MCPStatusType | null,
   }),
 
   getters: {
+    loadStatus: (state) => state.loadStatus,
     isInitialized: (state) => (): boolean => state.initialized,
 
     // Device getters
@@ -186,8 +189,11 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
       state.deviceMap = {};
       state.appConfig = createAppconfig();
       state.initialized = false;
+      state.loadStatus = 'idle';
       state.mcpStatus = null;
     },
+
+    setLoadStatus(state, status: HubLoadStatus) { state.loadStatus = status; },
 
     setInitialized(state, initialized: boolean) {
       state.initialized = initialized;
@@ -195,7 +201,7 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
   },
 
   actions: {
-    init({ commit }, payload: { devices: Devices; config: AppConfig }) {
+    init({ commit }, payload: HubStateSnapshot) {
       commit('clear');
       commit('setAppConfig', payload.config);
       commit('setDevices', payload.devices);
