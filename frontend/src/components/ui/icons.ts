@@ -13,7 +13,7 @@ import {
   mdiGoogle, mdiHelpCircleOutline, mdiHomeOutline, mdiImport, mdiInformationOutline, mdiLanDisconnect, mdiLeaf,
   mdiLightbulbOnOutline, mdiLightbulbOutline, mdiLightningBolt, mdiLockOutline, mdiLogout, mdiMagnify, mdiMenu, mdiMinus,
   mdiMotionSensor, mdiPaletteOutline, mdiPencilOutline, mdiPlay, mdiPlus, mdiPowerPlugOutline, mdiRadar, mdiRefresh,
-  mdiRemote, mdiRobotOutline, mdiShieldCheckOutline, mdiSignal, mdiSmokeDetectorVariant, mdiSync, mdiTabletDashboard,
+  mdiPin, mdiPinOutline, mdiRemote, mdiRobotOutline, mdiShieldCheckOutline, mdiSignal, mdiSmokeDetectorVariant, mdiSync, mdiTabletDashboard,
   mdiThermometer, mdiTimerOutline, mdiTrashCanOutline, mdiTune, mdiViewDashboardOutline, mdiVolumeHigh, mdiWater,
   mdiWaterPercent, mdiWeatherNight, mdiWhiteBalanceSunny, mdiWifi, mdiZigbee,
 } from '@mdi/js';
@@ -33,6 +33,8 @@ export const ICONS = {
   join: mdiAccessPointNetwork,
   panel: mdiTabletDashboard,
   // actions
+  pin: mdiPin,
+  pinOutline: mdiPinOutline,
   search: mdiMagnify,
   add: mdiPlus,
   remove: mdiMinus,

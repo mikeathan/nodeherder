@@ -2,6 +2,8 @@ import { createRouter, createWebHistory } from 'vue-router';
 import type { RouteRecordRaw } from 'vue-router';
 import LoginPage from '@/components/auth/LoginPage.vue';
 import { store } from '@/store/index.js';
+import { useDefaultView } from '@/composables/useDefaultView';
+import { postLoginTarget } from '@/domain/default-view';
 import { RouteName } from '@/types/router';
 
 declare module 'vue-router' {
@@ -108,7 +110,7 @@ router.beforeEach((to) => {
     return { name: RouteName.Login, query: to.fullPath !== '/' ? { redirect: to.fullPath } : undefined };
   }
   if (to.meta.public && isAuthenticated && to.name === RouteName.Login) {
-    return { name: RouteName.GroupDashboard };
+    return postLoginTarget(to.query.redirect, useDefaultView().preferred.value);
   }
   return true;
 });

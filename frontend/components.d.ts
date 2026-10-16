@@ -39,6 +39,7 @@ declare module 'vue' {
     ConsoleViewer: typeof import('./src/components/hub/console/ConsoleViewer.vue')['default']
     DateRangeDisplay: typeof import('./src/components/chart/DateRangeDisplay.vue')['default']
     DebounceEditor: typeof import('./src/components/settings/DebounceEditor.vue')['default']
+    DefaultViewButton: typeof import('./src/components/ui/DefaultViewButton.vue')['default']
     DeviceActions: typeof import('./src/components/device/DeviceActions.vue')['default']
     DeviceCard: typeof import('./src/components/entity/DeviceCard.vue')['default']
     DeviceCardFooter: typeof import('./src/components/dashboards/cards/DeviceCardFooter.vue')['default']
