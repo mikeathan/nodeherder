@@ -24,6 +24,7 @@
   import UiEmpty from '@/components/ui/UiEmpty.vue';
   import ConnectionStatus from '@/components/shell/ConnectionStatus.vue';
   import StatusBanners from '@/components/shell/StatusBanners.vue';
+  import DefaultViewButton from '@/components/ui/DefaultViewButton.vue';
   import PanelDial from './PanelDial.vue';
   import PanelButton from './PanelButton.vue';
 
@@ -155,6 +156,7 @@
     </main>
 
     <nav class="hp-dock" aria-label="Panel">
+      <DefaultViewButton dock />
       <button type="button" :aria-pressed="page === 'rooms'" @click="page = 'rooms'"><UiIcon name="home" /><span>Rooms</span></button>
       <button type="button" :aria-pressed="page === 'status'" @click="page = 'status'"><UiIcon name="gauge" /><span>Status</span></button>
       <RouterLink :to="{ name: RouteName.GroupDashboard }"><UiIcon name="signOut" /><span>Exit panel</span></RouterLink>
@@ -374,7 +376,8 @@
     background: var(--nh-surface-2);
     color: var(--nh-text);
   }
-  .hp-dock [aria-pressed='true'] {
+  .hp-dock button[aria-pressed='true'],
+  .hp-dock button[aria-pressed='true']:hover {
     background: var(--nh-accent);
     color: var(--nh-accent-contrast);
   }
@@ -442,6 +445,7 @@
     .hp-dock a {
       flex: 1;
       min-width: 0;
+      padding: 0.4rem 0.35rem;
     }
   }
 </style>

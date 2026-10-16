@@ -8,6 +8,7 @@
   import UiButton from '@/components/ui/UiButton.vue';
   import UiIcon from '@/components/ui/UiIcon.vue';
   import AppLogo from '@/components/ui/AppLogo.vue';
+  import DefaultViewButton from '@/components/ui/DefaultViewButton.vue';
   import ConnectionStatus from './ConnectionStatus.vue';
 
   defineProps<{ navOpen: boolean }>();
@@ -26,6 +27,7 @@
       <AppLogo :size="32" :wordmark="false" />
     </RouterLink>
     <div class="nh-header-title">{{ title }}</div>
+    <DefaultViewButton />
     <div class="nh-header-actions">
       <ConnectionStatus />
       <UiButton variant="ghost" :icon="mode === 'dark' ? 'light' : 'dark'" :label="mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'" @click="toggleMode" />
