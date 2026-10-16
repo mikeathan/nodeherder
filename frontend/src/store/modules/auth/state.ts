@@ -1,8 +1,8 @@
-import { User } from '@/types/auth.type';
+import type { SessionValidationStatus, User } from '@/types/auth.type';
 
 export interface AuthModuleState {
   user: User;
   authenticated: boolean;
-  validation: 'idle' | 'checking' | 'authenticated' | 'signedOut' | 'unavailable';
+  validation: SessionValidationStatus;
   revision: number;
 }

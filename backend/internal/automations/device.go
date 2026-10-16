@@ -137,19 +137,15 @@ func (d *Device) Evaluate(event TriggerEvent) bool {
 		return false
 	}
 
-	payload := deviceEvent.Payload()
 	ctx := deviceEvent.runContext(d.state)
-
-	// NOTE: a trigger can have multiple conditions.
-	// e.g presence can have multiple conditions for on and off
 	success := true
 	for _, trigger := range d.Triggers {
-		// Only process this trigger if its property is in the changed payload
-		if _, ok := payload[trigger.GetName()]; ok {
-			if err := trigger.Process(ctx); err != nil {
-				utils.LogErrorf("automation %s: %v", d.Id, err)
-				success = false
-			}
+		if !trigger.AffectedBy(ctx, deviceEvent.Payload()) {
+			continue
+		}
+		if err := trigger.Process(ctx); err != nil {
+			utils.LogErrorf("automation %s: %v", d.Id, err)
+			success = false
 		}
 	}
 	return success

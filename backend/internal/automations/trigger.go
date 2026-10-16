@@ -12,6 +12,8 @@ type TriggerType string
 type TriggerList []Trigger
 
 type Trigger interface {
+	// AffectedBy selects relevant device updates without evaluating conditions.
+	AffectedBy(ctx AutomationContext, changes map[string]interface{}) bool
 	GetType() TriggerType
 	GetName() string
 	Process(ctx AutomationContext) error
@@ -44,6 +46,31 @@ func (t *BaseTrigger) GetType() TriggerType {
 
 func (t *BaseTrigger) GetName() string {
 	return t.Name
+}
+
+// AffectedBy accepts the primary input and, for state sources, changes to any
+// declared condition dependency. A cached physical event must never be replayed
+// because another property changed. Selection has no eligibility history.
+func (t *BaseTrigger) AffectedBy(ctx AutomationContext, changes map[string]interface{}) bool {
+	if _, primary := changes[t.Name]; primary {
+		return true
+	}
+	source, exists := ctx.GetDevicePayload(t.Name)
+	if !exists || source.IsEventValue(source.Data.Value()) {
+		return false
+	}
+	return t.conditionsAffectedBy(changes)
+}
+
+func (t *BaseTrigger) conditionsAffectedBy(changes map[string]interface{}) bool {
+	for property := range changes {
+		for _, condition := range t.Conditions {
+			if condition.DependsOn(property) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (t *BaseTrigger) Process(ctx AutomationContext) error {
@@ -134,30 +161,39 @@ func NewDeviceTrigger(name string) *DeviceTrigger {
 	}
 }
 
+// Process is the single execution path for device-selected and manual runs.
 func (t *DeviceTrigger) Process(ctx AutomationContext) error {
-
-	// Simple feedback prevention: block device-triggered automations without conditions
-	if len(t.Conditions) == 0 && !ctx.IsManualTrigger() {
-		utils.LogInfof("Blocking device-triggered automation without conditions: %s", t.Name)
+	if !t.conditionsPermitExecution(ctx) {
 		return nil
 	}
+	return t.executeActions(ctx)
+}
 
-	for _, c := range t.Conditions {
-
-		isMatched := c.Evaluate(ctx)
-		if !isMatched {
-			// reset any pending actions eg if its a timer
-			for _, action := range t.Actions {
-				action.Stop()
-			}
-			return nil
+func (t *DeviceTrigger) conditionsPermitExecution(ctx AutomationContext) bool {
+	// Retain feedback protection and the existing condition/value-change policy.
+	if len(t.Conditions) == 0 && !ctx.IsManualTrigger() {
+		utils.LogInfof("Blocking device-triggered automation without conditions: %s", t.Name)
+		return false
+	}
+	for _, condition := range t.Conditions {
+		if !condition.Evaluate(ctx) {
+			t.stopActions()
+			return false
 		}
-
-		if !c.HasValueChanged(t.Name, ctx) {
-			return nil
+		if !condition.HasValueChanged(t.Name, ctx) {
+			return false
 		}
 	}
+	return true
+}
 
+func (t *DeviceTrigger) stopActions() {
+	for _, action := range t.Actions {
+		action.Stop()
+	}
+}
+
+func (t *DeviceTrigger) executeActions(ctx AutomationContext) error {
 	var failures error
 	for i, action := range t.Actions {
 		if err := action.Execute(ctx); err != nil {

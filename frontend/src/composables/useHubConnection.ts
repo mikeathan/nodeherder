@@ -1,51 +1,71 @@
-/*
- * Starts the hub link for a signed-in user: WebSocket connection, initial hub state
- * (GET hub state) and session validation, including foreground/network recovery.
- */
+/* Session recovery and initial data loading are independent of socket truth. */
 import { store } from '@/store';
 import { fetchHubState } from '@/services/hubstate.service';
 import { onMounted, onBeforeUnmount } from 'vue';
 
-function ensureSocket() {
-  const socket = store.getters['ws/getSocket'] as WebSocket | null;
-  if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) return;
-  const status = store.getters['ws/getConnectionStatus'];
-  if (status !== 'connected' && status !== 'connecting') store.dispatch('ws/connect');
-}
-
-async function loadHubState() {
-  if (!store.getters['hub/isInitialized']()) {
-    try {
-      store.dispatch('hub/init', await fetchHubState());
-    } catch (err) {
-      console.error('Failed to load hub state:', err);
-      store.commit('ws/setConnectionStatus', 'disconnected');
-      return;
-    }
-  }
-  store.dispatch('hub/loadMCPStatus');
-}
-
+let generation = 0;
 let pendingConnection: Promise<void> | null = null;
+let pendingSnapshot: Promise<void> | null = null;
+let snapshotController: AbortController | null = null;
+
+async function requestSnapshot(signal: AbortSignal, owner: number) {
+  try {
+    const data = await fetchHubState(signal);
+    if (signal.aborted || owner !== generation) return;
+    store.dispatch('hub/init', data);
+    store.commit('hub/setLoadStatus', 'ready');
+  } catch {
+    if (signal.aborted || owner !== generation) return;
+    store.commit('hub/setLoadStatus', 'failed');
+  }
+}
+
+function loadHubState() {
+  if (store.getters['hub/isInitialized']()) return;
+  if (pendingSnapshot) return;
+  snapshotController = new AbortController();
+  store.commit('hub/setLoadStatus', 'loading');
+  const request = requestSnapshot(snapshotController.signal, generation).finally(() => {
+    if (pendingSnapshot !== request) return;
+    pendingSnapshot = null;
+    snapshotController = null;
+  });
+  pendingSnapshot = request;
+}
+
+async function validateAndConnect(owner: number) {
+  await store.dispatch('auth/restoreSession');
+  if (owner !== generation) return;
+  if (!store.getters['auth/isAuthenticated']()) {
+    stopHubConnection();
+    return;
+  }
+  if (store.getters['auth/validation'] !== 'authenticated') return;
+  store.dispatch('ws/connect');
+  // The socket action owns deduplication; slow HTTP does not block validation.
+  loadHubState();
+}
 
 export function startHubConnection(): Promise<void> {
   if (pendingConnection) return pendingConnection;
-  pendingConnection = validateAndConnect().finally(() => { pendingConnection = null; });
-  return pendingConnection;
+  const check = validateAndConnect(generation).finally(() => {
+    if (pendingConnection === check) pendingConnection = null;
+  });
+  pendingConnection = check;
+  return check;
 }
 
-async function validateAndConnect() {
-  await store.dispatch('auth/restoreSession');
-  if (store.getters['auth/isAuthenticated']() && store.getters['auth/validation'] === 'authenticated') {
-    ensureSocket();
-    // A slow hub-state request must not block later session validation/recovery.
-    void loadHubState();
-  } else if (!store.getters['auth/isAuthenticated']()) {
-    store.commit('ws/setConnectionStatus', 'disconnected');
-  }
+/** Dispose the shell's network work before another session/link can take ownership. */
+export function stopHubConnection() {
+  generation += 1;
+  pendingConnection = null;
+  snapshotController?.abort();
+  snapshotController = null;
+  pendingSnapshot = null;
+  store.dispatch('ws/disconnect');
+  if (store.getters['hub/loadStatus'] === 'loading') store.commit('hub/setLoadStatus', 'idle');
 }
 
-/** Recheck after a mobile browser returns to the foreground or its network recovers. */
 export function useHubConnection() {
   const retry = () => { void startHubConnection(); };
   const visible = () => { if (document.visibilityState === 'visible') retry(); };
@@ -59,5 +79,6 @@ export function useHubConnection() {
     window.removeEventListener('online', retry);
     window.removeEventListener('focus', retry);
     document.removeEventListener('visibilitychange', visible);
+    stopHubConnection();
   });
 }

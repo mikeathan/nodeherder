@@ -3,7 +3,7 @@
   import { computed } from 'vue';
   import { store } from '@/store';
   import { useHub } from '@/composables/useHub';
-  import { MCPStatusType } from '@/types/settings.type';
+  import type { MCPStatusType } from '@/types/settings.type';
   import { connectionText } from './connection';
 
   const { connection } = useHub();
@@ -16,7 +16,7 @@
 </script>
 
 <template>
-  <span class="nh-conn" :class="`is-${connection}`" role="status" :title="title">
+  <span class="nh-conn" :class="`is-${connection}`" role="status" tabindex="-1" :title="title">
     <span class="nh-dot" aria-hidden="true" />
     <span class="nh-conn-txt">{{ connectionText(connection) }}</span>
     <span class="sr-only">{{ title }}</span>
@@ -35,15 +35,18 @@
     background: var(--nh-surface);
     font-size: 0.8rem;
     white-space: nowrap;
+    min-width: 8.5rem;
+    justify-content: center;
   }
   .nh-dot {
     width: 0.55rem;
     height: 0.55rem;
     border-radius: 50%;
-    background: var(--nh-ok);
-    box-shadow: 0 0 0 3px var(--nh-ok-soft);
+    background: var(--nh-text-muted);
   }
-  .is-connecting .nh-dot {
+  .nh-conn:focus-visible { outline: 2px solid var(--nh-accent); outline-offset: 2px; }
+  .is-connected .nh-dot { background: var(--nh-ok); box-shadow: 0 0 0 3px var(--nh-ok-soft); }
+  .is-reconnecting .nh-dot {
     background: var(--nh-warn);
     box-shadow: 0 0 0 3px var(--nh-warn-soft);
     animation: nh-pulse 1s infinite;
@@ -58,6 +61,7 @@
     }
     .nh-conn {
       width: 2rem;
+      min-width: 0;
       justify-content: center;
       padding: 0;
     }

@@ -1321,3 +1321,100 @@ func createEntity(name string, description string, data any, unit string, attrib
 	newEntity.Attributes = attributes
 	return newEntity
 }
+
+// This implementation deliberately is not an ExposeCondition. The coordinator
+// must use the dependency contract rather than inspect concrete condition types.
+type temperatureCondition struct {
+	automations.BaseCondition
+	evaluations int
+}
+
+func (c *temperatureCondition) DependsOn(property string) bool { return property == "temperature" }
+func (c *temperatureCondition) Evaluate(automations.AutomationContext) bool {
+	c.evaluations++
+	return true
+}
+
+func TestDeviceTriggerOwnsSingleConditionEvaluation(t *testing.T) {
+	device := utils_test.CreateDeviceWithExposes("sensor", "sensor", []*devices.Entity{
+		utils_test.CreateEntity("contact", "binary", false),
+		utils_test.CreateEntity("temperature", "numeric", 10.0),
+	})
+	condition := &temperatureCondition{}
+	action := &recordingAction{}
+	trigger := automations.NewDeviceTrigger("contact")
+	trigger.Conditions = []automations.Condition{condition}
+	trigger.Actions = []automations.MqttAction{action}
+	automation := automations.NewDevice("sensor")
+	automation.Triggers = automations.TriggerList{trigger}
+	for i, changes := range []map[string]interface{}{{"contact": false}, {"temperature": 11.0}, {"contact": true, "temperature": 12.0}} {
+		if !automation.Evaluate(automations.NewDeviceEvent(device, changes)) {
+			t.Fatal("unexpected action failure")
+		}
+		if condition.evaluations != i+1 {
+			t.Fatalf("condition evaluations=%d, want %d", condition.evaluations, i+1)
+		}
+		if action.deviceRuns.Load() != int32(i+1) {
+			t.Fatal("trigger did not process its declared dependency")
+		}
+	}
+	automation.Evaluate(automations.NewDeviceEvent(device, map[string]interface{}{"linkquality": 90.0}))
+	if condition.evaluations != 3 {
+		t.Fatal("unrelated property evaluated the condition")
+	}
+}
+
+func TestTriggerSelectsOnlyRelevantDeviceUpdates(t *testing.T) {
+	for _, tc := range []struct {
+		name, source string
+		value        any
+		changes      map[string]interface{}
+		want         bool
+	}{
+		{"primary state", "contact", false, map[string]interface{}{"contact": false}, true},
+		{"primary event", "action", "press", map[string]interface{}{"action": "press"}, true},
+		{"custom condition dependency", "contact", false, map[string]interface{}{"temperature": 11.0}, true},
+		{"unrelated property", "contact", false, map[string]interface{}{"linkquality": 90.0}, false},
+		{"empty update", "contact", false, nil, false},
+		{"cached event", "action", "press", map[string]interface{}{"temperature": 11.0}, false},
+		{"toggle event", "state", "TOGGLE", map[string]interface{}{"temperature": 11.0}, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			entity := utils_test.CreateEntity(tc.source, "binary", tc.value)
+			ctx := automations.NewRunContext(automations.NewDeviceContext(), map[string]*devices.Entity{tc.source: entity}, false)
+			trigger := automations.NewDeviceTrigger(tc.source)
+			trigger.Conditions = []automations.Condition{&temperatureCondition{}}
+			if got := trigger.AffectedBy(ctx, tc.changes); got != tc.want {
+				t.Fatalf("AffectedBy=%v, want %v", got, tc.want)
+			}
+			if trigger.Conditions[0].(*temperatureCondition).evaluations != 0 {
+				t.Fatal("selection evaluated a condition")
+			}
+		})
+	}
+}
+
+func TestTriggerDependenciesDoNotNeedAReportedConditionValue(t *testing.T) {
+	// Dependency selection relies on declarations, not current condition values or
+	// an eagerly maintained cache. The actual condition decides eligibility later.
+	source := utils_test.CreateEntity("presence", "binary", true)
+	ctx := automations.NewRunContext(automations.NewDeviceContext(), map[string]*devices.Entity{"presence": source}, false)
+	trigger := automations.NewDeviceTrigger("presence")
+	trigger.Conditions = []automations.Condition{
+		&automations.TimeCondition{},
+		utils_test.NewExposeCondition("illuminance", 45.0, utils.LessThanEqual),
+		utils_test.NewExposeCondition("temperature", 30.0, utils.LessThanEqual),
+	}
+	for _, property := range []string{"illuminance", "temperature"} {
+		if !trigger.AffectedBy(ctx, map[string]interface{}{property: 10.0}) {
+			t.Fatalf("missing declared dependency %s", property)
+		}
+	}
+	if trigger.AffectedBy(ctx, map[string]interface{}{"clock": true}) {
+		t.Fatal("time condition invented a device dependency")
+	}
+	empty := automations.NewRunContext(automations.NewDeviceContext(), nil, false)
+	if trigger.AffectedBy(empty, map[string]interface{}{"illuminance": 10.0}) {
+		t.Fatal("missing source must not replay dependencies")
+	}
+}
