@@ -9,7 +9,7 @@ cancel the other component. Superseded PR runs are cancelled; main runs are not.
 | Check | Errors caught |
 | --- | --- |
 | Workflow and Shell Checks | Invalid Actions syntax/expressions/inline shell; Bash syntax in tracked scripts; stack-manager ShellCheck findings |
-| Stack Manager (Ubuntu) | CLI scope/failure/dry-run/version regressions; real Compose merge, required variables, paths/ports/network using dummy fixtures |
+| Stack Manager (Ubuntu) | Local launcher startup/shutdown/descendant cleanup; generated reporting-defaults drift and generator regressions; CLI scope/failure/dry-run/version regressions; real Compose merge, required variables, paths/ports/network using dummy fixtures |
 | Backend Tests and Build | Go module checksum changes, Linux compilation failures, uncached unit regressions, `go vet` findings |
 | Backend Race Detection | Concurrent accesses exercised by backend tests; not proof that all races are absent |
 | Frontend Tests and Build | Locked install failures, existing ESLint errors, Jest regressions, Vue/TypeScript compilation and production bundle failures |

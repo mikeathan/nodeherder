@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"sync"
 	"testing"
+	"time"
 )
 
 func TestEntityDataConcurrentAccess(t *testing.T) {
@@ -249,6 +250,73 @@ func TestEntity_IsEventValue(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.entity.IsEventValue(tt.newValue); got != tt.wantEvent {
 				t.Errorf("Entity.IsEventValue() = %v, want %v", got, tt.wantEvent)
+			}
+		})
+	}
+}
+
+func TestExpectedReportDoesNotConfirmState(t *testing.T) {
+	data := devices.NewEntityData(float64(10), "brightness")
+	now := time.Date(2026, 10, 16, 12, 0, 0, 0, time.UTC)
+	data.ExpectReportUntil(now.Add(5 * time.Second))
+	if data.Value() != float64(10) {
+		t.Fatal("request changed confirmed state")
+	}
+	if !data.ConsumeExpectedReport(now) || data.ConsumeExpectedReport(now) {
+		t.Fatal("interest not consumed exactly once")
+	}
+	data.ExpectReportUntil(now)
+	if data.ConsumeExpectedReport(now) {
+		t.Fatal("interest must expire at boundary")
+	}
+}
+
+func TestTargetDistanceClassification(t *testing.T) {
+	entity, err := devices.CreateEntityFromExpose(devices.BridgeExpose{
+		Property: "target_distance", Type: bridge.NumericDataType,
+		Access: devices.StateBridgeAccessMode, Category: bridge.DiagnosticCategory, Unit: "m",
+	}, 1.71)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if entity.Category != bridge.MeasurementCategory || entity.Data.Value() != 1.71 {
+		t.Fatalf("distance category/value = %s/%v", entity.Category, entity.Data.Value())
+	}
+}
+
+func TestStoredMeasurementCategoryNormalization(t *testing.T) {
+	for _, tc := range []struct{ name, category, want string }{
+		{"target_distance", bridge.DiagnosticCategory, bridge.MeasurementCategory},
+		{"target_distance", bridge.MeasurementCategory, bridge.MeasurementCategory},
+		{"linkquality", bridge.DiagnosticCategory, bridge.DiagnosticCategory},
+		{"unknown_reading", bridge.DiagnosticCategory, bridge.DiagnosticCategory},
+		{"target_distance", bridge.ConfigCategory, bridge.ConfigCategory},
+	} {
+		t.Run(tc.name+"/"+tc.category, func(t *testing.T) {
+			original := devices.NewEntity(tc.name)
+			original.Category, original.Unit, original.AccessMode = tc.category, "m", bridge.ReadAccessMode
+			original.Data.SetValue(1.71)
+			encoded, err := json.Marshal(original)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var loaded devices.Entity
+			if err := json.Unmarshal(encoded, &loaded); err != nil {
+				t.Fatal(err)
+			}
+			if loaded.Category != tc.want || loaded.Unit != "m" || loaded.AccessMode != bridge.ReadAccessMode || loaded.Data.Value() != 1.71 {
+				t.Fatalf("loaded entity lost category or reading metadata: %+v", loaded)
+			}
+			encoded, err = json.Marshal(&loaded)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var again devices.Entity
+			if err := json.Unmarshal(encoded, &again); err != nil {
+				t.Fatal(err)
+			}
+			if again.Category != tc.want {
+				t.Fatal("category normalization is not stable")
 			}
 		})
 	}

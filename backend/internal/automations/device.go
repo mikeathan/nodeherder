@@ -68,7 +68,8 @@ var ErrAutomationSourceDisabled = errors.New("automation source is disabled")
 
 type Device struct {
 	BaseAutomation
-	state *DeviceContext
+	state  *DeviceContext
+	inputs *triggerDependencies
 }
 
 func newDevice() *Device {
@@ -189,5 +190,15 @@ func (d *Device) Configure(registrar services.DeviceRegistrar, client mqtt.MqttC
 
 	d.FriendlyName = bridgeInfo.FriendlyName
 
-	return d.BaseAutomation.Configure(registrar, client)
+	if err := d.BaseAutomation.Configure(registrar, client); err != nil {
+		return err
+	}
+	d.inputs = newTriggerDependencies(d.Triggers)
+	return nil
+}
+
+// AcceptsDeviceUpdate avoids constructing a run context for unrelated telemetry.
+// Unconfigured instances intentionally keep the conservative full-selection path.
+func (d *Device) AcceptsDeviceUpdate(changes map[string]interface{}) bool {
+	return d.inputs.accepts(changes)
 }

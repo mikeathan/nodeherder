@@ -53,6 +53,11 @@ export type DeviceSettings = {
 };
 
 export type DeviceConfig = {
+  liveIntervalByCategory?: DeviceDebounce;
+  liveIntervalOverrides?: DeviceDebounce;
+  reportingThresholds?: Record<string, number>;
+  metricOverrides?: Record<string, boolean>;
+  commandConfirmationTimeoutMs?: number;
   id: string;
   disabled: boolean;
   metricsEnabled: boolean;

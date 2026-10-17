@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"fmt"
 	"maps"
 	"node-herder/models/automations"
@@ -13,6 +14,7 @@ import (
 )
 
 type DeviceProcessor struct {
+	ctx               context.Context
 	registrar         *HubRegisterService
 	deviceServices    map[string]*deviceServiceEntry
 	configCache       *settings.DeviceConfigCache
@@ -67,7 +69,10 @@ func (dm *DeviceProcessor) OnDeviceConfigUpdated(cfg *settings.DeviceConfig) {
 	if cfg.Id == "" {
 		// device config defaults
 		for _, id := range dm.getDeviceIDs() {
-			dm.configureDeviceLifetime(id, cfg)
+			effective, err := dm.configCache.Get(id)
+			if err == nil {
+				dm.configureDeviceLifetime(id, effective)
+			}
 		}
 		return
 	}
@@ -81,6 +86,43 @@ func (dm *DeviceProcessor) configureDeviceLifetime(id string, cfg *settings.Devi
 	if entry, _ := dm.routeDeviceEvent(id, nil, event); entry != nil {
 		event.apply(entry.service)
 	}
+}
+
+// DeviceName resolves an active generation even while its first snapshot is still
+// being published and has not reached storage. Removal must join that same lane.
+func (dm *DeviceProcessor) DeviceName(id string) (string, bool) {
+	dm.mutex.RLock()
+	entry := dm.deviceServices[id]
+	dm.mutex.RUnlock()
+	if entry == nil {
+		return "", false
+	}
+	return entry.service.device.GetFriendlyName(), true
+}
+
+// RemoveDevice retires the exact active generation before evicting its registry
+// entry. The caller serializes this operation with reports on the device lane.
+// No registry lock surrounds persistence or callbacks. A later accepted discovery
+// creates a fresh generation rather than reusing a closed lifetime.
+func (dm *DeviceProcessor) RemoveDevice(id string) error {
+	dm.mutex.RLock()
+	entry := dm.deviceServices[id]
+	dm.mutex.RUnlock()
+	remove := func() error { return dm.registrar.RemoveDevice(id) }
+	if entry == nil {
+		return remove()
+	}
+	if err := entry.service.Retire(remove); err != nil {
+		return err
+	}
+	dm.mutex.Lock()
+	if dm.deviceServices[id] == entry {
+		clear(entry.pending)
+		entry.pending = nil
+		delete(dm.deviceServices, id)
+	}
+	dm.mutex.Unlock()
+	return nil
 }
 
 func (dm *DeviceProcessor) CreateOrUpdateDevice(friendlyName, connType string, dataMap map[string]interface{}) error {
@@ -119,7 +161,7 @@ func (dm *DeviceProcessor) routeDeviceEvent(id string, device *devices.Device, e
 		return nil, false
 	}
 	entry := &deviceServiceEntry{
-		service:  NewDeviceLifetimeService(device, dm.events, dm.configCache, dm.automationQueries, utils.NewRealClock()),
+		service:  NewDeviceLifetimeService(device, dm.events, dm.configCache, dm.automationQueries, utils.NewRealClock(), dm.ctx),
 		creating: true,
 	}
 	dm.deviceServices[id] = entry
@@ -176,6 +218,7 @@ func (dm *DeviceProcessor) getDeviceIDs() []string {
 
 // DeviceProcessor builder
 type DeviceProcessorBuilder struct {
+	ctx                 context.Context
 	registrar           *HubRegisterService
 	store               store.AppStore
 	events              *devices.DeviceRequestEvents
@@ -206,11 +249,21 @@ func (b *DeviceProcessorBuilder) WithAutomationQuerier(a automations.AutomationQ
 	return b
 }
 
+func (b *DeviceProcessorBuilder) WithContext(ctx context.Context) *DeviceProcessorBuilder {
+	b.ctx = ctx
+	return b
+}
+
 func (b *DeviceProcessorBuilder) Build() *DeviceProcessor {
-	return newDeviceProcessor(
+	processor := newDeviceProcessor(
 		b.registrar,
 		b.store,
 		b.events,
 		b.automationRetreiver,
 	)
+	processor.ctx = b.ctx
+	if processor.ctx == nil {
+		processor.ctx = context.Background()
+	}
+	return processor
 }

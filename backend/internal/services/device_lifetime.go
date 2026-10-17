@@ -18,8 +18,13 @@ const lastSeenKey = "last_seen"
 // message at a time in arrival order, so the automations they trigger read the
 // state written by that message (spec 005, FR-01).
 type DeviceLifetimeService struct {
+	ctx               context.Context
+	cancel            context.CancelFunc
+	monitorWorkers    sync.WaitGroup
 	device            *devices.Device
 	debouncerService  *settings.DeviceDebouncer
+	publisher         *ObservationPublisher
+	clock             utils.Clock
 	stopped           bool
 	events            *devices.DeviceRequestEvents
 	configCache       *settings.DeviceConfigCache
@@ -34,9 +39,24 @@ type availabilityMonitor struct {
 	cancel context.CancelFunc
 }
 
-func NewDeviceLifetimeService(device *devices.Device, events *devices.DeviceRequestEvents, configCache *settings.DeviceConfigCache, automationQueries automations.AutomationQuerier, clock utils.Clock) *DeviceLifetimeService {
+func NewDeviceLifetimeService(device *devices.Device, events *devices.DeviceRequestEvents, configCache *settings.DeviceConfigCache, automationQueries automations.AutomationQuerier, clock utils.Clock, contexts ...context.Context) *DeviceLifetimeService {
 
+	ctx := context.Background()
+	if len(contexts) > 0 {
+		ctx = contexts[0]
+	}
+	ctx, cancel := context.WithCancel(ctx)
+	publisher := NewObservationPublisher(ctx, device, clock, func(expose *devices.Entity) settings.ReportingPolicy {
+		return configCache.GetReportingPolicy(device.Id, expose)
+	}, func(p *devices.UpdatePackage) {
+		if events.OnDeviceUpdated != nil {
+			events.OnDeviceUpdated(device, p)
+		}
+	})
 	return &DeviceLifetimeService{
+		ctx: ctx, cancel: cancel,
+		publisher:         publisher,
+		clock:             clock,
 		configCache:       configCache,
 		debouncerService:  settings.NewDeviceDebouncer(device.Id, configCache, clock),
 		device:            device,
@@ -47,6 +67,9 @@ func NewDeviceLifetimeService(device *devices.Device, events *devices.DeviceRequ
 }
 
 func (d *DeviceLifetimeService) Seed(payload map[string]interface{}) {
+	if d.ctx.Err() != nil {
+		return
+	}
 
 	if d.configCache.IsDeviceDisabled(d.device.Id) {
 		d.monitorMu.Lock()
@@ -75,6 +98,7 @@ func (d *DeviceLifetimeService) Seed(payload map[string]interface{}) {
 		}
 
 		d.device.Exposes[name].Data.SetValue(value)
+		d.publisher.Prime(expose, value)
 		hasChanges = true
 	}
 
@@ -93,9 +117,17 @@ func (d *DeviceLifetimeService) Seed(payload map[string]interface{}) {
 }
 
 func (d *DeviceLifetimeService) OnConfigUpdated(cfg *settings.DeviceConfig) {
+	if d.ctx.Err() != nil {
+		return
+	}
+	if cfg.Disabled {
+		d.publisher.Clear()
+	} else {
+		d.publisher.Reconfigure()
+	}
 	d.monitorMu.Lock()
 	defer d.monitorMu.Unlock()
-	if cfg.Disabled == d.stopped {
+	if d.ctx.Err() != nil || cfg.Disabled == d.stopped {
 		return
 	}
 
@@ -116,7 +148,7 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 	d.monitorMu.Lock()
 	stopped := d.stopped
 	d.monitorMu.Unlock()
-	if stopped {
+	if stopped || d.ctx.Err() != nil {
 		return
 	}
 
@@ -132,14 +164,13 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 	if len(sampled) > 0 {
 		d.attemptToStoreMetrics(sampled)
 	}
-	if live.HasData() || live.Availability != "" {
-		d.events.OnDeviceUpdated(d.device, live)
-	}
+	d.publisher.Publish(live)
 }
 
-// collectUpdate separates device evidence, changed automation inputs and sampled
-// metrics. Writable same-value reports can confirm a command without retriggering
-// automation or consuming the metrics sampling window.
+// collectUpdate splits one report into independent consumer outputs. Raw entity state
+// and the automation delta are updated first. The observation filter may hide numeric
+// jitter from UI clients; the metrics sampler retains its separate history policy.
+// Neither output policy can suppress a real event or stale an automation read.
 func (d *DeviceLifetimeService) collectUpdate(payload map[string]interface{}) (*devices.UpdatePackage, map[string]interface{}, map[string]interface{}) {
 	live := devices.NewUpdatePackage(d.device.Id)
 	delta := make(map[string]interface{})
@@ -156,11 +187,24 @@ func (d *DeviceLifetimeService) collectUpdate(payload map[string]interface{}) (*
 				sampled[name] = value
 			}
 		}
-		if changed || isWritableExpose(expose) {
+		if d.shouldPublishExpose(expose, value, changed) {
 			live.Data[name] = value
 		}
 	}
 	return live, delta, sampled
+}
+
+// shouldPublishExpose keeps pending command evidence separate from sensor noise.
+// Actuators retain their existing same-value reports. Cached configuration fields
+// need an outstanding command interest to justify another identical broadcast.
+// Eligible candidates then pass through the publisher’s threshold and live interval.
+func (d *DeviceLifetimeService) shouldPublishExpose(expose *devices.Entity, value any, changed bool) bool {
+	expected := expose.Data.ConsumeExpectedReport(d.clock.Now())
+	writableEcho := isWritableExpose(expose) && (expose.Category != bridge.ConfigCategory || expected)
+	if !changed && !writableEcho {
+		return false
+	}
+	return true
 }
 
 func acceptExposeReport(expose *devices.Entity, value interface{}) bool {
@@ -188,8 +232,8 @@ func (d *DeviceLifetimeService) restoreAvailability(live *devices.UpdatePackage)
 // attemptToTriggerAutomation fires the automation engine if automation is
 // enabled for this device. Only triggers when relevant exposes have changed.
 func (d *DeviceLifetimeService) attemptToTriggerAutomation(delta map[string]interface{}) {
-	if !d.automationQueries.IsAutomationEnabled(d.device.Id) {
-		utils.LogTracef("device %s: automation disabled, skipping", d.device.Id)
+	if !d.shouldEvaluateAutomation(delta) {
+		utils.LogTracef("device %s: automation disabled or no configured input changed, skipping", d.device.Id)
 		return
 	}
 
@@ -197,6 +241,15 @@ func (d *DeviceLifetimeService) attemptToTriggerAutomation(delta map[string]inte
 		utils.LogTracef("device %s: dispatching changed exposes to automation evaluation", d.device.Id)
 		d.events.OnDeviceAutomationTriggered(d.device, delta)
 	}
+}
+
+// Use the configured recipe's dependency index when available. Older/custom query
+// adapters retain the enabled-only fallback so unknown dependencies are never dropped.
+func (d *DeviceLifetimeService) shouldEvaluateAutomation(delta map[string]interface{}) bool {
+	if selector, ok := d.automationQueries.(automations.DeviceUpdateSelector); ok {
+		return selector.ShouldEvaluateDevice(d.device.Id, delta)
+	}
+	return d.automationQueries.IsAutomationEnabled(d.device.Id)
 }
 
 // attemptToStoreMetrics sends debounced measurement data to the metrics store.
@@ -211,7 +264,7 @@ func (d *DeviceLifetimeService) attemptToStoreMetrics(payload map[string]interfa
 	// filter to measurement exposes only
 	data := map[string]interface{}{}
 	for name, value := range payload {
-		if expose, ok := d.device.Exposes[name]; ok && expose.Category == bridge.MeasurementCategory {
+		if expose, ok := d.device.Exposes[name]; ok && d.configCache.GetReportingPolicy(d.device.Id, expose).RecordMetrics {
 			data[name] = normalizeMeasurementValue(expose, value)
 		}
 	}
@@ -256,15 +309,17 @@ func (s *DeviceLifetimeService) startAvailabilityMonitoring(timeoutDuration time
 }
 
 func (s *DeviceLifetimeService) startAvailabilityMonitoringLocked(timeoutDuration time.Duration, onChangeCallback func(p *devices.UpdatePackage)) {
-	if s.monitor != nil {
+	if s.monitor != nil || s.ctx.Err() != nil {
 		return
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(s.ctx)
 	monitor := &availabilityMonitor{ticker: time.NewTicker(time.Second), ctx: ctx, cancel: cancel}
 	s.monitor = monitor
+	s.monitorWorkers.Add(1)
 
 	go func() {
+		defer s.monitorWorkers.Done()
 		defer func() {
 			monitor.ticker.Stop()
 			monitor.cancel()
@@ -308,6 +363,7 @@ func (s *DeviceLifetimeService) startAvailabilityMonitoringLocked(timeoutDuratio
 						return
 					}
 					s.device.SetAvailable(false)
+					s.publisher.Clear()
 					monitor.ticker.Stop()
 					s.monitorMu.Unlock()
 					utils.LogInfof("device %s is offine", s.device.Id)
@@ -344,6 +400,30 @@ func (s *DeviceLifetimeService) stopAvailabilityMonitoringLocked() {
 		s.monitor.ticker.Stop()
 		s.monitor = nil
 	}
+}
+
+// Close permanently retires this generation. Call outside its output/availability
+// callbacks, after the owning device lane has finished its current update. Cancelling
+// before taking monitorMu prevents any later configuration from starting a worker.
+func (s *DeviceLifetimeService) Close() {
+	s.cancel()
+	s.monitorMu.Lock()
+	s.stopped = true
+	s.stopAvailabilityMonitoringLocked()
+	s.monitorMu.Unlock()
+	s.publisher.Close()
+	s.monitorWorkers.Wait()
+}
+
+// Retire commits storage removal behind current output, then joins this lifetime.
+// A failed removal leaves it operational. Call on the owning device lane, outside
+// callbacks; delayed publication is synchronized by the publisher itself.
+func (s *DeviceLifetimeService) Retire(removeFromStore func() error) error {
+	if err := s.publisher.closeAfter(removeFromStore); err != nil {
+		return err
+	}
+	s.Close()
+	return nil
 }
 
 func getLastSeen(data map[string]interface{}) string {

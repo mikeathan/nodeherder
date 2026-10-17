@@ -16,8 +16,8 @@ test.describe('panel mode', () => {
 
 // Spec 011: the Panel view owns this pin-and-return flow.
 test.describe('browser default view', () => {
-  const pinName = 'Make default view on this browser';
-  const unpinName = 'Remove default view on this browser';
+  const pinName = 'Pin view as the default on this browser';
+  const unpinName = 'Unpin view as the default on this browser';
 
   test('pins explicitly, preserves direct links, replaces and clears the default', async ({ page }, testInfo) => {
     await signIn(page, '/panel');

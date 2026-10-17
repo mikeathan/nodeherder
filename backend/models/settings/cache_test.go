@@ -657,3 +657,301 @@ func TestGetDebounce_FallsBackToDefaultsForUnconfiguredDevice(t *testing.T) {
 		t.Error("Expected GetDebounce to return false for Config category with no default")
 	}
 }
+
+func TestReportingThresholdPrecedenceAndValidation(t *testing.T) {
+	app := settings.NewAppConfig()
+	app.Hub.Devices.Defaults.ReportingThresholds = map[string]float64{"target_distance": .2, "illuminance": 5}
+	cfg := settings.NewDeviceConfig("sensor")
+	cfg.ReportingThresholds = map[string]float64{"target_distance": 0}
+	app.AddDeviceConfig(cfg)
+	cache := settings.NewDeviceConfigCache(&mocks.NopSettingsrepo{}, app, &sync.RWMutex{})
+	e := devices.NewEntity("target_distance")
+	e.Unit = "m"
+	if got := cache.GetReportingPolicy("sensor", e).MinimumChange; got != 0 {
+		t.Fatalf("device zero = %v", got)
+	}
+	if got := cache.GetReportingPolicy("other", e).MinimumChange; got != .2 {
+		t.Fatalf("global = %v", got)
+	}
+	e.Name, e.Unit = "illuminance", "lx"
+	if got := cache.GetReportingPolicy("sensor", e).MinimumChange; got != 5 {
+		t.Fatalf("builtin = %v", got)
+	}
+	e.Unit = "unknown"
+	if got := cache.GetReportingPolicy("sensor", e).MinimumChange; got != 5 {
+		t.Fatalf("configured threshold must use native units = %v", got)
+	}
+	cfg.ReportingThresholds["target_distance"] = -1
+	if err := cache.Set(cfg); err == nil {
+		t.Fatal("negative threshold accepted")
+	}
+}
+
+type failingReportingRepository struct {
+	mocks.NopSettingsrepo
+	fail bool
+}
+
+func (r *failingReportingRepository) SaveDeviceConfig(*settings.DeviceConfig) error {
+	if r.fail {
+		return fmt.Errorf("save failed")
+	}
+	return nil
+}
+func (r *failingReportingRepository) SaveAppConfig(*settings.AppConfig) error {
+	if r.fail {
+		return fmt.Errorf("save failed")
+	}
+	return nil
+}
+
+func TestReportingThresholdsSnapshotAndFailedSave(t *testing.T) {
+	repo := &failingReportingRepository{}
+	cache, err := settings.NewAppConfigCache(repo, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg := settings.NewDeviceConfig("sensor")
+	cfg.ReportingThresholds = map[string]float64{"target_distance": .2, "illuminance": 5}
+	if err := cache.SetDeviceConfigOverrides(cfg); err != nil {
+		t.Fatal(err)
+	}
+	cfg.ReportingThresholds["target_distance"] = 99
+	snapshot, _ := cache.LoadAppConfig()
+	snapshot.Hub.Devices.Overrides["sensor"].ReportingThresholds["target_distance"] = 88
+	e := devices.NewEntity("target_distance")
+	e.Unit = "m"
+	if got := cache.GetDeviceConfigCache().GetReportingPolicy("sensor", e).MinimumChange; got != .2 {
+		t.Fatalf("snapshot alias changed threshold %v", got)
+	}
+	repo.fail = true
+	if err := cache.SetDeviceConfigOverrides(cfg); err == nil {
+		t.Fatal("failed save hidden")
+	}
+	if got := cache.GetDeviceConfigCache().GetReportingPolicy("sensor", e).MinimumChange; got != .2 {
+		t.Fatalf("failed save changed threshold %v", got)
+	}
+	defaults := settings.DefaultDeviceConfig()
+	defaults.ReportingThresholds = map[string]float64{"target_distance": .5}
+	if err := cache.SetDeviceConfigDefaults(defaults); err == nil {
+		t.Fatal("failed defaults save hidden")
+	}
+	if got := cache.GetDeviceConfigCache().GetReportingPolicy("other", e).MinimumChange; got != 0 {
+		t.Fatalf("failed save changed default %v", got)
+	}
+}
+
+func TestReportingPolicyIsEntirelyConfigurationDriven(t *testing.T) {
+	app := settings.NewAppConfig()
+	e := devices.NewEntity("new_sensor_property")
+	e.Category = bridge.DiagnosticCategory
+	cache := settings.NewDeviceConfigCache(&mocks.NopSettingsrepo{}, app, &sync.RWMutex{})
+	if policy := cache.GetReportingPolicy("sensor", e); policy.MinimumChange != 0 || policy.RecordMetrics {
+		t.Fatal("unconfigured property acquired a policy")
+	}
+	app.Hub.Devices.Defaults.ReportingThresholds = map[string]float64{e.Name: 12.5}
+	app.Hub.Devices.Defaults.MetricOverrides = map[string]bool{e.Name: true}
+	if policy := cache.GetReportingPolicy("sensor", e); policy.MinimumChange != 12.5 || !policy.RecordMetrics {
+		t.Fatal("new configured property ignored")
+	}
+	override := settings.NewDeviceConfig("sensor")
+	override.ReportingThresholds = map[string]float64{e.Name: 0}
+	override.MetricOverrides = map[string]bool{e.Name: false}
+	app.AddDeviceConfig(override)
+	if policy := cache.GetReportingPolicy("sensor", e); policy.MinimumChange != 0 || policy.RecordMetrics {
+		t.Fatal("explicit zero/false did not override global")
+	}
+	if err := cache.Delete("sensor"); err != nil {
+		t.Fatal(err)
+	}
+	if policy := cache.GetReportingPolicy("sensor", e); policy.MinimumChange != 12.5 || !policy.RecordMetrics {
+		t.Fatal("removing override did not restore inheritance")
+	}
+}
+
+func TestCommandConfirmationTimeoutUsesConfiguredHierarchy(t *testing.T) {
+	app := settings.NewAppConfig()
+	global, local := 12000, 2500
+	app.Hub.Devices.Defaults.CommandConfirmationTimeoutMs = &global
+	override := settings.NewDeviceConfig("sensor")
+	override.CommandConfirmationTimeoutMs = &local
+	app.AddDeviceConfig(override)
+	cache := settings.NewDeviceConfigCache(&mocks.NopSettingsrepo{}, app, &sync.RWMutex{})
+	if got := cache.GetCommandConfirmationTimeout("sensor"); got != 2500*time.Millisecond {
+		t.Fatal(got)
+	}
+	if got := cache.GetCommandConfirmationTimeout("other"); got != 12*time.Second {
+		t.Fatal(got)
+	}
+	override.CommandConfirmationTimeoutMs = nil
+	if got := cache.GetCommandConfirmationTimeout("sensor"); got != 12*time.Second {
+		t.Fatal(got)
+	}
+}
+
+func TestLiveIntervalsSnapshotAndFailedSave(t *testing.T) {
+	repo := &failingReportingRepository{}
+	cache, err := settings.NewAppConfigCache(repo, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg := settings.NewDeviceConfig("sensor")
+	cfg.LiveIntervalOverrides = map[string]*utils.TimeInterval{"distance": utils.IntervalFromSeconds(10)}
+	if err := cache.SetDeviceConfigOverrides(cfg); err != nil {
+		t.Fatal(err)
+	}
+	cfg.LiveIntervalOverrides["distance"].Value = 99
+	snapshot, _ := cache.LoadAppConfig()
+	snapshot.Hub.Devices.Overrides["sensor"].LiveIntervalOverrides["distance"].Value = 88
+	expose := devices.NewEntity("distance")
+	if got := cache.GetDeviceConfigCache().GetReportingPolicy("sensor", expose).LiveInterval; got != 10*time.Second {
+		t.Fatalf("snapshot mutated policy: %v", got)
+	}
+	repo.fail = true
+	if cache.SetDeviceConfigOverrides(cfg) == nil {
+		t.Fatal("failed save hidden")
+	}
+	if got := cache.GetDeviceConfigCache().GetReportingPolicy("sensor", expose).LiveInterval; got != 10*time.Second {
+		t.Fatalf("failed save changed policy: %v", got)
+	}
+}
+
+type legacyLiveIntervalRepository struct {
+	mocks.NopSettingsrepo
+	config *settings.AppConfig
+}
+
+func (r *legacyLiveIntervalRepository) Load() (*settings.AppConfig, error) { return r.config, nil }
+
+func TestLiveIntervalLegacyHydrationPreservesExplicitEmpty(t *testing.T) {
+	for _, missing := range []bool{true, false} {
+		config := settings.NewAppConfig()
+		config.Hub.Devices.Defaults.LiveIntervalByCategory = nil
+		if !missing {
+			config.Hub.Devices.Defaults.LiveIntervalByCategory = map[string]*utils.TimeInterval{}
+		}
+		config.Hub.Devices.Defaults.DefaultDebounceByCategory[bridge.DiagnosticCategory] = utils.IntervalFromSeconds(123)
+		cache, err := settings.NewAppConfigCache(&legacyLiveIntervalRepository{config: config}, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		snapshot, _ := cache.LoadAppConfig()
+		got := snapshot.Hub.Devices.Defaults.LiveIntervalByCategory[bridge.DiagnosticCategory]
+		if missing && (got == nil || got.Duration() != 30*time.Second) {
+			t.Fatal("legacy live defaults not hydrated")
+		}
+		if !missing && got != nil {
+			t.Fatal("explicit empty category settings replaced")
+		}
+		interval, _ := cache.GetDeviceConfigCache().GetDebounce("sensor", "link", bridge.DiagnosticCategory)
+		if interval != 123*time.Second {
+			t.Fatal("legacy history configuration changed")
+		}
+	}
+}
+
+func TestHistoryIntervalMutationFailedSaveKeepsActivePolicy(t *testing.T) {
+	repo := &failingReportingRepository{}
+	cache, err := settings.NewAppConfigCache(repo, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	devices := cache.GetDeviceConfigCache()
+	original := utils.IntervalFromSeconds(10)
+	if err := devices.SetDebounce("sensor", "distance", original); err != nil {
+		t.Fatal(err)
+	}
+	original.Value = 99
+	repo.fail = true
+	if devices.SetDebounce("sensor", "distance", utils.IntervalFromSeconds(20)) == nil {
+		t.Fatal("save failure hidden")
+	}
+	if _, err := devices.DeleteDebounce("sensor", "distance"); err == nil {
+		t.Fatal("delete failure hidden")
+	}
+	if got, _ := devices.GetDebounce("sensor", "distance", bridge.MeasurementCategory); got != 10*time.Second {
+		t.Fatalf("failed mutation changed active history: %v", got)
+	}
+}
+
+func TestDerivedDeviceConfigCannotMutateDefaultIntervals(t *testing.T) {
+	app := settings.NewAppConfig()
+	cache := settings.NewDeviceConfigCache(&mocks.NopSettingsrepo{}, app, &sync.RWMutex{})
+	cfg, err := cache.Get("sensor")
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg.DefaultDebounceByCategory[bridge.DiagnosticCategory].Value = 1
+	cfg.LiveIntervalByCategory[bridge.DiagnosticCategory].Value = 1
+	if got, _ := cache.GetDebounce("other", "link", bridge.DiagnosticCategory); got != 300*time.Second {
+		t.Fatal("derived config mutated history defaults")
+	}
+	e := devices.NewEntity("link")
+	e.Category = bridge.DiagnosticCategory
+	if got := cache.GetReportingPolicy("other", e).LiveInterval; got != 30*time.Second {
+		t.Fatal("derived config mutated live defaults")
+	}
+}
+
+func TestConfigurationListenersOwnIndependentSnapshots(t *testing.T) {
+	for _, scope := range []string{"defaults", "device"} {
+		t.Run(scope, func(t *testing.T) {
+			cache, err := settings.NewAppConfigCache(&failingReportingRepository{}, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var received *settings.DeviceConfig
+			cache.RegisterDeviceConfigUpdateListener(func(cfg *settings.DeviceConfig) {
+				cfg.Disabled = true
+				cfg.ReportingThresholds["distance"] = 99
+			})
+			cache.RegisterDeviceConfigUpdateListener(func(cfg *settings.DeviceConfig) { received = cfg })
+			cfg := settings.NewDeviceConfig("sensor")
+			cfg.ReportingThresholds = map[string]float64{"distance": .2}
+			save := cache.SetDeviceConfigOverrides
+			if scope == "defaults" {
+				cfg.Id = ""
+				save = cache.SetDeviceConfigDefaults
+			}
+			if err := save(cfg); err != nil {
+				t.Fatal(err)
+			}
+			if received == nil || received.Disabled || received.ReportingThresholds["distance"] != .2 {
+				t.Fatal("listener changed another listener's snapshot")
+			}
+			cfg.ReportingThresholds["distance"] = 88
+			if received.ReportingThresholds["distance"] != .2 {
+				t.Fatal("caller changed retained listener snapshot")
+			}
+			snapshot, _ := cache.LoadAppConfig()
+			active := snapshot.Hub.Devices.Overrides["sensor"]
+			if scope == "defaults" {
+				active = snapshot.Hub.Devices.Defaults
+			}
+			if active.Disabled || active.ReportingThresholds["distance"] != .2 {
+				t.Fatal("notification mutated active persisted configuration")
+			}
+		})
+	}
+}
+
+func TestFailedConfigurationSaveDoesNotNotifyListeners(t *testing.T) {
+	repo := &failingReportingRepository{fail: true}
+	cache, err := settings.NewAppConfigCache(repo, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	calls := 0
+	cache.RegisterDeviceConfigUpdateListener(func(*settings.DeviceConfig) { calls++ })
+	cfg := settings.NewDeviceConfig("sensor")
+	if cache.SetDeviceConfigOverrides(cfg) == nil {
+		t.Fatal("override failure hidden")
+	}
+	cfg.Id = ""
+	if cache.SetDeviceConfigDefaults(cfg) == nil {
+		t.Fatal("default failure hidden")
+	}
+	if calls != 0 {
+		t.Fatal("failed configuration save notified consumers")
+	}
+}

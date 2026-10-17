@@ -1,13 +1,15 @@
 /*
  * Device commands with pending state (spec 007 FR-04, AC-04; NH-02, FE-03).
  * A command stays "pending" until a deviceUpdated message reports the requested value or
- * COMMAND_TIMEOUT_MS passes; then the user is told the device did not respond. Commands are
+ * the configured confirmation timeout passes; then the user is told the device did not respond. Commands are
  * never retried, and a second command for the same expose is refused while one is pending.
  */
 import { reactive } from 'vue';
 import { store } from '@/store';
 import { Device, DeviceUpdate } from '@/types/device';
-import { COMMAND_TIMEOUT_MS, commandKey, confirmedBy, PendingCommand } from '@/domain/commands';
+import { commandKey, confirmedBy, PendingCommand } from '@/domain/commands';
+import { confirmationTimeoutMs } from '@/domain/reporting-settings';
+import type { DeviceConfig } from '@/types/settings.type';
 import { useHub } from './useHub';
 
 const pending = reactive(new Map<string, PendingCommand>());
@@ -24,6 +26,10 @@ function subscribe() {
   if (subscribed) return;
   subscribed = true;
   store.subscribe((mutation) => {
+    if (mutation.type === 'hub/clear') {
+      for (const key of pending.keys()) settle(key);
+      return;
+    }
     if (mutation.type !== 'hub/updateDevice' || pending.size === 0) return;
     confirmedBy(pending.values(), mutation.payload as DeviceUpdate).forEach(settle);
   });
@@ -41,6 +47,14 @@ export function useDeviceCommand() {
     const key = commandKey(device.id, expose);
     if (pending.has(key)) return false;
 
+    const timeout = confirmationTimeoutMs(
+      store.getters['hub/findDeviceSetting'](device.id) as DeviceConfig | undefined,
+      store.getters['hub/deviceDefaults']() as DeviceConfig | undefined
+    );
+    if (timeout === null) {
+      store.dispatch('alerts/showError', 'Configure a valid command confirmation timeout in hub settings.');
+      return false;
+    }
     pending.set(key, { key, deviceId: device.id, expose, value, sentAt: Date.now() });
     timers.set(
       key,
@@ -48,7 +62,7 @@ export function useDeviceCommand() {
         if (!pending.has(key)) return;
         settle(key);
         store.dispatch('alerts/showError', `${device.friendly_name} did not confirm the change. Check that it is reachable and try again.`);
-      }, COMMAND_TIMEOUT_MS)
+      }, timeout)
     );
     store.dispatch('hub/setDeviceValue', { id: device.id, name: expose, value });
     return true;

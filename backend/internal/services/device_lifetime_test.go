@@ -1,6 +1,9 @@
 package services_test
 
 import (
+	"context"
+	"errors"
+	"fmt"
 	"maps"
 	"node-herder/internal/automations"
 	"node-herder/internal/services"
@@ -1065,7 +1068,11 @@ func newLiveUpdateReplay(property string, enabled bool, onAutomation func(*devic
 	e.Data.SetValue(float64(0))
 	r.device.Exposes[property] = e
 	app := settings.NewAppConfig()
+	// These replays isolate delta filtering/history; interval behavior has separate fake-clock coverage.
+	app.Hub.Devices.Defaults.LiveIntervalByCategory = map[string]*utils.TimeInterval{}
 	app.Hub.Devices.Defaults.MetricsEnabled = true
+	app.Hub.Devices.Defaults.ReportingThresholds = map[string]float64{"illuminance": 5, "target_distance": .1}
+	app.Hub.Devices.Defaults.MetricOverrides = map[string]bool{"target_distance": true}
 	cache := settings.NewDeviceConfigCache(&mocks.NopSettingsrepo{}, app, &sync.RWMutex{})
 	events := &devices.DeviceRequestEvents{
 		OnDeviceUpdated: func(_ *devices.Device, p *devices.UpdatePackage) {
@@ -1203,6 +1210,434 @@ func TestLiveUnchangedWritableReportConfirmsWithoutRetriggering(t *testing.T) {
 			}
 			if !reflect.DeepEqual(r.broadcasts, want) || !reflect.DeepEqual(r.automation, []float64{100, 0}) || !reflect.DeepEqual(r.metrics, []float64{100}) {
 				t.Fatalf("live/automation/metrics = %v/%v/%v", r.broadcasts, r.automation, r.metrics)
+			}
+		})
+	}
+}
+
+func TestSensorObservationsFilterNoiseButPreserveRawAutomationInputs(t *testing.T) {
+	r := newLiveUpdateReplay("illuminance", true, func(d *devices.Device, delta map[string]interface{}) {
+		if d.Exposes["illuminance"].Data.Value() != delta["illuminance"] {
+			t.Fatal("automation read stale state")
+		}
+	})
+	e := r.device.Exposes["illuminance"]
+	e.AccessMode, e.Unit = bridge.ReadAccessMode, "lx"
+	for _, value := range []float64{163, 165, 168, 169, 170, 173} {
+		r.report(time.Second, "illuminance", value)
+	}
+	if !reflect.DeepEqual(r.broadcasts, []float64{163, 168, 173}) {
+		t.Fatalf("observations = %v", r.broadcasts)
+	}
+	if len(r.automation) != 6 || e.Data.Value() != float64(173) {
+		t.Fatal("raw automation evidence lost")
+	}
+	// The last significant observation was delivered immediately, with no timer or later report.
+}
+
+func TestDistanceHistorySupportsOlderDiagnosticMetadata(t *testing.T) {
+	r := newLiveUpdateReplay("target_distance", false, nil)
+	e := r.device.Exposes["target_distance"]
+	e.AccessMode, e.Unit, e.Category = bridge.ReadAccessMode, "m", bridge.DiagnosticCategory
+	r.report(0, "target_distance", 2)
+	r.report(time.Second, "target_distance", 2.03)
+	r.report(301*time.Second, "target_distance", 2.2)
+	if !reflect.DeepEqual(r.broadcasts, []float64{2, 2.2}) {
+		t.Fatalf("distance observations = %v", r.broadcasts)
+	}
+	if !reflect.DeepEqual(r.metrics, []float64{2, 2.2}) {
+		t.Fatalf("distance metrics = %v", r.metrics)
+	}
+}
+
+type selectiveAutomationQueries struct{ selected int }
+
+func (q *selectiveAutomationQueries) IsAutomationEnabled(string) bool { return true }
+func (q *selectiveAutomationQueries) ShouldEvaluateDevice(_ string, changes map[string]interface{}) bool {
+	q.selected++
+	_, relevant := changes["presence"]
+	return relevant
+}
+
+func TestUnrelatedTelemetryNeverDispatchesAutomation(t *testing.T) {
+	device := devices.NewDevice("sensor")
+	device.SetAvailability(devices.OnlineAvailability)
+	for _, property := range []string{"linkquality", "presence"} {
+		e := devices.NewEntity(property)
+		e.AccessMode = bridge.ReadAccessMode
+		e.Type = bridge.NumericDataType
+		e.Data.SetValue(float64(134))
+		device.Exposes[property] = e
+	}
+	device.Exposes["presence"].Type = bridge.BinaryDataType
+	device.Exposes["presence"].Data.SetValue(false)
+	radar := devices.NewEntity("radar_sensitivity")
+	radar.Type, radar.AccessMode, radar.Category = bridge.NumericDataType, bridge.ReadWriteAccessMode, bridge.ConfigCategory
+	radar.Data.SetValue(float64(6))
+	device.Exposes[radar.Name] = radar
+	queries := &selectiveAutomationQueries{}
+	dispatched, broadcast := 0, 0
+	events := &devices.DeviceRequestEvents{
+		OnDeviceUpdated:             func(*devices.Device, *devices.UpdatePackage) { broadcast++ },
+		OnDeviceAutomationTriggered: func(*devices.Device, map[string]interface{}) { dispatched++ },
+	}
+	app := settings.NewAppConfig()
+	app.Hub.Devices.Defaults.ReportingThresholds = map[string]float64{"linkquality": 10}
+	cache := settings.NewDeviceConfigCache(&mocks.NopSettingsrepo{}, app, &sync.RWMutex{})
+	service := services.NewDeviceLifetimeService(device, events, cache, queries, utils.NewRealClock())
+	for i := 0; i < 10_000; i++ {
+		service.Update(map[string]interface{}{"linkquality": float64(134 + (i%2)*4), "radar_sensitivity": float64(6)})
+	}
+	if dispatched != 0 || broadcast != 0 {
+		t.Fatalf("noise dispatch/broadcast = %d/%d", dispatched, broadcast)
+	}
+	service.Update(map[string]interface{}{"presence": true, "linkquality": float64(136)})
+	if dispatched != 1 || broadcast != 1 || device.Exposes["linkquality"].Data.Value() != float64(136) {
+		t.Fatal("mixed payload lost relevant input/raw state")
+	}
+}
+
+func TestWritableEchoNeedsAnUnexpiredCommandInterest(t *testing.T) {
+	r := newLiveUpdateReplay("radar_sensitivity", true, nil)
+	e := r.device.Exposes["radar_sensitivity"]
+	e.AccessMode, e.Category = bridge.ReadWriteAccessMode, bridge.ConfigCategory
+	r.report(0, "radar_sensitivity", 100)
+	r.report(time.Second, "radar_sensitivity", 100) // Unsolicited cached echo is noise.
+	e.Data.ExpectReportUntil(r.now.Add(5 * time.Second))
+	r.report(time.Second, "radar_sensitivity", 100) // Actual requested same-value report.
+	r.report(time.Second, "radar_sensitivity", 100) // Interest is consumed exactly once.
+	e.Data.ExpectReportUntil(r.now.Add(time.Second))
+	r.report(2*time.Second, "radar_sensitivity", 100) // Expired interest cannot force output.
+	if !reflect.DeepEqual(r.broadcasts, []float64{100, 100}) {
+		t.Fatalf("echo observations = %v", r.broadcasts)
+	}
+	if !reflect.DeepEqual(r.automation, []float64{100}) {
+		t.Fatalf("echo triggered automation: %v", r.automation)
+	}
+}
+
+func TestDiagnosticLiveIntervalPreservesRawAutomationAndCancelsOnDisable(t *testing.T) {
+	device := devices.NewDevice("diagnostic-live")
+	device.SetAvailable(true)
+	expose := devices.NewEntity("new_diagnostic")
+	expose.Type, expose.AccessMode, expose.Category = bridge.NumericDataType, bridge.ReadAccessMode, bridge.DiagnosticCategory
+	expose.Data.SetValue(float64(100))
+	device.Exposes[expose.Name] = expose
+	cache := settings.NewDeviceConfigCache(&mocks.NopSettingsrepo{}, settings.NewAppConfig(), &sync.RWMutex{})
+	clock := mocks.NewMockClock(func() time.Time { return time.Date(2026, 10, 16, 0, 0, 0, 0, time.UTC) })
+	published, evaluated := 0, 0
+	events := &devices.DeviceRequestEvents{
+		OnDeviceUpdated: func(*devices.Device, *devices.UpdatePackage) { published++ },
+		OnDeviceAutomationTriggered: func(_ *devices.Device, delta map[string]interface{}) {
+			evaluated++
+			if expose.Data.Value() != delta[expose.Name] {
+				t.Fatal("automation saw stale raw value")
+			}
+		},
+	}
+	service := services.NewDeviceLifetimeService(device, events, cache, mocks.NewMockAutomationDeviceQuerierWithValues(map[string]bool{device.Id: true}), clock)
+	service.Update(map[string]interface{}{expose.Name: float64(101)})
+	clock.Advance(time.Second)
+	service.Update(map[string]interface{}{expose.Name: float64(102)})
+	if evaluated != 2 || published != 0 {
+		t.Fatalf("raw/live separation failed: %d/%d", evaluated, published)
+	}
+	clock.Advance(29 * time.Second)
+	if published != 1 {
+		t.Fatal("latest diagnostic did not flush")
+	}
+	service.Update(map[string]interface{}{expose.Name: float64(103)})
+	disabled := settings.NewDeviceConfig(device.Id)
+	disabled.Disabled = true
+	service.OnConfigUpdated(disabled)
+	clock.Advance(time.Minute)
+	if published != 1 {
+		t.Fatal("disabled device flushed queued data")
+	}
+}
+
+func TestLifetimeCloseRetiresPendingUpdatesAndConfiguration(t *testing.T) {
+	device := devices.NewDevice("retired-lifetime")
+	device.SetAvailable(true)
+	expose := devices.NewEntity("reading")
+	expose.Type, expose.AccessMode, expose.Category = bridge.NumericDataType, bridge.ReadAccessMode, bridge.DiagnosticCategory
+	expose.Data.SetValue(float64(100))
+	device.Exposes[expose.Name] = expose
+	cache := settings.NewDeviceConfigCache(&mocks.NopSettingsrepo{}, settings.NewAppConfig(), &sync.RWMutex{})
+	clock := mocks.NewMockClock(func() time.Time { return time.Date(2026, 10, 16, 0, 0, 0, 0, time.UTC) })
+	ctx := newTrackedShutdownContext(t)
+	seeds, updates := 0, 0
+	service := services.NewDeviceLifetimeService(device, &devices.DeviceRequestEvents{
+		AvailabilityTimeout:         time.Hour,
+		OnNewDevice:                 func(*devices.Device) { seeds++ },
+		OnDeviceUpdated:             func(*devices.Device, *devices.UpdatePackage) { updates++ },
+		OnDeviceAvailabilityChanged: func(*devices.UpdatePackage) { t.Error("retired lifetime reported availability") },
+	}, cache, mocks.NewMockAutomationDeviceQuerier(), clock, ctx)
+	t.Cleanup(service.Close)
+	service.Seed(map[string]interface{}{"reading": float64(100)})
+	service.Update(map[string]interface{}{"reading": float64(101)})
+	service.Close()
+	service.Close()
+	if ctx.active.Load() != 0 {
+		t.Fatal("closed lifetime retained its parent registration")
+	}
+	service.OnConfigUpdated(settings.NewDeviceConfig(device.Id))
+	service.Update(map[string]interface{}{"reading": float64(102)})
+	service.Seed(map[string]interface{}{"reading": float64(103)})
+	clock.Advance(time.Minute)
+	if seeds != 1 || updates != 0 || expose.Data.Value() != float64(101) {
+		t.Fatalf("retired lifetime accepted work: seeds=%d updates=%d value=%v", seeds, updates, expose.Data.Value())
+	}
+}
+
+func TestLifetimeRetirementKeepsPendingReadingOnFailure(t *testing.T) {
+	device := devices.NewDevice("retirement-failure")
+	device.SetAvailable(true)
+	e := devices.NewEntity("reading")
+	e.Type, e.AccessMode, e.Category = bridge.NumericDataType, bridge.ReadAccessMode, bridge.DiagnosticCategory
+	e.Data.SetValue(float64(100))
+	device.Exposes[e.Name] = e
+	clock := mocks.NewMockClock(func() time.Time { return time.Date(2026, 10, 16, 0, 0, 0, 0, time.UTC) })
+	cache := settings.NewDeviceConfigCache(&mocks.NopSettingsrepo{}, settings.NewAppConfig(), &sync.RWMutex{})
+	ctx := newTrackedShutdownContext(t)
+	published := []any{}
+	service := services.NewDeviceLifetimeService(device, &devices.DeviceRequestEvents{OnDeviceUpdated: func(_ *devices.Device, p *devices.UpdatePackage) { published = append(published, p.Data[e.Name]) }}, cache, mocks.NewMockAutomationDeviceQuerier(), clock, ctx)
+	t.Cleanup(service.Close)
+	service.Update(map[string]interface{}{e.Name: float64(101)})
+	failure := errors.New("storage unavailable")
+	if err := service.Retire(func() error { return failure }); !errors.Is(err, failure) {
+		t.Fatal("lost deletion error", err)
+	}
+	clock.Advance(30 * time.Second)
+	if !reflect.DeepEqual(published, []any{float64(101)}) || ctx.active.Load() != 1 {
+		t.Fatal("failed retirement cancelled pending publication")
+	}
+	service.Update(map[string]interface{}{e.Name: float64(102)})
+	deleted := false
+	if err := service.Retire(func() error { deleted = true; return nil }); err != nil {
+		t.Fatal(err)
+	}
+	clock.Advance(time.Minute)
+	if !deleted || len(published) != 1 || ctx.active.Load() != 0 {
+		t.Fatal("successful retirement left pending work")
+	}
+}
+
+func TestLifetimeRetirementFencesDelayedSnapshotWrite(t *testing.T) {
+	device := devices.NewDevice("retirement-fence")
+	device.SetAvailable(true)
+	e := devices.NewEntity("reading")
+	e.Type, e.AccessMode, e.Category = bridge.NumericDataType, bridge.ReadAccessMode, bridge.DiagnosticCategory
+	e.Data.SetValue(float64(100))
+	device.Exposes[e.Name] = e
+	clock := mocks.NewMockClock(func() time.Time { return time.Date(2026, 10, 16, 0, 0, 0, 0, time.UTC) })
+	cache := settings.NewDeviceConfigCache(&mocks.NopSettingsrepo{}, settings.NewAppConfig(), &sync.RWMutex{})
+	entered, release := make(chan struct{}), make(chan struct{})
+	var once sync.Once
+	var mu sync.Mutex
+	var order []string
+	service := services.NewDeviceLifetimeService(device, &devices.DeviceRequestEvents{OnDeviceUpdated: func(*devices.Device, *devices.UpdatePackage) {
+		close(entered)
+		<-release
+		mu.Lock()
+		order = append(order, "snapshot write")
+		mu.Unlock()
+	}}, cache, mocks.NewMockAutomationDeviceQuerier(), clock)
+	defer func() { once.Do(func() { close(release) }); service.Close() }()
+	service.Update(map[string]interface{}{e.Name: float64(101)})
+	flushed := make(chan struct{})
+	go func() { clock.Advance(30 * time.Second); close(flushed) }()
+	select {
+	case <-entered:
+	case <-time.After(5 * time.Second):
+		t.Fatal("delayed output did not start")
+	}
+	attempted, retired := make(chan struct{}), make(chan error, 1)
+	go func() {
+		close(attempted)
+		retired <- service.Retire(func() error { mu.Lock(); order = append(order, "delete"); mu.Unlock(); return nil })
+	}()
+	<-attempted
+	once.Do(func() { close(release) })
+	select {
+	case err := <-retired:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("retirement blocked")
+	}
+	select {
+	case <-flushed:
+	case <-time.After(5 * time.Second):
+		t.Fatal("publication blocked")
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if !reflect.DeepEqual(order, []string{"snapshot write", "delete"}) {
+		t.Fatalf("deletion raced snapshot persistence: %v", order)
+	}
+}
+
+func TestLifetimeConcurrentCloseCannotRestartMonitoring(t *testing.T) {
+	device := devices.NewDevice("retirement-config")
+	device.SetAvailable(true)
+	clock := mocks.NewMockClock(func() time.Time { return time.Now() })
+	cache := settings.NewDeviceConfigCache(&mocks.NopSettingsrepo{}, settings.NewAppConfig(), &sync.RWMutex{})
+	ctx := newTrackedShutdownContext(t)
+	service := services.NewDeviceLifetimeService(device, &devices.DeviceRequestEvents{AvailabilityTimeout: time.Hour}, cache, mocks.NewMockAutomationDeviceQuerier(), clock, ctx)
+	var workers sync.WaitGroup
+	for i := 0; i < 4; i++ {
+		workers.Add(1)
+		go func() {
+			defer workers.Done()
+			for j := 0; j < 100; j++ {
+				cfg := settings.NewDeviceConfig(device.Id)
+				cfg.Disabled = j%2 == 0
+				service.OnConfigUpdated(cfg)
+			}
+		}()
+	}
+	service.Close()
+	workers.Wait()
+	service.Close()
+	if ctx.active.Load() != 0 {
+		t.Fatal("retirement retained context while configuration changed")
+	}
+}
+
+func TestLifetimeHubCancellationRejectsNewReports(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	device := devices.NewDevice("hub-cancelled-lifetime")
+	device.SetAvailable(true)
+	expose := devices.NewEntity("temperature")
+	expose.Type, expose.AccessMode = bridge.NumericDataType, bridge.ReadAccessMode
+	expose.Data.SetValue(float64(20))
+	device.Exposes[expose.Name] = expose
+	cache := settings.NewDeviceConfigCache(&mocks.NopSettingsrepo{}, settings.NewAppConfig(), &sync.RWMutex{})
+	clock := mocks.NewMockClock(func() time.Time { return time.Now() })
+	updates := 0
+	service := services.NewDeviceLifetimeService(device, &devices.DeviceRequestEvents{
+		AvailabilityTimeout:         time.Hour,
+		OnNewDevice:                 func(*devices.Device) {},
+		OnDeviceUpdated:             func(*devices.Device, *devices.UpdatePackage) { updates++ },
+		OnDeviceAvailabilityChanged: func(*devices.UpdatePackage) { t.Error("cancelled hub emitted availability") },
+	}, cache, mocks.NewMockAutomationDeviceQuerier(), clock, ctx)
+	service.Seed(map[string]interface{}{expose.Name: float64(20)})
+	cancel()
+	service.OnConfigUpdated(settings.NewDeviceConfig(device.Id))
+	service.Update(map[string]interface{}{expose.Name: float64(21)})
+	service.Close() // Join cancellation/monitor cleanup before the assertion and test exit.
+	if updates != 0 || expose.Data.Value() != float64(20) {
+		t.Fatal("hub cancellation did not retire input handling")
+	}
+}
+
+func TestTargetDistanceMeasurementReportsEveryChange(t *testing.T) {
+	for _, filtered := range []bool{false, true} {
+		t.Run(fmt.Sprintf("explicitFilter=%v", filtered), func(t *testing.T) {
+			entity, err := devices.CreateEntityFromExpose(devices.BridgeExpose{
+				Property: "target_distance", Type: bridge.NumericDataType,
+				Access: devices.StateBridgeAccessMode, Category: bridge.DiagnosticCategory, Unit: "m",
+			}, float64(0))
+			if err != nil {
+				t.Fatal(err)
+			}
+			device := devices.NewDevice("distance-sensor")
+			device.Exposes[entity.Name] = entity
+			device.SetAvailability(devices.OnlineAvailability)
+			app := settings.NewAppConfig()
+			if filtered {
+				cfg := settings.NewDeviceConfig(device.Id)
+				cfg.ReportingThresholds = map[string]float64{entity.Name: .1}
+				app.AddDeviceConfig(cfg)
+			}
+			cache := settings.NewDeviceConfigCache(&mocks.NopSettingsrepo{}, app, &sync.RWMutex{})
+			clock := mocks.NewMockClock(func() time.Time { return time.Date(2026, 10, 16, 0, 0, 0, 0, time.UTC) })
+			var live, automation []float64
+			events := &devices.DeviceRequestEvents{
+				OnDeviceUpdated: func(_ *devices.Device, update *devices.UpdatePackage) {
+					live = append(live, update.Data[entity.Name].(float64))
+				},
+				OnDeviceAutomationTriggered: func(d *devices.Device, delta map[string]interface{}) {
+					value := delta[entity.Name].(float64)
+					if d.Exposes[entity.Name].Data.Value() != value {
+						t.Error("automation read stale state")
+					}
+					automation = append(automation, value)
+				},
+			}
+			service := services.NewDeviceLifetimeService(device, events, cache,
+				mocks.NewMockAutomationDeviceQuerierWithValues(map[string]bool{device.Id: true}), clock)
+			t.Cleanup(service.Close)
+			values := []float64{1.71, 1.72, 1.69}
+			for _, value := range values {
+				service.Update(map[string]interface{}{entity.Name: value})
+				// Assert before advancing time: there must be no implicit delay.
+				if !filtered && (len(live) == 0 || live[len(live)-1] != value) {
+					t.Fatal("measurement was delayed")
+				}
+				clock.Advance(time.Second)
+			}
+			service.Update(map[string]interface{}{entity.Name: 1.69})
+			wantLive := values
+			if filtered {
+				wantLive = values[:1]
+			}
+			if !reflect.DeepEqual(live, wantLive) || !reflect.DeepEqual(automation, values) {
+				t.Fatalf("live/automation = %v/%v; want %v/%v", live, automation, wantLive, values)
+			}
+		})
+	}
+}
+
+func TestDeviceMeasurementCategoryDelaysOnlyLiveOutput(t *testing.T) {
+	app := settings.NewAppConfig()
+	cfg := settings.NewDeviceConfig("custom")
+	cfg.LiveIntervalByCategory = map[string]*utils.TimeInterval{bridge.MeasurementCategory: utils.IntervalFromSeconds(5)}
+	app.AddDeviceConfig(cfg)
+	cache := settings.NewDeviceConfigCache(&mocks.NopSettingsrepo{}, app, &sync.RWMutex{})
+	for _, id := range []string{"custom", "inherited"} {
+		t.Run(id, func(t *testing.T) {
+			device := devices.NewDevice(id)
+			device.SetAvailability(devices.OnlineAvailability)
+			entity := devices.NewEntity("target_distance")
+			entity.Category, entity.Type, entity.AccessMode = bridge.MeasurementCategory, bridge.NumericDataType, bridge.ReadAccessMode
+			entity.Data.SetValue(float64(0))
+			device.Exposes[entity.Name] = entity
+			clock := mocks.NewMockClock(func() time.Time { return time.Date(2026, 10, 17, 0, 0, 0, 0, time.UTC) })
+			var live, automation []float64
+			events := &devices.DeviceRequestEvents{
+				OnDeviceUpdated: func(_ *devices.Device, update *devices.UpdatePackage) {
+					live = append(live, update.Data[entity.Name].(float64))
+				},
+				OnDeviceAutomationTriggered: func(d *devices.Device, delta map[string]interface{}) {
+					value := delta[entity.Name].(float64)
+					if d.Exposes[entity.Name].Data.Value() != value {
+						t.Fatal("stale automation read")
+					}
+					automation = append(automation, value)
+				},
+			}
+			service := services.NewDeviceLifetimeService(device, events, cache, mocks.NewMockAutomationDeviceQuerierWithValues(map[string]bool{id: true}), clock)
+			t.Cleanup(service.Close)
+			for _, value := range []float64{1, 2} {
+				service.Update(map[string]interface{}{entity.Name: value})
+			}
+			if !reflect.DeepEqual(automation, []float64{1, 2}) {
+				t.Fatalf("automation delayed: %v", automation)
+			}
+			if id == "custom" {
+				if len(live) != 0 {
+					t.Fatalf("category interval ignored: %v", live)
+				}
+				clock.Advance(5 * time.Second)
+				if !reflect.DeepEqual(live, []float64{2}) {
+					t.Fatalf("latest reading not flushed: %v", live)
+				}
+			} else if !reflect.DeepEqual(live, []float64{1, 2}) {
+				t.Fatalf("another device was throttled: %v", live)
 			}
 		})
 	}

@@ -112,11 +112,18 @@ func (d *DeviceConfigCache) Get(id string) (*DeviceConfig, error) {
 }
 
 func (d *DeviceConfigCache) Set(deviceConfig *DeviceConfig) error {
+	if err := deviceConfig.ValidateReportingSettings(); err != nil {
+		return err
+	}
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
+	deviceConfig = cloneDeviceConfig(deviceConfig)
+	if err := d.store.SaveDeviceConfig(deviceConfig); err != nil {
+		return err
+	}
 	d.appConfig.Hub.Devices.AddOverride(deviceConfig)
-	return d.store.SaveDeviceConfig(deviceConfig)
+	return nil
 }
 
 func (d *DeviceConfigCache) Delete(id string) error {
@@ -132,50 +139,62 @@ func (d *DeviceConfigCache) Delete(id string) error {
 	return nil
 }
 
+// DeleteDebounce retains the legacy history API while using copy-before-save, just
+// like whole-config updates: a failed write must not change active sampling policy.
 func (d *DeviceConfigCache) DeleteDebounce(id string, exposeName string) (bool, error) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
-
 	config, exists := d.appConfig.Hub.Devices.Overrides[id]
 	if !exists {
 		return false, nil
 	}
+	config = cloneDeviceConfig(config)
 	delete(config.DebounceOverrides, exposeName)
 	if err := d.store.SaveDeviceConfig(config); err != nil {
 		return false, err
 	}
+	d.appConfig.Hub.Devices.AddOverride(config)
 	return true, nil
 }
 
-func (d *DeviceConfigCache) SetDebounce(id string, exposeName string, timeInterval *utils.TimeInterval) error {
+func (d *DeviceConfigCache) SetDebounce(id string, exposeName string, interval *utils.TimeInterval) error {
+	if exposeName == "" || !validReportingInterval(interval) {
+		return fmt.Errorf("invalid history interval for %q", exposeName)
+	}
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
-
-	config, exists := d.appConfig.Hub.Devices.Overrides[id]
-	if !exists {
+	config := cloneDeviceConfig(d.appConfig.Hub.Devices.Overrides[id])
+	if config == nil {
 		config = NewDeviceConfig(id)
-		d.appConfig.Hub.Devices.AddOverride(config)
 	}
-	config.DebounceOverrides[exposeName] = timeInterval
-	return d.store.SaveDeviceConfig(config)
+	if config.DebounceOverrides == nil {
+		config.DebounceOverrides = map[string]*utils.TimeInterval{}
+	}
+	config.DebounceOverrides[exposeName] = clonePointer(interval)
+	if err := d.store.SaveDeviceConfig(config); err != nil {
+		return err
+	}
+	d.appConfig.Hub.Devices.AddOverride(config)
+	return nil
 }
 
 func (d *DeviceConfigCache) GetDebounce(id string, exposeName string, category bridge.ExposeCategory) (time.Duration, bool) {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
 
-	config, exists := d.appConfig.Hub.Devices.Overrides[id]
-	if exists {
-		if interval, ok := config.DebounceOverrides[exposeName]; ok {
-			return interval.Duration(), true
-		}
+	config := d.appConfig.Hub.Devices.Overrides[id]
+	var fields, categories map[string]*utils.TimeInterval
+	if config != nil {
+		fields = config.DebounceOverrides
+		categories = config.DefaultDebounceByCategory
 	}
+	interval := resolveInterval(fields, d.appConfig.Hub.Devices.Defaults.DebounceOverrides, categories, d.appConfig.Hub.Devices.Defaults.DefaultDebounceByCategory, exposeName, category)
+	_, deviceRule := fields[exposeName]
+	_, globalRule := d.appConfig.Hub.Devices.Defaults.DebounceOverrides[exposeName]
+	_, categoryRule := d.appConfig.Hub.Devices.Defaults.DefaultDebounceByCategory[category]
+	_, deviceCategoryRule := categories[category]
+	return interval.Duration(), deviceRule || globalRule || deviceCategoryRule || categoryRule
 
-	if defaultInterval, ok := d.appConfig.Hub.Devices.Defaults.DefaultDebounceByCategory[category]; ok {
-		return defaultInterval.Duration(), true
-	}
-
-	return 0, false
 }
 
 type AppConfigCache struct {
@@ -194,6 +213,12 @@ func NewAppConfigCache(store Repository, task []Task) (*AppConfigCache, error) {
 		return nil, err
 	}
 
+	if config.Hub.Devices.Defaults.LiveIntervalByCategory == nil {
+		config.Hub.Devices.Defaults.LiveIntervalByCategory = defaultLiveIntervals()
+	}
+	if config.Hub.Devices.Defaults.CommandConfirmationTimeoutMs == nil {
+		config.Hub.Devices.Defaults.CommandConfirmationTimeoutMs = newDefaultConfirmationTimeout()
+	}
 	cache := &AppConfigCache{
 		store:                 store,
 		tasks:                 task,
@@ -226,7 +251,8 @@ func (s *AppConfigCache) LoadAppConfig() (*AppConfig, error) {
 // cloneHubConfig copies everything writers replace or mutate under the cache lock
 // (device defaults/overrides and their debounce maps, dashboard groups, sections),
 // so callers may read or encode the snapshot after the lock is released.
-// Interval values and expose lists are replaced by writers, never mutated, and stay shared.
+// Device interval values are copied as part of policy snapshots. Expose lists are
+// replaced by writers, never mutated, and stay shared.
 func cloneHubConfig(hub *HubConfig) *HubConfig {
 	if hub == nil {
 		return nil
@@ -266,8 +292,13 @@ func cloneDeviceConfig(config *DeviceConfig) *DeviceConfig {
 		return nil
 	}
 	copy := *config
-	copy.DefaultDebounceByCategory = maps.Clone(config.DefaultDebounceByCategory)
-	copy.DebounceOverrides = maps.Clone(config.DebounceOverrides)
+	copy.LiveIntervalByCategory = cloneIntervals(config.LiveIntervalByCategory)
+	copy.LiveIntervalOverrides = cloneIntervals(config.LiveIntervalOverrides)
+	copy.CommandConfirmationTimeoutMs = clonePointer(config.CommandConfirmationTimeoutMs)
+	copy.MetricOverrides = maps.Clone(config.MetricOverrides)
+	copy.ReportingThresholds = maps.Clone(config.ReportingThresholds)
+	copy.DefaultDebounceByCategory = cloneIntervals(config.DefaultDebounceByCategory)
+	copy.DebounceOverrides = cloneIntervals(config.DebounceOverrides)
 	return &copy
 }
 
@@ -457,7 +488,9 @@ func (s *AppConfigCache) ImportDashboardGroups(groups map[string]*DashboardGroup
 }
 
 func (d *AppConfigCache) SetDeviceConfigOverrides(deviceConfig *DeviceConfig) error {
-	// Simple delegation now
+	// Capture the value submitted for persistence before notifying consumers.
+	// The caller and each listener retain separate ownership of their snapshots.
+	deviceConfig = cloneDeviceConfig(deviceConfig)
 	err := d.deviceCache.Set(deviceConfig)
 	if err != nil {
 		return err
@@ -467,30 +500,46 @@ func (d *AppConfigCache) SetDeviceConfigOverrides(deviceConfig *DeviceConfig) er
 }
 
 func (d *AppConfigCache) DeleteDeviceConfigOverrides(id string) error {
-	// Simple delegation now
-	return d.deviceCache.Delete(id)
+	if err := d.deviceCache.Delete(id); err != nil {
+		return err
+	}
+	cfg, err := d.deviceCache.Get(id)
+	if err != nil {
+		return err
+	}
+	d.setDirty(cfg)
+	return nil
 }
 
 func (s *AppConfigCache) setDirty(cfg *DeviceConfig) {
 	for _, listener := range s.configUpdateListeners {
-		listener(cfg)
+		// A listener may retain or adapt its snapshot without changing active
+		// policy or the values delivered to any other listener.
+		listener(cloneDeviceConfig(cfg))
 	}
 }
 
 func (s *AppConfigCache) SetDeviceConfigDefaults(deviceDefaults *DeviceConfig) error {
-
-	// We need to update appConfig too?
-	// SetDeviceConfigDefaults loads, saves, and updates device cache.
-	// We should update s.appConfig.Hub.Devices.Defaults as well.
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	s.appConfig.Hub.Devices.Defaults = deviceDefaults
-	err := s.store.SaveAppConfig(s.appConfig)
-	if err != nil {
+	if err := deviceDefaults.ValidateReportingSettings(); err != nil {
 		return err
 	}
 
+	// Persist a candidate before replacing active defaults. Notify listeners
+	// outside the cache lock, with an owned snapshot for each consumer.
+	s.mutex.Lock()
+
+	deviceDefaults = cloneDeviceConfig(deviceDefaults)
+	candidate := *s.appConfig
+	candidate.Hub = cloneHubConfig(s.appConfig.Hub)
+	candidate.Hub.Devices.Defaults = deviceDefaults
+	if err := s.store.SaveAppConfig(&candidate); err != nil {
+		s.mutex.Unlock()
+		return err
+	}
+	s.appConfig.Hub.Devices.Defaults = deviceDefaults
+
+	// Call listeners outside the cache lock: they may resolve current reporting policy.
+	s.mutex.Unlock()
 	s.setDirty(deviceDefaults)
 	return nil
 }

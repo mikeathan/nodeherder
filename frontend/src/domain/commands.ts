@@ -6,8 +6,6 @@
  */
 import { DeviceUpdate } from '@/types/device';
 
-export const COMMAND_TIMEOUT_MS = 5000;
-
 export type PendingCommand = { key: string; deviceId: string; expose: string; value: unknown; sentAt: number };
 
 export const commandKey = (deviceId: string, expose: string) => `${deviceId}|${expose}`;
@@ -25,6 +23,6 @@ export function confirmedBy(pending: Iterable<PendingCommand>, update: DeviceUpd
   return keys;
 }
 
-export function isExpired(p: PendingCommand, now: number, timeout = COMMAND_TIMEOUT_MS): boolean {
+export function isExpired(p: PendingCommand, now: number, timeout: number): boolean {
   return now - p.sentAt >= timeout;
 }

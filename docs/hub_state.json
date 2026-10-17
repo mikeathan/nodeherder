@@ -909,7 +909,7 @@
             "unit": "m",
             "data": 0,
             "type": "numeric",
-            "category": "diagnostic",
+            "category": "measurement",
             "access_mode": "read"
           }
         },

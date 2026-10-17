@@ -46,7 +46,7 @@ func TestBridgeResponsesRejectMalformedDataBeforeEffects(t *testing.T) {
 			case "rename":
 				h = newBridgeDeviceRenameResponseHandler(w, m)
 			case "remove":
-				h = newBridgeDeviceRemoveResponseHandler(r, w, m)
+				h = newBridgeDeviceRemoveResponseHandler(r.RemoveDevice, w)
 			case "interview":
 				h = newBridgeDeviceInterviewResponseHandler(w, m)
 			case "permit_join":
@@ -106,7 +106,7 @@ func TestBridgeResponseEffectsAndFailures(t *testing.T) {
 		var calls []string
 		w := &failureEventHub{calls: &calls, err: emitErr}
 		r := services.NewHubRegisterService(&failureStore{calls: &calls, err: removeErr}, w, 0)
-		h := newBridgeDeviceRemoveResponseHandler(r, w, nil)
+		h := newBridgeDeviceRemoveResponseHandler(r.RemoveDevice, w)
 		err := h.ProcessPayload("bridge/response/device/remove", "mqtt", []byte(`{"status":"ok","data":{"id":"fixture"}}`))
 		if !errors.Is(err, removeErr) || !errors.Is(err, emitErr) || !reflect.DeepEqual(calls, []string{"remove", "broadcast"}) {
 			t.Fatalf("error/effects = %v/%v", err, calls)
@@ -140,7 +140,7 @@ func TestBridgeResponseNotificationCompatibility(t *testing.T) {
 			topic := "bridge/response/device/" + tc.name
 			switch tc.name {
 			case "remove":
-				h = newBridgeDeviceRemoveResponseHandler(r, w, nil)
+				h = newBridgeDeviceRemoveResponseHandler(r.RemoveDevice, w)
 			case "interview":
 				h = newBridgeDeviceInterviewResponseHandler(w, nil)
 			case "rename":

@@ -1,12 +1,12 @@
 <script setup lang="ts">
   /* Recent activity card with an on/off switch (spec 007 FR-12, AC-27). */
-  import { computed } from 'vue';
+  import { computed, ref } from 'vue';
   import { RouteName } from '@/types/router';
   import { useActivityFeed } from '@/composables/useActivityFeed';
   import { findDevice } from '@/composables/useHub';
   import { exposeLabel, formatExposeValue } from '@/domain/exposes';
   import { clockTime } from '@/domain/time';
-  import { ActivityChange } from '@/domain/activity';
+  import { ActivityChange, filterActivityEntries } from '@/domain/activity';
   import UiCard from '@/components/ui/UiCard.vue';
   import UiToggle from '@/components/ui/UiToggle.vue';
   import UiIcon from '@/components/ui/UiIcon.vue';
@@ -14,8 +14,17 @@
 
   const { enabled, entries, setEnabled, clear } = useActivityFeed();
 
+  const query = ref('');
+  const searchInput = ref<HTMLInputElement | null>(null);
+  // Presentation only: recording keeps the full bounded feed while searching.
+  const matchingEntries = computed(() => filterActivityEntries(entries.value, query.value, (id) => findDevice(id)?.friendly_name));
+  function resetFilter() {
+    query.value = '';
+    searchInput.value?.focus();
+  }
+
   const rows = computed(() =>
-    entries.value.slice(0, 60).map((e) => {
+    matchingEntries.value.slice(0, 60).map((e) => {
       const device = findDevice(e.deviceId);
       const text = (c: ActivityChange, v: unknown) => {
         const expose = device?.exposes[c.expose];
@@ -36,13 +45,23 @@
   <UiCard title="Recent activity" icon="clock" flush class="nh-activity">
     <template #tools>
       <span v-if="enabled && entries.length" class="nh-muted nh-act-count">{{ entries.length }}</span>
-      <UiButton v-if="enabled && entries.length" size="sm" variant="ghost" @click="clear">Clear</UiButton>
+      <UiButton v-if="enabled && entries.length" size="sm" variant="ghost" aria-label="Clear all recent activity" @click="clear">Clear</UiButton>
       <label class="nh-feed-switch">
         <span>{{ enabled ? 'On' : 'Off' }}</span>
         <UiToggle :model-value="enabled" label="Record recent activity" @update:model-value="setEnabled" />
       </label>
     </template>
+    <div class="nh-activity-filter" role="search" aria-label="Recent activity devices">
+      <label class="nh-activity-search">
+        <UiIcon name="search" />
+        <span class="sr-only">Filter activity by device name</span>
+        <input ref="searchInput" v-model="query" class="nh-input" type="search" placeholder="Filter by device name…" @keydown.esc="resetFilter" />
+      </label>
+      <UiButton v-if="query" icon="close" size="sm" variant="ghost" label="Clear activity filter" @click="resetFilter" />
+      <span v-if="enabled && entries.length" class="nh-activity-results" role="status">{{ rows.length }} of {{ matchingEntries.length }} {{ query.trim() ? 'matches' : 'events' }}</span>
+    </div>
     <p v-if="!enabled" class="nh-feed-note"><UiIcon name="info" />Activity recording is off. Turn it on to see device changes as they happen.</p>
+    <p v-else-if="entries.length && !matchingEntries.length" class="nh-feed-note" role="status"><UiIcon name="search" />No activity matches this device name.</p>
     <p v-else-if="!rows.length" class="nh-feed-note"><UiIcon name="clock" />Waiting for device changes… They appear here while this tab is open.</p>
     <ol v-else class="nh-feed" aria-live="polite" aria-relevant="additions">
       <li v-for="r in rows" :key="r.id">
@@ -59,6 +78,11 @@
 </template>
 
 <style scoped>
+  .nh-activity-filter { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; padding: .75rem var(--nh-space); border-bottom: var(--nh-border-w) solid var(--nh-border); }
+  .nh-activity-search { display: flex; align-items: center; position: relative; flex: 1 1 12rem; min-width: 0; max-width: 26rem; }
+  .nh-activity-search > .nh-ic { position: absolute; left: .65rem; color: var(--nh-text-muted); pointer-events: none; }
+  .nh-activity-search input { width: 100%; min-width: 0; padding-left: 2.2rem; }
+  .nh-activity-results { margin-left: auto; color: var(--nh-text-muted); font-size: .78rem; }
   .nh-act-count {
     font-size: 0.78rem;
   }

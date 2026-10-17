@@ -10,33 +10,6 @@ type DeviceSettings struct {
 	Overrides map[string]*DeviceConfig `json:"overrides"`
 }
 
-func (d *DeviceSettings) GetEffectiveConfig(deviceId string) *DeviceConfig {
-	if override, exists := d.Overrides[deviceId]; exists {
-		return override
-	}
-	return d.Defaults
-}
-
-func (d *DeviceSettings) GetDebounceForEntity(deviceId, entityName string, entityCategory bridge.ExposeCategory) *utils.TimeInterval {
-	// First check if device has entity specific override
-	if deviceOverride, exists := d.Overrides[deviceId]; exists {
-		if debounce, exists := deviceOverride.DebounceOverrides[entityName]; exists {
-			return debounce
-		}
-	}
-
-	//  Fall back to category default from base config
-	if debounce, exists := d.Defaults.DefaultDebounceByCategory[entityCategory]; exists {
-		return debounce
-	}
-
-	return nil
-}
-
-func (d *DeviceSettings) IsEntityDebounced(deviceId, entityName string, entityCategory bridge.ExposeCategory) bool {
-	return d.GetDebounceForEntity(deviceId, entityName, entityCategory) != nil
-}
-
 func (d *DeviceSettings) AddOverride(deviceConfig *DeviceConfig) {
 	if deviceConfig.Id == "" {
 		return
@@ -67,8 +40,10 @@ func NewDeviceSettings() *DeviceSettings {
 
 func DefaultDeviceConfig() *DeviceConfig {
 	return &DeviceConfig{
-		Disabled:       false,
-		MetricsEnabled: false,
+		Disabled:                     false,
+		MetricsEnabled:               false,
+		CommandConfirmationTimeoutMs: newDefaultConfirmationTimeout(),
+		LiveIntervalByCategory:       defaultLiveIntervals(),
 		DefaultDebounceByCategory: map[bridge.ExposeCategory]*utils.TimeInterval{
 			bridge.DiagnosticCategory:  utils.IntervalFromSeconds(300),
 			bridge.MeasurementCategory: utils.IntervalFromSeconds(60),
@@ -78,11 +53,17 @@ func DefaultDeviceConfig() *DeviceConfig {
 }
 
 type DeviceConfig struct {
-	Id                        string                                        `json:"id,omitempty"`
-	Disabled                  bool                                          `json:"disabled"`
-	MetricsEnabled            bool                                          `json:"metricsEnabled"`
-	DefaultDebounceByCategory map[bridge.ExposeCategory]*utils.TimeInterval `json:"defaultDebounceByCategory,omitempty"`
-	DebounceOverrides         map[string]*utils.TimeInterval                `json:"debounceOverrides,omitempty"`
+	// Live intervals quiet numeric observations; legacy debounce maps sample history.
+	LiveIntervalByCategory       map[bridge.ExposeCategory]*utils.TimeInterval `json:"liveIntervalByCategory"`
+	LiveIntervalOverrides        map[string]*utils.TimeInterval                `json:"liveIntervalOverrides,omitempty"`
+	CommandConfirmationTimeoutMs *int                                          `json:"commandConfirmationTimeoutMs,omitempty"`
+	MetricOverrides              map[string]bool                               `json:"metricOverrides,omitempty"`
+	ReportingThresholds          map[string]float64                            `json:"reportingThresholds,omitempty"`
+	Id                           string                                        `json:"id,omitempty"`
+	Disabled                     bool                                          `json:"disabled"`
+	MetricsEnabled               bool                                          `json:"metricsEnabled"`
+	DefaultDebounceByCategory    map[bridge.ExposeCategory]*utils.TimeInterval `json:"defaultDebounceByCategory,omitempty"`
+	DebounceOverrides            map[string]*utils.TimeInterval                `json:"debounceOverrides,omitempty"`
 }
 
 func NewDeviceConfig(id string) *DeviceConfig {
@@ -95,22 +76,10 @@ func NewDeviceConfig(id string) *DeviceConfig {
 	}
 }
 
+// NewDeviceConfigFrom derives an owned settings snapshot using the same copy path
+// as saves and app snapshots, including every optional policy map and interval.
 func NewDeviceConfigFrom(config *DeviceConfig) *DeviceConfig {
-	newConfig := &DeviceConfig{
-		Id:                        config.Id,
-		Disabled:                  config.Disabled,
-		MetricsEnabled:            config.MetricsEnabled,
-		DebounceOverrides:         nil,
-		DefaultDebounceByCategory: config.DefaultDebounceByCategory,
-	}
-
-	if config.DebounceOverrides != nil {
-		newConfig.DebounceOverrides = make(map[string]*utils.TimeInterval)
-		for k, v := range config.DebounceOverrides {
-			newConfig.DebounceOverrides[k] = v
-		}
-	}
-	return newConfig
+	return cloneDeviceConfig(config)
 }
 
 type HistoryConfig struct {

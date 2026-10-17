@@ -72,6 +72,7 @@ var nonBridgeExposesWhitelist = map[string]int{
 }
 
 var measurementWhitelist = map[string]int{
+	"target_distance":  14,
 	"state":            1,
 	"brightness":       2,
 	"color_temp":       3,
@@ -107,13 +108,12 @@ var eventWhitelist = map[string]int{
 }
 
 var diagnosticWhitelist = map[string]int{
-	"linkquality":     1,
-	"battery":         2,
-	"voltage":         3,
-	"battery_low":     4,
-	"battery_state":   5,
-	"strength":        6,
-	"target_distance": 7,
+	"linkquality":   1,
+	"battery":       2,
+	"voltage":       3,
+	"battery_low":   4,
+	"battery_state": 5,
+	"strength":      6,
 }
 
 // read access mode is set as measurement category
@@ -208,9 +208,10 @@ func NewEntityData(value any, name string) *EntityData {
 type EntityData struct {
 	// Protects value replacement, not mutation of referenced maps/slices.
 	// EntityData is pointer-owned and must not be copied after first use.
-	mutex sync.RWMutex
-	value any
-	name  string
+	mutex               sync.RWMutex
+	value               any
+	name                string
+	expectedReportUntil time.Time
 }
 
 func (d *EntityData) Value() any {
@@ -223,6 +224,22 @@ func (d *EntityData) SetValue(v any) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 	d.value = v
+}
+
+// ExpectReportUntil records a bounded confirmation interest without changing state.
+// Only the next actual device report consumes it; requests never confirm themselves.
+func (d *EntityData) ExpectReportUntil(deadline time.Time) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+	d.expectedReportUntil = deadline
+}
+
+func (d *EntityData) ConsumeExpectedReport(now time.Time) bool {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+	expected := !d.expectedReportUntil.IsZero() && now.Before(d.expectedReportUntil)
+	d.expectedReportUntil = time.Time{}
+	return expected
 }
 
 func (d *EntityData) ValuesMatch(pending any) bool {
@@ -294,6 +311,22 @@ type Entity struct {
 	Attributes  map[string]any          `json:"attributes,omitempty"`
 	AccessMode  bridge.ExposeAccessMode `json:"access_mode"`
 	Values      map[string]any          `json:"values,omitempty"`
+}
+
+// UnmarshalJSON upgrades legacy diagnostic measurements using the same taxonomy
+// as bridge discovery. This happens when snapshots load, before reporting/history
+// policies are resolved; readings and explicit reporting settings are preserved.
+func (e *Entity) UnmarshalJSON(data []byte) error {
+	type entityJSON Entity
+	if err := json.Unmarshal(data, (*entityJSON)(e)); err != nil {
+		return err
+	}
+	if e.Category == bridge.DiagnosticCategory {
+		if _, measurement := measurementWhitelist[e.Name]; measurement {
+			e.Category = bridge.MeasurementCategory
+		}
+	}
+	return nil
 }
 
 func NewEntity(name string) *Entity {
@@ -432,22 +465,6 @@ func (e *Entity) Sanitize(raw any) any {
 // 		Data:  e.data,
 // 		Alias: (*Alias)(&e),
 // 	})
-// }
-
-// // Custom unmarshal
-// func (e *Entity) UnmarshalJSON(b []byte) error {
-// 	type Alias Entity
-// 	aux := &struct {
-// 		Data any `json:"data"`
-// 		*Alias
-// 	}{
-// 		Alias: (*Alias)(e),
-// 	}
-// 	if err := json.Unmarshal(b, &aux); err != nil {
-// 		return err
-// 	}
-// 	e.data = aux.Data
-// 	return nil
 // }
 
 // Not used yet, is for handling non bridge devices which we havent tested yet

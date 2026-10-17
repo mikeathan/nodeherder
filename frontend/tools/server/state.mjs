@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
 import moment from 'moment';
+import { readFileSync } from 'node:fs';
 import 'moment-timezone';
 import { createRequire } from 'module';
 import { paths } from './config.mjs';
@@ -857,6 +858,13 @@ export function initState() {
   if (!hubStatePayload) throw new Error('Failed to load hub state');
   hubStatePayload.devices.sort((a, b) => a.friendly_name.localeCompare(b.friendly_name));
   appConfig = hubStatePayload.config;
+  const reportingDefaults = JSON.parse(readFileSync(new URL('../../src/domain/reporting-defaults.json', import.meta.url), 'utf8'));
+  if (appConfig.hub.devices.defaults.commandConfirmationTimeoutMs === undefined) {
+    appConfig.hub.devices.defaults.commandConfirmationTimeoutMs = reportingDefaults.commandConfirmationTimeoutMs;
+  }
+  if (appConfig.hub.devices.defaults.liveIntervalByCategory === undefined) {
+    appConfig.hub.devices.defaults.liveIntervalByCategory = structuredClone(reportingDefaults.liveIntervalByCategory);
+  }
   metricsMap = loadMetrics();
 }
 

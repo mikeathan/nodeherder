@@ -75,9 +75,21 @@ func (a *AutomationEngine) IsAutomationEnabled(id string) bool {
 	return false
 }
 
+// ShouldEvaluateDevice uses the currently published generation's derived index.
+// Replacement publishes recipe and index together under the existing ready lock.
+func (a *AutomationEngine) ShouldEvaluateDevice(id string, changes map[string]interface{}) bool {
+	automation, err := a.Load(id)
+	if err != nil || !automation.IsEnabled() {
+		return false
+	}
+	return acceptsDeviceUpdate(automation, changes)
+}
+
+// HandleDevice validates selection at the execution boundary too. Seed/direct
+// callers bypass the service prefilter, and a recipe may change after that check.
 func (a *AutomationEngine) HandleDevice(device *devices.Device, payload map[string]interface{}) {
 	automation, err := a.Load(device.Id)
-	if err == nil && automation.IsEnabled() {
+	if err == nil && automation.IsEnabled() && acceptsDeviceUpdate(automation, payload) {
 		automation.Evaluate(NewDeviceEvent(device, payload))
 	}
 }
@@ -307,4 +319,13 @@ func (a *AutomationEngine) changeHandlers(automation Automation, publish func() 
 		change.Complete()
 	}
 	return nil
+}
+
+func acceptsDeviceUpdate(automation Automation, changes map[string]interface{}) bool {
+	if selector, ok := automation.(interface {
+		AcceptsDeviceUpdate(map[string]interface{}) bool
+	}); ok {
+		return selector.AcceptsDeviceUpdate(changes)
+	}
+	return true
 }

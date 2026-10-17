@@ -55,10 +55,15 @@ jobs:
         with:
           node-version-file: ".nvmrc"
 
+      - name: Check generated reporting defaults
+        run: |
+          node scripts/sync-reporting-defaults.mjs --check
+          node --test scripts/sync-reporting-defaults.test.mjs
+
       - name: Check deployment tooling
         run: |
           node --check frontend/scripts/get-version.cjs
-          node --test scripts/manage-stack.test.cjs
+          node --test scripts/manage-stack.test.cjs scripts/dev.test.mjs
 
       - name: Validate real Compose configuration (isolated, no containers)
         env:

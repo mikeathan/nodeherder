@@ -13,6 +13,7 @@ import (
 	"node-herder/internal/services"
 	"node-herder/internal/ws"
 	automationmodels "node-herder/models/automations"
+	"node-herder/models/bridge"
 	"node-herder/models/devices"
 	"node-herder/models/hub"
 	"node-herder/models/settings"
@@ -332,15 +333,31 @@ func (h *HubController) registerEventHubEvents() {
 			return errors.New("set device value failed. Invalid payload type")
 		}
 
-		id := payload["id"].(string)
+		id, ok := payload["id"].(string)
+		if !ok || id == "" {
+			return errors.New("device id is required")
+		}
 
 		device, err := h.registrar.LookupById(id)
 		if err != nil {
 			return fmt.Errorf("device %s not found", id)
 		}
 
-		name := payload["name"].(string)
-		value := payload["value"]
+		name, ok := payload["name"].(string)
+		if !ok || name == "" {
+			return errors.New("device field is required")
+		}
+		expose, exists := device.GetExpose(name)
+		if !exists || (expose.AccessMode != bridge.WriteAccessMode && expose.AccessMode != bridge.ReadWriteAccessMode) {
+			return fmt.Errorf("device field %q is not writable", name)
+		}
+		value, exists := payload["value"]
+		if !exists || value == nil {
+			return errors.New("device value is required")
+		}
+		// Use the hub policy shared with the browser. A report remains evidence;
+		// routine cached configuration echoes no longer force observation broadcasts.
+		expose.Data.ExpectReportUntil(time.Now().Add(appconfig.GetDeviceConfigCache().GetCommandConfirmationTimeout(id)))
 		msg := map[string]any{
 			name: value,
 		}
@@ -625,6 +642,25 @@ func (m *HubController) TriggerManual(ctx context.Context, automationId string, 
 	return err
 }
 
+// removeDevice is called from the bridge lane. Join the device's own lane before
+// retiring it so in-flight state/automation callbacks finish ahead of deletion.
+func (m *HubController) removeDevice(id string) error {
+	processor := m.getDeviceProcessor()
+	key := id
+	if name, active := processor.DeviceName(id); active {
+		key = name
+	} else if device, err := m.registrar.LookupById(id); err == nil {
+		key = device.GetFriendlyName()
+	}
+	remove := func() error { return processor.RemoveDevice(id) }
+	if key == bridgeKey {
+		return remove()
+	} // Already on this lane; Do would wait on itself.
+	ctx, cancel := context.WithTimeout(m.ctx, laneShutdownTimeout)
+	defer cancel()
+	return m.deviceLanes.Do(ctx, key, remove)
+}
+
 // route runs on the ingress lane, which owns responseHandlers, and hands the
 // message to its device (or bridge) lane.
 func (m *HubController) route(id string, payload []byte, connType string) {
@@ -670,7 +706,7 @@ func (m *HubController) responseHandler(id string) handler {
 				var h = newBridgeDeviceRenameResponseHandler(m.eventHub, m.mqtt)
 				m.responseHandlers[id] = h
 			case "bridge/response/device/remove":
-				var h = newBridgeDeviceRemoveResponseHandler(m.registrar, m.eventHub, m.mqtt)
+				var h = newBridgeDeviceRemoveResponseHandler(m.removeDevice, m.eventHub)
 				m.responseHandlers[id] = h
 			case "bridge/response/device/interview":
 				var h = newBridgeDeviceInterviewResponseHandler(m.eventHub, m.mqtt)
@@ -722,6 +758,7 @@ func (d *HubController) createDeviceProcessor() *services.DeviceProcessor {
 	})
 
 	processor := services.NewDeviceProcessorBuilder().
+		WithContext(d.ctx).
 		WithRegistrar(d.registrar).
 		WithStore(d.store).
 		WithEvents(events).
