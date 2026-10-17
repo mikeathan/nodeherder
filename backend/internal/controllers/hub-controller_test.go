@@ -1923,6 +1923,9 @@ func TestNewDeviceExposeValuesAreBroadcastedOnly(t *testing.T) {
 		config.DebounceOverrides = make(map[string]*utils.TimeInterval)
 	}
 	config.DebounceOverrides["illuminance"] = utils.IntervalFromMilliseconds(500)
+	// This regression isolates live routing from metrics sampling. Explicit zero
+	// keeps every-change observation semantics; significance has separate replays.
+	config.ReportingThresholds = map[string]float64{"illuminance": 0, "target_distance": 0}
 	appConfig.SetDeviceConfigOverrides(config)
 
 	wg := &sync.WaitGroup{}
@@ -1972,6 +1975,11 @@ func TestNewDeviceExposeValuesAreBroadcastedOnly(t *testing.T) {
 
 		lastSeen := time.Now().Format(time.RFC3339)
 		payload := map[string]interface{}{}
+		if device, err := store.FindDeviceByFriendlyName(testCase.deviceName); err == nil {
+			if expose, ok := device.GetExpose(testCase.key); ok && testCase.key == "radar_sensitivity" {
+				expose.Data.ExpectReportUntil(time.Now().Add(5 * time.Second))
+			}
+		}
 		payload[testCase.key] = testCase.value
 		payload["last_seen"] = lastSeen
 
@@ -2514,9 +2522,17 @@ func TestHTTPIngestionIsOrderedPerDevice(t *testing.T) {
 	h.Seed(t, map[string]map[string]any{replayLightName: {"state": "OFF"}})
 
 	updates := make(chan *devices.UpdatePackage, messages+1)
+	burstObserved := make(chan struct{})
+	stateBroadcasts := 0 // Owned by this device lane; the test waits on burstObserved.
 	h.EventHub.OnBroadcast(func(eventName string, data interface{}) {
 		if p, ok := data.(*devices.UpdatePackage); ok && eventName == ws.DeviceUpdated {
 			updates <- p
+			if _, isState := p.Data["state"]; isState {
+				stateBroadcasts++
+				if stateBroadcasts == messages {
+					close(burstObserved)
+				}
+			}
 		}
 	})
 
@@ -2527,6 +2543,14 @@ func TestHTTPIngestionIsOrderedPerDevice(t *testing.T) {
 		if err := h.Hub.Enqueue(replayLightName, map[string]interface{}{"state": state}, "http"); err != nil {
 			t.Fatal(err)
 		}
+	}
+	// The burst fills the bounded device queue. Its completion probe is an
+	// additional task, so acknowledge the burst before submitting that task.
+	// Otherwise a valid scheduler can reject only the probe as queue overflow.
+	select {
+	case <-burstObserved:
+	case <-time.After(2 * time.Second):
+		t.Fatal("HTTP state burst did not drain")
 	}
 	if err := h.Hub.Enqueue(replayLightName, map[string]interface{}{replayProbe: "on"}, "http"); err != nil {
 		t.Fatal(err)
@@ -2827,4 +2851,38 @@ func settle(tb testing.TB) int {
 		}
 	}
 	return last
+}
+
+func TestConfigurationConfirmationUsesConfiguredTimeout(t *testing.T) {
+	device := devices.NewDevice("config-sensor")
+	device.FriendlyName = "config-sensor"
+	field := devices.NewEntity("new_config_property")
+	field.Type, field.AccessMode, field.Category = bridge.NumericDataType, bridge.ReadWriteAccessMode, bridge.ConfigCategory
+	field.Data.SetValue(float64(6))
+	device.Exposes[field.Name] = field
+	h := hubharness.New(t, []*devices.Device{device})
+	h.Seed(t, map[string]map[string]any{device.FriendlyName: {field.Name: float64(6)}})
+	cfg := settings.NewDeviceConfig(device.Id)
+	timeout := 60000
+	cfg.CommandConfirmationTimeoutMs = &timeout
+	if err := h.Store.AppConfig().SetDeviceConfigOverrides(cfg); err != nil {
+		t.Fatal(err)
+	}
+	before := time.Now()
+	if err := h.EventHub.SetValue(map[string]any{"id": device.Id, "name": field.Name, "value": float64(6)}); err != nil {
+		t.Fatal(err)
+	}
+	stored, err := h.Store.FindDeviceById(device.Id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !stored.Exposes[field.Name].Data.ConsumeExpectedReport(before.Add(10 * time.Second)) {
+		t.Fatal("request ignored configured confirmation window")
+	}
+	if stored.Exposes[field.Name].Data.Value() != float64(6) {
+		t.Fatal("request optimistically changed device state")
+	}
+	if err := h.EventHub.SetValue(map[string]any{"id": device.Id, "name": "missing", "value": float64(6)}); err == nil {
+		t.Fatal("unknown command field accepted")
+	}
 }

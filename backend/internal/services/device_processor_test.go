@@ -1,7 +1,9 @@
 package services_test
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"node-herder/internal/automations"
@@ -11,6 +13,7 @@ import (
 	"node-herder/models/devices"
 	"node-herder/models/settings"
 	"node-herder/repository"
+	appstore "node-herder/store"
 	utils_test "node-herder/testing"
 	"node-herder/utils"
 	"os"
@@ -760,4 +763,109 @@ func TestOnDeviceConfigUpdated_WithDeviceDefaults_ShouldDisableAllDevices(t *tes
 	updatePayload3["alarm"] = true
 	updatePayload3["last_seen"] = lastSeen3
 	processor.CreateOrUpdateDevice(deviceName3, "mqtt", updatePayload3)
+}
+
+type removalFailureStore struct {
+	appstore.AppStore
+	removalError error
+}
+
+func (s *removalFailureStore) RemoveDeviceById(id string) error {
+	if s.removalError != nil {
+		return s.removalError
+	}
+	return s.AppStore.RemoveDeviceById(id)
+}
+
+func retirementProcessor(t *testing.T, app appstore.AppStore, ctx context.Context) (*services.DeviceProcessor, *atomic.Int32, *atomic.Int32) {
+	t.Helper()
+	registrar := services.NewHubRegisterService(app, &mocks.MockEventHub{}, 0)
+	seeds, updates := &atomic.Int32{}, &atomic.Int32{}
+	events := &devices.DeviceRequestEvents{
+		AvailabilityTimeout: time.Hour,
+		OnNewDevice: func(d *devices.Device) {
+			seeds.Add(1)
+			if err := app.StoreDevice(d.FriendlyName, d); err != nil {
+				t.Error(err)
+			}
+		},
+		OnDeviceUpdated: func(d *devices.Device, _ *devices.UpdatePackage) {
+			updates.Add(1)
+			if err := app.StoreDevice(d.FriendlyName, d); err != nil {
+				t.Error(err)
+			}
+		},
+		OnDeviceAvailabilityChanged: func(*devices.UpdatePackage) { t.Error("unexpected expiry") },
+	}
+	processor := services.NewDeviceProcessorBuilder().WithContext(ctx).WithRegistrar(registrar).WithStore(app).WithEvents(events).WithAutomationQuerier(mocks.NewMockAutomationDeviceQuerier()).Build()
+	return processor, seeds, updates
+}
+
+func TestDeviceRemovalReleasesGenerationAndAllowsRediscovery(t *testing.T) {
+	ctx := newTrackedShutdownContext(t)
+	app := utils_test.CreateStoreFromDeviceRepo(repository.NewMemoryDeviceRepo())
+	processor, seeds, _ := retirementProcessor(t, app, ctx)
+	// Repeated rediscovery of the same ID must produce a new Seed every time.
+	// Churn also visits distinct IDs, without retaining shutdown registrations.
+	for i := 0; i < 30; i++ {
+		name := "rediscovered"
+		if i%2 != 0 {
+			name = fmt.Sprintf("churn-%d", i)
+		}
+		if err := processor.CreateOrUpdateDevice(name, "mqtt", map[string]interface{}{"temperature": float64(i)}); err != nil {
+			t.Fatal(err)
+		}
+		if ctx.active.Load() != 1 || seeds.Load() != int32(i+1) {
+			t.Fatal("rediscovery reused a retired generation")
+		}
+		device, err := app.FindDeviceByFriendlyName(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := processor.RemoveDevice(device.Id); err != nil {
+			t.Fatal(err)
+		}
+		if err := processor.RemoveDevice(device.Id); err != nil {
+			t.Fatal("repeated removal", err)
+		}
+		if _, err := app.FindDeviceById(device.Id); err == nil {
+			t.Fatal("removed device remained in storage")
+		}
+		if ctx.active.Load() != 0 {
+			t.Fatal("removed generation retained by parent context")
+		}
+	}
+}
+
+func TestDeviceRemovalFailureKeepsServiceOperational(t *testing.T) {
+	ctx := newTrackedShutdownContext(t)
+	app := &removalFailureStore{AppStore: utils_test.CreateStoreFromDeviceRepo(repository.NewMemoryDeviceRepo())}
+	processor, seeds, updates := retirementProcessor(t, app, ctx)
+	if err := processor.CreateOrUpdateDevice("failure", "mqtt", map[string]interface{}{"temperature": float64(1)}); err != nil {
+		t.Fatal(err)
+	}
+	device, err := app.FindDeviceByFriendlyName("failure")
+	if err != nil {
+		t.Fatal(err)
+	}
+	app.removalError = errors.New("delete unavailable")
+	if err := processor.RemoveDevice(device.Id); !errors.Is(err, app.removalError) {
+		t.Fatal("removal failure hidden", err)
+	}
+	if ctx.active.Load() != 1 {
+		t.Fatal("failed removal retired the service")
+	}
+	if err := processor.CreateOrUpdateDevice("failure", "mqtt", map[string]interface{}{"temperature": float64(2)}); err != nil {
+		t.Fatal(err)
+	}
+	if seeds.Load() != 1 || updates.Load() != 1 {
+		t.Fatal("failed removal stopped the original generation")
+	}
+	app.removalError = nil
+	if err := processor.RemoveDevice(device.Id); err != nil {
+		t.Fatal(err)
+	}
+	if ctx.active.Load() != 0 {
+		t.Fatal("successful retry retained generation")
+	}
 }

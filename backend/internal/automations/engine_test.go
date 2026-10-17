@@ -1794,3 +1794,32 @@ func TestEngineSchedulerConfiguresAutomation(t *testing.T) {
 		t.Fatalf("ERROR cleaning scheduler: %v", err)
 	}
 }
+
+func TestEngineRoutesOnlyConfiguredInputs(t *testing.T) {
+	engine := automations.NewEngine(nil, &reloadRegistrar{}, &mocks.MockMqttClient{})
+	engine.WithStorage(reloadDisk(t))
+	first := reloadRecipe(false)
+	first.Triggers[0].(*automations.DeviceTrigger).Conditions = append(first.Triggers[0].GetConditions(), utils_test.NewExposeCondition("illuminance", 30.0, "<="))
+	if err := engine.Add(first); err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 10_000; i++ {
+		if engine.ShouldEvaluateDevice("source", map[string]interface{}{"linkquality": float64(i)}) {
+			t.Fatal("unrelated noise selected recipe")
+		}
+	}
+	for _, property := range []string{"action", "illuminance"} {
+		if !engine.ShouldEvaluateDevice("source", map[string]interface{}{property: true}) {
+			t.Fatalf("lost input %s", property)
+		}
+	}
+	if err := engine.Add(reloadRecipe(true)); err != nil {
+		t.Fatal(err)
+	}
+	if engine.ShouldEvaluateDevice("source", map[string]interface{}{"illuminance": 10.0}) {
+		t.Fatal("old generation dependencies retained")
+	}
+	if engine.ShouldEvaluateDevice("missing", map[string]interface{}{"action": "pressed"}) {
+		t.Fatal("missing recipe selected")
+	}
+}

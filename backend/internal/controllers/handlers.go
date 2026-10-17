@@ -110,14 +110,13 @@ func (b *bridgeConfigurationHandler) ProcessPayload(id string, connType string, 
 }
 
 type bridgeDeviceRemoveResponseHandler struct {
-	topic     string
-	ws        ws.EventHub
-	mqtt      mqtt.MqttClient
-	registrar *services.HubRegisterService
+	topic        string
+	ws           ws.EventHub
+	removeDevice func(string) error
 }
 
-func newBridgeDeviceRemoveResponseHandler(registrar *services.HubRegisterService, ws ws.EventHub, mqtt mqtt.MqttClient) *bridgeDeviceRemoveResponseHandler {
-	return &bridgeDeviceRemoveResponseHandler{topic: "bridge/response/device/remove", registrar: registrar, ws: ws, mqtt: mqtt}
+func newBridgeDeviceRemoveResponseHandler(removeDevice func(string) error, ws ws.EventHub) *bridgeDeviceRemoveResponseHandler {
+	return &bridgeDeviceRemoveResponseHandler{topic: "bridge/response/device/remove", removeDevice: removeDevice, ws: ws}
 }
 
 func (b *bridgeDeviceRemoveResponseHandler) ProcessPayload(id string, connType string, payload []byte) error {
@@ -134,7 +133,7 @@ func (b *bridgeDeviceRemoveResponseHandler) ProcessPayload(id string, connType s
 	if resp.Data.ID == "" {
 		return fmt.Errorf("%s: missing device id", b.topic)
 	}
-	if err := b.registrar.RemoveDevice(resp.Data.ID); err != nil {
+	if err := b.removeDevice(resp.Data.ID); err != nil {
 		notifyErr := broadcastBridgeResult(b.ws, b.topic, ws.OperationFailed, fmt.Sprintf("Device %s failed to remove from store", resp.Data.ID))
 		return errors.Join(fmt.Errorf("%s: remove device: %w", b.topic, err), notifyErr)
 	}

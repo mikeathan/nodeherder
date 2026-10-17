@@ -1,0 +1,7 @@
+{
+  "commandConfirmationTimeoutMs": 5000,
+  "liveIntervalByCategory": {
+    "diagnostic": { "value": 30, "unit": "seconds" },
+    "measurement": { "value": 0, "unit": "seconds" }
+  }
+}

@@ -78,6 +78,11 @@ Or use the makefile:
 make run_backend
 ```
 
+To build and run the backend together with the frontend in one terminal, run
+`node scripts/dev.mjs` from the repository root. Ctrl+C stops both services;
+backend edits require a restart. See [local development setup](../docs/setup.md#run-backend-and-frontend-together)
+for prerequisites, environment configuration, and lifecycle details.
+
 ### Command-Line Arguments
 
 The backend accepts several command-line arguments:

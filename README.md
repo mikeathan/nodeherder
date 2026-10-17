@@ -26,7 +26,7 @@ to compatible clients.
 
 - View device state, availability, exposes, and controls in grouped dashboards.
 - Create device-triggered and scheduled automations with conditions and actions.
-- Chart sensor history and configure metrics retention and per-device debounce.
+- Chart sensor history, configure retention, and quiet noisy readings with category defaults.
 - Inspect hub logs and manage bridge joining and device settings.
 - Query metrics through HTTP or MCP; connect an external assistant service with conversation history.
 
@@ -95,6 +95,19 @@ trusted-network access controls; see [deployment details](docs/setup.md#deployme
 ## Development
 
 Use Go from [`backend/go.mod`](backend/go.mod) and Node from [`.nvmrc`](.nvmrc).
+
+Run both services in one terminal (after `npm ci` in `frontend/`):
+
+```bash
+node scripts/dev.mjs
+```
+
+This builds the native backend and starts it alongside Vite. Ctrl+C stops both;
+either service exiting also stops the other. Supports macOS/Linux. Backend changes
+need a restart; frontend changes hot reload. Uses existing environment files, with
+`APP_ENV` defaulting to `development`. Follow the [local development setup](docs/setup.md#run-backend-and-frontend-together)
+for MQTT/environment configuration and set frontend local API/WS URLs to that backend.
+Ports must be free; this command does not start Docker or the mock server.
 
 ```bash
 # From backend/

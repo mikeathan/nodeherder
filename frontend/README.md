@@ -50,6 +50,11 @@ npm run dev
 
 The application will be available at `http://localhost:4100`; Vite sets its port in `vite.config.js`.
 
+To run the native backend and frontend together, use `node scripts/dev.mjs` from
+the repository root after installing dependencies. Ctrl+C stops both services;
+frontend changes still hot reload. See [local development setup](../docs/setup.md#run-backend-and-frontend-together)
+for backend prerequisites and local API/WebSocket configuration.
+
 ### Other Development Commands
 
 - **Type checking** (watch mode):
@@ -81,6 +86,22 @@ The application will be available at `http://localhost:4100`; Vite sets its port
   ```bash
   npm run test-server
   ```
+
+## Shared reporting defaults
+
+`src/domain/reporting-defaults.json` is a generated, checked-in build artifact used
+by both the app and mock server. Edit only the canonical
+[`backend/models/settings/reporting-defaults.json`](../backend/models/settings/reporting-defaults.json).
+From the repository root, regenerate and check it with:
+
+```bash
+node scripts/sync-reporting-defaults.mjs --write
+node scripts/sync-reporting-defaults.mjs --check
+```
+
+Commit both JSON files when defaults change. CI checks for drift and missing files;
+it never silently regenerates them. Production builds need only `frontend/` and do
+not run this repository-level generator or read backend files.
 
 ## Building for Production
 

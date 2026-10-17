@@ -69,3 +69,38 @@ describe('brightness confirmation investigation (AC-42)', () => {
     expect(store.getters['alerts/messages']()).toEqual([]);
   });
 });
+
+describe('configured command confirmation lifecycle', () => {
+  const light = device('configured-light', {}, [expose('brightness', { data: 50 })]);
+  let capture: ReturnType<typeof captureWsFrames>;
+  beforeEach(() => {
+    jest.useFakeTimers();
+    const config = hubConfig();
+    config.hub.devices.defaults.commandConfirmationTimeoutMs = 12000;
+    store.dispatch('hub/init', { devices: [light], config });
+    store.commit('ws/setConnectionStatus', 'connected');
+    capture = captureWsFrames();
+  });
+  afterEach(() => {
+    store.commit('hub/clear');
+    jest.runOnlyPendingTimers();
+    capture.restore();
+    store.commit('alerts/clear');
+    jest.useRealTimers();
+  });
+  test('uses the configured deadline instead of the former fixed timeout', () => {
+    const command = useDeviceCommand();
+    expect(command.send(light, 'brightness', 100)).toBe(true);
+    jest.advanceTimersByTime(11999);
+    expect(command.isPending(light.id, 'brightness')).toBe(true);
+    jest.advanceTimersByTime(1);
+    expect(command.isPending(light.id, 'brightness')).toBe(false);
+  });
+  test('hub reset cancels pending work even with a long configured timeout', () => {
+    const command = useDeviceCommand();
+    command.send(light, 'brightness', 100);
+    store.commit('hub/clear');
+    expect(command.isPending(light.id, 'brightness')).toBe(false);
+    expect(jest.getTimerCount()).toBe(0);
+  });
+});

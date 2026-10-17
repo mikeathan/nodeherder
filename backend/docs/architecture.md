@@ -4,72 +4,135 @@ This document describes the lifecycle of an incoming device update payload and h
 
 ## Overview
 
-When the backend receives a payload from a device (e.g. via Zigbee2MQTT), it is processed by the `DeviceLifetimeService`. The service has a strict order of operations designed to keep the in-memory state fresh for immediate consumers (like automations) while debouncing the data written to the metrics storage and broadcast to the UI.
+When a device payload arrives, `DeviceLifetimeService` first updates raw state and
+builds a changed-field delta. UI observations, command confirmations, automation input
+selection and metric sampling have distinct policies ([spec 012](../../specs/012-sensor-reporting/spec.md),
+[category reporting](../../specs/014-category-reporting/spec.md)).
 
 ### Ordering (spec 005)
 
-Messages are handled one at a time per device, in arrival order, end to end:
-paho delivers in order (`SetOrderMatters(true)`) and its callback only queues the
-message on the hub's single **ingress lane** (`HubController.Ingest`, also used by the
-HTTP data collector). The ingress lane owns the topic→handler map and hands each message
-to a **device lane** keyed by topic (all `bridge/*` topics share one lane), which runs
-the whole update (dedupe, automations, store, broadcast) before the next message for
-that device. Different devices run concurrently. Lanes (`internal/lanes`) hold a goroutine
-only while busy, queue at most 1,000 messages per device (beyond that: rejected, logged,
-counted) and drain on hub context cancellation. Manual triggers run on the automation's
-device lane; if it does not start before the request deadline the API returns 503.
-Each automation run gets its own context (exposes + origin) over persistent state.
-
-### Flow Diagram
+MQTT/HTTP messages enter the ingress lane, then a lane per device, in arrival order.
+Different devices may run concurrently. A device's accepted state is visible before
+its automation callback. Raw state is authoritative; observation filtering never changes
+what a condition or action reads. See `internal/controllers/hub-controller.go` and
+`internal/services/device_lifetime.go` for the current contract.
 
 ```mermaid
 flowchart TD
-    A["Payload arrives (MQTT)"] --> B{"Physical event or value changed?"}
-    B -->|No| SKIP["Skip"]
-    B -->|Yes| C["SetValue (In-Memory)"]
-    C --> D{"Debounced?"}
-    D -->|Yes| E["Skip Downstream Storage"]
-    D -->|No| F["Add to updatePackage"]
-
-    %% Automation always triggers on real changes regardless of debounce
-    C -->|Automation| G["attemptToTriggerAutomation"]
-    G --> H["automationEngine.HandleDevice"]
-
-    %% Storage and UI use the debounced updatePackage
-    F -->|Storage| I["attemptToStoreMetrics"]
-    I --> J["StoreMetrics (DB)"]
-
-    F -->|UI| K["OnDeviceUpdated (WS)"]
+    A[Device report] --> B[Accept raw state; deduplicate ordinary state]
+    B --> C[Changed fields]
+    C --> D{Relevant configured automation input?}
+    D -->|Yes| E[Evaluate with fresh raw state]
+    C --> F[Existing metrics interval sampling]
+    F --> G[Eligible measurement history, when enabled]
+    B --> H[Minimum change and per-field live interval]
+    H --> K[Immediate output or latest-value pending window]
+    K --> I[Broadcast UI update and persist device snapshot]
+    B --> J[Actual report for pending writable command]
+    J --> I
 ```
 
-## Key Architectural Decisions
+### Observations and noisy numeric sensors
 
-### 1. In-Memory State is Always Fresh
+`models/settings/reporting_policy.go` resolves output policy from saved configuration.
+The same ordered lookup supports live and history intervals: device field, global
+field, device category, global category, then immediate. Missing fields inherit; explicit zero means
+every change. `liveIntervalByCategory` and `liveIntervalOverrides` control live
+output; existing `defaultDebounceByCategory` and `debounceOverrides` control history.
+Device category overrides affect only that device; removing an override resumes
+inheritance. Individual sensor rules remain more specific than category rules.
+There are no sensor-name-specific timing rules. The shared declarative bootstrap
+JSON provides 30 seconds for numeric diagnostics and zero for measurements.
+The backend file is canonical; `scripts/sync-reporting-defaults.mjs --write` generates
+a checked-in frontend-local copy for browser/mock consumers. CI rejects missing or
+stale artifacts with `--check`. Frontend builds never import outside their build
+context; see the [frontend guide](../../frontend/README.md#shared-reporting-defaults). Missing
+live category settings in older configurations are hydrated; explicit empty maps
+and zero survive reload. Existing history intervals retain their meaning.
 
-The `SetValue()` operation happens **before** any debouncing.
+`internal/services/observation_publisher.go` composes numeric delta checks and live
+intervals. Within an interval it retains the latest qualifying value per field and
+flushes at the original deadline even if reports stop. New reports never postpone
+the deadline. A field returning within its minimum-change tolerance cancels its
+pending observation, rather than publishing an intermediate spike. Multiple fields
+due together share one update. Unknown/invalid values, recovery, binary/enums,
+physical events and writable reports bypass interval filtering. Availability changes
+remain independent. A delayed update carries the current raw last-seen timestamp.
 
-- **Why**: Automations (such as dials adjusting brightness based on a step operation) need to read the absolute latest state of the device. If `SetValue` was debounced, a dial turned quickly would calculate its steps based on stale, debounced data.
+`models/devices/observation_filter.go` compares with the last published numeric
+baseline, so small changes accumulate. Optional `reportingThresholds` resolve device
+field then global field; absent means zero. Values use each sensor's native unit.
+A link threshold of 10 suppresses 131/134/138 oscillation; 144 is significant relative
+to 134 and becomes the baseline when published. There is no automatic unit conversion
+or noise learning. Device exceptions cover different units for the same property.
 
-### 2. Automation Triggers are Unthrottled
+The publisher owns a mutex, one baseline/timestamp per known field, one latest pending
+value per delayed field and at most one timer per device. It creates no per-report
+workers or timers. Generation tokens reject stale timer callbacks. Output callbacks
+run under that mutex and must not re-enter the publisher; they do not run automations
+or change raw values. Hub context cancellation closes publication; disable and offline
+clear pending output. Configuration edits re-evaluate retained readings with current
+policy, preserving the publication-time anchor so unrelated edits cannot lose the
+final live value. Existing history sampling is separate and still has no trailing flush.
 
-The `attemptToTriggerAutomation()` method receives accepted changes and repeated
-physical events, independently of UI/metrics debounce, when automation is enabled.
-Unchanged state is deduplicated; whitelisted event values bypass equality checks.
+Cached unchanged writable configuration settings do not force broadcasts. Actuator
+measurement echoes retain their existing confirmation behavior. The UI command handler
+marks one nonserialized confirmation interest on the requested entity before publishing
+a command. Its duration comes from `commandConfirmationTimeoutMs`, resolved from device
+override, hub default, then the shared declarative compatibility bootstrap JSON. Only an actual next report consumes it. It neither updates state
+optimistically nor retriggers automation for an unchanged value. Expired interests are
+inert and own no timers/resources. The frontend reads the same setting for its pending command timer, clears pending
+work on a hub reset, and does not retry commands automatically. Settings forms can edit
+or remove device timeout overrides without changing source code.
 
-- **Why**: User inputs like physical buttons or dials generate rapid, intentional bursts of events. Throttling these would result in missed button presses or sluggish dial responsiveness.
+### Device retirement
 
-### 3. Storage and UI are Debounced
+Successful bridge removal runs on the same friendly-name lane as device reports.
+The processor supplies the active name even before a first snapshot reaches storage,
+so removal cannot bypass an in-flight Seed. Delayed live callbacks run outside that
+lane; the publisher's output mutex fences storage deletion behind any snapshot write.
+Only a successful deletion closes publication. Failure preserves the existing service,
+monitoring and pending reading and is reported through the existing bridge response.
 
-The `attemptToStoreMetrics()` method and the WebSocket broadcast (`OnDeviceUpdated`) only receive data that makes it past the `debouncerService.DebounceExpose()` check.
+A lifetime owns a child context. Retirement cancels it, unregisters publisher shutdown
+callbacks, stops and joins all availability workers (including previously disabled
+workers still exiting), and evicts that exact processor entry and pending creation
+queue. Old references cannot be re-enabled or accept reports. Hub cancellation also
+cancels the child/monitor contexts. Registry locks never surround persistence or output.
+Close/Retire run outside lifetime callbacks; the controller supplies lane ordering.
 
-- **Why**: Noisy sensors (like `linkquality` bouncing between 80 and 81 every second) would flood the database and overwhelm the frontend UI if every single change was recorded. The debouncer ensures we capture representative samples of environmental data while ignoring high-frequency jitter.
+Repeated removal is safe with existing repositories. Later accepted rediscovery uses
+a fresh service, preserving existing device discovery semantics; no permanent blacklist
+or tombstone map is retained. Tests use isolated stores, channels and fake clocks;
+see [retirement spec](../../specs/016-device-service-cleanup/spec.md).
 
-### Separation of Concerns
+### Automation routing
 
-By splitting the pipeline early, we fulfill conflicting requirements without coupling:
+Each configured device recipe has an immutable, derived set of primary and condition
+input names. The current published generation owns its set; replacement/reload builds a
+new one. Unrelated telemetry is rejected before a run context or condition evaluation.
+Unknown custom trigger/condition implementations conservatively retain full routing.
+`Trigger.AffectedBy` remains authoritative: state conditions can re-evaluate on relevant
+numeric changes; cached physical events cannot replay on unrelated updates. Manual runs
+use their explicit path. Filtering UI observations never filters automation inputs.
 
-- **Immediate action** (automations) gets raw, real-time data.
-- **Historical tracking and observation** (metrics, UI) gets filtered, clean data.
+### Metric sampling
+
+Legacy settings named debounce are leading-edge interval sampling, not a wait for a
+quiet period. Category defaults are 60 seconds for measurements and 300 seconds for
+diagnostics; binary/enums bypass intervals. Schema measurement fields reach metrics storage when enabled, unless explicitly
+excluded. The optional `metricOverrides` map can include/exclude any field, including
+fields supplied as diagnostic metadata; device entries override global entries.
+Target distance is a measurement even when bridge metadata labels it diagnostic.
+Stored diagnostic measurements normalize on load using the same measurement taxonomy
+as discovery, preserving readings and explicit overrides. Measurements have no default
+live interval or minimum-change suppression; history sampling remains separate.
+No past records are backfilled or rewritten.
+
+The interval sampler has no trailing flush: a changed value suppressed inside a window,
+followed only by identical reports, can remain absent from history. This limitation is
+separate from the live publisher, which does flush the latest eligible reading. Retention and metric timestamp
+semantics remain unchanged. See `models/settings/cache.go` for actual legacy precedence.
 
 ## Automation reload and failures
 

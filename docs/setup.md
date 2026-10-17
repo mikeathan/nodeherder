@@ -205,6 +205,31 @@ Native data/log paths default to `data/` and `logs/`; override with `DATA_DIR`/`
 `docker-compose.backend-dev.yml` defines only the backend, not a complete broker/Zigbee
 stack. Do not assume it starts those dependencies.
 
+## Run backend and frontend together
+
+After completing the native backend configuration above, install frontend dependencies
+with `npm ci` in `frontend/` and configure its [local API/WebSocket URLs](#frontend).
+From the repository root, run:
+
+```bash
+MQTT_URL=tcp://localhost:1883 node scripts/dev.mjs
+```
+
+The launcher builds `backend/nodeherder`, starts it from `backend/`, and runs Vite
+from `frontend/` in the same terminal. It uses existing environment files and exported
+variables; `APP_ENV` defaults to `development`. Omit the `MQTT_URL` override if your
+existing configuration already points to the correct broker.
+
+Open [localhost:4100](http://localhost:4100). Ctrl+C stops both services and their
+subprocesses. If either service exits, the other stops too; shutdown is forced after
+five seconds if necessary. Backend edits require restarting the launcher; frontend
+edits hot reload. Vite fails if its configured port is occupied rather than choosing
+another port.
+
+Requires macOS/Linux, Go from `backend/go.mod`, and Node from `.nvmrc`. The launcher
+does not install dependencies or start Docker, MQTT, Zigbee2MQTT, or the mock server.
+Keep ports 4100/4110 free and stop any other backend using the same data files.
+
 ## Frontend
 
 Create `frontend/.env.development.local`:
@@ -232,6 +257,49 @@ It serves nginx on host port 80 and proxies `/api/` and `/ws` to
 container environment alone does not update them. For native static serving,
 `npm run build`, then `npm start`, which requires `.env.production` and uses
 `PORT` (default 9080); it has no nginx API proxy.
+
+## Recent activity search
+
+On **Overview → Recent activity**, type part of a device name to filter the list.
+Matching ignores case and surrounding spaces. The count shows displayed events out of
+matching retained events; up to 60 rows are displayed from the latest 200 recorded events.
+Use the filter's × button or Escape to show all devices again. Filtering keeps recording
+all devices and is not saved. The header **Clear** button clears all recorded activity,
+including events currently hidden by the filter.
+
+## Sensor reporting settings
+
+Open **Settings → Device Defaults** for shared settings, or a device's **Settings**
+tab for changes that affect only that device.
+
+Under **Dashboard & activity updates**, each category offers **Use shared default**
+(on a device), **Every change**, or **Custom interval…**. For example, set Diagnostics
+to a custom **10 seconds** on one device to reduce its default 30-second wait.
+Measurements have no delay by default; choosing **5 seconds** on a device limits only
+that device's numeric measurement updates. Select **Use shared default** to reset a
+category override. The latest qualifying reading is delivered at the deadline even
+if the sensor stops reporting.
+
+Under **Sensor adjustments**, choose a sensor and set **Ignore changes smaller than**
+in its own unit. For target distance, `0.2` m hides changes smaller than 20 cm compared
+with the last displayed value; `0` shows every actual change. Blank uses the inherited
+rule. Adding a row saves nothing until edited. **Advanced update timing** optionally
+limits that sensor's frequency. **Reset … adjustment** removes only its live rules.
+
+Individual sensor rules take priority over category rules: device sensor, shared
+sensor, device category, shared category, then every change. No default minimum-change
+thresholds apply to measurements. Explicit zero always remains a real setting.
+
+**History recording** is collapsed separately. It has its own category timing and
+sensor inclusion controls, and recording must also be enabled for the device. History
+saves the first eligible change in each interval, without a trailing flush. Measurements
+are included by default; diagnostics require a sensor inclusion rule. Resetting a live
+adjustment preserves history settings, and resetting history preserves live settings.
+**Restore device defaults** removes every override for that device after confirmation.
+
+These filters affect dashboard/activity output and history, not raw state or automation
+inputs. Presence events, discrete states and command confirmations remain immediate.
+**Advanced → Command confirmation** contains the separate confirmation timeout.
 
 ## Native systemd examples
 

@@ -17,3 +17,9 @@ type AutomationQuerier interface {
 type AutomationTrigger interface {
 	TriggerManual(ctx context.Context, automationId string, triggerName string) error
 }
+
+// DeviceUpdateSelector is optional for adapters that can cheaply reject unrelated
+// changed fields. Selection must include every trigger and condition dependency.
+type DeviceUpdateSelector interface {
+	ShouldEvaluateDevice(id string, changes map[string]interface{}) bool
+}

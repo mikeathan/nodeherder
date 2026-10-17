@@ -38,3 +38,13 @@ export function recordUpdate(entries: ActivityEntry[], snap: ValueSnapshot, upda
   if (!changes.length) return entries;
   return [{ id: ++seq, deviceId: update.id, at: now, changes }, ...entries].slice(0, limit);
 }
+
+/** Filter retained events before the display cap, so older matching devices remain
+ * discoverable. Names are resolved from current device state; removed devices use ID. */
+export function filterActivityEntries<T extends Pick<ActivityEntry, 'deviceId'>>(
+  entries: readonly T[], query: string, deviceName: (id: string) => string | undefined
+): readonly T[] {
+  const search = query.trim().toLocaleLowerCase();
+  if (!search) return entries;
+  return entries.filter((entry) => (deviceName(entry.deviceId) || entry.deviceId).toLocaleLowerCase().includes(search));
+}

@@ -10,7 +10,7 @@
   const { preferred, toggle } = useDefaultView();
   const eligible = computed(() => isDefaultView(route.name));
   const pinned = computed(() => preferred.value === route.name);
-  const hint = computed(() => pinned.value ? 'Remove default view on this browser' : 'Make default view on this browser');
+  const hint = computed(() => pinned.value ? 'Unpin view as the default on this browser' : 'Pin view as the default on this browser');
 
   function toggleCurrent() {
     if (isDefaultView(route.name)) toggle(route.name);
@@ -28,7 +28,7 @@
     :title="hint"
     @click="toggleCurrent">
     <UiIcon :name="pinned ? 'pin' : 'pinOutline'" />
-    <span>{{ pinned ? 'Default view' : 'Make default' }}</span>
+    <span>{{ pinned ? 'Pinned' : 'Pin view' }}</span>
   </button>
 </template>
 

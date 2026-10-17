@@ -1,20 +1,26 @@
 package controllers
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
 	"node-herder/internal/automations"
+	"node-herder/internal/lanes"
 	"node-herder/internal/services"
 	"node-herder/mocks"
 	"node-herder/models/bridge"
 	"node-herder/models/devices"
 	"node-herder/models/settings"
+	"node-herder/repository"
 	"node-herder/store"
 	utils_test "node-herder/testing"
 	"node-herder/utils"
 	"reflect"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 )
 
 type failureEventHub struct {
@@ -165,5 +171,122 @@ func TestDeviceCallbackFailuresAreReportedWithoutRetry(t *testing.T) {
 		if !strings.Contains(strings.Join(messages, "\n"), stage) {
 			t.Errorf("missing stage %q in %v", stage, messages)
 		}
+	}
+}
+
+type recordingRemovalStore struct {
+	store.AppStore
+	removed atomic.Bool
+}
+
+func (s *recordingRemovalStore) RemoveDeviceById(id string) error {
+	s.removed.Store(true)
+	return s.AppStore.RemoveDeviceById(id)
+}
+
+type recordingRemovalLanes struct {
+	*lanes.Executor
+	entered chan string
+}
+
+func (l *recordingRemovalLanes) Do(ctx context.Context, key string, task func() error) error {
+	l.entered <- key
+	return l.Executor.Do(ctx, key, task)
+}
+
+func TestBridgeRemovalWaitsForDeviceLaneAndLeavesOtherLanesFree(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	executor := &recordingRemovalLanes{Executor: lanes.New(), entered: make(chan string, 1)}
+	release := make(chan struct{})
+	var releaseOnce sync.Once
+	defer func() {
+		releaseOnce.Do(func() { close(release) })
+		cancel()
+		shutdown, done := context.WithTimeout(context.Background(), 5*time.Second)
+		defer done()
+		if err := executor.Shutdown(shutdown); err != nil {
+			t.Error(err)
+		}
+	}()
+	app := &recordingRemovalStore{AppStore: utils_test.CreateStoreFromDeviceRepo(repository.NewMemoryDeviceRepo())}
+	registrar := services.NewHubRegisterService(app, &mocks.MockEventHub{}, 0)
+	seeded := make(chan *devices.Device, 1)
+	events := &devices.DeviceRequestEvents{
+		AvailabilityTimeout: time.Hour,
+		OnNewDevice: func(device *devices.Device) {
+			seeded <- device
+			<-release // The first snapshot has not reached storage yet.
+			if err := app.StoreDevice(device.FriendlyName, device); err != nil {
+				t.Error(err)
+			}
+		},
+		OnDeviceAvailabilityChanged: func(*devices.UpdatePackage) {},
+	}
+	processor := services.NewDeviceProcessorBuilder().WithContext(ctx).WithRegistrar(registrar).WithStore(app).WithEvents(events).WithAutomationQuerier(mocks.NewMockAutomationDeviceQuerier()).Build()
+	var calls []string
+	controller := &HubController{ctx: ctx, registrar: registrar, deviceLanes: executor,
+		responseHandlers: map[string]handler{}, eventHub: &failureEventHub{calls: &calls},
+		getDeviceProcessor: func() *services.DeviceProcessor { return processor }}
+	seedResult := make(chan error, 1)
+	if err := executor.Submit("retire-lane", func() {
+		seedResult <- processor.CreateOrUpdateDevice("retire-lane", "mqtt", map[string]interface{}{"temperature": float64(1)})
+	}); err != nil {
+		t.Fatal(err)
+	}
+	var device *devices.Device
+	select {
+	case device = <-seeded:
+	case <-time.After(5 * time.Second):
+		t.Fatal("seed did not start")
+	}
+	payload, err := json.Marshal(map[string]interface{}{"status": "ok", "data": map[string]interface{}{"id": device.Id}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	handler := controller.responseHandler("bridge/response/device/remove")
+	removed := make(chan error, 1)
+	go func() { removed <- handler.ProcessPayload("bridge/response/device/remove", "mqtt", payload) }()
+	select {
+	case key := <-executor.entered:
+		if key != device.FriendlyName {
+			t.Fatalf("wrong retirement lane %q", key)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("removal bypassed device lane")
+	}
+	if app.removed.Load() {
+		t.Fatal("storage deletion bypassed in-flight Seed")
+	}
+	unrelated := make(chan struct{})
+	if err := executor.Submit("other-device", func() { close(unrelated) }); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case <-unrelated:
+	case <-time.After(5 * time.Second):
+		t.Fatal("removal blocked unrelated lanes")
+	}
+	releaseOnce.Do(func() { close(release) })
+	select {
+	case err := <-seedResult:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("Seed did not finish")
+	}
+	select {
+	case err := <-removed:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("removal did not finish")
+	}
+	if _, err := app.FindDeviceById(device.Id); err == nil {
+		t.Fatal("removed device was reinserted by earlier work")
+	}
+	if !reflect.DeepEqual(calls, []string{"broadcast"}) {
+		t.Fatalf("removal response changed: %v", calls)
 	}
 }
