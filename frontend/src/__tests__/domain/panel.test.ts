@@ -1,4 +1,4 @@
-import { panelRoom, shortName } from '@/domain/panel';
+import { normalizeRoomIndex, panelRoom, shortName } from '@/domain/panel';
 import { DashboardGroup } from '@/types/settings.type';
 import { device, expose } from '../helpers/devices';
 
@@ -42,5 +42,19 @@ describe('shortName', () => {
     expect(shortName('Kitchen light', 'Kitchen')).toBe('Light');
     expect(shortName('Kitchen', 'Kitchen')).toBe('Kitchen');
     expect(shortName('Desk lamp', 'Kitchen')).toBe('Desk lamp');
+  });
+});
+
+
+describe('normalizeRoomIndex', () => {
+  it.each([NaN, Infinity, -Infinity, .5, -1.5, Number.MAX_SAFE_INTEGER + 1])('falls back safely for invalid index %p', (index) => {
+    expect(normalizeRoomIndex(index, 3)).toBe(0);
+  });
+  it('wraps integers in both directions and handles no rooms', () => {
+    expect(normalizeRoomIndex(2, 3)).toBe(2);
+    expect(normalizeRoomIndex(4, 3)).toBe(1);
+    expect(normalizeRoomIndex(-1, 3)).toBe(2);
+    expect(normalizeRoomIndex(0, 0)).toBe(0);
+    expect(normalizeRoomIndex(7, 1)).toBe(0);
   });
 });

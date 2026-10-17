@@ -4,7 +4,7 @@
    * clock, one Home area at a time (swipe-free pager, arrow keys) and a network status page.
    * Uses the same commands, themes and data as the rest of the app.
    */
-  import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+  import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
   import { RouteName } from '@/types/router';
   import { Automations } from '@/types/automation.type';
   import { useDashboardGroups } from '@/composables/useDashboardGroups';
@@ -12,7 +12,7 @@
   import { useAutomationsLoader } from '@/composables/useAutomations';
   import { useThemeSettings } from '@/composables/useThemeSettings';
   import { useNow } from '@/composables/useClock';
-  import { panelRoom } from '@/domain/panel';
+  import { normalizeRoomIndex, panelRoom } from '@/domain/panel';
   import { formatExposeValue } from '@/domain/exposes';
   import { isOnline, isBatteryPowered, hasLowBattery, linkQuality, batteryLevel } from '@/domain/devices';
   import { needsAttention } from '@/domain/network';
@@ -41,10 +41,8 @@
   const roomIndex = ref(Number(safeStorage.getItem(ROOM_KEY)) || 0);
   watch(roomIndex, (i) => safeStorage.setItem(ROOM_KEY, String(i)));
 
-  const current = computed(() => {
-    const n = groups.value.length;
-    return n ? ((roomIndex.value % n) + n) % n : 0;
-  });
+  const roomTabs = ref<HTMLElement | null>(null);
+  const current = computed(() => normalizeRoomIndex(roomIndex.value, groups.value.length));
   const room = computed(() => (groups.value.length ? panelRoom(groups.value[current.value], findDevice) : null));
   const go = (i: number) => (roomIndex.value = i);
 
@@ -78,11 +76,31 @@
   const rulesOn = computed(() => (automations.value as Automations).filter((a) => a.enabled).length);
   const attention = computed(() => needsAttention(devices.value, (d) => isDeviceDisabled(d.id)).slice(0, 8));
 
+  function modifiedKey(e: KeyboardEvent) {
+    return e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey;
+  }
+  function onRoomKey(e: KeyboardEvent) {
+    if (modifiedKey(e)) return;
+    const destinations: Record<string, number> = {
+      ArrowLeft: current.value - 1, ArrowRight: current.value + 1,
+      Home: 0, End: groups.value.length - 1,
+    };
+    if (!Object.prototype.hasOwnProperty.call(destinations, e.key)) return;
+    e.preventDefault();
+    go(destinations[e.key]);
+    void nextTick(() => roomTabs.value?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[current.value]?.focus());
+  }
   function onKey(e: KeyboardEvent) {
-    if (page.value !== 'rooms' || !/^Arrow(Left|Right)$/.test(e.key)) return;
-    if (/INPUT|SELECT|TEXTAREA/.test((document.activeElement as HTMLElement | null)?.tagName ?? '')) return;
+    if (modifiedKey(e) || page.value !== 'rooms' || !/^Arrow(Left|Right)$/.test(e.key)) return;
+    const target = e.target instanceof HTMLElement ? e.target : null;
+    if (target?.isContentEditable || target?.closest('input, select, textarea, button, a, [role="dialog"], [role="slider"], [role="spinbutton"]')) return;
+    e.preventDefault();
     go(current.value + (e.key === 'ArrowLeft' ? -1 : 1));
   }
+  watch([current, page], () => {
+    // Arrow buttons can select a room outside the horizontal pager viewport.
+    void nextTick(() => roomTabs.value?.querySelector<HTMLElement>('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' }));
+  });
   onMounted(() => window.addEventListener('keydown', onKey));
   onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
 </script>
@@ -100,7 +118,7 @@
       <UiButton variant="ghost" :icon="mode === 'dark' ? 'light' : 'dark'" :label="mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'" @click="toggleMode" />
       <UiButton variant="ghost" icon="palette" label="Appearance" @click="$emit('open-appearance')" />
     </header>
-    <StatusBanners />
+    <div class="hp-notices"><StatusBanners /></div>
 
     <main id="nh-content" class="hp-content" tabindex="-1">
       <template v-if="page === 'rooms'">
@@ -110,20 +128,23 @@
         <template v-else>
           <div class="hp-pager">
             <UiButton icon="chevronLeft" label="Previous room" @click="go(current - 1)" />
-            <div class="hp-pager-list" role="tablist" aria-label="Rooms">
+            <div ref="roomTabs" class="hp-pager-list" role="tablist" aria-label="Rooms" @keydown="onRoomKey">
               <button
                 v-for="(g, i) in groups"
                 :key="g.name"
                 type="button"
                 role="tab"
                 :aria-selected="i === current"
+                :tabindex="i === current ? 0 : -1"
+                :id="`panel-room-tab-${i}`"
+                aria-controls="panel-room"
                 @click="go(i)">
                 {{ g.name }}
               </button>
             </div>
             <UiButton icon="chevronRight" label="Next room" @click="go(current + 1)" />
           </div>
-          <section class="hp-room" :class="{ 'no-climate': !climate }" :aria-label="room.name" role="tabpanel">
+          <section class="hp-room" :class="{ 'no-climate': !climate }" id="panel-room" :aria-labelledby="`panel-room-tab-${current}`" role="tabpanel">
             <div v-if="climate" class="hp-climate">
               <PanelDial v-if="climate.online" :value="climate.value" :min="5" :max="35" :label="climate.label" :caption="climate.caption" />
               <div v-else class="hp-dial-off"><UiIcon name="offline" /><b>Offline</b><span>{{ climate.name }}</span></div>
@@ -166,6 +187,12 @@
 
 <style scoped>
   .hp {
+    --hp-dock-target: 2.75rem;
+    --hp-dock-padding: .3rem;
+    --hp-dock-bottom-gap: max(.6rem, env(safe-area-inset-bottom));
+    /* Share dock geometry with notices: no overlap, layout shift or resize observer. */
+    --nh-notice-bottom: calc(var(--hp-dock-target) + var(--hp-dock-padding) * 2 + var(--nh-border-w) * 2 + var(--hp-dock-bottom-gap) + .5rem);
+    --nh-notice-max-height: calc(100dvh - var(--nh-header-h) - var(--nh-notice-bottom) - 1rem);
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto auto minmax(0, 1fr) auto;
@@ -200,6 +227,7 @@
   .hp-clock b {
     font-size: 2.6rem;
     font-weight: 300 !important;
+    white-space: nowrap;
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.02em;
   }
@@ -338,56 +366,68 @@
     margin-left: auto;
     text-align: right;
   }
+  /* Keep the dock in its grid row: compact controls never cover scrollable content. */
   .hp-dock {
     display: flex;
     justify-content: center;
-    gap: 0.4rem;
-    padding: 0.5rem;
-    margin: 0 auto 0.9rem;
+    gap: .25rem;
+    padding: var(--hp-dock-padding);
+    margin: 0 auto var(--hp-dock-bottom-gap);
+    max-width: calc(100% - 1rem);
     background: var(--nh-surface);
     border: var(--nh-border-w) solid var(--nh-border);
-    border-radius: 26px;
+    border-radius: 18px;
   }
   .hp-dock button,
   .hp-dock a {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: 0.2rem;
-    min-width: 5.5rem;
-    min-height: 4rem;
-    padding: 0.4rem 0.8rem;
-    border-radius: 18px;
+    gap: .4rem;
+    min-width: var(--hp-dock-target);
+    min-height: var(--hp-dock-target);
+    padding: .4rem .7rem;
+    border-radius: 12px;
     border: 0;
     background: none;
     color: var(--nh-text-muted);
     font: inherit;
-    font-size: 0.85rem;
+    font-size: .8rem;
+    white-space: nowrap;
     text-decoration: none;
     cursor: pointer;
   }
-  .hp-dock .nh-ic {
-    width: 1.6rem;
-    height: 1.6rem;
+  .hp-dock :deep(.nh-ic) {
+    width: 1.15rem;
+    height: 1.15rem;
   }
   .hp-dock button:hover,
   .hp-dock a:hover {
     background: var(--nh-surface-2);
     color: var(--nh-text);
   }
-  .hp-dock button[aria-pressed='true'],
-  .hp-dock button[aria-pressed='true']:hover {
+  .hp-dock button[aria-pressed='true']:not(.nh-default-view) {
     background: var(--nh-accent);
     color: var(--nh-accent-contrast);
   }
+  /* Pin is a saved preference, distinct from the current Rooms/Status selection. */
+  .hp-dock button.nh-default-view[aria-pressed='true'] {
+    background: var(--nh-surface-2);
+    color: var(--nh-accent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--nh-accent) 40%, transparent);
+  }
   @media (max-width: 760px) {
+    .hp {
+      --hp-dock-padding: .25rem;
+      --hp-dock-bottom-gap: max(.5rem, env(safe-area-inset-bottom));
+    }
     .hp-strip {
       gap: 0.4rem;
       padding: 0.6rem 1rem;
     }
     .hp-clock b {
-      font-size: 2rem;
+      font-size: clamp(1.25rem, 6vw, 2rem);
     }
     .hp-clock span {
       display: none;
@@ -435,17 +475,11 @@
       margin-left: 2.7rem;
       text-align: left;
     }
-    .hp-dock {
-      margin: 0;
-      border-radius: 0;
-      border-width: 1px 0 0;
-      padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
-    }
     .hp-dock button,
     .hp-dock a {
-      flex: 1;
-      min-width: 0;
-      padding: 0.4rem 0.35rem;
+      gap: .3rem;
+      padding: .35rem .5rem;
+      font-size: .75rem;
     }
   }
 </style>

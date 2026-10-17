@@ -50,9 +50,9 @@
     position: fixed;
     z-index: 45;
     right: max(1rem, env(safe-area-inset-right));
-    bottom: max(1rem, env(safe-area-inset-bottom));
+    bottom: var(--nh-notice-bottom, max(1rem, env(safe-area-inset-bottom)));
     width: min(34rem, calc(100vw - 2rem));
-    max-height: calc(100dvh - var(--nh-header-h) - 2rem);
+    max-height: var(--nh-notice-max-height, calc(100dvh - var(--nh-header-h) - 2rem));
     overflow: auto;
     border: var(--nh-border-w) solid var(--nh-border);
     border-radius: var(--nh-radius-m);
