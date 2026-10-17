@@ -45,7 +45,7 @@
       width: 2.5rem;
       padding: 0;
     }
-    .nh-default-view:not(.is-dock) span {
+    .nh-default-view span {
       display: none;
     }
   }

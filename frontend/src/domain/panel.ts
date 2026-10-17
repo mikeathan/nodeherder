@@ -13,6 +13,13 @@ export type PanelRoom = { name: string; climate: GroupEntity | null; humidity: G
 
 const TEMPERATURE = new Set(['temperature', 'local_temperature']);
 
+/** Browser preferences may be corrupt or refer to a different room count. Never
+ * use a fractional/non-finite index to look up a room; preserve integer wraparound. */
+export function normalizeRoomIndex(index: number, count: number): number {
+  if (!Number.isSafeInteger(index) || count <= 0) return 0;
+  return ((index % count) + count) % count;
+}
+
 /** Device name without the room name in front ("Kitchen light" in "Kitchen" → "Light"). */
 export function shortName(deviceName: string, roomName: string): string {
   const name = deviceName.trim();

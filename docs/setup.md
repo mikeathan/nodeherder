@@ -258,6 +258,14 @@ container environment alone does not update them. For native static serving,
 `npm run build`, then `npm start`, which requires `.env.production` and uses
 `PORT` (default 9080); it has no nginx API proxy.
 
+## Panel navigation
+
+The compact panel toolbar switches between **Rooms** and **Status**. On phones, the
+pin icon saves this view as the browser's startup view; **Exit panel** returns to Home.
+Room tabs support Left/Right arrows and Home/End, with keyboard focus following the
+selected room. Room shortcuts pause while interacting with controls or dialogs.
+Connection notices appear above the toolbar without moving the page content.
+
 ## Recent activity search
 
 On **Overview → Recent activity**, type part of a device name to filter the list.
