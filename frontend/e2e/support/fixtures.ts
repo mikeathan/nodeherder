@@ -1,6 +1,6 @@
 import { test as base, expect, Page } from '@playwright/test';
 
-export const HUB_API = 'http://localhost:4110/api';
+export const HUB_API = process.env.E2E_HUB_API ?? 'http://localhost:4110/api';
 
 export type Frame = { type: string; payload: any };
 

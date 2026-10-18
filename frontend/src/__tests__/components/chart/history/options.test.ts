@@ -21,3 +21,18 @@ test('instantaneous power has straight segments and consumption axes begin at ze
   expect(historyOptions(style, 0, 100, 'W', false, false, true).datasets?.line?.tension).toBe(0);
   expect(historyOptions(style, 0, 100, 'kWh', false, true).scales?.y).toMatchObject({ beginAtZero: true });
 });
+test('theme surface/text tokens drive tooltip colours when supplied', () => {
+  const themed = historyOptions(
+    { ...style, dark: false, surface: 'rgb(20, 20, 20)', text: 'rgb(240, 240, 240)', border: 'rgb(80, 80, 80)' },
+    0,
+    100,
+    '%',
+    false,
+    false
+  );
+  expect(themed.plugins?.tooltip).toMatchObject({
+    backgroundColor: 'rgb(20, 20, 20)',
+    bodyColor: 'rgb(240, 240, 240)',
+    borderColor: 'rgb(80, 80, 80)',
+  });
+});

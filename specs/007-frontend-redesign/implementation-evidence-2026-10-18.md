@@ -5,6 +5,52 @@ Scope: FR-20–24 / AC-44–50 on `feat/entity-history-redesign`, baseline
 instruction supersedes the earlier investigation-only checkpoint. Constitutions
 remain proposed; no ratification, maintainer review or exception is invented.
 
+## Mobile repair review — 2026-10-18
+
+Owner screenshots exposed gaps in the prior corrective pass. AC-51–54 in the
+[spec](spec.md#mobile-entity-repair--2026-10-18) supersede history-dependent sheets.
+
+| Finding | Cause and final correction |
+| --- | --- |
+| Views open small, expand later, or remain half-height | `fullscreenMobile` and desktop width depended on loaded samples/availability. Every entity now requests the same full-screen shell from first render through loading, empty, error and offline states. The 899px breakpoint matches the entity layout, including 768px tablets and 844px landscape. Desktop width depends only on the control type. |
+| Brightness/temperature dragging feels stepped and disconnected | Painted grip and native-thumb travel used separate geometry; device steps drove visual motion and pending state faded the rail. Pointer capture now uses the visible rail geometry, tracks a continuous local percentage, and snaps only the draft/command to native steps. The fill scales instead of repainting a moving hard-stop gradient. Confirmation preserves the rail and opacity; mode/status rows reserve their space. |
+| Controls extend below a short phone screen | Slider height ignored the space needed by readout/mode controls. Its height now accounts for viewport space; the 320×568 control row stays visible. Very short landscape retains internal scrolling and a reachable close button. |
+| Activity/alert views lack the accepted visual hierarchy | `EntityReadout` restores state/event/alert badges and keeps environmental views typography-first. Writable mobile views use compact history and omit unrelated readings. |
+| Energy has no requested meter visual | `EntityMeter` frames the exact cumulative reading with a compact semicircular SVG arc. The arc is decorative: there is no invented maximum, percentage or safety threshold. Consumption history and missing/zero coverage stay separate. |
+| Tests passed despite incorrect layouts | Settled screenshots missed initial geometry; an empty-history test explicitly endorsed compact sheets. Tests now hold the response until first-frame geometry is checked for nine read-only families, then verify unchanged bounds after empty results. |
+
+Final checks (Node 24.21.0; isolated mock hub and Chromium only):
+
+- Jest coverage: 42 suites / 278 tests pass.
+- Clean-server full Playwright run: 135 pass; nine intentional desktop skips for
+  mobile-only scenarios. Includes both 50-cycle lifecycle checks, confirmation,
+  refusal/timeout/cancellation, keyboard, mouse/touch and viewport checks.
+- Additional final Playwright run: six pass, including drag-frame alignment with
+  reduced motion disabled and meter unknown versus measured zero. More than 12
+  distinct rendered drag positions are checked; grip/fill geometry error stays below 2px.
+- Frontend lint: zero errors, seven existing script warnings. Type check/build pass.
+  Existing duplicate `DeviceCard` auto-import warning remains.
+- Mock history contract: one test passes. Changed-function quality: 61 source reports,
+  317 touched functions, maximum complexity 8 / CRAP 30, no failures.
+- First full run on the reused hot-reloaded Vite process had four sign-in interceptor
+  failures: timestamped module URLs bypassed its exact lazy-route match. Fresh isolated
+  servers resolved these; the clean full run passes. No application auth code changed.
+- Inspected generated mock screenshots for brightness, temperature/humidity, presence,
+  energy, battery, smoke and alarm. Final viewport checks include 320×568, 390×844,
+  768×1024, 844×390 and 1280×800. The earlier 1920px inspection is historical.
+- Removed 12 disposable PNGs, their preview index, and superseded initial investigation/
+  readiness reports at the owner's request. Kept contracts, acceptance and final evidence;
+  relative file-link and diff-whitespace checks pass. Screenshots/logs stay outside git.
+
+Review: state/services/transport ownership is unchanged; pointer presentation is a
+local draft, not confirmed device state. Native steps, one command per completed
+gesture, cancellation and confirmation remain shared. New display components own no
+requests, timers or global listeners; pointer capture ends on release/cancel/removal.
+No dependency, backend, schema, retention or device ingestion change. NH-01–06 and
+FE-01–05 checked for this scope; no exceptions or ratification claimed. Go checks were
+not rerun for this frontend/document-only repair. Physical iOS/Android and assistive
+technology sessions remain unrun; browser motion checks do not establish physical feel.
+
 ## Final ownership and review
 
 - `domain/controls.ts` owns native numeric bounds, steps and display conversion;
@@ -39,7 +85,7 @@ change and measured reason are recorded in ADR-004.
 
 | Acceptance | Evidence |
 | --- | --- |
-| AC-44 layout/design | EntityViewDialog/DeviceMetrics browser specs; full-screen 390px, no overflow at 320/360/768/1280/1920 and short 500px landscape; mock [screenshots](../../docs/design-previews/README.md) visually inspected |
+| AC-44 layout/design | EntityViewDialog/DeviceMetrics browser specs; full-screen 390px, no overflow at 320/360/768/1280/1920 and short 500px landscape; mock screenshots visually inspected during implementation (disposable image artifacts subsequently removed at the owner’s request) |
 | AC-45 controls | Native 184/254 brightness displays 72%; Kelvin display/mired command; mouse/touch one-send gesture and cancellation; keyboard, confirmation, timeout/refusal/disconnect, missing-reading/zero tests |
 | AC-46 shared history | Shared renderer/domain/service tests; full-history numeric/contact/repeated event switching, custom invalid/valid dates, explicit error/refresh, generation/session invalidation |
 | AC-47 producer | API raw repeated enum/truncation/400/500 tests, domain decode tests, service empty/failure tests, repository range/reopen/scan/cancellation regressions; existing API/WS suites remain passing |
@@ -103,6 +149,72 @@ crap -format json -coverage /private/tmp/nodeherder-history-go.cover \
 22 changed functions; maximum C=9 / CRAP=9, zero violations. Coverage is mapped
 from the affected race suite; whole-package percentages are not substitutes for
 function scores. Reports/coverage are reproducible generated artifacts kept out of git.
+
+## Entity view corrective pass — 2026-10-18
+
+Historical checkpoint: the owner subsequently rejected response-dependent mobile
+sheets. The mobile repair below supersedes that sizing decision and its evidence.
+
+Owner review of `7ccdcfcb` found the implemented views did not match the accepted
+direction. Reproduction and corrections are recorded in the
+[plan](plan.md#entity-view-corrective-pass--2026-10-18), [spec](spec.md#corrective-pass--2026-10-18)
+and [tasks](tasks.md#entity-view-corrective-pass-2026-10-18). No HTTP/WS contract,
+backend, ingestion, storage or dependency changed.
+
+Observed and fixed: a missing/offline adjustable reading rendered a large `—` plus a
+minimum-position, pale rail (the reported "handle above the slider"); the grip was
+offset from the fill boundary; the dialog autofocused the range and painted a focus
+ring; power/alarm controls lacked visible labels/state; colour temperature omitted
+warmth and warm/cool endpoint text; adjustable desktop views used the compact chart;
+counter history with no complete interval drew empty axes with `—`; the mock history
+fallback collapsed expose-specific `ON`/`OFF` words to booleans; raw boolean HTTP
+history rendered as `Unknown` beside a confirmed `On`; the `--nh-kind-switch` colour
+was undefined; read-only views without samples used an oversized blank column;
+device-card row sliders expanded to a full-height 3rem rail across the row; alert views
+did not surface their silence action; missing current readings showed only `Unknown`
+despite recorded samples; "Other readings" listed empty values; and busy presence
+timelines rendered hundreds of thin buttons; Energy spent most of a narrow view on an
+empty 235px chart; and an offline adjustable entity still filled the phone with a
+full-height disabled slider and blank space.
+
+Corrective evidence:
+
+| Acceptance | Evidence |
+| --- | --- |
+| AC-44 layout/design | 320×568, 390×844, 768×1024, 1280×800 and 1920×1080 dialogs: no horizontal overflow; primary controls visible within the body at 320/390/768/1280/1920; desktop (≥900) uses two columns and the full history variant, mobile keeps compact history. Device cards at 1500/390/320 have no horizontal overflow and compact 28px rails; the 320px header hides its duplicate page title instead of truncating to `De…`. Short landscape (667×375, 844×390) uses the existing scrollable sheet with the header/close fixed; controls are reachable by scrolling, not permanently clipped. |
+| AC-45 controls | `UiRange`/`EntityAdjustment` tests and browser spec: unknown shows `Unknown` with a muted rail and no grip; grip centre is within 2px of the 72.44% fill boundary; one-send gesture/cancel unchanged; dialog surface, not the range, receives initial focus; energy/read-only writable controls show `Power` + On/Off/Unknown and `Alarm` labels. Device-row sliders are 1.75rem high (112–120px wide in the card test) with a 44px hit area, kind colour and mired/Kelvin direction matching the entity view. An unavailable adjustable entity shows `Unknown`/range in a content-height 597px sheet with no dead rail. |
+| AC-46 shared history | Desktop brightness shows `Range`/`Sample average`; mobile uses compact history. Counter history with one sample shows `No complete counter interval in this period.`, `Not enough data`, `0 / 12` and no canvas. Raw boolean state history renders `On`/`Off`, 120 min duration, 1 transition and 100% coverage instead of `Unknown`; read-only entities without samples use the ordinary dialog width and the explicit empty-history block. Missing current readings show `Latest recorded <value> · <time>`; other readings list known values only; >96 state segments use the labelled density view. Tooltip colours come from `--nh-surface`/`--nh-text`/`--nh-border-strong`. |
+| AC-48 energy | Observed consumption remains separate from the meter total; unavailable consumption is labelled instead of a bare dash; empty/zero-only interval axes are not rendered. At 597px the meter total, Power/Child lock and consumption summary stay primary with a 105px chart. Mock fallback preserves expose on/off words. |
+
+Checks, Darwin arm64, Node v26.0.0 (workspace `.nvmrc` is 24; actual runner reported),
+TypeScript 5.9.2, Playwright 1.56.1/Chromium:
+
+- `npm test -- --runInBand`: 42 suites / 278 tests pass.
+- `npm run lint`: 0 errors, 7 pre-existing warnings in `scripts/get-version.cjs` and
+  `scripts/start.mjs`.
+- `npm run build`: type check and production build pass.
+- `node --test tools/server/history.test.mjs`: pass, including expose-specific binary
+  on/off words.
+- Fresh isolated mock hub 4110 and frontend 4100 (`npm run test:e2e`): 118 passed on
+  the final code. A focused `EntityViewDialog.spec.ts` run also passed 24/24. Isolated
+  4103/4113 runs use the new
+  `E2E_EXTERNAL_SERVERS`/`E2E_BASE_URL`/`E2E_HUB_API` options. No household device was
+  contacted; the manual state/empty-state/card/smoke/energy/offline screenshots used
+  isolated mocks.
+- Quality runner after fresh coverage: 58 reports, 312 touched functions, max C=8,
+  max CRAP=30, zero failures.
+- Screenshots inspected in dark and light themes at 320/390/1120/1500 widths for
+  unknown/offline brightness, known brightness with full/compact history, colour
+  temperature, energy, alarm, contact, temperature, battery, smoke, silence, state,
+  empty illuminance/presence, dense presence, compact energy at 597px, the offline
+  brightness content sheet, and the device-card sliders. The earlier
+  empty illuminance/energy screenshots were caused by a stale mock process, not
+  production code.
+
+Limits: Chromium desktop/mobile emulation only; physical iOS/Android and assistive
+technology sessions were not run. Short landscape requires scrolling to the control
+row; it does not overflow horizontally. No backend or Go checks were run because this
+correction changed no Go code.
 
 ## Performance and lifecycle
 

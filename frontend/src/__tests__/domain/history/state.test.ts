@@ -24,6 +24,26 @@ test('contacts respect inverted values, unknown coverage and genuine transitions
   expect(binaryState(contact, 'garbage')).toBeNull();
   expect(stateStats(stateSegments({ ...series, data: [] }, contact)).percent).toBeNull();
 });
+test('boolean history normalises to live ON/OFF words', () => {
+  const lightState = expose('state', { type: 'binary', values: { on: 'ON', off: 'OFF' } });
+  const segments = stateSegments(
+    {
+      ...series,
+      name: 'state',
+      from: 0,
+      to: 100,
+      data: [
+        { timestamp: 0, value: true },
+        { timestamp: 50, value: false },
+      ],
+    },
+    lightState
+  );
+  expect(segments[0]).toMatchObject({ active: true, label: 'On' });
+  expect(segments[1]).toMatchObject({ active: false, label: 'Off' });
+  expect(stateStats(segments)).toMatchObject({ transitions: 1, duration: 100 });
+});
+
 test('same-time reports have no invented duration and unknown breaks transition inference', () => {
   const s = stateSegments(
     {

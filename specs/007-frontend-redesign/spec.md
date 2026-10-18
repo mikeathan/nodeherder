@@ -1,5 +1,24 @@
 # Spec: Frontend redesign and customisable design system
 
+## Mobile entity repair — 2026-10-18
+
+Reproduction: with delayed history, read-only dialogs open as sheets then expand;
+empty presence/illuminance stay sheets. Slider native-thumb travel differs from the
+painted handle; pending state dims it. Energy has no requested meter visual.
+
+- AC-51: Every entity opens full-screen on mobile from the first rendered frame,
+  independent of history/loading/error/offline state. Content scrolls inside a stable
+  viewport; desktop sizing depends on entity type, never an asynchronous response.
+- AC-52: Brightness/temperature dragging follows the finger continuously, with a
+  stable handle/fill and no layout jump on pending/confirmation. Native steps and
+  keyboard accessibility remain; release sends once and cancellation sends nothing.
+- AC-53: Energy shows a compact semicircular meter reading visual alongside separate
+  interval consumption history. No invented maximum, percentage, or safety bands:
+  absent real metadata bounds, the arc is decorative and the exact reading is labelled.
+- AC-54: Environmental, state/event, alert, diagnostic and writable families share
+  the same stable mobile shell, concise recent history and capability-driven controls.
+  Missing history and zero consumption remain distinct. No device commands in audits.
+
 ## Implementation amendment — 2026-10-17
 
 Owner instruction: implement the accepted entity/chart designs, clean touched CRAP
@@ -45,23 +64,36 @@ existing query consumers keep compatible success shapes. Tests use mock hub/temp
 
 ## Accepted entity/chart direction — 2026-10-17
 
-The owner accepted these visual references for the deferred follow-up:
-[brightness/colour temperature v3](../../docs/design-previews/entity-views-mobile-concept-v3.png)
-(not its temperature panel), [environmental v5](../../docs/design-previews/entity-views-environmental-concept-v5.png),
-[activity/electricity v4](../../docs/design-previews/entity-views-activity-energy-concept-v4.png)
-and [diagnostics/settings v4](../../docs/design-previews/entity-views-diagnostics-settings-concept-v4.png).
+The accepted direction covers brightness/colour temperature controls, environmental
+history, activity/electricity, and diagnostics/settings. Initial concept images
+were removed after implementation at the owner’s request; git history retains them.
 Mobile entity views fill the screen; adjustable entities prioritise large controls
 and minimal recent history. Read-only entities can show larger charts and condensed
 useful summaries. All charts, including full device history, share truthful semantics
 and the accepted visual language. Desktop adapts the same behavior to available space.
-Images contain illustrative data/capabilities, not guaranteed producer contracts.
 
-Current authorisation is investigation/report only. The
-[readiness report](redesign-readiness-2026-10-17.md) identifies exact changes and the
-event/energy/resource contract amendments needed before dependent implementation.
-Historical proposed sheet layouts and exclusions on inferred consumption require
-scoped reconciliation; this note does not silently declare those contracts resolved
-or reopen unrelated deferred work. Existing acceptance IDs and completed history remain.
+Implementation was subsequently authorised and completed. The
+[implementation evidence](implementation-evidence-2026-10-18.md) records final
+ownership, contract decisions, and verification. Existing acceptance IDs and
+completed history remain.
+
+### Corrective pass — 2026-10-18
+
+Owner review of the completed views found implementation defects, not new
+requirements. Reproduction against the isolated mock: an offline/missing adjustable
+reading shows a large `—` and a minimum-position rail that reads as a handle above
+the slider; the grip is offset from the fill boundary; the slider receives a focus
+outline on open; power/alarm controls lack visible state or labels; colour temperature
+lacks its warm/cool information; desktop keeps the compact chart; counter history
+with no complete interval draws empty axes without explanation; raw boolean history
+renders as `Unknown` beside a confirmed `ON` state; and read-only views with no samples
+leave an oversized blank column. Expected behavior is unchanged: FR-20/21/22/24 require
+explicit unknown states, truthful history/energy coverage, labelled accessible controls
+and the accepted responsive composition, including consistent binary state words across
+live and recorded values and compact device-row sliders with the same direction as the
+full entity control. The
+[plan](plan.md#entity-view-corrective-pass--2026-10-18) and [tasks](tasks.md#entity-view-corrective-pass-2026-10-18)
+record the corrections and verification; no contract or device-semantics change.
 
 ID: 007-frontend-redesign | Status: Main redesign merged; follow-up design proposed | Author: Claude Code / Codex | Updated: 2026-10-11
 Constitutions: parent/frontend/backend 1.0.0, proposed, not ratified. Components: frontend;

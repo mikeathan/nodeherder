@@ -10,6 +10,7 @@
     binaryOffValue,
     binaryOnValue,
     controlOf,
+    exposeKind,
     exposeLabel,
     exposePresets,
     exposeRange,
@@ -17,7 +18,7 @@
     isBinaryOn,
   } from '@/domain/exposes';
   import { useExposeEdit } from '@/composables/useExposeEdit';
-  import { numericStep } from '@/domain/controls';
+  import { numericStep, sliderValue } from '@/domain/controls';
   import UiRange from '@/components/ui/UiRange.vue';
   import UiToggle from '@/components/ui/UiToggle.vue';
   import UiSelect from '@/components/ui/UiSelect.vue';
@@ -44,6 +45,16 @@
     () => props.expose
   );
   const step = computed(() => numericStep(props.expose));
+  const unknown = computed(
+    () => displayValue.value === null || displayValue.value === undefined || displayValue.value === ''
+  );
+  const position = computed(() => sliderValue(props.expose, numberValue.value));
+  function previewSlider(value: number) {
+    preview(sliderValue(props.expose, value));
+  }
+  function commitSlider(value: number) {
+    sendNumber(sliderValue(props.expose, value));
+  }
   function commitNumber(event: Event) {
     const input = event.target as HTMLInputElement;
     if (!input.value.trim()) {
@@ -55,7 +66,10 @@
 </script>
 
 <template>
-  <div class="nh-xc" :class="`is-${control}`">
+  <div
+    class="nh-xc"
+    :class="`is-${control}`"
+    :style="{ '--range-color': `var(--nh-kind-${exposeKind(expose.name)})` }">
     <UiToggle
       v-if="control === 'switch'"
       :model-value="isBinaryOn(expose)"
@@ -70,13 +84,16 @@
         :min="range.min"
         :max="range.max"
         :step="step"
-        :value="numberValue"
+        :value="position"
         :label="name"
         :value-text="formatExposeValue(expose, displayValue)"
         :disabled="disabled"
+        :unknown="unknown"
+        :temperature="expose.name === 'color_temp'"
         @start="dragging = true"
-        @preview="preview"
-        @commit="sendNumber"
+        @end="dragging = false"
+        @preview="previewSlider"
+        @commit="commitSlider"
         @cancel="cancel" />
       <output class="nh-xc-out">{{ formatExposeValue(expose, displayValue) }}</output>
       <UiSelect
@@ -124,12 +141,26 @@
     min-width: 0;
   }
   .nh-xc.is-slider {
-    flex: 1 1 14rem;
+    flex: 0 1 auto;
     flex-wrap: nowrap;
   }
   .nh-xc-range {
-    flex: 1 1 8rem;
-    min-width: 5rem;
+    flex: 1 1 9rem;
+    min-width: 7rem;
+    max-width: 7.5rem;
+  }
+  .nh-xc.is-slider .nh-xc-range {
+    height: 1.75rem;
+    border-radius: var(--nh-radius-s);
+  }
+  .nh-xc.is-slider .nh-xc-range :deep(.nh-range-grip) {
+    height: 55%;
+  }
+  /* Keep the visual rail compact while preserving a 44px touch target. */
+  .nh-xc.is-slider .nh-xc-range :deep(input) {
+    top: -0.5rem;
+    bottom: -0.5rem;
+    height: auto;
   }
   .nh-xc-out {
     min-width: 3.5rem;

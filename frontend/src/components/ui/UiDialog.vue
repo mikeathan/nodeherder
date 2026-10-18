@@ -1,7 +1,7 @@
 <script setup lang="ts">
   /*
    * Modal dialog: labelled, Escape and backdrop close it, focus moves inside on open, Tab is
-   * kept inside, and focus returns to the opener on close. A bottom sheet on phones.
+   * kept inside, and focus returns to the opener on close. A bottom sheet on phones unless the caller requests a full-screen view.
    */
   import { nextTick, onBeforeUnmount, ref, useId, watch } from 'vue';
   import UiButton from './UiButton.vue';
@@ -71,8 +71,10 @@
         document.addEventListener('keydown', onDocumentKeydown, true);
         opener = document.activeElement as HTMLElement | null;
         await nextTick();
-        const body = panel.value?.querySelector<HTMLElement>('[autofocus], .nh-dialog-body ' + FOCUSABLE);
-        (body ?? focusables()[0] ?? panel.value)?.focus();
+        // Focus the dialog surface by default. Focusing a body input would paint its
+        // keyboard ring before the user interacts; an explicit [autofocus] still wins.
+        const target = panel.value?.querySelector<HTMLElement>('[autofocus]') ?? panel.value;
+        target?.focus();
       } else {
         unlockScroll();
         opener?.focus?.();
@@ -168,19 +170,6 @@
     border-top: var(--nh-border-w) solid var(--nh-border);
   }
   @media (max-width: 640px) {
-    .nh-dialog.is-wide.is-fullscreen-mobile,
-    .nh-dialog.is-fullscreen-mobile:not(.is-wide) {
-      top: 0;
-      height: 100dvh;
-      max-height: 100dvh;
-      border: 0;
-      border-radius: 0;
-      padding-top: env(safe-area-inset-top);
-    }
-    .is-fullscreen-mobile .nh-dialog-body {
-      flex: 1;
-      padding: 1rem 1.5rem;
-    }
     .nh-dialog,
     .nh-dialog.is-wide {
       left: 0;
@@ -195,6 +184,25 @@
     }
     .nh-dialog-foot > :deep(*) {
       flex: 1 1 auto;
+    }
+  }
+  /* Match the entity layout breakpoint, including phone landscape and tablets. */
+  @media (max-width: 899px) {
+    .nh-dialog.is-wide.is-fullscreen-mobile,
+    .nh-dialog.is-fullscreen-mobile:not(.is-wide) {
+      inset: 0;
+      transform: none;
+      width: 100%;
+      height: 100dvh;
+      max-height: 100dvh;
+      border: 0;
+      border-radius: 0;
+      padding-top: env(safe-area-inset-top);
+    }
+    .is-fullscreen-mobile .nh-dialog-body {
+      flex: 1;
+      min-height: 0;
+      padding: 1rem 1.5rem;
     }
   }
 </style>

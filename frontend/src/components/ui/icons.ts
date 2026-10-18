@@ -13,7 +13,7 @@ import {
   mdiGoogle, mdiHelpCircleOutline, mdiHomeOutline, mdiImport, mdiInformationOutline, mdiLanDisconnect, mdiLeaf,
   mdiLightbulbOnOutline, mdiLightbulbOutline, mdiLightningBolt, mdiLockOutline, mdiLogout, mdiMagnify, mdiMenu, mdiMinus,
   mdiMotionSensor, mdiPaletteOutline, mdiPencilOutline, mdiPlay, mdiPlus, mdiPowerPlugOutline, mdiRadar, mdiRefresh,
-  mdiPin, mdiPinOutline, mdiRemote, mdiRobotOutline, mdiShieldCheckOutline, mdiSignal, mdiSmokeDetectorVariant, mdiSync, mdiTabletDashboard,
+  mdiPin, mdiPinOutline, mdiPower, mdiRemote, mdiRobotOutline, mdiShieldCheckOutline, mdiSignal, mdiSmokeDetectorVariant, mdiSync, mdiTabletDashboard,
   mdiThermometer, mdiTimerOutline, mdiTrashCanOutline, mdiTune, mdiViewDashboardOutline, mdiVolumeHigh, mdiWater,
   mdiWaterPercent, mdiWeatherNight, mdiWhiteBalanceSunny, mdiWifi, mdiZigbee,
 } from '@mdi/js';
@@ -84,6 +84,7 @@ export const ICONS = {
   batteryLow: mdiBatteryAlertVariantOutline,
   signal: mdiSignal,
   gauge: mdiGauge,
+  power: mdiPower,
 } as const;
 
 export type IconName = keyof typeof ICONS;

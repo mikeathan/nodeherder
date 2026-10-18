@@ -3,6 +3,19 @@ import type { Expose } from '@/types/device';
 import { findDevice, statusOf } from './useHub';
 import { controlOf, isWritable } from '@/domain/exposes';
 
+/** Related controls shown beside the selected expose; capability comes from expose metadata. */
+const RELATED: Record<string, string[]> = {
+  brightness: ['brightness', 'color_temp', 'state'],
+  color_temp: ['brightness', 'color_temp', 'state'],
+  energy: ['state', 'child_lock'],
+  power: ['state', 'child_lock'],
+  smoke: ['silence', 'test'],
+  water_leak: ['silence', 'test'],
+  tamper: ['silence', 'test'],
+  device_fault: ['silence', 'test'],
+  alarm: ['silence', 'test'],
+};
+
 /** Selects presentation only. Device truth and commands have separate shared owners. */
 export function useEntityDialog(deviceId: string, exposeName: string) {
   const selected = ref(exposeName);
@@ -16,10 +29,7 @@ export function useEntityDialog(deviceId: string, exposeName: string) {
   function relevantControl(e: Expose): boolean {
     if (!isWritable(e)) return false;
     if (e.name === exposeName) return true;
-    if (['brightness', 'color_temp'].includes(exposeName))
-      return ['brightness', 'color_temp', 'state'].includes(e.name);
-    if (['energy', 'power'].includes(exposeName)) return ['state', 'child_lock'].includes(e.name);
-    return false;
+    return RELATED[exposeName]?.includes(e.name) ?? false;
   }
   return { device, expose, adjustment, adjustable, selected, controls, related, status };
 }

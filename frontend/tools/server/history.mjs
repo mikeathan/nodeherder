@@ -10,13 +10,32 @@ function samples(device, expose, from, to) {
   }));
 }
 function sampleValue(value, expose) {
-  if (expose.type !== 'binary') return value;
-  if (typeof value === 'boolean') return value;
+  if (expose.type !== 'binary' || typeof value === 'boolean') return value;
+  const [on, off] = binaryWords(expose);
+  return isOnWord(value) ? on : off;
+}
+function binaryWords(expose) {
+  // Keep expose-specific on/off words: stateSegments compares against values.on/off,
+  // so collapsing "ON"/"OFF" to booleans would make every report unknown.
+  if (expose.values?.on === undefined) return [true, false];
+  return [expose.values.on, expose.values.off ?? false];
+}
+function isOnWord(value) {
   return ['true', 'ON', 'on', '1'].includes(String(value));
 }
 function fallbackValue(expose, index) {
-  if (expose.type === 'numeric') return Number(expose.data ?? 0) + Math.round(Math.sin(index / 5) * 10) / 10;
-  if (expose.type === 'binary') return index % 5 === 0;
+  if (expose.type === 'numeric') return numericFallback(expose, index);
+  if (expose.type === 'binary') return binaryFallback(expose, index);
+  return eventFallback(index);
+}
+function numericFallback(expose, index) {
+  return Number(expose.data ?? 0) + Math.round(Math.sin(index / 5) * 10) / 10;
+}
+function binaryFallback(expose, index) {
+  const on = expose.values?.on ?? true;
+  return index % 5 === 0 ? on : (expose.values?.off ?? false);
+}
+function eventFallback(index) {
   return index % 4 === 0 ? 'double_press' : 'single_press';
 }
 export function historyResponse(body, devices) {

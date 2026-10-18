@@ -8,12 +8,16 @@
   import { exposeKind, formatExposeValue } from '@/domain/exposes';
   import NumericHistory from './NumericHistory.vue';
   import StateHistory from './StateHistory.vue';
+  import UiIcon from '@/components/ui/UiIcon.vue';
   const props = defineProps<{ series: HistorySeries; expose: Expose; compact?: boolean }>();
   const isEnergy = computed(() => isEnergyCounter(props.series));
-  const consumption = computed(() =>
-    energySummary(energyBuckets(props.series.data, props.series.from, props.series.to))
+  const buckets = computed(() =>
+    isEnergy.value ? energyBuckets(props.series.data, props.series.from, props.series.to) : []
   );
-  const stats = computed(() => numericStats(props.series.data));
+  const consumption = computed(() => energySummary(buckets.value));
+  const stats = computed(() =>
+    props.series.type === 'numeric' && !isEnergy.value ? numericStats(props.series.data) : null
+  );
   const recent = computed(() => props.series.data.slice(-6).reverse());
   const samplePage = ref(0);
   const pageCount = computed(() => Math.ceil(props.series.data.length / 100));
@@ -40,7 +44,11 @@
     <p v-if="series.partial" class="history-notice" role="status">
       Partial history · narrow the period for complete results.
     </p>
-    <p v-if="!series.data.length" class="history-notice">No recorded history for this period.</p>
+    <div v-if="!series.data.length" class="history-empty">
+      <UiIcon name="chart" />
+      <p>No recorded history for this period.</p>
+      <small>Charts appear when this device reports and metrics are recorded.</small>
+    </div>
     <template v-else>
       <NumericHistory v-if="series.type === 'numeric'" :series="series" :expose="expose" :compact="compact" />
       <StateHistory v-else-if="series.type === 'binary'" :series="series" :expose="expose" :compact="compact" />
@@ -59,10 +67,10 @@
           <dd>{{ format(stats.avg) }}</dd>
         </div>
       </dl>
-      <dl v-if="isEnergy && !compact" class="history-summary">
+      <dl v-if="isEnergy" class="history-summary">
         <div>
           <dt>Observed consumption</dt>
-          <dd>{{ format(consumption.observed) }}</dd>
+          <dd>{{ consumption.observed === null ? 'Not enough data' : format(consumption.observed) }}</dd>
         </div>
         <div>
           <dt>Complete intervals</dt>
@@ -107,6 +115,7 @@
   </section>
 </template>
 <style>
+  /* Shared with StateHistory: both render the same summary rows. */
   .history-summary {
     margin: 1rem 0 0;
   }
@@ -135,6 +144,27 @@
   .history-notice {
     color: var(--nh-text-muted);
     font-size: 0.85rem;
+  }
+  .history-empty {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.5rem 0;
+    color: var(--nh-text-muted);
+  }
+  .history-empty :deep(.nh-ic) {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+  .history-empty p,
+  .history-empty small {
+    margin: 0;
+  }
+  .history-empty p {
+    font-size: 0.85rem;
+  }
+  .history-empty small {
+    font-size: 0.75rem;
   }
   .history-recent {
     margin-top: 1.5rem;

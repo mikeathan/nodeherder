@@ -40,6 +40,12 @@ export function sliderValue(expose: Expose, value: number): number {
   return value;
 }
 
+/** Visual position of a native value, clamped so unknown/out-of-range data cannot escape. */
+export function rangePercent(value: number, min: number, max: number): number {
+  if (!Number.isFinite(value) || !Number.isFinite(min) || !Number.isFinite(max) || max <= min) return 0;
+  return Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100));
+}
+
 /** Display conversion keeps full sample precision; formatting is a separate concern. */
 export function displayNumber(expose: Expose, value: number): number {
   if (expose.name === 'brightness') return (value / (exposeRange(expose)?.max || 254)) * 100;

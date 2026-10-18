@@ -144,7 +144,24 @@ export function binaryOffValue(e: Expose): unknown {
   return e.values && 'off' in e.values ? e.values['off'] : false;
 }
 export function isBinaryOn(e: Expose, value: unknown = e.data): boolean {
-  return value === binaryOnValue(e);
+  return binaryStateOf(e, value) === true;
+}
+
+/** Confirmed binary state; `null` means the latest value is missing or outside values.on/off. */
+export function binaryStateOf(e: Expose, value: unknown = e.data): boolean | null {
+  if (value === binaryOnValue(e)) return true;
+  if (value === binaryOffValue(e)) return false;
+  // Raw history is typed as boolean while live z2m words are often "ON"/"OFF".
+  if (typeof value === 'boolean' && typeof binaryOnValue(e) !== 'boolean') return value;
+  return null;
+}
+
+/** Human warmth description for a Kelvin reading; no invented device capabilities. */
+export function colourTemperatureName(kelvin: number): string {
+  if (!Number.isFinite(kelvin) || kelvin <= 0) return 'Unknown';
+  if (kelvin < 3000) return 'Warm white';
+  if (kelvin < 4500) return 'Neutral white';
+  return 'Cool white';
 }
 
 /** Named preset values (e.g. colour temperature "warm" → 454), excluding sentinel values. */
@@ -201,13 +218,15 @@ export function formatExposeValue(e: Expose, value: unknown = e.data): string {
 }
 function binaryText(e: Expose, value: unknown): string {
   const [on, off] = BINARY_WORDS[e.name] ?? ['On', 'Off'];
-  if (value === binaryOnValue(e)) return on;
-  return value === binaryOffValue(e) ? off : 'Unknown';
+  const state = binaryStateOf(e, value);
+  if (state === true) return on;
+  if (state === false) return off;
+  return 'Unknown';
 }
 function numericText(e: Expose, value: number): string {
   if (!Number.isFinite(value)) return '—';
   if (e.name === 'brightness') return `${Math.round(displayNumber(e, value))} %`;
-  if (e.name === 'color_temp' && value > 0) return `${Math.round(displayNumber(e, value))} K`;
+  if (e.name === 'color_temp') return value > 0 ? `${Math.round(displayNumber(e, value))} K` : '—';
   const unit = e.unit && e.unit !== 'lqi' ? e.unit : '';
   return unit ? `${numberText(value)} ${unit}` : numberText(value);
 }

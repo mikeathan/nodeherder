@@ -1,6 +1,8 @@
 import { describe, expect, test } from '@jest/globals';
 import {
+  binaryStateOf,
   capabilityOf,
+  colourTemperatureName,
   controlOf,
   exposeKind,
   exposeLabel,
@@ -61,6 +63,7 @@ describe('expose presentation', () => {
     expect(formatExposeValue(expose('voltage', { data: 3.105, unit: 'V' }))).toBe('3.1 V');
     expect(formatExposeValue(expose('linkquality', { data: 91, unit: 'lqi' }))).toBe('91');
     expect(formatExposeValue(expose('color_temp', { data: 370 }))).toBe('2703 K');
+    expect(formatExposeValue(expose('color_temp', { data: 0, unit: 'mired' }))).toBe('—');
     expect(
       formatExposeValue(expose('state', { type: 'binary' as never, data: 'ON', values: { on: 'ON', off: 'OFF' } }))
     ).toBe('On');
@@ -74,11 +77,34 @@ describe('expose presentation', () => {
     );
     expect(formatExposeValue(expose('temperature', { data: null }))).toBe('—');
     expect(formatExposeValue(expose('power', { data: 0, unit: 'W' }))).toBe('0 W');
+    // Raw binary history is boolean even when live values use ON/OFF words.
+    const stateWords = expose('state', { type: 'binary' as never, values: { on: 'ON', off: 'OFF' } });
+    expect(formatExposeValue(stateWords, true)).toBe('On');
+    expect(formatExposeValue(stateWords, false)).toBe('Off');
+    expect(formatExposeValue(stateWords, 'ON')).toBe('On');
   });
   test('binary on detection uses values.on when present', () => {
     const s = expose('state', { type: 'binary' as never, values: { on: 'ON', off: 'OFF' } });
     expect(isBinaryOn(s, 'ON')).toBe(true);
     expect(isBinaryOn(s, 'OFF')).toBe(false);
+    expect(isBinaryOn(s, true)).toBe(true);
+    expect(isBinaryOn(s, false)).toBe(false);
+  });
+  test('confirmed binary state stays unknown when the latest value is missing', () => {
+    const s = expose('state', { type: 'binary' as never, values: { on: 'ON', off: 'OFF' }, data: 'ON' });
+    expect(binaryStateOf(s)).toBe(true);
+    expect(binaryStateOf(s, 'OFF')).toBe(false);
+    expect(binaryStateOf(s, null)).toBeNull();
+    expect(binaryStateOf(s, 'unexpected')).toBeNull();
+    expect(binaryStateOf(s, true)).toBe(true);
+    expect(binaryStateOf(s, false)).toBe(false);
+  });
+  test('colour temperature names describe the reading, not a device capability', () => {
+    expect(colourTemperatureName(2700)).toBe('Warm white');
+    expect(colourTemperatureName(4000)).toBe('Neutral white');
+    expect(colourTemperatureName(6500)).toBe('Cool white');
+    expect(colourTemperatureName(Number.NaN)).toBe('Unknown');
+    expect(colourTemperatureName(0)).toBe('Unknown');
   });
   test('state expose lookup', () => {
     const st = expose('state', {

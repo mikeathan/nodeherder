@@ -6,7 +6,9 @@
   import { binaryOnValue, binaryOffValue, formatExposeValue } from '@/domain/exposes';
   const props = defineProps<{ series: HistorySeries; expose: Expose; compact?: boolean }>();
   const segments = computed(() => stateSegments(props.series, props.expose));
-  const dense = computed(() => segments.value.length > 300);
+  // Long timelines become a labelled density strip instead of hundreds of thin buttons.
+  const DENSE_SEGMENT_LIMIT = 96;
+  const dense = computed(() => segments.value.length > DENSE_SEGMENT_LIMIT);
   const density = computed(() => stateDensity(segments.value, props.series.from, props.series.to));
   const stats = computed(() => stateStats(segments.value));
   const selected = ref<StateSegment | null>(null);

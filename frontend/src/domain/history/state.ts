@@ -1,5 +1,5 @@
 import type { Expose } from '@/types/device';
-import { binaryOnValue, binaryOffValue, formatExposeValue } from '@/domain/exposes';
+import { binaryStateOf, formatExposeValue } from '@/domain/exposes';
 import type { HistoryPoint, HistorySeries } from './types';
 
 export type StateSegment = {
@@ -10,9 +10,7 @@ export type StateSegment = {
   active: boolean | null;
 };
 export function binaryState(expose: Expose, value: unknown): boolean | null {
-  if (value === binaryOnValue(expose)) return true;
-  if (value === binaryOffValue(expose)) return false;
-  return null;
+  return binaryStateOf(expose, value);
 }
 export function stateSegments(series: HistorySeries, expose: Expose): StateSegment[] {
   const segments: StateSegment[] = [];

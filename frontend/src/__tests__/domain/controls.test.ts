@@ -1,4 +1,4 @@
-import { nativeNumber, numericStep, sliderValue, isMired } from '@/domain/controls';
+import { nativeNumber, numericStep, rangePercent, sliderValue, isMired } from '@/domain/controls';
 import { expose } from '../helpers/devices';
 
 test('native bounds, decimal steps and invalid numbers', () => {
@@ -19,6 +19,15 @@ test('mired temperature reverses visual direction and Kelvin stays native', () =
   expect(sliderValue(e, sliderValue(e, 370))).toBe(370);
   expect(sliderValue({ ...e, unit: 'K' }, 370)).toBe(370);
   expect(sliderValue(expose('x'), 5)).toBe(5);
+});
+
+test('visual percentages clamp and never produce NaN for unusable bounds', () => {
+  expect(rangePercent(127, 0, 254)).toBe(50);
+  expect(rangePercent(-20, 0, 254)).toBe(0);
+  expect(rangePercent(300, 0, 254)).toBe(100);
+  expect(rangePercent(Number.NaN, 0, 254)).toBe(0);
+  expect(rangePercent(5, 10, 10)).toBe(0);
+  expect(rangePercent(5, Number.NaN, 10)).toBe(0);
 });
 
 test('invalid bounds disable edits and chart conversions do not round the data', () => {
