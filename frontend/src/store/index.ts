@@ -19,6 +19,10 @@ export type StoreType = Store<RootState>;
 
 export const store = createStore<RootState>({
   plugins: [
+    (stateStore) =>
+      stateStore.subscribe((mutation) => {
+        if (mutation.type === 'auth/logout') void stateStore.dispatch('cleanup');
+      }),
     createPersistedState({
       key: 'nodeherder_auth',
       paths: ['auth.authenticated', 'auth.user'],

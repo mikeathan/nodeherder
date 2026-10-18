@@ -1,7 +1,6 @@
 import { createApp } from 'vue';
 import PrimeVue from 'primevue/config';
 import ToastService from 'primevue/toastservice';
-import VueApexCharts from 'vue3-apexcharts';
 
 import '@fontsource/figtree/400.css';
 import '@fontsource/figtree/500.css';
@@ -33,6 +32,5 @@ app.use(ToastService);
 app.directive('click-outside', ClickOutside);
 app.use(store, key);
 app.use(router);
-app.component('ApexChart', VueApexCharts);
 // Session checks and OAuth cleanup need the resolved initial route.
 void router.isReady().then(() => app.mount('#app'));

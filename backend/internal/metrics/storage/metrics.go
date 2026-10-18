@@ -119,37 +119,17 @@ func (s *MetricsRepo) QueryDevice(deviceID string,
 
 func (s *MetricsRepo) execute(deviceID string, from, to time.Time, filters []domain.MetricFilter, collectors map[string]domain.ExposeResult) error {
 
-	//  Decide the DB range
-	var dbFrom, dbTo time.Time
-	var tailFrom time.Time
-	useTailCache := s.tailWindow > 0
-
-	if useTailCache {
-		dbFrom, dbTo, tailFrom = s.computeDatabaseRange(from, to)
-	} else {
-		dbFrom = from
-		dbTo = to
+	// Snapshot the cache once so pruning cannot move the split during this read.
+	entries := s.tailEntries(deviceID)
+	dbFrom, dbTo, tailFrom := from, to, to
+	if len(entries) > 0 {
+		dbFrom, dbTo, tailFrom = computeDatabaseRange(from, to, entries[0].Timestamp)
 	}
-
-	// DB scan
-	if err := s.queryDatabase(
-		deviceID,
-		dbFrom,
-		dbTo, filters, collectors); err != nil {
+	if err := s.queryDatabase(deviceID, dbFrom, dbTo, filters, collectors); err != nil {
 		return err
 	}
-
-	// tail merge
-	if useTailCache {
-		if err := s.mergeTailCache(
-			deviceID,
-			tailFrom,
-			to,
-			filters,
-			collectors,
-		); err != nil {
-			return err
-		}
+	if len(entries) > 0 {
+		return collectTail(entries, tailFrom, to, filters, collectors)
 	}
 
 	return nil
@@ -232,17 +212,19 @@ func (s *MetricsRepo) finalizeCollectors(collectors map[string]domain.ExposeResu
 	return result
 }
 
-func (s *MetricsRepo) computeDatabaseRange(from, to time.Time) (time.Time, time.Time, time.Time) {
-	now := s.clock.Now()
-	tailStart := now.Add(-s.tailWindow)
+func computeDatabaseRange(from, to, tailStart time.Time) (time.Time, time.Time, time.Time) {
 
 	dbFrom := from
 	dbTo := to
 
-	if to.After(tailStart) {
-		dbTo = tailStart
+	// The tail owns its lower boundary; a query ending there must not read it twice.
+	if !to.Before(tailStart) {
+		dbTo = tailStart.Add(-time.Nanosecond)
 	}
 
+	if from.After(tailStart) {
+		tailStart = from
+	}
 	return dbFrom, dbTo, tailStart
 }
 
@@ -251,7 +233,7 @@ func (s *MetricsRepo) queryDatabase(deviceID string,
 	filters []domain.MetricFilter,
 	collectors map[string]domain.ExposeResult) error {
 
-	if !dbTo.After(dbFrom) {
+	if dbTo.Before(dbFrom) {
 		return nil
 	}
 
@@ -259,6 +241,9 @@ func (s *MetricsRepo) queryDatabase(deviceID string,
 	toKey := s.keyGenerator.CreateMaxKeyFromTimestamp(dbTo)
 
 	callback := func(key, value []byte) error {
+		if err := checkScan(collectors); err != nil {
+			return err
+		}
 		expose, err := s.keyGenerator.GetIdFromKey(key)
 		if err != nil {
 			return err
@@ -282,15 +267,21 @@ func (s *MetricsRepo) queryDatabase(deviceID string,
 	return s.kvdb.ViewInRange(deviceID, fromKey, toKey, callback)
 }
 
-func (s *MetricsRepo) mergeTailCache(deviceID string, from, to time.Time,
-	filters []domain.MetricFilter,
-	collectors map[string]domain.ExposeResult) error {
-
+// tailEntries returns a stable snapshot; an empty cache falls back to the full DB
+// range, including recent persisted samples after a process restart.
+func (s *MetricsRepo) tailEntries(deviceID string) []domain.CachedEntry {
 	s.tailCacheLock.RLock()
-	entries := s.tailCache[deviceID]
-	s.tailCacheLock.RUnlock()
+	defer s.tailCacheLock.RUnlock()
+	return append([]domain.CachedEntry(nil), s.tailCache[deviceID]...)
+}
+
+func collectTail(entries []domain.CachedEntry, from, to time.Time,
+	filters []domain.MetricFilter, collectors map[string]domain.ExposeResult) error {
 
 	for _, e := range entries {
+		if err := checkScan(collectors); err != nil {
+			return err
+		}
 		// filter by time
 		if e.Timestamp.Before(from) || e.Timestamp.After(to) {
 			continue
@@ -311,5 +302,14 @@ func (s *MetricsRepo) mergeTailCache(deviceID string, from, to time.Time,
 		}
 	}
 
+	return nil
+}
+
+func checkScan(collectors map[string]domain.ExposeResult) error {
+	for _, collector := range collectors {
+		if guard, ok := collector.(domain.ScanGuard); ok {
+			return guard.CheckScan()
+		}
+	}
 	return nil
 }

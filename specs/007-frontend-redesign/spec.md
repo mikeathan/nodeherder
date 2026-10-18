@@ -1,5 +1,68 @@
 # Spec: Frontend redesign and customisable design system
 
+## Implementation amendment — 2026-10-17
+
+Owner instruction: implement the accepted entity/chart designs, clean touched CRAP
+scores, test, review and commit. This supersedes the investigation-only status below.
+Scope is entity controls, compact/full history and necessary producer fixes; unrelated
+old follow-up tasks remain deferred.
+
+- FR-20 / AC-44: Mobile entity details fill the viewport. Writable exposes use large
+  labelled controls; brightness/colour temperature match v3, read-only charts match
+  environmental v5, other families match activity/diagnostic v4. Desktop adapts the
+  same content. Verify at 320/390/768/1280/1920 px and short landscape.
+- FR-21 / AC-45: Native bounds/steps and units determine commands. A completed gesture
+  sends once; cancellation sends nothing. Drafts never replace confirmed state and
+  revert on refusal/timeout/disconnect. Closing does not retry/cancel sent commands.
+- FR-22 / AC-46: Full and compact history share validated typed data, calculations,
+  theme and query ownership. Empty, error, partial, unknown and measured zero differ.
+  Queries use explicit UTC instants, displayed local timezone, inclusive endpoints,
+  10s timeout, bounded queue/cache, and late-response rejection.
+- FR-23 / AC-47: Add optional HTTP `history: true` for bounded raw numeric/binary/enum
+  event history. Existing absent/false requests retain aggregation/interval responses.
+  Raw enums retain equal repeated reports; state transitions count only actual changes.
+  Public route access is unchanged. New option permits one device and up to 32 exposes,
+  at most 31 days and 10,001 returned samples per series; scan budget is 250,000 records
+  per request. Budget exhaustion is an explicit error, never a successful empty result.
+- FR-24 / AC-48: Energy consumption bars use nonnegative cumulative counter deltas
+  only between consecutive valid samples inside one displayed bucket. Missing boundary
+  baseline, reset or explicit gap makes that bucket partial/unknown. Do not allocate
+  deltas across buckets or integrate power. Label partial consumption and retain meter
+  total separately; no full-day total claimed without complete interval coverage.
+- NFR-09 / AC-49: At most one active client history request, 32 pending distinct queries,
+  10 cached entries and 10,000 retained samples per series; render at most 1,000 numeric
+  points preserving extrema/gaps. No hidden-tab polling. At 50 open/close cycles there
+  are no retained view-owned chart instances, handlers or requests after settlement.
+- AC-50: Touched functions meet the documented complexity/CRAP gate, with measured
+  coverage where supported and conservative zero-coverage upper bounds otherwise.
+  No exclusions of Vue script functions. Every new/changed function has C<=10 and
+  CRAP<=30; touched decision logic gets >=80% branch evidence or is refactored until
+  conservative evidence plus behavioral integration tests establishes the gate.
+
+No device ingestion/automation timing, storage schema or retention changes. No
+automatic retries for commands or history. Read failures return useful errors;
+existing query consumers keep compatible success shapes. Tests use mock hub/temp DB.
+
+## Accepted entity/chart direction — 2026-10-17
+
+The owner accepted these visual references for the deferred follow-up:
+[brightness/colour temperature v3](../../docs/design-previews/entity-views-mobile-concept-v3.png)
+(not its temperature panel), [environmental v5](../../docs/design-previews/entity-views-environmental-concept-v5.png),
+[activity/electricity v4](../../docs/design-previews/entity-views-activity-energy-concept-v4.png)
+and [diagnostics/settings v4](../../docs/design-previews/entity-views-diagnostics-settings-concept-v4.png).
+Mobile entity views fill the screen; adjustable entities prioritise large controls
+and minimal recent history. Read-only entities can show larger charts and condensed
+useful summaries. All charts, including full device history, share truthful semantics
+and the accepted visual language. Desktop adapts the same behavior to available space.
+Images contain illustrative data/capabilities, not guaranteed producer contracts.
+
+Current authorisation is investigation/report only. The
+[readiness report](redesign-readiness-2026-10-17.md) identifies exact changes and the
+event/energy/resource contract amendments needed before dependent implementation.
+Historical proposed sheet layouts and exclusions on inferred consumption require
+scoped reconciliation; this note does not silently declare those contracts resolved
+or reopen unrelated deferred work. Existing acceptance IDs and completed history remain.
+
 ID: 007-frontend-redesign | Status: Main redesign merged; follow-up design proposed | Author: Claude Code / Codex | Updated: 2026-10-11
 Constitutions: parent/frontend/backend 1.0.0, proposed, not ratified. Components: frontend;
 original additive backend field (`DashboardGroup.order`, FR-09), with scoped backend query/

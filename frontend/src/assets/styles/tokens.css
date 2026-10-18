@@ -102,3 +102,15 @@
   --text-color: var(--nh-text);
   --text-color-secondary: var(--nh-text-muted);
 }
+
+/* Shared chart/control roles; palettes may override these without component hex colours. */
+:root {
+  --nh-range-grip: #fff9e8;
+  --nh-range-empty: #fff0bd;
+  --nh-range-warm: #ffc34d;
+  --nh-range-cool: #b5defb;
+  --nh-chart-grid: color-mix(in srgb, var(--nh-text-muted) 22%, transparent);
+  --nh-kind-battery: var(--nh-ok);
+  --nh-kind-signal: var(--nh-info);
+  --nh-kind-misc: var(--nh-accent);
+}

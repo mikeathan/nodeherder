@@ -1,15 +1,33 @@
 import { describe, expect, test } from '@jest/globals';
-import { capabilityOf, controlOf, exposeKind, exposeLabel, exposePresets, exposeRange, formatExposeValue, isBinaryOn, stateExposeOf } from '@/domain/exposes';
+import {
+  capabilityOf,
+  controlOf,
+  exposeKind,
+  exposeLabel,
+  exposePresets,
+  exposeRange,
+  formatExposeValue,
+  isBinaryOn,
+  stateExposeOf,
+} from '@/domain/exposes';
 import { device, expose, hubDevices } from '../helpers/devices';
 
 describe('expose capabilities', () => {
   test('writable binary is a switch, read-only binary a sensor', () => {
-    expect(capabilityOf(expose('state', { type: 'binary' as never, access_mode: 'readwrite' as never }))).toBe('switch');
+    expect(capabilityOf(expose('state', { type: 'binary' as never, access_mode: 'readwrite' as never }))).toBe(
+      'switch'
+    );
     expect(capabilityOf(expose('contact', { type: 'binary' as never }))).toBe('binary-sensor');
   });
   test('writable numeric with a max is a slider; with values only a preset', () => {
-    expect(capabilityOf(expose('brightness', { access_mode: 'readwrite' as never, attributes: { min: 0, max: 254 } }))).toBe('slider');
-    expect(capabilityOf(expose('effect', { type: 'enum' as never, access_mode: 'write' as never, values: { blink: 'blink' } }))).toBe('preset');
+    expect(
+      capabilityOf(expose('brightness', { access_mode: 'readwrite' as never, attributes: { min: 0, max: 254 } }))
+    ).toBe('slider');
+    expect(
+      capabilityOf(
+        expose('effect', { type: 'enum' as never, access_mode: 'write' as never, values: { blink: 'blink' } })
+      )
+    ).toBe('preset');
   });
   test('config, diagnostic, action and reading', () => {
     expect(capabilityOf(expose('child_lock', { category: 'config' as never }))).toBe('config');
@@ -18,7 +36,8 @@ describe('expose capabilities', () => {
     expect(capabilityOf(expose('temperature'))).toBe('reading');
   });
   test('every expose of every fixture device resolves without throwing', () => {
-    for (const d of hubDevices()) for (const e of Object.values(d.exposes)) expect(typeof capabilityOf(e)).toBe('string');
+    for (const d of hubDevices())
+      for (const e of Object.values(d.exposes)) expect(typeof capabilityOf(e)).toBe('string');
   });
 });
 
@@ -42,13 +61,17 @@ describe('expose presentation', () => {
     expect(formatExposeValue(expose('voltage', { data: 3.105, unit: 'V' }))).toBe('3.1 V');
     expect(formatExposeValue(expose('linkquality', { data: 91, unit: 'lqi' }))).toBe('91');
     expect(formatExposeValue(expose('color_temp', { data: 370 }))).toBe('2703 K');
-    expect(formatExposeValue(expose('state', { type: 'binary' as never, data: 'ON', values: { on: 'ON', off: 'OFF' } }))).toBe('On');
+    expect(
+      formatExposeValue(expose('state', { type: 'binary' as never, data: 'ON', values: { on: 'ON', off: 'OFF' } }))
+    ).toBe('On');
     // Zigbee2MQTT: contact on=false means open, off=true means closed
     const contact = { type: 'binary' as never, values: { on: false, off: true } };
     expect(formatExposeValue(expose('contact', { ...contact, data: false }))).toBe('Open');
     expect(formatExposeValue(expose('contact', { ...contact, data: true }))).toBe('Closed');
     expect(formatExposeValue(expose('presence', { type: 'binary' as never, data: true }))).toBe('Detected');
-    expect(formatExposeValue(expose('action', { type: 'enum' as never, data: 'brightness_step_up' }))).toBe('Brightness step up');
+    expect(formatExposeValue(expose('action', { type: 'enum' as never, data: 'brightness_step_up' }))).toBe(
+      'Brightness step up'
+    );
     expect(formatExposeValue(expose('temperature', { data: null }))).toBe('—');
     expect(formatExposeValue(expose('power', { data: 0, unit: 'W' }))).toBe('0 W');
   });
@@ -58,7 +81,11 @@ describe('expose presentation', () => {
     expect(isBinaryOn(s, 'OFF')).toBe(false);
   });
   test('state expose lookup', () => {
-    const st = expose('state', { type: 'binary' as never, access_mode: 'readwrite' as never, values: { on: 'ON', off: 'OFF' } });
+    const st = expose('state', {
+      type: 'binary' as never,
+      access_mode: 'readwrite' as never,
+      values: { on: 'ON', off: 'OFF' },
+    });
     expect(stateExposeOf(device('a', {}, [expose('brightness'), st]))?.name).toBe('state');
     expect(stateExposeOf(device('b', {}, [expose('temperature')]))).toBeUndefined();
   });
@@ -67,7 +94,10 @@ describe('expose presentation', () => {
 describe('expose ranges and presets', () => {
   test('reads hub min/max and Zigbee2MQTT value_min/value_max', () => {
     expect(exposeRange(expose('brightness', { attributes: { min: 0, max: 254 } }))).toEqual({ min: 0, max: 254 });
-    expect(exposeRange(expose('brightness', { attributes: { value_min: 1, value_max: 100 } }))).toEqual({ min: 1, max: 100 });
+    expect(exposeRange(expose('brightness', { attributes: { value_min: 1, value_max: 100 } }))).toEqual({
+      min: 1,
+      max: 100,
+    });
     expect(exposeRange(expose('temperature'))).toBeNull();
   });
   test('numeric presets use their names and drop out-of-range sentinels', () => {
@@ -76,16 +106,30 @@ describe('expose ranges and presets', () => {
   });
   test('enum presets use their values', () => {
     const e = expose('power_on_behavior', { type: 'enum' as never, values: { '0': 'off', '1': 'previous_state' } });
-    expect(exposePresets(e)).toEqual([{ label: 'Off', value: 'off' }, { label: 'Previous state', value: 'previous_state' }]);
+    expect(exposePresets(e)).toEqual([
+      { label: 'Off', value: 'off' },
+      { label: 'Previous state', value: 'previous_state' },
+    ]);
   });
 });
 
 describe('controlOf', () => {
   test('picks the input for writable exposes only', () => {
     expect(controlOf(expose('state', { type: 'binary' as never, access_mode: 'readwrite' as never }))).toBe('switch');
-    expect(controlOf(expose('brightness', { access_mode: 'readwrite' as never, attributes: { min: 0, max: 254 } }))).toBe('slider');
+    expect(
+      controlOf(expose('brightness', { access_mode: 'readwrite' as never, attributes: { min: 0, max: 254 } }))
+    ).toBe('slider');
     expect(controlOf(expose('duration', { access_mode: 'write' as never }))).toBe('number');
-    expect(controlOf(expose('volume', { type: 'enum' as never, access_mode: 'write' as never, values: { '0': 'low' } }))).toBe('choice');
+    expect(
+      controlOf(expose('volume', { type: 'enum' as never, access_mode: 'write' as never, values: { '0': 'low' } }))
+    ).toBe('choice');
     expect(controlOf(expose('temperature'))).toBe('none');
   });
+});
+
+test('invalid numeric metadata, unknown binary values and Kelvin remain truthful', () => {
+  expect(exposeRange(expose('brightness', { attributes: { min: 10, max: 1 } }))).toBeNull();
+  expect(formatExposeValue(expose('presence', { type: 'binary', data: 'unknown' }))).toBe('Unknown');
+  expect(formatExposeValue(expose('color_temp', { unit: 'K', data: 2700 }))).toBe('2700 K');
+  expect(formatExposeValue(expose('temperature', { data: Infinity }))).toBe('—');
 });

@@ -1196,3 +1196,64 @@ func TestAssistantMessageHandler(t *testing.T) {
 		t.Errorf("unexpected assistant message: %+v", savedConv.Messages[1])
 	}
 }
+
+func TestMetricsQueryHandlerRawHistory(t *testing.T) {
+	s, repo, clock, cleanup := createMetricsQueryTestStore(t)
+	defer cleanup()
+	name := "history-fixture"
+	id := utils.HashName(name)
+	entity := devices.NewEntity("action")
+	entity.Type = "enum"
+	dev := &devices.Device{Id: id, FriendlyName: name, Exposes: map[string]*devices.Entity{"action": entity}}
+	if err := s.StoreDevice(name, dev); err != nil {
+		t.Fatal(err)
+	}
+	base := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	for i := 1; i <= 3; i++ {
+		clock.SetMockTime(base.Add(time.Duration(i) * time.Minute))
+		if err := repo.Store(id, map[string]any{"action": "press"}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	payload := metricsquery.MetricsQueryRequest{History: true, DeviceIds: []string{id}, Exposes: []string{"action"}, Limit: 2, Time: metricsdomain.TimeQuery{From: base, To: base.Add(5 * time.Minute)}}
+	body, _ := json.Marshal(payload)
+	req := httptest.NewRequest(http.MethodPost, "/api/metrics/query", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	api.NewMetricsQueryHandler(ratelimiter.NewWindowRateLimiter(5, time.Second), s).ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status %d: %s", w.Code, w.Body.String())
+	}
+	var result []metricsquery.MetricsQueryResponse
+	if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
+		t.Fatal(err)
+	}
+	value := result[0].Values[0].Value.(map[string]any)
+	if value["partial"] != true || len(value["data"].([]any)) != 2 {
+		t.Fatalf("raw reports lost: %s", w.Body.String())
+	}
+	if !strings.Contains(w.Body.String(), `"value":"press"`) {
+		t.Fatal("enum value missing")
+	}
+	payload.Limit = 0
+	body, _ = json.Marshal(payload)
+	req = httptest.NewRequest(http.MethodPost, "/api/metrics/query", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	w = httptest.NewRecorder()
+	api.NewMetricsQueryHandler(ratelimiter.NewWindowRateLimiter(5, time.Second), s).ServeHTTP(w, req)
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("invalid history accepted: %d", w.Code)
+	}
+	// A cancelled scan is an explicit failure, never a successful empty history.
+	payload.Limit = 2
+	body, _ = json.Marshal(payload)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	req = httptest.NewRequest(http.MethodPost, "/api/metrics/query", bytes.NewReader(body)).WithContext(ctx)
+	req.Header.Set("Content-Type", "application/json")
+	w = httptest.NewRecorder()
+	api.NewMetricsQueryHandler(ratelimiter.NewWindowRateLimiter(5, time.Second), s).ServeHTTP(w, req)
+	if w.Code != http.StatusInternalServerError || !strings.Contains(w.Body.String(), "History could not be read") {
+		t.Fatalf("scan failure hidden or not actionable: %d %s", w.Code, w.Body.String())
+	}
+}

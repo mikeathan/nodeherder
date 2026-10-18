@@ -4,35 +4,53 @@
    * metadata (domain/exposes.ts controlOf). Commands go through useDeviceCommand, so pending
    * state, timeouts and the "can control" rules are the same everywhere (FR-04).
    */
-  import { computed, ref, watch } from 'vue';
+  import { computed } from 'vue';
   import { Device, Expose } from '@/types/device';
-  import { binaryOffValue, binaryOnValue, controlOf, exposeLabel, exposePresets, exposeRange, formatExposeValue, isBinaryOn } from '@/domain/exposes';
-  import { useDeviceCommand } from '@/composables/useDeviceCommand';
+  import {
+    binaryOffValue,
+    binaryOnValue,
+    controlOf,
+    exposeLabel,
+    exposePresets,
+    exposeRange,
+    formatExposeValue,
+    isBinaryOn,
+  } from '@/domain/exposes';
+  import { useExposeEdit } from '@/composables/useExposeEdit';
+  import { numericStep } from '@/domain/controls';
+  import UiRange from '@/components/ui/UiRange.vue';
   import UiToggle from '@/components/ui/UiToggle.vue';
   import UiSelect from '@/components/ui/UiSelect.vue';
 
   const props = defineProps<{ device: Device; expose: Expose; label?: string }>();
 
-  const { send, isPending, canControl } = useDeviceCommand();
   const control = computed(() => controlOf(props.expose));
   const name = computed(() => props.label ?? exposeLabel(props.expose.name));
-  const pending = computed(() => isPending(props.device.id, props.expose.name));
-  const disabled = computed(() => !canControl(props.device) || pending.value);
   const range = computed(() => exposeRange(props.expose));
   const presets = computed(() => exposePresets(props.expose));
 
-  // slider and number keep a local value while the user is editing
-  const draft = ref<number | null>(null);
-  watch(
-    () => props.expose.data,
-    () => (draft.value = null)
+  const {
+    value: numberValue,
+    displayValue,
+    pending,
+    disabled,
+    dragging,
+    preview,
+    commit,
+    commitNumber: sendNumber,
+    cancel,
+  } = useExposeEdit(
+    () => props.device,
+    () => props.expose
   );
-  const numberValue = computed(() => draft.value ?? (typeof props.expose.data === 'number' ? props.expose.data : (range.value?.min ?? 0)));
-
-  const commit = (value: unknown) => send(props.device, props.expose.name, value);
+  const step = computed(() => numericStep(props.expose));
   function commitNumber(event: Event) {
-    const value = Number((event.target as HTMLInputElement).value);
-    if (Number.isFinite(value)) commit(value);
+    const input = event.target as HTMLInputElement;
+    if (!input.value.trim()) {
+      cancel();
+      return;
+    }
+    sendNumber(Number(input.value));
   }
 </script>
 
@@ -47,18 +65,20 @@
       @update:model-value="commit($event ? binaryOnValue(expose) : binaryOffValue(expose))" />
 
     <template v-else-if="control === 'slider' && range">
-      <input
-        type="range"
+      <UiRange
         class="nh-xc-range"
         :min="range.min"
         :max="range.max"
+        :step="step"
         :value="numberValue"
-        :aria-label="name"
-        :aria-valuetext="formatExposeValue(expose, numberValue)"
+        :label="name"
+        :value-text="formatExposeValue(expose, displayValue)"
         :disabled="disabled"
-        @input="draft = Number(($event.target as HTMLInputElement).value)"
-        @change="commitNumber" />
-      <output class="nh-xc-out">{{ formatExposeValue(expose, numberValue) }}</output>
+        @start="dragging = true"
+        @preview="preview"
+        @commit="sendNumber"
+        @cancel="cancel" />
+      <output class="nh-xc-out">{{ formatExposeValue(expose, displayValue) }}</output>
       <UiSelect
         v-if="presets.length"
         class="nh-xc-presets"
@@ -83,7 +103,8 @@
       type="number"
       class="nh-input is-num"
       inputmode="decimal"
-      :value="numberValue"
+      :step="step"
+      :value="displayValue"
       :aria-label="name"
       :disabled="disabled"
       @change="commitNumber" />
@@ -109,7 +130,6 @@
   .nh-xc-range {
     flex: 1 1 8rem;
     min-width: 5rem;
-    accent-color: var(--nh-accent);
   }
   .nh-xc-out {
     min-width: 3.5rem;

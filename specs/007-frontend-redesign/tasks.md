@@ -1,5 +1,24 @@
 # Tasks: Frontend redesign and customisable design system
 
+## Entity/chart implementation — 2026-10-17
+
+Completed scope and checks: [2026-10-18 evidence](implementation-evidence-2026-10-18.md).
+
+- [x] T300 — Freeze additive history/control contracts and capture baseline complexity;
+  FR-20–24, NH-01/04, AC-50; done: amendment, producer fixtures, recorded metrics.
+- [x] T301 — Bounded history HTTP producer, raw enum events, real errors and companion
+  regressions; FR-23, AC-47; depends T300; done: Go contract/race tests.
+- [x] T302 — Pure control conversions and history/energy/state calculations; FR-21/22/24,
+  AC-45/46/48; depends T300; done: source-owned boundary/regression tests.
+- [x] T303 — Shared request lifecycle/Vuex history, decoding, cancellation/timeout/cache;
+  FR-22, AC-46/49; depends T301/302; done: failure/concurrency/reset coverage.
+- [x] T304 — Shared numeric/state/event renderers and full-screen entity controls,
+  full device history; FR-20–22, AC-44/45/46; depends T302/303; done: mock browser visuals.
+- [x] T305 — Remove unused legacy paths, mock parity, quality cleanup and review;
+  AC-49/50; depends T304; done: import scan, scores, resource/viewport regressions.
+- [x] T306 — Required tests/lint/build/race, final acceptance/rule evidence and commit;
+  NH-05, AC-44–50; depends T305; done: actual results and commit recorded.
+
 Spec: [spec.md](spec.md) | Plan: [plan.md](plan.md) | Status: Main redesign merged; scoped backend repair implemented; follow-up open
 
 ## Current status (2026-10-12)

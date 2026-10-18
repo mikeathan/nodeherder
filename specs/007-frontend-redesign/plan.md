@@ -1,5 +1,46 @@
 # Plan: Frontend redesign and customisable design system
 
+Final implementation review: [2026-10-18 evidence](implementation-evidence-2026-10-18.md).
+
+## Implementation authorised — 2026-10-17
+
+Implement FR-20–24/AC-44–50 on `feat/entity-history-redesign`; readiness report is the
+change map. Use Chart.js 4.5.1 with a shared theme-aware adapter after the Apex mobile teardown
+regression (ADR-004), plus native accessible
+range inputs and proportional HTML state timelines. Pure functions own history and
+control conversions; Vuex owns query results and hub confirmed state. Browser handles
+live outside serialisable store state and are disposed by explicit subscriptions.
+HTTP history is additive, bounded and cancellable at collector callbacks; no migration.
+Energy bucket semantics and raw enums follow the amendment in spec.md. Backend changes
+ship with frontend and old HTTP/WS consumers remain compatible. Rollback is code-only.
+
+Before implementation rule check: NH-01 PASS (amendment/tasks); NH-02 PASS design
+(native commands, confirmation, no ingestion changes); NH-03 PASS design (same route,
+runtime decode, no logs/persistence); NH-04 PASS design (existing boundaries, ADR-004
+amended); NH-05 PASS design (source-owned tests and planned commands); NH-06 PASS design
+(bounded resources, units/partial/gaps). FE-01–05 and BE-01–05 PASS design against the
+readiness ownership/verification tables. Execution evidence remains pending. No
+ratification or exception approval is claimed. Review these gates against final diff.
+
+Verification: Jest coverage, frontend lint/build, mock Playwright desktop/mobile plus
+viewport/leak checks; Go tests/vet/build and affected metrics race tests. Quality runner
+uses TypeScript AST for TS/JS/Vue script complexity, Istanbul statement coverage where
+available, zero-coverage upper bounds otherwise; Go scorer pinned/recorded in evidence.
+Baseline is branch parent recorded by git, not an unrelated repository. Vue behavior
+is exercised through Playwright; adding a second unit framework is unnecessary.
+
+## Entity/chart redesign investigation — 2026-10-17
+
+The owner accepted brightness/colour-temperature mobile v3, environmental v5,
+activity/electricity v4 and diagnostics/settings v4, and requested implementation
+preparation and a report only. See the repository-grounded
+[readiness/change map](redesign-readiness-2026-10-17.md) for the scoped architecture,
+contracts, cleanup/performance budgets, verification and unresolved preparations.
+This updates the deferred entity/history follow-up without reopening unrelated
+automation/assistant work or changing completed repair history. Production changes
+and execution of T200–T214 have not started. Event/energy contract amendments and
+installed-renderer proof are preparation work before dependent implementation.
+
 Spec: [spec.md](spec.md) | Tasks: [tasks.md](tasks.md) | Status: Main redesign merged; scoped backend repair implemented; wider follow-up deferred
 Author: Claude Code / Codex | Updated: 2026-10-12 | Follow-up baseline: `fcdebca2` (#54)
 Constitutions: parent/frontend/backend 1.0.0, proposed; none claimed ratified.

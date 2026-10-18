@@ -1,236 +1,185 @@
 <script setup lang="ts">
-  import { ref, watchEffect, computed, onMounted } from 'vue';
-  import LastSeen from '../device/LastSeen.vue';
-  import { getFormattedSensorValue, getSensorName } from '../../modules/formatters/sensor-formatter';
-  import { ExposeTypes } from '@/types/device.type';
-  import Icon from '../controls/Icon.vue';
-  import Menu from 'primevue/menu';
-  import MenuDropdown from '../controls/MenuDropdown.vue';
-  import { getSensorIcon } from '../../modules/formatters/sensor-formatter';
-  import { useMiniChartData } from '@/composables/useMiniChartData';
+  import { computed, ref } from 'vue';
+  import { onBeforeRouteLeave } from 'vue-router';
   import { useEntityDialog } from '@/composables/useEntityDialog';
-  import { useDialogUI } from '@/composables/useDialogUI';
-  import { isBinaryChartableExpose } from '@/utils/chart.utils';
-  import MiniChart from '@/components/chart/mini/MiniChart.vue';
-
-  const props = defineProps<{
-    show: boolean;
-    title?: string;
-    id: string;
-    name: string;
-  }>();
-
-  const emit = defineEmits(['close']);
-
-  const showDialog = ref<boolean>(props.show);
-
-  // Entity dialog logic
-  const {
-    device,
-    expose,
-    lastSeen,
-    configExposes,
-    controlExposes,
-    selectedControlExpose,
-    selectedComponent,
-    isEnabled,
-    handleClick,
-    buildMenuItems,
-  } = useEntityDialog(props.id, props.name);
-
-  // Chart data
-  const { chartData, refetch, isLiveUpdates, toggleLiveUpdates } = useMiniChartData(props.id, props.name, 4, false);
-
-  // UI state
-  const { dialogStyle } = useDialogUI(() => close());
-
-  const showMiniChart = computed(() => {
-    // Don't show chart if there's a brightness control
-    const hasBrightnessControl = controlExposes.value.some((exp) => exp.name === 'brightness');
-    if (hasBrightnessControl) return false;
-    return (
-      chartData.value.hasData &&
-      (expose.value.type === ExposeTypes.Numeric ||
-        isBinaryChartableExpose(expose.value.type as string, expose.value.name as string))
-    );
+  import { useHistoryQuery } from '@/composables/useHistoryQuery';
+  import { exposeLabel, formatExposeValue, controlOf, exposeKind } from '@/domain/exposes';
+  import UiDialog from '@/components/ui/UiDialog.vue';
+  import UiButton from '@/components/ui/UiButton.vue';
+  import EntityAdjustment from '@/components/entity/EntityAdjustment.vue';
+  import ExposeControl from '@/components/entity/ExposeControl.vue';
+  import HistoryView from '@/components/chart/history/HistoryView.vue';
+  import RelativeTime from '@/components/ui/RelativeTime.vue';
+  import UiIcon from '@/components/ui/UiIcon.vue';
+  import { exposeIcon } from '@/components/ui/icons';
+  const props = defineProps<{ show: boolean; title?: string; id: string; name: string }>();
+  const emit = defineEmits<{ close: [value: boolean] }>();
+  const model = useEntityDialog(props.id, props.name);
+  const { device, expose, adjustment, adjustable, selected, related, status } = model;
+  const now = ref(Date.now());
+  const exists = computed(() => !!device.value?.exposes[selected.value]);
+  const request = computed(() => {
+    if (!exists.value || !props.show) return null;
+    return { deviceId: props.id, exposes: [selected.value], from: now.value - 4 * 3600000, to: now.value };
   });
-
-  // Fetch chart data when dialog is mounted
-  onMounted(() => {
-    refetch();
-  });
-
-  watchEffect(() => (showDialog.value = props.show));
-
+  const { entry, refresh } = useHistoryQuery(request);
+  const series = computed(() => entry.value?.series.find((s) => s.name === selected.value));
+  const title = computed(() => exposeLabel(selected.value));
+  const writable = computed(() => !!expose.value && controlOf(expose.value) !== 'none');
+  const kind = computed(() => exposeKind(selected.value));
   function close() {
     emit('close', false);
-    showDialog.value = false;
-    selectedControlExpose.value = null;
   }
-
-  const dialogTitle = () => props.title ?? expose.value.name;
-
-  const menu = ref<InstanceType<typeof Menu> | null>(null);
-  const toggleMenu = (event: Event) => {
-    menu.value?.toggle(event);
-  };
+  function refreshHistory() {
+    now.value = Date.now();
+    refresh();
+  }
+  onBeforeRouteLeave(close);
 </script>
-
 <template>
-  <Dialog
-    v-model:visible="showDialog"
-    :draggable="false"
-    :dismissableMask="true"
-    :blockScroll="true"
-    :closable="false"
-    modal
-    :style="dialogStyle"
-    @hide="close()">
-    <template #header>
-      <div class="dialog-header">
-        <RouterLink :to="`/devicepage/${id}`">
-          <Button label="Link" variant="link" class="ps-0" @click="close()">
-            {{ dialogTitle() }}
-          </Button>
-        </RouterLink>
-        <Button icon="pi pi-times" class="p-button-text" @click="close()" />
+  <UiDialog :open="show" :title="title" wide fullscreen-mobile @close="close">
+    <div
+      v-if="device && expose && adjustment"
+      class="entity-detail"
+      :class="[{ 'has-adjustment': adjustable }, `kind-${kind}`]">
+      <p class="entity-device">{{ device.friendly_name }}</p>
+      <p v-if="status !== 'online'" class="entity-warning" role="status">
+        {{ status === 'disabled' ? 'Device disabled' : 'Device offline' }} · controls unavailable
+      </p>
+      <div class="entity-primary">
+        <EntityAdjustment v-if="adjustable" :key="selected" :device="device" :expose="adjustment" />
+        <template v-else
+          ><div class="entity-current">{{ formatExposeValue(adjustment) }}</div>
+          <p v-if="adjustment.name === 'energy'" class="entity-seen">Meter total</p>
+          <p class="entity-seen">Device seen <RelativeTime :value="device.last_seen" /></p>
+          <ExposeControl v-if="writable" :device="device" :expose="expose"
+        /></template>
+        <div v-if="related.length > 1" class="entity-controls">
+          <div v-for="control in related" :key="control.name">
+            <button
+              v-if="['brightness', 'color_temp'].includes(control.name)"
+              type="button"
+              class="entity-tab"
+              :aria-label="exposeLabel(control.name)"
+              :aria-pressed="selected === control.name"
+              @click="selected = control.name">
+              <UiIcon :path="exposeIcon(control.name)" />{{
+                control.name === 'color_temp' ? 'Colour temp' : exposeLabel(control.name)
+              }}
+            </button>
+            <template v-else-if="control.name !== selected"
+              ><span>{{ control.name === 'state' ? 'Power' : exposeLabel(control.name) }}</span
+              ><ExposeControl
+                :device="device"
+                :expose="control"
+                :label="control.name === 'state' ? 'Power' : exposeLabel(control.name)"
+            /></template>
+          </div>
+        </div>
       </div>
-    </template>
-    <div class="modal-content-header">
-      <div class="modal-value">{{ getFormattedSensorValue(expose) }}</div>
-      <LastSeen :timestamp="lastSeen" class="modal-last-seen" :truncated="false" />
+      <section class="entity-history" aria-label="Recent history">
+        <header>
+          <h3>Last 4 hours</h3>
+          <UiButton
+            variant="ghost"
+            icon="refresh"
+            label="Refresh history"
+            :disabled="entry?.status === 'loading'"
+            @click="refreshHistory" />
+        </header>
+        <p v-if="entry?.status === 'loading'" role="status">Loading history…</p>
+        <p v-else-if="entry?.status === 'error'" role="alert">{{ entry.error }}</p>
+        <HistoryView v-else-if="series" :series="series" :expose="adjustment" :compact="adjustable" />
+        <p v-else>No recorded history for this entity.</p>
+      </section>
     </div>
-
-    <!-- Mini chart section -->
-    <div v-if="showMiniChart" class="modal-chart-section">
-      <Button
-        :icon="isLiveUpdates ? 'pi pi-sync' : 'pi pi-refresh'"
-        :class="['p-button-rounded', 'p-button-text', 'p-button-sm', 'chart-refresh-btn', { active: isLiveUpdates }]"
-        @click="toggleLiveUpdates"
-        :title="isLiveUpdates ? 'Disable auto refresh' : 'Enable auto refresh'" />
-      <MiniChart
-        :type="chartData.type"
-        :data="chartData.data as any"
-        :exposeName="expose.name"
-        :unit="expose.unit || ''"
-        :height="150" />
-    </div>
-
-    <div class="modal-content">
-      <component
-        v-if="selectedComponent"
-        :is="selectedComponent"
-        :value="selectedControlExpose?.data"
-        :disabled="!isEnabled()" />
-
-      <div class="modal-control-buttons">
-        <template v-for="expose in controlExposes" :key="expose.name">
-          <Icon
-            :icon="getSensorIcon(expose.name, expose.data)"
-            clickable
-            background="#222222"
-            :size="38"
-            @click="handleClick(expose)" />
-        </template>
-      </div>
-      <div class="modal-config-buttons">
-        <template v-for="expose in configExposes" :key="expose.name">
-          <MenuDropdown
-            backgroundColor="#222222"
-            :size="38"
-            :text="getSensorName(expose.name)"
-            :children="buildMenuItems(expose)"
-            @click="toggleMenu"
-            :icon="getSensorIcon(expose.name, expose.data)" />
-        </template>
-      </div>
-    </div>
-  </Dialog>
+    <p v-else role="status">This entity is no longer available.</p>
+  </UiDialog>
 </template>
 <style scoped>
-  .modal-control-buttons {
-    display: flex;
-    background: #222222;
-    border-radius: 999px;
-    justify-content: center;
-    align-items: center;
+  .entity-detail {
+    display: grid;
     gap: 1rem;
-    margin-top: 1.5rem;
-    align-self: center;
-    width: fit-content;
+    min-width: 0;
   }
-
-  .modal-config-buttons {
+  .entity-device {
+    color: var(--nh-text-muted);
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+  .entity-primary {
+    min-width: 0;
+  }
+  .entity-current {
+    font-size: clamp(2.5rem, 6vw, 3.5rem);
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.04em;
+    padding: 1rem 0 0.5rem;
+  }
+  .entity-seen {
+    font-size: 0.8rem;
+    color: var(--nh-text-muted);
+  }
+  .entity-warning {
+    color: var(--nh-warn);
+  }
+  .entity-history {
+    min-width: 0;
+  }
+  .entity-history > header {
     display: flex;
-    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+  }
+  h3 {
+    font-size: 0.9rem;
+    margin: 0;
+    font-weight: 500;
+  }
+  .entity-controls {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+  }
+  .entity-controls > div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
-    max-width: 100%;
+    font-size: 0.75rem;
   }
-
-  .dialog-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    user-select: none;
-  }
-
-  .modal-content {
+  .entity-tab {
     display: flex;
     flex-direction: column;
     align-items: center;
-    user-select: none;
-  }
-
-  .modal-content-header {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.2rem;
-    padding-bottom: 1rem;
-    user-select: none;
-  }
-
-  .modal-chart-section {
+    gap: 0.4rem;
+    padding: 0.7rem 0.4rem;
     width: 100%;
-    margin-bottom: 1.5rem;
-    position: relative;
-    padding-top: 0.25rem;
-    padding-right: 2.5rem;
+    min-height: 44px;
+    border: 1px solid var(--nh-border-strong);
+    border-radius: var(--nh-radius-l);
+    background: var(--nh-surface-2);
+    color: var(--nh-text);
+    cursor: pointer;
   }
-
-  .chart-refresh-btn {
-    position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
-    z-index: 10;
-    transition: color 0.2s ease;
+  .entity-tab[aria-pressed='true'] {
+    color: var(--nh-accent);
+    border-color: var(--nh-accent);
   }
-
-  .chart-refresh-btn.active {
-    color: #4caf50 !important;
-    animation: spin 2s linear infinite;
-  }
-
-  @keyframes spin {
-    from {
-      transform: rotate(0deg);
+  @media (min-width: 900px) {
+    .has-adjustment {
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
     }
-    to {
-      transform: rotate(360deg);
+    .has-adjustment .entity-device,
+    .has-adjustment .entity-warning {
+      grid-column: 1 / -1;
     }
-  }
-
-  .modal-value {
-    font-size: 36px;
-    font-weight: 400;
-  }
-  .modal-last-seen {
-    font-size: 16px;
-    font-weight: 500;
+    .has-adjustment .entity-history {
+      align-self: center;
+    }
   }
 </style>

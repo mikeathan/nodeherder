@@ -6,15 +6,30 @@
   import { nextTick, onBeforeUnmount, ref, useId, watch } from 'vue';
   import UiButton from './UiButton.vue';
 
-  const props = defineProps<{ open: boolean; title: string; wide?: boolean; dismissible?: boolean }>();
+  const props = withDefaults(
+    defineProps<{ open: boolean; title: string; wide?: boolean; dismissible?: boolean; fullscreenMobile?: boolean }>(),
+    { dismissible: true }
+  );
   const emit = defineEmits<{ (e: 'close'): void }>();
 
   const titleId = useId();
   const panel = ref<HTMLElement | null>(null);
   let opener: HTMLElement | null = null;
+  let previousOverflow: string | null = null;
 
-  const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-  const focusables = () => Array.from(panel.value?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? []);
+  function unlockScroll() {
+    document.removeEventListener('keydown', onDocumentKeydown, true);
+    if (previousOverflow === null) return;
+    document.body.style.overflow = previousOverflow;
+    previousOverflow = null;
+  }
+
+  const FOCUSABLE =
+    'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
+  const focusables = () =>
+    Array.from(panel.value?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? []).filter(
+      (element) => element.getClientRects().length > 0
+    );
 
   function close() {
     if (props.dismissible !== false) emit('close');
@@ -26,43 +41,64 @@
       close();
       return;
     }
-    if (e.key !== 'Tab') return;
+    if (e.key === 'Tab') trapFocus(e);
+  }
+
+  function trapFocus(event: KeyboardEvent) {
     const items = focusables();
     if (!items.length) return;
-    const first = items[0];
-    const last = items[items.length - 1];
-    if (e.shiftKey && document.activeElement === first) {
-      e.preventDefault();
-      last.focus();
-    } else if (!e.shiftKey && document.activeElement === last) {
-      e.preventDefault();
-      first.focus();
-    }
+    event.preventDefault();
+    const current = items.indexOf(document.activeElement as HTMLElement);
+    const direction = event.shiftKey ? -1 : 1;
+    const index =
+      current < 0 ? (event.shiftKey ? items.length - 1 : 0) : (current + direction + items.length) % items.length;
+    items[index].focus();
+  }
+
+  // Pending controls may lose focus when disabled; Escape must still dismiss the modal.
+  function onDocumentKeydown(event: KeyboardEvent) {
+    const dialogs = document.querySelectorAll('[role="dialog"][aria-modal="true"]');
+    if (dialogs[dialogs.length - 1] !== panel.value) return;
+    onKeydown(event);
   }
 
   watch(
     () => props.open,
     async (open) => {
       if (open) {
+        previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        document.addEventListener('keydown', onDocumentKeydown, true);
         opener = document.activeElement as HTMLElement | null;
         await nextTick();
         const body = panel.value?.querySelector<HTMLElement>('[autofocus], .nh-dialog-body ' + FOCUSABLE);
         (body ?? focusables()[0] ?? panel.value)?.focus();
       } else {
+        unlockScroll();
         opener?.focus?.();
         opener = null;
       }
     },
     { immediate: true }
   );
-  onBeforeUnmount(() => opener?.focus?.());
+  onBeforeUnmount(() => {
+    unlockScroll();
+    opener?.focus?.();
+  });
 </script>
 
 <template>
   <Teleport to="body">
-    <div v-if="open" class="nh-dialog-root" @keydown="onKeydown">
+    <div v-if="open" class="nh-dialog-root">
       <div class="nh-dialog-backdrop" @click="close" />
-      <div ref="panel" class="nh-dialog" :class="{ 'is-wide': wide }" role="dialog" aria-modal="true" :aria-labelledby="titleId" tabindex="-1">
+      <div
+        ref="panel"
+        class="nh-dialog"
+        :class="{ 'is-wide': wide, 'is-fullscreen-mobile': fullscreenMobile }"
+        role="dialog"
+        aria-modal="true"
+        :aria-labelledby="titleId"
+        tabindex="-1">
         <header class="nh-dialog-head">
           <h2 :id="titleId">{{ title }}</h2>
           <UiButton v-if="dismissible !== false" variant="ghost" icon="close" label="Close" @click="close" />
@@ -132,6 +168,19 @@
     border-top: var(--nh-border-w) solid var(--nh-border);
   }
   @media (max-width: 640px) {
+    .nh-dialog.is-wide.is-fullscreen-mobile,
+    .nh-dialog.is-fullscreen-mobile:not(.is-wide) {
+      top: 0;
+      height: 100dvh;
+      max-height: 100dvh;
+      border: 0;
+      border-radius: 0;
+      padding-top: env(safe-area-inset-top);
+    }
+    .is-fullscreen-mobile .nh-dialog-body {
+      flex: 1;
+      padding: 1rem 1.5rem;
+    }
     .nh-dialog,
     .nh-dialog.is-wide {
       left: 0;
