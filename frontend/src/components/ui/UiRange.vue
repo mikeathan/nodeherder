@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { computed, ref } from 'vue';
+  import { computed, ref, watch } from 'vue';
   import { rangePercent } from '@/domain/controls';
   const props = withDefaults(
     defineProps<{
@@ -27,72 +27,40 @@
   }>();
   const cancelled = ref(false);
   const keyboard = ref(false);
-  // Pointer presentation follows the finger continuously. Only the command draft
-  // snaps to native steps, so coarse device steps cannot make the handle stutter.
-  const pointerPercent = ref<number | null>(null);
-  let activePointer: number | null = null;
-  const percent = computed(() => pointerPercent.value ?? rangePercent(props.value, props.min, props.max));
+  const dragging = ref(false);
+  // The browser owns pointer movement. Keep its local value separate from hub
+  // reports so no second pointer writer or live update can fight a native drag.
+  const localValue = ref(props.value);
+  const percent = computed(() => rangePercent(localValue.value, props.min, props.max));
   const style = computed(() => ({
     '--range-percent': `${percent.value}%`,
     '--range-level': percent.value / 100,
   }));
-  function pointerValue(event: PointerEvent) {
-    const input = event.currentTarget as HTMLInputElement;
-    const box = input.getBoundingClientRect();
-    const fraction = props.vertical
-      ? (box.bottom - event.clientY) / box.height
-      : (event.clientX - box.left) / box.width;
-    const bounded = Math.max(0, Math.min(1, fraction));
-    pointerPercent.value = bounded * 100;
-    const raw = props.min + bounded * (props.max - props.min);
-    const stepped = props.min + Math.round((raw - props.min) / props.step) * props.step;
-    const value = Math.max(props.min, Math.min(props.max, Number(stepped.toFixed(8))));
-    input.value = String(value);
-    emit('preview', value);
-    return value;
-  }
-  function pointerDown(event: PointerEvent) {
-    if (props.disabled || event.button > 0 || activePointer !== null) return;
-    event.preventDefault();
-    start();
-    activePointer = event.pointerId;
-    const input = event.currentTarget as HTMLInputElement;
-    input.focus({ preventScroll: true });
-    keyboard.value = false;
-    if (event.isTrusted) input.setPointerCapture(event.pointerId);
-    pointerValue(event);
-  }
-  function pointerMove(event: PointerEvent) {
-    if (activePointer !== event.pointerId) return;
-    pointerValue(event);
-  }
-  function pointerUp(event: PointerEvent) {
-    if (activePointer !== event.pointerId) return;
-    const value = pointerValue(event);
-    activePointer = null;
-    pointerPercent.value = null;
-    emit('commit', value);
-    end();
-  }
-  function lostCapture() {
-    if (activePointer !== null) cancel();
-  }
+  watch(() => props.value, (value) => {
+    if (!dragging.value) localValue.value = value;
+  });
+  watch(() => props.disabled, (disabled) => {
+    if (disabled && dragging.value) cancel();
+  });
   function input(event: Event) {
     emit('preview', Number((event.target as HTMLInputElement).value));
   }
   function start() {
+    if (props.disabled) return;
     cancelled.value = false;
     keyboard.value = false;
+    dragging.value = true;
     emit('start');
   }
   function end() {
+    dragging.value = false;
     emit('end');
   }
   function cancel() {
     cancelled.value = true;
-    activePointer = null;
-    pointerPercent.value = null;
+    dragging.value = false;
     emit('cancel');
+    localValue.value = props.value;
   }
   function key(event: KeyboardEvent) {
     keyboard.value = true;
@@ -106,7 +74,10 @@
     keyboard.value = false;
   }
   function change(event: Event) {
-    if (!cancelled.value) emit('commit', Number((event.target as HTMLInputElement).value));
+    if (cancelled.value) return;
+    end();
+    // Native change commits on release; input events above only update the draft.
+    emit('commit', Number((event.target as HTMLInputElement).value));
   }
 </script>
 <template>
@@ -128,7 +99,7 @@
     <span v-if="!unknown" class="nh-range-grip" aria-hidden="true" />
     <input
       type="range"
-      :value="value"
+      v-model.number="localValue"
       :min="min"
       :max="max"
       :step="step"
@@ -139,10 +110,8 @@
       :aria-orientation="vertical ? 'vertical' : 'horizontal'"
       @input="input"
       @change="change"
-      @pointerdown="pointerDown"
-      @pointermove="pointerMove"
-      @pointerup="pointerUp"
-      @lostpointercapture="lostCapture"
+      @pointerdown="start"
+      @pointerup="end"
       @pointercancel="cancel"
       @focus="focus"
       @blur="blur"
@@ -201,16 +170,34 @@
     width: 100%;
     height: 100%;
     opacity: 0;
+    appearance: none;
+    padding: 0;
+    border: 0;
     cursor: pointer;
     touch-action: none;
+  }
+  /* Zero-size native thumbs keep native travel aligned with the painted rail.
+     The custom grip is decorative; it never writes pointer positions back. */
+  input::-webkit-slider-thumb {
+    appearance: none;
+    width: 0;
+    height: 0;
+    border: 0;
+  }
+  input::-moz-range-thumb {
+    width: 0;
+    height: 0;
+    border: 0;
   }
   .nh-range.is-keyboard {
     outline: 3px solid var(--nh-focus);
     outline-offset: 5px;
   }
   .nh-range.is-vertical {
-    width: clamp(7.5rem, 20vw, 10rem);
-    height: clamp(10rem, min(40dvh, calc(100dvh - 23rem)), 22rem);
+    --range-width: clamp(7.5rem, 20vw, 10rem);
+    --range-height: clamp(10rem, min(40dvh, calc(100dvh - 23rem)), 22rem);
+    width: var(--range-width);
+    height: var(--range-height);
     border-radius: 2.5rem;
   }
   .is-vertical .nh-range-track {
@@ -229,8 +216,14 @@
     transform: translate(-50%, 50%);
   }
   .is-vertical input {
-    writing-mode: vertical-lr;
-    direction: rtl;
+    /* Match the previous BaseSlider: rotate one native horizontal range instead
+       of combining browser-specific vertical behaviour with a pointer engine. */
+    inset: auto;
+    left: 50%;
+    top: 50%;
+    width: var(--range-height);
+    height: var(--range-width);
+    transform: translate(-50%, -50%) rotate(-90deg);
   }
   .nh-range.is-temperature .nh-range-track {
     background: linear-gradient(to right, var(--nh-range-warm), var(--nh-range-cool));

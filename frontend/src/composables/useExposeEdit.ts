@@ -47,7 +47,9 @@ export function useExposeEdit(device: () => Device, expose: () => Expose) {
   watch(
     () => expose().data,
     () => {
-      if (!dragging.value) draft.value = null;
+      // A report is not necessarily the requested value. Keep the released draft
+      // until the shared command lifecycle confirms it, refuses it or times out.
+      if (!dragging.value && !pending.value) draft.value = null;
     }
   );
   watch(() => device().id + '|' + expose().name, cancel);

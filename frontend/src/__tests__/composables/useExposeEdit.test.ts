@@ -74,3 +74,41 @@ test('missing readings have a usable native position without displaying a measur
   expect(edit.displayValue.value).toBeNull();
   scope.stop();
 });
+
+
+for (const reading of [
+  { name: 'brightness', min: 0, max: 254, initial: 50, target: 184, report: 75 },
+  { name: 'color_temp', min: 153, max: 500, initial: 250, target: 370, report: 300 },
+]) {
+  test(`${reading.name} keeps its released draft through unconfirmed live reports`, async () => {
+    const light = device('pending-draft', {}, [expose(reading.name, {
+      data: reading.initial, attributes: { min: reading.min, max: reading.max }, access_mode: 'readwrite',
+    })]);
+    store.dispatch('hub/init', { devices: [light], config: hubConfig() });
+    store.commit('ws/setConnectionStatus', 'connected');
+    const capture = captureWsFrames();
+    const scope = effectScope();
+    const find = () => store.getters['hub/findDevice'](light.id);
+    const edit = scope.run(() => useExposeEdit(find, () => find().exposes[reading.name]))!;
+    try {
+      edit.dragging.value = true;
+      edit.preview(reading.target);
+      expect(capture.frames).toHaveLength(0);
+      edit.commitNumber(reading.target);
+      await nextTick();
+      store.commit('hub/updateDevice', { id: light.id, data: { [reading.name]: reading.report } });
+      await nextTick();
+      expect(edit.pending.value).toBe(true);
+      expect(edit.displayValue.value).toBe(reading.target);
+      expect(find().exposes[reading.name].data).toBe(reading.report);
+      expect(capture.frames).toHaveLength(1);
+      store.commit('hub/updateDevice', { id: light.id, data: { [reading.name]: reading.target } });
+      await nextTick();
+      expect(edit.pending.value).toBe(false);
+      expect(edit.displayValue.value).toBe(reading.target);
+    } finally {
+      scope.stop();
+      capture.restore();
+    }
+  });
+}

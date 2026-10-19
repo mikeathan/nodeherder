@@ -31,6 +31,20 @@ Entity choices with at most five metadata options use labelled direct buttons;
 longer lists retain the shared select. Requested settings remain distinct from
 confirmed state. Verify both themes and desktop/mobile against isolated mocks.
 
+### Drag stability repair — 2026-10-19
+
+Owner reproduction: brightness and colour-temperature handles jump backward/forward
+while dragging. The old BaseSlider used native range/v-model and emitted only change;
+the replacement adds a competing pointer-value writer. Unconfirmed live reports can
+also clear a released draft while its command is still pending.
+
+AC-56: one native drag owner, local preview only while dragging, and one native-unit
+command on release. Unconfirmed reports must not reset an active/pending draft;
+confirmation, refusal, disconnect and timeout keep their established semantics.
+Brightness and mired/Kelvin temperature need mouse/touch/keyboard/cancel coverage,
+including live reports during drag and while awaiting confirmation. No arbitrary
+animation delay, continuous MQTT writes, or device-state optimism.
+
 ## Implementation amendment — 2026-10-17
 
 Owner instruction: implement the accepted entity/chart designs, clean touched CRAP

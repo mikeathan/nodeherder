@@ -70,13 +70,16 @@ type Point = { x: number; y: number };
  * Drags from one point to another the way the device would: touch events on touch devices
  * (phones), mouse events otherwise. Moves in small steps so drag libraries see a gesture.
  */
-export async function dragBetween(page: Page, from: Point, to: Point, steps = 14): Promise<void> {
+export async function dragBetween(
+  page: Page, from: Point, to: Point, steps = 14, beforeRelease?: () => Promise<void>
+): Promise<void> {
   const touch = await page.evaluate(() => navigator.maxTouchPoints > 0);
   const at = (i: number) => ({ x: from.x + ((to.x - from.x) * i) / steps, y: from.y + ((to.y - from.y) * i) / steps });
   if (!touch) {
     await page.mouse.move(from.x, from.y);
     await page.mouse.down();
     for (let i = 1; i <= steps; i++) await page.mouse.move(at(i).x, at(i).y);
+    await beforeRelease?.();
     await page.mouse.up();
     return;
   }
@@ -88,6 +91,7 @@ export async function dragBetween(page: Page, from: Point, to: Point, steps = 14
     await send('touchMove', at(i));
     await page.waitForTimeout(16);
   }
+  await beforeRelease?.();
   await send('touchEnd');
   await cdp.detach();
 }

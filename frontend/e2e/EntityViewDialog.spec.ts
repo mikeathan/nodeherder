@@ -461,3 +461,54 @@ test('entity mode choices show direct metadata options and wait for confirmation
   await expect(choices.getByRole('button', { name: 'Medium', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(choices.getByRole('button', { name: 'Medium', exact: true })).toBeEnabled();
 });
+
+
+for (const control of [
+  { name: 'brightness', label: 'Brightness', during: 20, pending: 30 },
+  { name: 'color_temp', label: 'Colour temperature', during: 490, pending: 480 },
+]) {
+  test(`${control.name} ignores live reports during native drag and pending confirmation`, async ({ page }) => {
+    const commands: { id: string; name: string; value: number }[] = [];
+    let report!: (value: number) => void;
+    await page.routeWebSocket('ws://localhost:4110/ws', (socket) => {
+      report = (value) => socket.send(JSON.stringify({
+        type: 'deviceUpdated', payload: { id: MOCK.livingRoomLight.id, data: { [control.name]: value } },
+      }));
+      socket.onMessage((raw) => {
+        const frame = JSON.parse(String(raw));
+        if (frame.type === 'deviceSetValue') commands.push(frame.payload);
+      });
+    });
+    await signIn(page, ui.home.path);
+    await ui.home.tile(page, 'living room group', 'Brightness').locator('.nh-tile-body').click();
+    const dialog = page.getByRole('dialog');
+    if (control.name === 'color_temp') await dialog.getByRole('button', { name: 'Colour temperature', exact: true }).click();
+    const slider = dialog.getByRole('slider', { name: control.label, exact: true });
+    const preview = dialog.getByLabel(`${control.label} preview`);
+    const box = (await slider.boundingBox())!;
+    let heldPreview = '';
+    // Routed WebSocket frames are not visible to Playwright's network recorder.
+    // Let delivery, Vue's update and a full rendered frame settle before checking.
+    const paint = () => page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+    await dragBetween(page,
+      { x: box.x + box.width / 2, y: box.y + box.height * 0.7 },
+      { x: box.x + box.width / 2, y: box.y + box.height * 0.2 }, 20,
+      async () => {
+        expect(commands).toHaveLength(0);
+        heldPreview = (await preview.textContent())!;
+        report(control.during);
+        await paint();
+        await expect(preview).toHaveText(heldPreview);
+        expect(commands).toHaveLength(0);
+      });
+    await expect.poll(() => commands.length).toBe(1);
+    await expect(slider).toBeDisabled();
+    report(control.pending);
+    await paint();
+    await expect(preview).toHaveText(heldPreview);
+    expect(commands).toHaveLength(1);
+    report(commands[0].value);
+    await expect(slider).toBeEnabled();
+    await expect(preview).toHaveText(heldPreview);
+  });
+}

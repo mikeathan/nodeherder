@@ -28,6 +28,14 @@ controls. Source-owned domain/options tests plus mock browser checks cover label
 colours, battery missing/zero and confirmed-setting semantics. No new dependency,
 transport, timing or persistence change; NH-01–06 / FE-01–05 checks remain applicable.
 
+AC-56 repair: remove the added pointer-position engine from UiRange, restoring one
+native range/local-value owner and change-only commits. Keep shared modern styling,
+keyboard focus, cancellation and native bounds. useExposeEdit retains its draft while
+pending even when an unrelated/unconfirmed device report arrives. Add a source-owned
+regression before fixing the draft reset, then verify both native drag directions,
+coarse/decimal bounds and native command units against isolated mocks. No backend,
+dependency or command transport change; NH-02/05/06 and FE-01/03/04 remain gates.
+
 Final implementation review: [2026-10-18 evidence](implementation-evidence-2026-10-18.md).
 
 ## Implementation authorised — 2026-10-17

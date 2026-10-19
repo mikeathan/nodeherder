@@ -5,6 +5,37 @@ Scope: FR-20–24 / AC-44–50 on `feat/entity-history-redesign`, baseline
 instruction supersedes the earlier investigation-only checkpoint. Constitutions
 remain proposed; no ratification, maintainer review or exception is invented.
 
+## Native drag repair — 2026-10-19
+
+AC-56 responds to backward/forward slider jumps. Comparison with
+`git show 771d2a9b:frontend/src/components/input/BaseSlider.vue` established the old
+mechanism: native range/v-model, a rotated horizontal range for vertical controls,
+and update only on native change. There was no animation library.
+
+Removed UiRange's competing pointer-position writer, manual input.value assignment
+and pointer capture. The browser again owns drag movement through a local v-model;
+props cannot replace that value during a gesture. The modern painted track/grip and
+keyboard semantics remain. Native input emits preview only; change sends the command.
+useExposeEdit also keeps a released draft while pending: an unconfirmed report updates
+hub truth without resetting the requested preview. Confirmation/timeout/refusal still
+settle through the existing shared command owner. No continuous device writes or
+arbitrary animation interpolation were added.
+
+Verification: 42 Jest suites / 282 tests pass, including released-draft regressions
+for brightness and mired temperature. Twelve final desktop/touch-emulated browser
+checks pass for both controls: keyboard, cancellation, native gestures/frame alignment,
+zero commands while held, one after release, and reports injected both during the
+gesture and while awaiting confirmation. Four preceding horizontal-row keyboard/drag
+timeout checks also pass; their code path is unchanged by the vertical CSS rotation.
+The new browser fixture initially waited on a network recorder that cannot observe
+routed WebSocket frames; a render barrier corrected that test harness failure.
+Lint/build pass with the same seven existing script warnings. Quality: 327 touched
+functions, maximum C=8 / CRAP=30, no failures. No Go changes or backend tests; no new
+resource subscriptions, global drag listeners or dependencies. Firefox/physical phone
+feel remains unverified because of the previously recorded local Firefox launch error.
+The full suite was not repeated for this scoped repair. NH-01–06/FE-01–05 reviewed;
+no exception/adoption is claimed. All device commands in checks target isolated mocks.
+
 ## Visual completeness review — 2026-10-19
 
 The owner identified the missing agreed multicolour meter and requested a comparison

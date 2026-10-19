@@ -15,6 +15,12 @@
 - [x] Add metadata-driven direct choices to entity views; preserve confirmation.
 - [x] Verify both themes, mobile/desktop, review quality and commit.
 
+### Drag stability repair — AC-56
+
+- [x] Reproduce pending draft reset; compare native control with the old implementation.
+- [x] Restore one native drag owner and retain unconfirmed pending drafts.
+- [x] Verify brightness/temperature gestures, failure/cancel and quality; commit.
+
 ## Entity/chart implementation — 2026-10-17
 
 Completed scope and checks: [2026-10-18 evidence](implementation-evidence-2026-10-18.md).
