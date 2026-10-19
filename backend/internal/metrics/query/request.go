@@ -6,6 +6,7 @@ import (
 )
 
 type MetricsQueryRequest struct {
+	History   bool     `json:"history,omitempty"`
 	DeviceIds []string `json:"deviceIds"`
 	Exposes   []string `json:"exposes"`
 

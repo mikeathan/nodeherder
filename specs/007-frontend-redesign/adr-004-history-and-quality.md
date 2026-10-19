@@ -1,6 +1,42 @@
 # ADR-004: Shared history queries, renderer boundary and measured quality
 
+## Implementation refinement — 2026-10-17
+
+Owner authorised implementation. Add opt-in `history: true` to existing metrics HTTP
+request. Each returned device value is `{name,type,from,to,data,partial}`. All samples use
+`{timestamp,value}` with epoch milliseconds and typed numeric/boolean/string values. Legacy requests retain
+their existing shapes. History limits and scan/time/device bounds are defined in
+FR-23. Context and collector budget checks stop work at scan callbacks. Storage
+bytes/keys and legacy interfaces remain unchanged. Enum history uses a raw collector
+only for this option. Missing bucket is empty; genuine errors propagate.
+
+Energy bars explicitly show observed within-bucket deltas and completeness; unknown
+boundaries/reset/gap are not measured zero. They never silently assert full-period
+consumption from incomplete data. This replaces the earlier exclusion on inferred
+counter consumption for the scoped entity/history redesign.
+
+Keep source-owned Jest/Playwright checks. Conservative zero-coverage
+CRAP upper bounds cover Vue script/mock code when Istanbul source coverage is absent;
+do not call upper bounds measured coverage. Keep low complexity and document before/
+after functions, including removed predecessors. Final renderer selection follows
+the lifecycle amendment below.
+
+Lifecycle amendment — 2026-10-18: the isolated mobile repeated-close test found
+retained DOM/listener growth with ApexCharts 4.7.0 after destruction, also with a
+raw unproxied instance in the compiled production build. Dialogs without charts
+stayed stable. Replace only the renderer with pinned Chart.js 4.5.1, whose canvas
+instance is owned outside Vue deep reactivity and explicitly destroyed on unmount.
+Retain shared transforms, units, statistics, controls, tokens and visual direction.
+Chart.js supplies monotone interpolation, steps, bars, gradients and native responsive
+canvas rendering. This replaces Apex/Vue-Apex runtime dependencies; resource and
+bundle comparisons must be re-run. No date adapter is needed for epoch-linear axes.
+Verify retained DOM/listener/heap trends, not just an empty library registry.
+The adapter follows the documented [Chart.js destruction contract](https://www.chartjs.org/docs/latest/developers/api.html#destroy).
+
 Status: Proposed | Date: 2026-10-11 | Spec: [spec.md](spec.md), FR-14…19
+
+Implementation and verification: [2026-10-18 evidence](implementation-evidence-2026-10-18.md).
+The original proposal below remains historical where superseded by the refinement.
 
 ## Context
 

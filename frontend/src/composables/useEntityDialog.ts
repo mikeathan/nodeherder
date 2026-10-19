@@ -1,144 +1,35 @@
-import { ref, computed, watchEffect } from 'vue';
-import { store } from '@/store/index';
-import { Device, Expose } from '@/types/device';
-import { ExposeTypes } from '@/types/device.type';
-import { getExposeBinaryProperty, getExposes, toggleExposeBinaryProperty } from '@/contracts/device';
-import {
-  writableExposesDeviceFilter,
-  writableConfigPresetsExposesDeviceFilter,
-} from '@/configs/automation/device.config';
-import { EntityInputComponents } from '@/mixins/useEntityComponents';
+import { computed, ref } from 'vue';
+import type { Expose } from '@/types/device';
+import { findDevice, statusOf } from './useHub';
+import { controlOf, isWritable } from '@/domain/exposes';
 
-/**
- * Composable for managing entity dialog state and logic
- */
+/** Related controls shown beside the selected expose; capability comes from expose metadata. */
+const RELATED: Record<string, string[]> = {
+  brightness: ['brightness', 'color_temp', 'state'],
+  color_temp: ['brightness', 'color_temp', 'state'],
+  energy: ['state', 'child_lock'],
+  power: ['state', 'child_lock'],
+  smoke: ['silence', 'test'],
+  water_leak: ['silence', 'test'],
+  tamper: ['silence', 'test'],
+  device_fault: ['silence', 'test'],
+  alarm: ['silence', 'test'],
+};
+
+/** Selects presentation only. Device truth and commands have separate shared owners. */
 export function useEntityDialog(deviceId: string, exposeName: string) {
-  const selectedControlExpose = ref<Expose | null>(null);
-
-  const device = computed(() => {
-    return store.getters['hub/findDevice'](deviceId) as Device | null;
-  });
-
-  const expose = computed(() => {
-    if (!device.value) return {} as Expose;
-    return device.value.exposes[exposeName] as Expose;
-  });
-
-  const lastSeen = computed(() => {
-    return device.value ? device.value.last_seen : '';
-  });
-
-  const configExposes = computed(() => {
-    if (!device.value) return [];
-
-    const exposeNameList = getExposes(device.value, writableConfigPresetsExposesDeviceFilter());
-    return exposeNameList.map((name) => device.value!.exposes[name] as Expose);
-  });
-
-  const controlExposes = computed(() => {
-    if (!device.value) return [];
-
-    const exposeNameList = getExposes(device.value, writableExposesDeviceFilter());
-    return exposeNameList.map((name) => device.value!.exposes[name] as Expose);
-  });
-
-  const selectedComponent = computed(() => {
-    if (!selectedControlExpose.value) return null;
-
-    return (
-      EntityInputComponents(selectedControlExpose.value, 'vertical', {
-        update: (e: any) => updateValue(selectedControlExpose.value!.name, e),
-      }) ?? null
-    );
-  });
-
-  // Pre-select expose control using priority order
-  watchEffect(() => {
-    if (!selectedControlExpose.value) {
-      const selected = controlExposes.value.reduce<Expose | null>((acc, expose) => {
-        if (acc) return acc;
-
-        if (expose.type === ExposeTypes.Numeric) {
-          if (expose.values === null) {
-            return expose; // Highest priority
-          }
-          return acc ?? expose; // Lower-priority fallback
-        }
-
-        return acc;
-      }, null);
-
-      selectedControlExpose.value = selected;
-    }
-  });
-
-  function isEnabled() {
-    if (device.value?.availability === 'offline') {
-      return false;
-    }
-
-    if (expose.value.type === ExposeTypes.Numeric && expose.value.data === 0) {
-      return false;
-    }
-
-    if (controlExposes.value) {
-      return controlExposes.value.some((exp) => {
-        if (exp.type === ExposeTypes.Binary) {
-          return getExposeBinaryProperty(exp);
-        }
-      });
-    }
-    return true;
+  const selected = ref(exposeName);
+  const device = computed(() => findDevice(deviceId));
+  const expose = computed(() => device.value?.exposes[exposeName]);
+  const status = computed(() => (device.value ? statusOf(device.value) : 'missing'));
+  const related = computed(() => Object.values(device.value?.exposes ?? {}).filter(relevantControl));
+  const adjustment = computed(() => device.value?.exposes[selected.value]);
+  const adjustable = computed(() => !!adjustment.value && controlOf(adjustment.value) === 'slider');
+  const controls = computed(() => related.value.filter((e) => e.name !== selected.value));
+  function relevantControl(e: Expose): boolean {
+    if (!isWritable(e)) return false;
+    if (e.name === exposeName) return true;
+    return RELATED[exposeName]?.includes(e.name) ?? false;
   }
-
-  function handleClick(expose: Expose) {
-    if (device.value?.availability === 'offline') {
-      return;
-    }
-    if (expose.type === ExposeTypes.Binary) {
-      const value = toggleExposeBinaryProperty(expose);
-      updateValue(expose.name, value);
-    } else {
-      selectedControlExpose.value = expose;
-    }
-  }
-
-  function updateValue(exposeName: string, newValue: any): void {
-    const msg = {
-      id: deviceId,
-      name: exposeName,
-      value: newValue,
-    };
-
-    store.dispatch('hub/setDeviceValue', msg);
-  }
-
-  function buildMenuItems(expose: Expose) {
-    if (!expose.values) {
-      return [];
-    }
-    return Object.values(expose.values).map((value: any) => {
-      return {
-        label: value,
-        value: value,
-        command: () => {
-          updateValue(expose.name, value);
-        },
-      };
-    });
-  }
-
-  return {
-    device,
-    expose,
-    lastSeen,
-    configExposes,
-    controlExposes,
-    selectedControlExpose,
-    selectedComponent,
-    isEnabled,
-    handleClick,
-    updateValue,
-    buildMenuItems,
-  };
+  return { device, expose, adjustment, adjustable, selected, controls, related, status };
 }

@@ -1,5 +1,108 @@
 # Tasks: Frontend redesign and customisable design system
 
+## Mobile entity repair — 2026-10-18
+
+- [x] Reproduce delayed/empty-history sizing across entity families with isolated mocks.
+- [x] AC-51/54: remove response-dependent shell sizing; cover all family states.
+- [x] AC-52: continuous slider presentation; verify step, capture, cancel and confirmation.
+- [x] AC-53: add truthful meter reading visual with missing/zero coverage.
+- [x] Review, visually inspect, run checks, document evidence and commit scoped work.
+
+### Visual completeness follow-up — AC-55
+
+- [x] Restore decorative meter colours and shared chart guides/final-sample markers.
+- [x] Correct state/event/air palettes and battery diagnostic presentation.
+- [x] Add metadata-driven direct choices to entity views; preserve confirmation.
+- [x] Verify both themes, mobile/desktop, review quality and commit.
+
+### Drag stability repair — AC-56
+
+- [x] Reproduce pending draft reset; compare native control with the old implementation.
+- [x] Restore one native drag owner and retain unconfirmed pending drafts.
+- [x] Verify brightness/temperature gestures, failure/cancel and quality; commit.
+
+## Entity/chart implementation — 2026-10-17
+
+Completed scope and checks: [2026-10-18 evidence](implementation-evidence-2026-10-18.md).
+
+- [x] T300 — Freeze additive history/control contracts and capture baseline complexity;
+  FR-20–24, NH-01/04, AC-50; done: amendment, producer fixtures, recorded metrics.
+- [x] T301 — Bounded history HTTP producer, raw enum events, real errors and companion
+  regressions; FR-23, AC-47; depends T300; done: Go contract/race tests.
+- [x] T302 — Pure control conversions and history/energy/state calculations; FR-21/22/24,
+  AC-45/46/48; depends T300; done: source-owned boundary/regression tests.
+- [x] T303 — Shared request lifecycle/Vuex history, decoding, cancellation/timeout/cache;
+  FR-22, AC-46/49; depends T301/302; done: failure/concurrency/reset coverage.
+- [x] T304 — Shared numeric/state/event renderers and full-screen entity controls,
+  full device history; FR-20–22, AC-44/45/46; depends T302/303; done: mock browser visuals.
+- [x] T305 — Remove unused legacy paths, mock parity, quality cleanup and review;
+  AC-49/50; depends T304; done: import scan, scores, resource/viewport regressions.
+- [x] T306 — Required tests/lint/build/race, final acceptance/rule evidence and commit;
+  NH-05, AC-44–50; depends T305; done: actual results and commit recorded.
+
+## Entity view corrective pass (2026-10-18)
+
+Owner review evidence, reproduction and expected behavior:
+[plan](plan.md#entity-view-corrective-pass--2026-10-18), [spec](spec.md#corrective-pass--2026-10-18).
+No contract or backend change; all tasks are frontend presentation/behavior corrections.
+
+- [x] T307 — Make unknown/offline and preview states truthful in `UiRange` and
+  `EntityAdjustment`: muted rail, hidden fill/grip until a real draft/reading, tested
+  percent conversion, grip centred on the boundary, pointer release/cancel cleanup.
+  IDs: FR-20/21, AC-44/45; paths: `components/ui/UiRange.vue`,
+  `components/entity/EntityAdjustment.vue`, `domain/controls.ts`; done: `rangePercent`
+  unit tests plus grip-geometry and gesture browser assertions.
+- [x] T308 — Restore brightness/colour-temperature information: muted `Unknown`
+  readout, warmth descriptor, `Warm`/`Cool` endpoint labels, visible power state, and
+  labelled writable controls for read-only entities. IDs: FR-20/21, AC-44/45; paths:
+  `EntityAdjustment.vue`, `EntityViewDialog.vue`, new `EntityPowerButton.vue`,
+  `domain/exposes.ts`; done: browser assertions for Unknown/no-fill, warmth/endpoints,
+  visible power/alarm labels.
+- [x] T309 — Correct history truthfulness: no empty counter axes, explicit
+  unavailable consumption, theme-token tooltip colours, compact/full selection by
+  viewport. IDs: FR-22/24, AC-46/48; paths: `HistoryView.vue`, `NumericHistory.vue`,
+  `options.ts`, `EntityViewDialog.vue`, new `composables/useMediaQuery.ts`; done:
+  no-complete-interval browser test, desktop summary vs mobile compact assertions.
+- [x] T310 — Fix focus/mobile composition: initial focus on the dialog surface, no
+  slider outline on open, 44px circular mode/power targets, essential controls reachable
+  at 320/390 and short landscape, desktop two-column use of the larger chart.
+  IDs: FR-20, AC-44, FE-04; paths: `UiDialog.vue`, `EntityViewDialog.vue`,
+  `EntityPowerButton.vue`; done: dialog-surface focus assertion, 320×568 control-reach
+  test, 390/1120 screenshots, 320 header title hidden to avoid truncation.
+- [x] T311 — Add source-owned regressions for the corrected behavior; IDs: AC-45/46,
+  NH-05; paths: `src/__tests__/domain/controls.test.ts`,
+  `src/__tests__/domain/exposes.test.ts`,
+  `src/__tests__/domain/history/state.test.ts`,
+  `src/__tests__/components/chart/history/options.test.ts`,
+  `frontend/e2e/EntityViewDialog.spec.ts`; done: new assertions fail on the pre-fix
+  behaviour and pass on the final code.
+- [x] T313 — Normalise raw boolean history to live binary words, restore the
+  `--nh-kind-switch` colour, and use the ordinary dialog width with an explicit empty
+  state for read-only views without samples. IDs: FR-22, AC-46/48, NH-02/04; paths:
+  `domain/exposes.ts`, `domain/history/state.ts`, `assets/styles/tokens.css`,
+  `HistoryView.vue`, `EntityViewDialog.vue`; done: unit assertions for boolean/word
+  history, state-timeline screenshot, empty-history browser test.
+- [x] T314 — Restore compact device-row sliders: 1.75rem visual rail, 44px touch
+  target, kind colour, and mired/Kelvin inversion matching the entity view.
+  IDs: FR-21, AC-45, FE-04; paths: `components/entity/ExposeControl.vue`,
+  `components/ui/UiRange.vue`; done: 28px rails at 112–122px, affected browser specs.
+- [x] T315 — Alert-family action rows, latest-recorded fallback, known-only other
+  readings and dense-timeline threshold. IDs: FR-20/22, AC-44/46, NH-06; paths:
+  `composables/useEntityDialog.ts`, `EntityViewDialog.vue`, `StateHistory.vue`;
+  done: smoke silence browser test, latest-recorded browser test, density screenshot.
+- [x] T316 — Make energy history compact at narrow widths, keep its summary visible,
+  and replace zero-only interval axes with an explicit notice. IDs: FR-22/24, AC-46/48;
+  paths: `NumericHistory.vue`, `HistoryView.vue`, `EntityViewDialog.vue`; done:
+  compact energy browser checks and no-complete-interval regression.
+- [x] T317 — Historical, superseded by AC-51/52 above: collapse unavailable adjustable rails to a range line and use a
+  content-height mobile sheet when there is no usable control/history. IDs: FR-20/21,
+  AC-44/45, FE-04; paths: `EntityAdjustment.vue`, `EntityViewDialog.vue`; done:
+  offline-brightness 597px sheet check and entity-dialog browser suite.
+- [x] T312 — Run fresh isolated mock and exact checks, record acceptance/rule evidence
+  and update the evidence document; IDs: AC-44–50, NH-01/05; depends T307–T317; done:
+  118 Playwright tests, 42 Jest suites/278 tests, lint/build, quality max C=8/CRAP=30;
+  evidence recorded.
+
 Spec: [spec.md](spec.md) | Plan: [plan.md](plan.md) | Status: Main redesign merged; scoped backend repair implemented; follow-up open
 
 ## Current status (2026-10-12)

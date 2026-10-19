@@ -97,4 +97,10 @@
       font-size: 0.95rem;
     }
   }
+  /* The page heading carries the name; avoid a truncated "De…" in the narrow bar. */
+  @media (max-width: 360px) {
+    .nh-header-title {
+      display: none;
+    }
+  }
 </style>

@@ -1,5 +1,170 @@
 # Plan: Frontend redesign and customisable design system
 
+## Mobile entity repair — 2026-10-18
+
+Apply AC-51–54 in shared UiDialog/EntityViewDialog (stable shell), UiRange and pure
+control geometry (continuous pointer presentation with native step commands), and a
+small SVG EntityMeter (reading visual; no new chart dependency or invented scale).
+EntityReadout owns the state/alert badge and environmental reading presentation;
+mobile writable views retain controls plus compact history.
+Keep Vuex confirmed state, command confirmation, raw history semantics and bounded
+query ownership. Existing uncommitted frontend repairs are retained and reviewed.
+
+Verify first-frame and settled geometry with delayed/empty/error history for each
+family on mobile, touch/mouse/keyboard/cancel command semantics, meter unknown/zero,
+small/landscape/desktop layouts, screenshots and browser errors. Run relevant Jest,
+Playwright, lint/build and changed-function quality checks. Prior passing evidence
+is historical and does not prove this follow-up visually matches the approved design.
+NH-01/04: scoped acceptance and existing boundaries; NH-02/06, FE-01/03: native
+steps, no fabricated readings, unchanged transport/persistence; NH-03/FE-02/05:
+no new ingress/secrets; NH-05/FE-04: isolated interaction/viewport verification.
+No exceptions or adoption are claimed. Rollback is code-only.
+
+Visual completeness (AC-55): keep the shared expose registry as the owner of state
+palettes, use theme tokens for SVG meter stops and chart styling, retain chart gaps,
+and add battery presentation to EntityReadout. ExposeControl gets an explicit
+expanded presentation for short choices in entity views; device rows retain compact
+controls. Source-owned domain/options tests plus mock browser checks cover labels,
+colours, battery missing/zero and confirmed-setting semantics. No new dependency,
+transport, timing or persistence change; NH-01–06 / FE-01–05 checks remain applicable.
+
+AC-56 repair: remove the added pointer-position engine from UiRange, restoring one
+native range/local-value owner and change-only commits. Keep shared modern styling,
+keyboard focus, cancellation and native bounds. useExposeEdit retains its draft while
+pending even when an unrelated/unconfirmed device report arrives. Add a source-owned
+regression before fixing the draft reset, then verify both native drag directions,
+coarse/decimal bounds and native command units against isolated mocks. No backend,
+dependency or command transport change; NH-02/05/06 and FE-01/03/04 remain gates.
+
+Final implementation review: [2026-10-18 evidence](implementation-evidence-2026-10-18.md).
+
+## Implementation authorised — 2026-10-17
+
+Implement FR-20–24/AC-44–50 on `feat/entity-history-redesign`; the final implementation
+evidence above records the completed change map. Use Chart.js 4.5.1 with a shared theme-aware adapter after the Apex mobile teardown
+regression (ADR-004), plus native accessible
+range inputs and proportional HTML state timelines. Pure functions own history and
+control conversions; Vuex owns query results and hub confirmed state. Browser handles
+live outside serialisable store state and are disposed by explicit subscriptions.
+HTTP history is additive, bounded and cancellable at collector callbacks; no migration.
+Energy bucket semantics and raw enums follow the amendment in spec.md. Backend changes
+ship with frontend and old HTTP/WS consumers remain compatible. Rollback is code-only.
+
+Before implementation rule check: NH-01 PASS (amendment/tasks); NH-02 PASS design
+(native commands, confirmation, no ingestion changes); NH-03 PASS design (same route,
+runtime decode, no logs/persistence); NH-04 PASS design (existing boundaries, ADR-004
+amended); NH-05 PASS design (source-owned tests and planned commands); NH-06 PASS design
+(bounded resources, units/partial/gaps). FE-01–05 and BE-01–05 PASS design against the
+planned ownership/verification boundaries. This records the pre-implementation
+checkpoint; final execution evidence is linked above. No
+ratification or exception approval is claimed. Review these gates against final diff.
+
+Verification: Jest coverage, frontend lint/build, mock Playwright desktop/mobile plus
+viewport/leak checks; Go tests/vet/build and affected metrics race tests. Quality runner
+uses TypeScript AST for TS/JS/Vue script complexity, Istanbul statement coverage where
+available, zero-coverage upper bounds otherwise; Go scorer pinned/recorded in evidence.
+Baseline is branch parent recorded by git, not an unrelated repository. Vue behavior
+is exercised through Playwright; adding a second unit framework is unnecessary.
+
+## Entity view corrective pass — 2026-10-18
+
+Owner review of `7ccdcfcb` found that the implemented entity views do not match the
+accepted v3/v4/v5 direction and that some states are misleading. Observed against the
+isolated mock at 1120×850 and 390×844:
+
+- An offline or missing adjustable reading renders a large `—` where the value belongs.
+  At the same time the native range falls back to `min`, so the whole vertical rail
+  uses `--nh-range-empty` and the grip sits at the bottom. The dash reads as a floating
+  handle above the slider (the owner's "handle above the slider").
+- The vertical grip is offset by three percentage points below the fill boundary and is
+  not centred on it; the horizontal grip has the same offset.
+- `UiDialog` focuses the first body input on open, so the hidden native range draws a
+  focus outline around the whole slider before any keyboard interaction.
+- The power/state control has no visible On/Off/Unknown text, and a read-only entity
+  whose primary control is writable (alarm) renders an unlabelled switch.
+- Colour temperature omits the accepted warm/cool endpoint labels and the warmth
+  descriptor below the value.
+- Adjustable desktop views keep the compact history variant, leaving most of the
+  second column empty instead of using a larger chart and summary.
+- A counter series with no complete interval shows empty bar axes, `—` consumption and
+  no explanation.
+- The illuminance/energy screenshots used a stale local mock process. Current mock code
+  returns in-range samples; verification must start from a fresh isolated mock.
+
+Corrections, all implementation-level against existing FR-20/21/22/24 and AC-44/45/46/48;
+no new HTTP/WS contract, ingestion, automation, storage or dependency change:
+
+1. `UiRange` gains an explicit unknown/disabled presentation: the rail is muted, the
+   fill and grip are hidden, and a preview value reveals the real fill. The grip is
+   centred on the boundary with `calc()` in both orientations. Percent conversion moves
+   to a tested `domain/controls` helper.
+2. `EntityAdjustment` shows a muted `Unknown` readout (never a fake minimum), a warmth
+   descriptor for colour temperature, and `Warm`/`Cool` endpoint labels. The status line
+   is reserved for sending/release feedback. When controls are unavailable it collapses
+   the full-height rail to a compact range line instead of a dead slider.
+3. `EntityViewDialog` uses circular labelled mode controls, a labelled power control
+   with On/Off/Unknown state, labelled writable controls for read-only entities, and a
+   compact "Other readings" summary where the device has other measurements. Desktop
+   uses the full history variant; a small `useMediaQuery` composable selects it.
+   Read-only views without samples use the ordinary dialog width and an explicit empty
+   state instead of an oversized blank history column. Unavailable/empty mobile views
+   use a content-height sheet; full-screen is reserved for a usable control or history.
+4. `UiDialog` moves initial focus to the dialog surface, not the first body input, while
+   keeping focus trapped and restored; an explicit `[autofocus]` still wins.
+5. `HistoryView`/`NumericHistory`/`options` explain counter series with no complete
+   interval instead of drawing empty axes, distinguish unavailable consumption from
+   measured zero, and read tooltip colours from theme tokens.
+6. Raw HTTP binary history is typed as boolean while live z2m values often use
+   `ON`/`OFF`; `binaryStateOf`/formatting now accept both so state timelines and recent
+   reports no longer show `Unknown` beside a confirmed `On`. The missing
+   `--nh-kind-switch` token is defined so On/Off timelines and legend dots have a colour.
+7. Device-row sliders keep the compact horizontal treatment: 1.75rem visual rail with
+   a 44px touch target, kind colour, and mired/Kelvin direction inverted consistently
+   with the entity view. The device card no longer expands the range to the row width.
+8. Alert-family views expose their writable silence/test action as a labelled row.
+   A missing current reading shows the latest recorded sample with time, other readings
+   list only known values, and very busy timelines (>96 segments) use the labelled
+   64-bucket activity density instead of hundreds of thin buttons.
+9. Energy history is compact at narrow widths and shows a notice instead of empty axes
+   when no interval has measurable consumption, while the meter total, controls and
+   consumption summary stay primary.
+10. Regression coverage extends `domain/controls`, `domain/exposes`, history state,
+   chart options and `EntityViewDialog.spec.ts` (unknown/offline, grip geometry, focus,
+   labels, empty-history width, latest-recorded fallback, alert action, desktop summary,
+   320/390 widths) plus the existing device-row `ExposeControl` browser flows.
+   Verification starts fresh mock/frontend processes.
+
+### Rule check
+
+| Rule | Design/verification evidence | Before implementation | Before merge |
+| --- | --- | --- | --- |
+| NH-01 | This section, spec corrective note and T307–T317 reproduce the defects and expected behavior | PASS | PASS |
+| NH-02 | Commands still go through `useExposeEdit`/`useDeviceCommand`; unknown is never shown as confirmed; labels only | PASS | PASS |
+| NH-03 | No new entry points, payload fields, logs or persistence; mock-only verification | PASS | PASS |
+| NH-04 | Existing component/domain ownership; no new dependency; shared chart options retained | PASS | PASS |
+| NH-05 | Source-owned unit tests plus Playwright desktop/mobile; exact commands recorded | PASS | PASS |
+| NH-06 | Unknown vs zero, no fake fill, explicit no-complete-interval text; bounded rendering unchanged | PASS | PASS |
+| FE-01/02/03 | Presentation only; existing contracts; requested/confirmed separation documented | PASS | PASS |
+| FE-04 | Accessible names, keyboard focus, 44px targets, 320/390/768/1280/1920 checks | PASS | PASS |
+| FE-05 | No secrets, bundle or persistence change | PASS | PASS |
+| BE-01–05 | N/A: no backend change in this correction | N/A | N/A |
+
+Verification (2026-10-18, final code): Jest 42 suites / 278 tests, frontend lint 0 errors
+(7 pre-existing warnings), build/type-check pass, mock history contract pass, full
+Playwright suite 118 passed on fresh mock/frontend processes, and the quality runner
+reports 312 touched functions, max C=8 / max CRAP=30, zero failures. Desktop/mobile
+screenshots confirm unknown/known brightness, colour temperature, energy, alarm, state
+history and empty-history read-only states at 320/390/768/1280/1920 widths. No household
+device was contacted; only the isolated mock ran for browser evidence.
+
+## Entity/chart redesign investigation — 2026-10-17
+
+The initial investigation established the accepted control-first mobile direction
+and shared history architecture. Implementation was subsequently authorised and
+completed; see the final evidence above. Initial concept images and superseded
+investigation/readiness reports were removed at the owner’s request. Git history
+preserves the original preparation material.
+
 Spec: [spec.md](spec.md) | Tasks: [tasks.md](tasks.md) | Status: Main redesign merged; scoped backend repair implemented; wider follow-up deferred
 Author: Claude Code / Codex | Updated: 2026-10-12 | Follow-up baseline: `fcdebca2` (#54)
 Constitutions: parent/frontend/backend 1.0.0, proposed; none claimed ratified.

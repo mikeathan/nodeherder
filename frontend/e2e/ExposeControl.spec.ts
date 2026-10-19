@@ -21,9 +21,15 @@ for (const gesture of ['keyboard', 'drag'] as const) {
         if (frame.type !== 'deviceSetValue') return;
         commands.push(frame.payload);
         if (commands.length === 2) return; // device echo filtered by backend sampling
-        socket.send(JSON.stringify({ type: 'deviceUpdated', payload: {
-          id: frame.payload.id, data: { [frame.payload.name]: frame.payload.value },
-        } }));
+        socket.send(
+          JSON.stringify({
+            type: 'deviceUpdated',
+            payload: {
+              id: frame.payload.id,
+              data: { [frame.payload.name]: frame.payload.value },
+            },
+          })
+        );
       });
     });
     await signIn(page, `/devicepage/${MOCK.livingRoomLight.id}`);
@@ -58,13 +64,13 @@ for (const gesture of ['keyboard', 'drag'] as const) {
     await expect(page.getByText('Sending…', { exact: true })).toBeVisible();
     await expect(page.getByText(/did not confirm the change/)).toBeVisible({ timeout: 7000 });
     await expect(slider).toBeEnabled();
-    // Additional UI defect: the unconfirmed draft remains displayed after the timeout.
-    await expect(slider).toHaveValue(String(commands[1].value));
+    // A timed-out draft must return to the device-confirmed value.
+    await expect(slider).toHaveValue(String(commands[0].value));
 
     await slider.focus();
     await adjust();
     await expect.poll(() => commands.length).toBe(3);
-    expect(commands[2].value).toBeGreaterThan(commands[1].value);
+    expect(commands[2].value).toBe(commands[1].value);
     await expect(slider).toBeEnabled();
     await expect(page.getByText('Sending…', { exact: true })).toHaveCount(0);
   });

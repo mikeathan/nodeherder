@@ -1,6 +1,7 @@
 package storage_test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"node-herder/internal/metrics/domain"
@@ -1301,4 +1302,61 @@ func assertExposeDataCount(t *testing.T, expose domain.ExposeResult, want int) {
 	}
 
 	t.Fatalf("unknown expose result type")
+}
+
+func TestHistoryTailBoundsAndScanCancellation(t *testing.T) {
+	filename := utils_test.Tempfile()
+	repo, clock, err := utils_test.CreateMetricsRepoWithTailWindow(filename, time.Minute)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { repo.Close(); os.Remove(filename) }()
+	base := time.Date(2026, 10, 17, 12, 0, 0, 0, time.UTC)
+	for _, seconds := range []int{20, 40, 60, 80} {
+		clock.SetMockTime(base.Add(time.Duration(seconds) * time.Second))
+		if err := repo.Store("history-device", map[string]any{"temperature": float32(seconds)}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	clock.SetMockTime(base.Add(100 * time.Second))
+	read := func(from, to time.Time, budget *domain.HistoryBudget) (*domain.HistoryResult, error) {
+		result := &domain.HistoryResult{Name: "temperature", Type: "numeric", From: from.UnixMilli(), To: to.UnixMilli(), Limit: 10001, Budget: budget}
+		_, err := repo.QueryDevice("history-device", from, to, nil, map[string]domain.ExposeResult{"temperature": result})
+		return result, err
+	}
+	budget := func() *domain.HistoryBudget {
+		return &domain.HistoryBudget{Context: context.Background(), Remaining: 100}
+	}
+	all, err := read(base, base.Add(100*time.Second), budget())
+	if err != nil || len(all.Data) != 4 {
+		t.Fatalf("split boundary duplicated/lost: %+v, %v", all.Data, err)
+	}
+	boundary, err := read(base, base.Add(40*time.Second), budget())
+	if err != nil || len(boundary.Data) != 2 {
+		t.Fatalf("inclusive end at split boundary duplicated/lost: %+v, %v", boundary.Data, err)
+	}
+	narrow, err := read(base.Add(65*time.Second), base.Add(85*time.Second), budget())
+	if err != nil || len(narrow.Data) != 1 || narrow.Data[0].Value != float32(80) {
+		t.Fatalf("tail escaped bounds: %+v, %v", narrow.Data, err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if _, err := read(base, base.Add(100*time.Second), &domain.HistoryBudget{Context: ctx, Remaining: 100}); err != context.Canceled {
+		t.Fatalf("scan ignored cancellation: %v", err)
+	}
+	if _, err := read(base, base.Add(100*time.Second), &domain.HistoryBudget{Context: context.Background(), Remaining: 1}); err == nil {
+		t.Fatal("scan budget ignored")
+	}
+	if err := repo.Close(); err != nil {
+		t.Fatal(err)
+	}
+	repo, clock, err = utils_test.CreateMetricsRepoWithTailWindow(filename, time.Minute)
+	if err != nil {
+		t.Fatal(err)
+	}
+	clock.SetMockTime(base.Add(100 * time.Second))
+	restored, err := read(base, base.Add(100*time.Second), budget())
+	if err != nil || len(restored.Data) != 4 {
+		t.Fatalf("empty cache hid recent persisted history: %+v, %v", restored.Data, err)
+	}
 }

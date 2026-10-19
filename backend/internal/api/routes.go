@@ -616,6 +616,10 @@ func (h *MetricsQueryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	if req.History {
+		h.serveHistory(w, r, req)
+		return
+	}
 	response, err := h.querier.Query(r.Context(), req)
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, err.Error())

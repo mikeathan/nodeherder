@@ -4,40 +4,72 @@
    * metadata (domain/exposes.ts controlOf). Commands go through useDeviceCommand, so pending
    * state, timeouts and the "can control" rules are the same everywhere (FR-04).
    */
-  import { computed, ref, watch } from 'vue';
+  import { computed } from 'vue';
   import { Device, Expose } from '@/types/device';
-  import { binaryOffValue, binaryOnValue, controlOf, exposeLabel, exposePresets, exposeRange, formatExposeValue, isBinaryOn } from '@/domain/exposes';
-  import { useDeviceCommand } from '@/composables/useDeviceCommand';
+  import {
+    binaryOffValue,
+    binaryOnValue,
+    controlOf,
+    exposeKind,
+    exposeLabel,
+    exposePresets,
+    exposeRange,
+    formatExposeValue,
+    isBinaryOn,
+  } from '@/domain/exposes';
+  import { useExposeEdit } from '@/composables/useExposeEdit';
+  import { numericStep, sliderValue } from '@/domain/controls';
+  import UiRange from '@/components/ui/UiRange.vue';
   import UiToggle from '@/components/ui/UiToggle.vue';
   import UiSelect from '@/components/ui/UiSelect.vue';
 
-  const props = defineProps<{ device: Device; expose: Expose; label?: string }>();
+  const props = defineProps<{ device: Device; expose: Expose; label?: string; expanded?: boolean }>();
 
-  const { send, isPending, canControl } = useDeviceCommand();
   const control = computed(() => controlOf(props.expose));
   const name = computed(() => props.label ?? exposeLabel(props.expose.name));
-  const pending = computed(() => isPending(props.device.id, props.expose.name));
-  const disabled = computed(() => !canControl(props.device) || pending.value);
   const range = computed(() => exposeRange(props.expose));
   const presets = computed(() => exposePresets(props.expose));
 
-  // slider and number keep a local value while the user is editing
-  const draft = ref<number | null>(null);
-  watch(
-    () => props.expose.data,
-    () => (draft.value = null)
+  const {
+    value: numberValue,
+    displayValue,
+    pending,
+    disabled,
+    dragging,
+    preview,
+    commit,
+    commitNumber: sendNumber,
+    cancel,
+  } = useExposeEdit(
+    () => props.device,
+    () => props.expose
   );
-  const numberValue = computed(() => draft.value ?? (typeof props.expose.data === 'number' ? props.expose.data : (range.value?.min ?? 0)));
-
-  const commit = (value: unknown) => send(props.device, props.expose.name, value);
+  const step = computed(() => numericStep(props.expose));
+  const unknown = computed(
+    () => displayValue.value === null || displayValue.value === undefined || displayValue.value === ''
+  );
+  const position = computed(() => sliderValue(props.expose, numberValue.value));
+  function previewSlider(value: number) {
+    preview(sliderValue(props.expose, value));
+  }
+  function commitSlider(value: number) {
+    sendNumber(sliderValue(props.expose, value));
+  }
   function commitNumber(event: Event) {
-    const value = Number((event.target as HTMLInputElement).value);
-    if (Number.isFinite(value)) commit(value);
+    const input = event.target as HTMLInputElement;
+    if (!input.value.trim()) {
+      cancel();
+      return;
+    }
+    sendNumber(Number(input.value));
   }
 </script>
 
 <template>
-  <div class="nh-xc" :class="`is-${control}`">
+  <div
+    class="nh-xc"
+    :class="`is-${control}`"
+    :style="{ '--range-color': `var(--nh-kind-${exposeKind(expose.name)})` }">
     <UiToggle
       v-if="control === 'switch'"
       :model-value="isBinaryOn(expose)"
@@ -47,18 +79,23 @@
       @update:model-value="commit($event ? binaryOnValue(expose) : binaryOffValue(expose))" />
 
     <template v-else-if="control === 'slider' && range">
-      <input
-        type="range"
+      <UiRange
         class="nh-xc-range"
         :min="range.min"
         :max="range.max"
-        :value="numberValue"
-        :aria-label="name"
-        :aria-valuetext="formatExposeValue(expose, numberValue)"
+        :step="step"
+        :value="position"
+        :label="name"
+        :value-text="formatExposeValue(expose, displayValue)"
         :disabled="disabled"
-        @input="draft = Number(($event.target as HTMLInputElement).value)"
-        @change="commitNumber" />
-      <output class="nh-xc-out">{{ formatExposeValue(expose, numberValue) }}</output>
+        :unknown="unknown"
+        :temperature="expose.name === 'color_temp'"
+        @start="dragging = true"
+        @end="dragging = false"
+        @preview="previewSlider"
+        @commit="commitSlider"
+        @cancel="cancel" />
+      <output class="nh-xc-out">{{ formatExposeValue(expose, displayValue) }}</output>
       <UiSelect
         v-if="presets.length"
         class="nh-xc-presets"
@@ -70,6 +107,23 @@
         @update:model-value="commit" />
     </template>
 
+    <!-- Entity views favour directly reachable choices; rows and long lists keep
+         the native select. Pressed state always comes from the confirmed expose. -->
+    <div
+      v-else-if="control === 'choice' && expanded && presets.length <= 5"
+      class="choice-options"
+      role="group"
+      :aria-label="name">
+      <button
+        v-for="preset in presets"
+        :key="preset.label"
+        type="button"
+        :aria-pressed="expose.data === preset.value"
+        :disabled="disabled"
+        @click="commit(preset.value)">
+        {{ preset.label }}
+      </button>
+    </div>
     <UiSelect
       v-else-if="control === 'choice'"
       :model-value="expose.data"
@@ -83,7 +137,8 @@
       type="number"
       class="nh-input is-num"
       inputmode="decimal"
-      :value="numberValue"
+      :step="step"
+      :value="displayValue"
       :aria-label="name"
       :disabled="disabled"
       @change="commitNumber" />
@@ -103,13 +158,54 @@
     min-width: 0;
   }
   .nh-xc.is-slider {
-    flex: 1 1 14rem;
+    flex: 0 1 auto;
     flex-wrap: nowrap;
   }
+  .choice-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .choice-options button {
+    min-height: 44px;
+    padding: 0.6rem 0.9rem;
+    border-radius: var(--nh-radius-s);
+    border: 1px solid var(--nh-border-strong);
+    background: var(--nh-surface-2);
+    color: var(--nh-text);
+    font: inherit;
+    cursor: pointer;
+  }
+  .choice-options button[aria-pressed='true'] {
+    border-color: var(--nh-accent);
+    background: var(--nh-accent-soft);
+    color: var(--nh-accent);
+  }
+  .choice-options button:focus-visible {
+    outline: 3px solid var(--nh-focus);
+    outline-offset: 3px;
+  }
+  .choice-options button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
   .nh-xc-range {
-    flex: 1 1 8rem;
-    min-width: 5rem;
-    accent-color: var(--nh-accent);
+    flex: 1 1 9rem;
+    min-width: 7rem;
+    max-width: 7.5rem;
+  }
+  .nh-xc.is-slider .nh-xc-range {
+    height: 1.75rem;
+    border-radius: var(--nh-radius-s);
+  }
+  .nh-xc.is-slider .nh-xc-range :deep(.nh-range-grip) {
+    height: 55%;
+  }
+  /* Keep the visual rail compact while preserving a 44px touch target. */
+  .nh-xc.is-slider .nh-xc-range :deep(input) {
+    top: -0.5rem;
+    bottom: -0.5rem;
+    height: auto;
   }
   .nh-xc-out {
     min-width: 3.5rem;

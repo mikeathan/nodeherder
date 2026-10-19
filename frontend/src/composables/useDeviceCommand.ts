@@ -26,7 +26,8 @@ function subscribe() {
   if (subscribed) return;
   subscribed = true;
   store.subscribe((mutation) => {
-    if (mutation.type === 'hub/clear') {
+    if (['hub/clear', 'auth/logout', 'ws/setConnectionStatus'].includes(mutation.type)) {
+      if (mutation.type === 'ws/setConnectionStatus' && mutation.payload === 'connected') return;
       for (const key of pending.keys()) settle(key);
       return;
     }
@@ -61,7 +62,10 @@ export function useDeviceCommand() {
       setTimeout(() => {
         if (!pending.has(key)) return;
         settle(key);
-        store.dispatch('alerts/showError', `${device.friendly_name} did not confirm the change. Check that it is reachable and try again.`);
+        store.dispatch(
+          'alerts/showError',
+          `${device.friendly_name} did not confirm the change. Check that it is reachable and try again.`
+        );
       }, timeout)
     );
     store.dispatch('hub/setDeviceValue', { id: device.id, name: expose, value });

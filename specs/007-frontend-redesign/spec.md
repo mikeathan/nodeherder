@@ -1,5 +1,126 @@
 # Spec: Frontend redesign and customisable design system
 
+## Mobile entity repair — 2026-10-18
+
+Reproduction: with delayed history, read-only dialogs open as sheets then expand;
+empty presence/illuminance stay sheets. Slider native-thumb travel differs from the
+painted handle; pending state dims it. Energy has no requested meter visual.
+
+- AC-51: Every entity opens full-screen on mobile from the first rendered frame,
+  independent of history/loading/error/offline state. Content scrolls inside a stable
+  viewport; desktop sizing depends on entity type, never an asynchronous response.
+- AC-52: Brightness/temperature dragging follows the finger continuously, with a
+  stable handle/fill and no layout jump on pending/confirmation. Native steps and
+  keyboard accessibility remain; release sends once and cancellation sends nothing.
+- AC-53: Energy shows a compact semicircular meter reading visual alongside separate
+  interval consumption history. No invented maximum, percentage, or safety bands:
+  absent real metadata bounds, the arc is decorative and the exact reading is labelled.
+- AC-54: Environmental, state/event, alert, diagnostic and writable families share
+  the same stable mobile shell, concise recent history and capability-driven controls.
+  Missing history and zero consumption remain distinct. No device commands in audits.
+
+### Visual completeness follow-up — 2026-10-18
+
+The owner requests the originally agreed multicolour meter and any remaining
+omissions. AC-55: meter arc has a green/yellow/coral decorative palette (no threshold
+scale); known numeric charts show a final-sample marker and fine dashed guides;
+air quality is teal and action events purple. Contact open/closed and alert/dry
+colours must match their labels, with unknown visually distinct. Battery diagnostics
+show the known percentage bar and badge; missing readings never become zero.
+Entity choices with at most five metadata options use labelled direct buttons;
+longer lists retain the shared select. Requested settings remain distinct from
+confirmed state. Verify both themes and desktop/mobile against isolated mocks.
+
+### Drag stability repair — 2026-10-19
+
+Owner reproduction: brightness and colour-temperature handles jump backward/forward
+while dragging. The old BaseSlider used native range/v-model and emitted only change;
+the replacement adds a competing pointer-value writer. Unconfirmed live reports can
+also clear a released draft while its command is still pending.
+
+AC-56: one native drag owner, local preview only while dragging, and one native-unit
+command on release. Unconfirmed reports must not reset an active/pending draft;
+confirmation, refusal, disconnect and timeout keep their established semantics.
+Brightness and mired/Kelvin temperature need mouse/touch/keyboard/cancel coverage,
+including live reports during drag and while awaiting confirmation. No arbitrary
+animation delay, continuous MQTT writes, or device-state optimism.
+
+## Implementation amendment — 2026-10-17
+
+Owner instruction: implement the accepted entity/chart designs, clean touched CRAP
+scores, test, review and commit. This supersedes the investigation-only status below.
+Scope is entity controls, compact/full history and necessary producer fixes; unrelated
+old follow-up tasks remain deferred.
+
+- FR-20 / AC-44: Mobile entity details fill the viewport. Writable exposes use large
+  labelled controls; brightness/colour temperature match v3, read-only charts match
+  environmental v5, other families match activity/diagnostic v4. Desktop adapts the
+  same content. Verify at 320/390/768/1280/1920 px and short landscape.
+- FR-21 / AC-45: Native bounds/steps and units determine commands. A completed gesture
+  sends once; cancellation sends nothing. Drafts never replace confirmed state and
+  revert on refusal/timeout/disconnect. Closing does not retry/cancel sent commands.
+- FR-22 / AC-46: Full and compact history share validated typed data, calculations,
+  theme and query ownership. Empty, error, partial, unknown and measured zero differ.
+  Queries use explicit UTC instants, displayed local timezone, inclusive endpoints,
+  10s timeout, bounded queue/cache, and late-response rejection.
+- FR-23 / AC-47: Add optional HTTP `history: true` for bounded raw numeric/binary/enum
+  event history. Existing absent/false requests retain aggregation/interval responses.
+  Raw enums retain equal repeated reports; state transitions count only actual changes.
+  Public route access is unchanged. New option permits one device and up to 32 exposes,
+  at most 31 days and 10,001 returned samples per series; scan budget is 250,000 records
+  per request. Budget exhaustion is an explicit error, never a successful empty result.
+- FR-24 / AC-48: Energy consumption bars use nonnegative cumulative counter deltas
+  only between consecutive valid samples inside one displayed bucket. Missing boundary
+  baseline, reset or explicit gap makes that bucket partial/unknown. Do not allocate
+  deltas across buckets or integrate power. Label partial consumption and retain meter
+  total separately; no full-day total claimed without complete interval coverage.
+- NFR-09 / AC-49: At most one active client history request, 32 pending distinct queries,
+  10 cached entries and 10,000 retained samples per series; render at most 1,000 numeric
+  points preserving extrema/gaps. No hidden-tab polling. At 50 open/close cycles there
+  are no retained view-owned chart instances, handlers or requests after settlement.
+- AC-50: Touched functions meet the documented complexity/CRAP gate, with measured
+  coverage where supported and conservative zero-coverage upper bounds otherwise.
+  No exclusions of Vue script functions. Every new/changed function has C<=10 and
+  CRAP<=30; touched decision logic gets >=80% branch evidence or is refactored until
+  conservative evidence plus behavioral integration tests establishes the gate.
+
+No device ingestion/automation timing, storage schema or retention changes. No
+automatic retries for commands or history. Read failures return useful errors;
+existing query consumers keep compatible success shapes. Tests use mock hub/temp DB.
+
+## Accepted entity/chart direction — 2026-10-17
+
+The accepted direction covers brightness/colour temperature controls, environmental
+history, activity/electricity, and diagnostics/settings. Initial concept images
+were removed after implementation at the owner’s request; git history retains them.
+Mobile entity views fill the screen; adjustable entities prioritise large controls
+and minimal recent history. Read-only entities can show larger charts and condensed
+useful summaries. All charts, including full device history, share truthful semantics
+and the accepted visual language. Desktop adapts the same behavior to available space.
+
+Implementation was subsequently authorised and completed. The
+[implementation evidence](implementation-evidence-2026-10-18.md) records final
+ownership, contract decisions, and verification. Existing acceptance IDs and
+completed history remain.
+
+### Corrective pass — 2026-10-18
+
+Owner review of the completed views found implementation defects, not new
+requirements. Reproduction against the isolated mock: an offline/missing adjustable
+reading shows a large `—` and a minimum-position rail that reads as a handle above
+the slider; the grip is offset from the fill boundary; the slider receives a focus
+outline on open; power/alarm controls lack visible state or labels; colour temperature
+lacks its warm/cool information; desktop keeps the compact chart; counter history
+with no complete interval draws empty axes without explanation; raw boolean history
+renders as `Unknown` beside a confirmed `ON` state; and read-only views with no samples
+leave an oversized blank column. Expected behavior is unchanged: FR-20/21/22/24 require
+explicit unknown states, truthful history/energy coverage, labelled accessible controls
+and the accepted responsive composition, including consistent binary state words across
+live and recorded values and compact device-row sliders with the same direction as the
+full entity control. The
+[plan](plan.md#entity-view-corrective-pass--2026-10-18) and [tasks](tasks.md#entity-view-corrective-pass-2026-10-18)
+record the corrections and verification; no contract or device-semantics change.
+
 ID: 007-frontend-redesign | Status: Main redesign merged; follow-up design proposed | Author: Claude Code / Codex | Updated: 2026-10-11
 Constitutions: parent/frontend/backend 1.0.0, proposed, not ratified. Components: frontend;
 original additive backend field (`DashboardGroup.order`, FR-09), with scoped backend query/

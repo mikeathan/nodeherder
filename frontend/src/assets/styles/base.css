@@ -458,6 +458,9 @@ textarea.nh-input {
 .kind-air {
   --nh-kc: var(--nh-kind-air);
 }
+.kind-event {
+  --nh-kc: var(--nh-kind-event);
+}
 .kind-battery,
 .kind-signal,
 .kind-misc {

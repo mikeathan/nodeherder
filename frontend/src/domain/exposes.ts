@@ -6,33 +6,103 @@
  */
 import { Device, Expose } from '@/types/device';
 import { ExposeAccessModes, ExposeCategories, ExposeTypes } from '@/types/device.type';
-import { getFormattedSensorValueByName, getSensorName } from '@/modules/formatters/sensor-formatter';
+import { getSensorName } from '@/modules/formatters/sensor-formatter';
+import { displayNumber, exposeRange } from './controls';
+export { exposeRange, type NumericRange } from './controls';
 
-export type ExposeCapability = 'switch' | 'slider' | 'preset' | 'binary-sensor' | 'event' | 'diagnostic' | 'config' | 'reading';
+export type ExposeCapability =
+  | 'switch'
+  | 'slider'
+  | 'preset'
+  | 'binary-sensor'
+  | 'event'
+  | 'diagnostic'
+  | 'config'
+  | 'reading';
 
 /** Colour family used for icons/tiles; each maps to a --nh-kind-* design token. */
-export type ExposeKind = 'temp' | 'humidity' | 'energy' | 'power' | 'light' | 'switch' | 'motion' | 'contact' | 'alarm' | 'air' | 'battery' | 'signal' | 'misc';
+export type ExposeKind =
+  | 'temp'
+  | 'humidity'
+  | 'energy'
+  | 'power'
+  | 'light'
+  | 'switch'
+  | 'motion'
+  | 'contact'
+  | 'alarm'
+  | 'air'
+  | 'battery'
+  | 'signal'
+  | 'event'
+  | 'misc';
 
 const KIND_BY_NAME: Record<string, ExposeKind> = {
-  temperature: 'temp', local_temperature: 'temp', device_temperature: 'temp', current_heating_setpoint: 'temp',
-  humidity: 'humidity', soil_moisture: 'humidity', water_leak: 'humidity',
-  energy: 'energy', energy_today: 'energy', energy_yesterday: 'energy', energy_month: 'energy',
-  power: 'power', current: 'power', voltage: 'power', power_factor: 'power',
-  brightness: 'light', color_temp: 'light', color: 'light', illuminance: 'light', illuminance_lux: 'light',
+  temperature: 'temp',
+  local_temperature: 'temp',
+  device_temperature: 'temp',
+  current_heating_setpoint: 'temp',
+  humidity: 'humidity',
+  soil_moisture: 'humidity',
+  water_leak: 'humidity',
+  energy: 'energy',
+  energy_today: 'energy',
+  energy_yesterday: 'energy',
+  energy_month: 'energy',
+  power: 'power',
+  current: 'power',
+  voltage: 'power',
+  power_factor: 'power',
+  brightness: 'light',
+  color_temp: 'light',
+  color: 'light',
+  illuminance: 'light',
+  illuminance_lux: 'light',
   state: 'switch',
-  presence: 'motion', occupancy: 'motion', target_distance: 'motion', vibration: 'motion',
+  presence: 'motion',
+  occupancy: 'motion',
+  target_distance: 'motion',
+  vibration: 'motion',
   contact: 'contact',
-  alarm: 'alarm', smoke: 'alarm', smoke_concentration: 'alarm', device_fault: 'alarm', tamper: 'alarm', gas: 'alarm', water_leak_alarm: 'alarm',
-  co2: 'air', voc: 'air', pm25: 'air', pm10: 'air', pm1: 'air', formaldehyd: 'air', pressure: 'air', air_quality_score: 'air',
-  battery: 'battery', battpercentage: 'battery', battery_low: 'battery',
-  linkquality: 'signal', rssi: 'signal',
+  alarm: 'alarm',
+  smoke: 'alarm',
+  smoke_concentration: 'alarm',
+  device_fault: 'alarm',
+  tamper: 'alarm',
+  gas: 'alarm',
+  water_leak_alarm: 'alarm',
+  co2: 'air',
+  voc: 'air',
+  pm25: 'air',
+  pm10: 'air',
+  pm1: 'air',
+  formaldehyd: 'air',
+  pressure: 'air',
+  air_quality_score: 'air',
+  battery: 'battery',
+  battpercentage: 'battery',
+  battery_low: 'battery',
+  linkquality: 'signal',
+  rssi: 'signal',
 };
 
 const LABELS: Record<string, string> = {
-  co2: 'CO₂', pm25: 'PM2.5', pm10: 'PM10', pm1: 'PM1', voc: 'VOC', formaldehyd: 'Formaldehyde',
-  linkquality: 'Link quality', rssi: 'Wi-Fi signal', color_temp: 'Colour temperature', battpercentage: 'Battery',
-  illuminance_lux: 'Illuminance', current_heating_setpoint: 'Setpoint', local_temperature: 'Temperature',
-  energy_today: 'Energy today', energy_yesterday: 'Energy yesterday', energy_month: 'Energy this month',
+  co2: 'CO₂',
+  pm25: 'PM2.5',
+  pm10: 'PM10',
+  pm1: 'PM1',
+  voc: 'VOC',
+  formaldehyd: 'Formaldehyde',
+  linkquality: 'Link quality',
+  rssi: 'Wi-Fi signal',
+  color_temp: 'Colour temperature',
+  battpercentage: 'Battery',
+  illuminance_lux: 'Illuminance',
+  current_heating_setpoint: 'Setpoint',
+  local_temperature: 'Temperature',
+  energy_today: 'Energy today',
+  energy_yesterday: 'Energy yesterday',
+  energy_month: 'Energy this month',
 };
 
 /**
@@ -54,12 +124,33 @@ const BINARY_WORDS: Record<string, [string, string]> = {
 
 const humanise = (s: string) => s.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
 
-export const isWritable = (e: Expose): boolean => e.access_mode !== ExposeAccessModes.Read;
+export const isWritable = (e: Expose): boolean =>
+  [ExposeAccessModes.Readwrite, ExposeAccessModes.Write].includes(e.access_mode as 'readwrite' | 'write');
 
 export function exposeKind(name: string): ExposeKind {
   if (KIND_BY_NAME[name]) return KIND_BY_NAME[name];
   if (name.startsWith('energy')) return 'energy';
+  if (name.startsWith('action') || name === 'event_count') return 'event';
   return 'misc';
+}
+
+/** Shared presentation palette: timeline segments, legends and state badges must
+ * agree on which value is open/closed or alert/clear. Unknown uses its own pattern. */
+export function exposePalette(expose: Expose): { active: string; inactive: string } {
+  if (expose.name === 'contact')
+    return { active: 'var(--nh-warn)', inactive: 'var(--nh-kind-contact)' };
+  if (exposeKind(expose.name) === 'alarm' || expose.name === 'water_leak' || expose.name === 'battery_low')
+    return { active: 'var(--nh-danger)', inactive: 'var(--nh-kind-contact)' };
+  return { active: `var(--nh-kind-${exposeKind(expose.name)})`, inactive: 'var(--nh-text-muted)' };
+}
+
+/** A current reading and its matching historical report use exactly the same colour. */
+export function exposeValueColor(expose: Expose, value: unknown = expose.data): string {
+  if (expose.type !== 'binary') return `var(--nh-kind-${exposeKind(expose.name)})`;
+  const state = binaryStateOf(expose, value);
+  if (state === null) return 'var(--nh-text-muted)';
+  const palette = exposePalette(expose);
+  return state ? palette.active : palette.inactive;
 }
 
 export function exposeLabel(name: string): string {
@@ -74,18 +165,24 @@ export function binaryOffValue(e: Expose): unknown {
   return e.values && 'off' in e.values ? e.values['off'] : false;
 }
 export function isBinaryOn(e: Expose, value: unknown = e.data): boolean {
-  return value === binaryOnValue(e);
+  return binaryStateOf(e, value) === true;
 }
 
-export type NumericRange = { min: number; max: number };
+/** Confirmed binary state; `null` means the latest value is missing or outside values.on/off. */
+export function binaryStateOf(e: Expose, value: unknown = e.data): boolean | null {
+  if (value === binaryOnValue(e)) return true;
+  if (value === binaryOffValue(e)) return false;
+  // Raw history is typed as boolean while live z2m words are often "ON"/"OFF".
+  if (typeof value === 'boolean' && typeof binaryOnValue(e) !== 'boolean') return value;
+  return null;
+}
 
-/** Numeric bounds from expose attributes (hub uses min/max; Zigbee2MQTT value_min/value_max). */
-export function exposeRange(e: Expose): NumericRange | null {
-  const a = e.attributes ?? {};
-  const max = Number(a['max'] ?? a['value_max']);
-  if (!Number.isFinite(max)) return null;
-  const min = Number(a['min'] ?? a['value_min'] ?? 0);
-  return { min: Number.isFinite(min) ? min : 0, max };
+/** Human warmth description for a Kelvin reading; no invented device capabilities. */
+export function colourTemperatureName(kelvin: number): string {
+  if (!Number.isFinite(kelvin) || kelvin <= 0) return 'Unknown';
+  if (kelvin < 3000) return 'Warm white';
+  if (kelvin < 4500) return 'Neutral white';
+  return 'Cool white';
 }
 
 /** Named preset values (e.g. colour temperature "warm" → 454), excluding sentinel values. */
@@ -94,18 +191,24 @@ export function exposePresets(e: Expose): { label: string; value: unknown }[] {
   const range = exposeRange(e);
   return Object.entries(e.values)
     .filter(([, v]) => !(range && typeof v === 'number' && (v < range.min || v > range.max)))
-    .map(([k, v]) => (e.type === ExposeTypes.Enum ? { label: humanise(String(v)), value: v } : { label: humanise(k), value: v }));
+    .map(([k, v]) =>
+      e.type === ExposeTypes.Enum ? { label: humanise(String(v)), value: v } : { label: humanise(k), value: v }
+    );
 }
 
 export function capabilityOf(e: Expose): ExposeCapability {
   if (e.category === ExposeCategories.Config) return 'config';
-  const writable = isWritable(e);
-  if (e.type === ExposeTypes.Binary) return writable ? 'switch' : 'binary-sensor';
-  if (e.type === ExposeTypes.Numeric && writable && exposeRange(e)) return 'slider';
-  if (writable && e.values && Object.keys(e.values).length > 0 && (e.type === ExposeTypes.Enum || e.type === ExposeTypes.Numeric)) return 'preset';
+  const control = controlOf(e);
+  if (control === 'switch' || control === 'slider') return control;
+  if (isPresetExpose(e)) return 'preset';
+  if (e.type === ExposeTypes.Binary) return 'binary-sensor';
   if (e.name.startsWith('action')) return 'event';
-  if (e.category === ExposeCategories.Diagnostic) return 'diagnostic';
-  return 'reading';
+  return e.category === ExposeCategories.Diagnostic ? 'diagnostic' : 'reading';
+}
+
+function isPresetExpose(expose: Expose): boolean {
+  const supported = [ExposeTypes.Numeric, ExposeTypes.Enum].includes(expose.type as 'numeric' | 'enum');
+  return supported && isWritable(expose) && exposePresets(expose).length > 0;
 }
 
 export type ExposeControl = 'switch' | 'slider' | 'choice' | 'number' | 'none';
@@ -119,7 +222,8 @@ export function controlOf(e: Expose): ExposeControl {
   return 'none';
 }
 
-const numberText = (v: number): string => (Number.isInteger(v) ? String(v) : String(parseFloat(v.toFixed(Math.abs(v) < 10 ? 2 : 1))));
+const numberText = (v: number): string =>
+  Number.isInteger(v) ? String(v) : String(parseFloat(v.toFixed(Math.abs(v) < 10 ? 2 : 1)));
 
 /**
  * Display text for an expose value (defaults to its current data). Uses expose metadata when
@@ -128,25 +232,29 @@ const numberText = (v: number): string => (Number.isInteger(v) ? String(v) : Str
  */
 export function formatExposeValue(e: Expose, value: unknown = e.data): string {
   if (value === null || value === undefined || value === '') return '—';
-  if (e.type === ExposeTypes.Binary) {
-    const [on, off] = BINARY_WORDS[e.name] ?? ['On', 'Off'];
-    return isBinaryOn(e, value) ? on : off;
-  }
-  if (typeof value === 'number') {
-    if (e.name === 'brightness') {
-      const max = exposeRange(e)?.max || 254;
-      return `${Math.round((value / max) * 100)} %`;
-    }
-    if (e.name === 'color_temp' && value > 0) return `${Math.round(1e6 / value)} K`;
-    const unit = e.unit && e.unit !== 'lqi' ? e.unit : '';
-    return unit ? `${numberText(value)} ${unit}` : numberText(value);
-  }
-  if (typeof value === 'string') {
-    if (value === 'ON') return 'On';
-    if (value === 'OFF') return 'Off';
-    return humanise(value);
-  }
-  return getFormattedSensorValueByName(e.name, value, e.unit);
+  if (e.type === ExposeTypes.Binary) return binaryText(e, value);
+  if (typeof value === 'number') return numericText(e, value);
+  if (typeof value === 'string') return stringText(value);
+  return '—';
+}
+function binaryText(e: Expose, value: unknown): string {
+  const [on, off] = BINARY_WORDS[e.name] ?? ['On', 'Off'];
+  const state = binaryStateOf(e, value);
+  if (state === true) return on;
+  if (state === false) return off;
+  return 'Unknown';
+}
+function numericText(e: Expose, value: number): string {
+  if (!Number.isFinite(value)) return '—';
+  if (e.name === 'brightness') return `${Math.round(displayNumber(e, value))} %`;
+  if (e.name === 'color_temp') return value > 0 ? `${Math.round(displayNumber(e, value))} K` : '—';
+  const unit = e.unit && e.unit !== 'lqi' ? e.unit : '';
+  return unit ? `${numberText(value)} ${unit}` : numberText(value);
+}
+function stringText(value: string): string {
+  if (value === 'ON') return 'On';
+  if (value === 'OFF') return 'Off';
+  return humanise(value);
 }
 
 /** The device's switch expose (binary, writable, measurement), if any. */

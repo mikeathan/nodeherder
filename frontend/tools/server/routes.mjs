@@ -1,9 +1,11 @@
 /* eslint-disable no-console */
 import { hubStatePayload } from './state.mjs';
 import { createMockToken } from './utils.mjs';
+import { registerHistoryRoute } from './history.mjs';
 import { getMetricsForDevice } from './metrics-mock.mjs';
 
 export function registerRoutes(app) {
+  registerHistoryRoute(app, () => hubStatePayload.devices);
   app.get('/api/auth/mode', (req, res) => {
     res.set('Cache-Control', 'no-store').json({ mode: 'google' });
   });
