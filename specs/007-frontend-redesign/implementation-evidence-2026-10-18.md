@@ -5,6 +5,61 @@ Scope: FR-20–24 / AC-44–50 on `feat/entity-history-redesign`, baseline
 instruction supersedes the earlier investigation-only checkpoint. Constitutions
 remain proposed; no ratification, maintainer review or exception is invented.
 
+## Visual completeness review — 2026-10-19
+
+The owner identified the missing agreed multicolour meter and requested a comparison
+of all remaining families with the accepted references (recovered temporarily from
+git history; disposable PNGs remain removed from the repository). AC-55 records scope.
+
+Completed corrections:
+
+- Energy: a full-opacity green/yellow/coral SVG gradient, with per-instance IDs and
+  existing theme tokens. The cumulative total stays an exact labelled reading;
+  the decorative arc adds no maximum or safety threshold.
+- Numeric history: a contrasting marker on the final known sample, with sufficient
+  clipping allowance at range endpoints. Missing tails stay missing. Start/middle/end
+  time labels replace irregular automatic millisecond ticks. Existing dashed guides
+  were verified in the installed Chart.js source and preserved, rather than replaced.
+- Shared expose palette: teal air quality, purple action/event charts, amber open and
+  teal closed contact, red alert/low-battery and teal clear/dry state. Badges, timelines,
+  legends and recent-report dots use the same registry; unknown remains distinct.
+- Diagnostics: battery/signal badges, a known-only percentage bar, and relevant
+  available link/battery readings. Null never becomes zero; actual zero keeps its meter.
+- Settings: up to five metadata options become labelled direct buttons in entity
+  views. Rows and longer lists retain the shared select. The selected button remains
+  confirmed state until the device update arrives; pending disables duplicate sends.
+- Cleanup: removed the unused history colour variable and retained one palette owner.
+  No new dependency, transport, retention, resource subscription or device capability.
+
+Verification:
+
+- Chromium desktop/mobile entity/history suite: 59 pass, nine intentional desktop
+  skips for mobile-only scenarios. The new meter-colour test initially read before
+  the dialog existed; adding visibility synchronisation corrected this test race.
+- Final marker/time-label change: four additional device-history browser checks pass.
+  Existing gap preservation, repeated-event, native-command, cancellation, shell and
+  confirmation checks remain passing in these affected suites.
+- Jest: 42 suites / 280 tests pass; lint has zero errors and seven existing script
+  warnings; production type check/build pass. Quality evidence is regenerated from
+  fresh coverage with no complexity/CRAP violations (maximum C=8 / CRAP=30).
+- Visually inspected both-theme meter and battery screenshots, plus the final numeric
+  history screenshot showing the complete marker and three labels. Logs/screenshots
+  and the temporary browser config are outside the repository.
+- Firefox 142.0.1 / Playwright build 1495 was installed to match the locked runner.
+  Its browser launch failed before application tests: macOS rejected a plugin-container
+  sandbox extension and the SWGL compositor could not map its framebuffer. A bounded
+  15-second retry reproduced the launch failure. Firefox rendering is **unverified**;
+  the initial eight launch failures and interrupted unbounded retry are not application
+  test failures or passing evidence. No physical phone/assistive-tech session was run.
+- The full 135-pass browser run above belongs to the preceding repair; it was not
+  unnecessarily repeated for these scoped visual changes. No Go code changed, so
+  backend checks were not rerun. Relative-link and diff-whitespace checks pass.
+
+Review against NH-01–06/FE-01–05: scoped acceptance and shared presentation ownership;
+confirmed values and native commands retained; no ingress, secrets, backend or storage
+change; theme/accessibility/empty/zero coverage and real verification recorded. Existing
+resource ownership is unchanged. No exceptions or ratification are claimed.
+
 ## Mobile repair review — 2026-10-18
 
 Owner screenshots exposed gaps in the prior corrective pass. AC-51–54 in the

@@ -20,6 +20,14 @@ steps, no fabricated readings, unchanged transport/persistence; NH-03/FE-02/05:
 no new ingress/secrets; NH-05/FE-04: isolated interaction/viewport verification.
 No exceptions or adoption are claimed. Rollback is code-only.
 
+Visual completeness (AC-55): keep the shared expose registry as the owner of state
+palettes, use theme tokens for SVG meter stops and chart styling, retain chart gaps,
+and add battery presentation to EntityReadout. ExposeControl gets an explicit
+expanded presentation for short choices in entity views; device rows retain compact
+controls. Source-owned domain/options tests plus mock browser checks cover labels,
+colours, battery missing/zero and confirmed-setting semantics. No new dependency,
+transport, timing or persistence change; NH-01–06 / FE-01–05 checks remain applicable.
+
 Final implementation review: [2026-10-18 evidence](implementation-evidence-2026-10-18.md).
 
 ## Implementation authorised — 2026-10-17

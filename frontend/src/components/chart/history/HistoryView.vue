@@ -5,7 +5,7 @@
   import { isEnergyCounter, energyBuckets, energySummary } from '@/domain/history/energy';
   import { eventCounts } from '@/domain/history/events';
   import { numericStats } from '@/domain/history/numeric';
-  import { exposeKind, formatExposeValue } from '@/domain/exposes';
+  import { exposeKind, exposeValueColor, formatExposeValue } from '@/domain/exposes';
   import NumericHistory from './NumericHistory.vue';
   import StateHistory from './StateHistory.vue';
   import UiIcon from '@/components/ui/UiIcon.vue';
@@ -35,12 +35,12 @@
   const time = (value: number) =>
     new Date(value).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   const counts = computed(() => eventCounts(props.series));
+  const reportColor = (value: unknown) => exposeValueColor(props.expose, value);
 </script>
 <template>
   <section
     class="history-view"
-    :class="`kind-${exposeKind(expose.name)}`"
-    :style="{ '--history-color': `var(--nh-kind-${exposeKind(expose.name)})` }">
+    :class="`kind-${exposeKind(expose.name)}`">
     <p v-if="series.partial" class="history-notice" role="status">
       Partial history · narrow the period for complete results.
     </p>
@@ -81,7 +81,7 @@
         <h3>{{ series.type === 'enum' ? 'Recent events' : 'Recent reports' }}</h3>
         <div v-for="(point, i) in recent" :key="i">
           <time>{{ time(point.timestamp) }}</time
-          ><span>{{ format(point.value) }}</span>
+          ><span :style="{ '--report-color': reportColor(point.value) }">{{ format(point.value) }}</span>
         </div>
       </div>
       <details v-if="!compact" class="history-samples">
@@ -183,6 +183,15 @@
   }
   time {
     color: var(--nh-text-muted);
+  }
+  .history-recent span::before {
+    content: '';
+    display: inline-block;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+    background: var(--report-color);
   }
   .history-samples {
     margin-top: 1rem;

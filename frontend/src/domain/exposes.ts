@@ -34,6 +34,7 @@ export type ExposeKind =
   | 'air'
   | 'battery'
   | 'signal'
+  | 'event'
   | 'misc';
 
 const KIND_BY_NAME: Record<string, ExposeKind> = {
@@ -129,7 +130,27 @@ export const isWritable = (e: Expose): boolean =>
 export function exposeKind(name: string): ExposeKind {
   if (KIND_BY_NAME[name]) return KIND_BY_NAME[name];
   if (name.startsWith('energy')) return 'energy';
+  if (name.startsWith('action') || name === 'event_count') return 'event';
   return 'misc';
+}
+
+/** Shared presentation palette: timeline segments, legends and state badges must
+ * agree on which value is open/closed or alert/clear. Unknown uses its own pattern. */
+export function exposePalette(expose: Expose): { active: string; inactive: string } {
+  if (expose.name === 'contact')
+    return { active: 'var(--nh-warn)', inactive: 'var(--nh-kind-contact)' };
+  if (exposeKind(expose.name) === 'alarm' || expose.name === 'water_leak' || expose.name === 'battery_low')
+    return { active: 'var(--nh-danger)', inactive: 'var(--nh-kind-contact)' };
+  return { active: `var(--nh-kind-${exposeKind(expose.name)})`, inactive: 'var(--nh-text-muted)' };
+}
+
+/** A current reading and its matching historical report use exactly the same colour. */
+export function exposeValueColor(expose: Expose, value: unknown = expose.data): string {
+  if (expose.type !== 'binary') return `var(--nh-kind-${exposeKind(expose.name)})`;
+  const state = binaryStateOf(expose, value);
+  if (state === null) return 'var(--nh-text-muted)';
+  const palette = exposePalette(expose);
+  return state ? palette.active : palette.inactive;
 }
 
 export function exposeLabel(name: string): string {

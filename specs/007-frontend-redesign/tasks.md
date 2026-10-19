@@ -8,6 +8,13 @@
 - [x] AC-53: add truthful meter reading visual with missing/zero coverage.
 - [x] Review, visually inspect, run checks, document evidence and commit scoped work.
 
+### Visual completeness follow-up — AC-55
+
+- [x] Restore decorative meter colours and shared chart guides/final-sample markers.
+- [x] Correct state/event/air palettes and battery diagnostic presentation.
+- [x] Add metadata-driven direct choices to entity views; preserve confirmation.
+- [x] Verify both themes, mobile/desktop, review quality and commit.
+
 ## Entity/chart implementation — 2026-10-17
 
 Completed scope and checks: [2026-10-18 evidence](implementation-evidence-2026-10-18.md).

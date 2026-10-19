@@ -19,6 +19,18 @@ painted handle; pending state dims it. Energy has no requested meter visual.
   the same stable mobile shell, concise recent history and capability-driven controls.
   Missing history and zero consumption remain distinct. No device commands in audits.
 
+### Visual completeness follow-up — 2026-10-18
+
+The owner requests the originally agreed multicolour meter and any remaining
+omissions. AC-55: meter arc has a green/yellow/coral decorative palette (no threshold
+scale); known numeric charts show a final-sample marker and fine dashed guides;
+air quality is teal and action events purple. Contact open/closed and alert/dry
+colours must match their labels, with unknown visually distinct. Battery diagnostics
+show the known percentage bar and badge; missing readings never become zero.
+Entity choices with at most five metadata options use labelled direct buttons;
+longer lists retain the shared select. Requested settings remain distinct from
+confirmed state. Verify both themes and desktop/mobile against isolated mocks.
+
 ## Implementation amendment — 2026-10-17
 
 Owner instruction: implement the accepted entity/chart designs, clean touched CRAP

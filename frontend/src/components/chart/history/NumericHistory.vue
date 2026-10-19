@@ -74,6 +74,7 @@
       :key="energy || series.name === 'event_count' ? 'bar' : 'line'"
       :type="energy || series.name === 'event_count' ? 'bar' : 'line'"
       :height="compact ? 105 : 235"
+      :end-marker="!compact && !energy && series.name !== 'event_count'"
       :options="options"
       :series="[{ name: expose.name, data }]" />
     <small v-if="energy">Observed consumption · incomplete intervals are partial</small>

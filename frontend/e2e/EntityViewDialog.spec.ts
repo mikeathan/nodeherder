@@ -385,3 +385,79 @@ for (const reading of [{ value: null, text: 'Unknown' }, { value: 0, text: '0 kW
     await expect(page.getByRole('group', { name: 'Energy meter reading' })).toContainText(reading.text);
   });
 }
+
+
+for (const mode of ['dark', 'light']) {
+  test(`meter retains three distinct colours in ${mode} mode`, async ({ page }, info) => {
+    await signIn(page, ui.home.path);
+    if (mode === 'light') await page.getByRole('button', { name: 'Switch to light mode' }).click();
+    await expect(page.locator('html')).toHaveAttribute('data-mode', mode);
+    await ui.home.tile(page, 'Kitchen', 'Energy').locator('.nh-tile-body').click();
+    const meter = page.getByRole('group', { name: 'Energy meter reading' });
+    await expect(meter).toBeVisible();
+    const colours = await meter.locator('stop').evaluateAll((stops) => stops.map((stop) => getComputedStyle(stop).stopColor));
+    expect(new Set(colours).size).toBe(3);
+    expect(await meter.locator('svg > path').last().evaluate((path) => getComputedStyle(path).stroke)).toContain('url(');
+    await page.getByRole('dialog').screenshot({ path: `/private/tmp/nodeherder-meter-${mode}-${info.project.name}.png`, scale: 'css' });
+  });
+}
+
+for (const level of [82, 0, null]) {
+  test(`battery diagnostic keeps ${level} distinct from an invented reading`, async ({ page }, info) => {
+    await page.route('**/api/hubstate', async (route) => {
+      const response = await route.fetch();
+      const body = await response.json();
+      const device = body.devices.find((device: { exposes: Record<string, unknown> }) => device.exposes.battery);
+      device.availability = 'online';
+      Object.assign(device.exposes.battery, { data: level, unit: '%' });
+      device.exposes.linkquality = { ...device.exposes.battery, name: 'linkquality', data: 116, unit: 'lqi' };
+      await route.fulfill({ response, json: body });
+    });
+    await signIn(page, ui.home.path);
+    await page.locator('.nh-tile').filter({ has: page.locator('.nh-tile-label', { hasText: /^Battery$/ }) }).first().locator('.nh-tile-body').click();
+    const dialog = page.getByRole('dialog');
+    const bar = dialog.getByRole('meter', { name: 'Battery level' });
+    if (level === null) await expect(bar).toHaveCount(0);
+    else await expect(bar).toHaveAttribute('aria-valuenow', String(level));
+    await expect(dialog.getByRole('region', { name: 'Other readings' })).toContainText('116');
+    await dialog.screenshot({ path: `/private/tmp/nodeherder-battery-${level}-${info.project.name}.png`, scale: 'css' });
+  });
+}
+
+test('entity mode choices show direct metadata options and wait for confirmation', async ({ page }) => {
+  await page.route('**/api/hubstate', async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    const device = body.devices.find((device: { id: string }) => device.id === MOCK.livingRoomLight.id);
+    device.availability = 'online';
+    Object.assign(device.exposes.brightness, { type: 'enum', data: 'near', values: { near: 'near', medium: 'medium', far: 'far' } });
+    await route.fulfill({ response, json: body });
+  });
+  const commands: { name: string; value: unknown }[] = [];
+  let confirm: (() => void) | undefined;
+  await page.routeWebSocket('ws://localhost:4110/ws', (socket) => {
+    socket.onMessage((raw) => {
+      const frame = JSON.parse(String(raw));
+      if (frame.type !== 'deviceSetValue') return;
+      commands.push(frame.payload);
+      confirm = () => socket.send(JSON.stringify({
+        type: 'deviceUpdated',
+        payload: { id: frame.payload.id, data: { [frame.payload.name]: frame.payload.value } },
+      }));
+    });
+  });
+  // Hold confirmation in the mock socket; clicking must never replace confirmed state.
+  await signIn(page, ui.home.path);
+  await ui.home.tile(page, 'living room group', 'Brightness').locator('.nh-tile-body').click();
+  const choices = page.getByRole('dialog').getByRole('group', { name: 'Brightness', exact: true });
+  await expect(choices.getByRole('button', { name: 'Near', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await choices.getByRole('button', { name: 'Medium', exact: true }).click();
+  await expect.poll(() => commands.length).toBe(1);
+  expect(commands[0]).toMatchObject({ name: 'brightness', value: 'medium' });
+  await expect(choices.getByRole('button', { name: 'Medium', exact: true })).toHaveAttribute('aria-pressed', 'false');
+  await expect(choices.getByRole('button', { name: 'Near', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(choices.getByRole('button', { name: 'Medium', exact: true })).toBeDisabled();
+  confirm!();
+  await expect(choices.getByRole('button', { name: 'Medium', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(choices.getByRole('button', { name: 'Medium', exact: true })).toBeEnabled();
+});

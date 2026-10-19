@@ -77,7 +77,11 @@
   );
   const otherReadings = computed(() => {
     if (!device.value || writable.value) return [];
-    return measurementExposes(device.value)
+    const candidates = ['battery', 'signal'].includes(kind.value)
+      ? Object.values(device.value.exposes).filter((reading) =>
+          ['battery', 'battpercentage', 'battery_low', 'linkquality', 'rssi'].includes(reading.name))
+      : measurementExposes(device.value);
+    return candidates
       .filter((reading) => reading.name !== selected.value && !isWritable(reading) && hasReading(reading))
       .slice(0, 4);
   });
@@ -140,7 +144,7 @@
           <p v-else-if="unknownCurrent" class="entity-readout-note">No reading reported.</p>
           <div v-if="writable" class="entity-writable">
             <span class="entity-control-label">{{ controlLabel(adjustment.name) }}</span>
-            <ExposeControl :device="device" :expose="adjustment" />
+            <ExposeControl :device="device" :expose="adjustment" expanded />
           </div>
         </template>
         <div v-for="action in alertControl" :key="action.name" class="entity-writable">

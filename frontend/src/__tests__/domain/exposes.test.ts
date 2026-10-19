@@ -159,3 +159,20 @@ test('invalid numeric metadata, unknown binary values and Kelvin remain truthful
   expect(formatExposeValue(expose('color_temp', { unit: 'K', data: 2700 }))).toBe('2700 K');
   expect(formatExposeValue(expose('temperature', { data: Infinity }))).toBe('—');
 });
+
+
+test('state badges and histories share label-aligned colours', () => {
+  const { exposePalette, exposeValueColor, exposeKind } = require('@/domain/exposes');
+  const contact = expose('contact', { type: 'binary', values: { on: false, off: true } });
+  expect(exposeValueColor(contact, false)).toBe('var(--nh-warn)');
+  expect(exposeValueColor(contact, true)).toBe('var(--nh-kind-contact)');
+  expect(exposeValueColor(contact, null)).toBe('var(--nh-text-muted)');
+  expect(exposePalette(expose('water_leak'))).toEqual({ active: 'var(--nh-danger)', inactive: 'var(--nh-kind-contact)' });
+  expect(exposePalette(expose('smoke'))).toEqual({ active: 'var(--nh-danger)', inactive: 'var(--nh-kind-contact)' });
+  expect(exposePalette(expose('battery_low')).active).toBe('var(--nh-danger)');
+  expect(exposePalette(expose('presence')).active).toBe('var(--nh-kind-motion)');
+  expect(exposeValueColor(expose('co2', { data: 680 }))).toBe('var(--nh-kind-air)');
+  expect(exposeKind('action')).toBe('event');
+  expect(exposeKind('action_double')).toBe('event');
+  expect(exposeKind('event_count')).toBe('event');
+});

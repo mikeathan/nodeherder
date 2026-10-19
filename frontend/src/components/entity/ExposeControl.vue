@@ -23,7 +23,7 @@
   import UiToggle from '@/components/ui/UiToggle.vue';
   import UiSelect from '@/components/ui/UiSelect.vue';
 
-  const props = defineProps<{ device: Device; expose: Expose; label?: string }>();
+  const props = defineProps<{ device: Device; expose: Expose; label?: string; expanded?: boolean }>();
 
   const control = computed(() => controlOf(props.expose));
   const name = computed(() => props.label ?? exposeLabel(props.expose.name));
@@ -107,6 +107,23 @@
         @update:model-value="commit" />
     </template>
 
+    <!-- Entity views favour directly reachable choices; rows and long lists keep
+         the native select. Pressed state always comes from the confirmed expose. -->
+    <div
+      v-else-if="control === 'choice' && expanded && presets.length <= 5"
+      class="choice-options"
+      role="group"
+      :aria-label="name">
+      <button
+        v-for="preset in presets"
+        :key="preset.label"
+        type="button"
+        :aria-pressed="expose.data === preset.value"
+        :disabled="disabled"
+        @click="commit(preset.value)">
+        {{ preset.label }}
+      </button>
+    </div>
     <UiSelect
       v-else-if="control === 'choice'"
       :model-value="expose.data"
@@ -143,6 +160,34 @@
   .nh-xc.is-slider {
     flex: 0 1 auto;
     flex-wrap: nowrap;
+  }
+  .choice-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .choice-options button {
+    min-height: 44px;
+    padding: 0.6rem 0.9rem;
+    border-radius: var(--nh-radius-s);
+    border: 1px solid var(--nh-border-strong);
+    background: var(--nh-surface-2);
+    color: var(--nh-text);
+    font: inherit;
+    cursor: pointer;
+  }
+  .choice-options button[aria-pressed='true'] {
+    border-color: var(--nh-accent);
+    background: var(--nh-accent-soft);
+    color: var(--nh-accent);
+  }
+  .choice-options button:focus-visible {
+    outline: 3px solid var(--nh-focus);
+    outline-offset: 3px;
+  }
+  .choice-options button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
   .nh-xc-range {
     flex: 1 1 9rem;

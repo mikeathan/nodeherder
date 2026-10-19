@@ -51,6 +51,11 @@ function lineDataset(style: ChartAppearance, step: boolean, linear: boolean): No
     borderCapStyle: 'round',
     pointRadius: 0,
     pointHoverRadius: 4,
+    pointBackgroundColor: style.color,
+    pointBorderColor: style.text || style.muted,
+    pointBorderWidth: 2,
+    // A sample on the range boundary still needs its complete marker visible.
+    clip: 8,
     stepped: step ? 'before' : false,
     cubicInterpolationMode: linear ? 'default' : 'monotone',
     tension: linear ? 0 : 0.3,
@@ -91,9 +96,15 @@ function xScale(style: ChartAppearance, from: number, to: number): NonNullable<S
     max: to,
     border: { display: false },
     grid: { display: false },
+    // Numeric millisecond ticks otherwise produce irregular intervals and often
+    // only two labels. These instants match the requested history range exactly.
+    afterBuildTicks: (axis) => {
+      axis.ticks = [{ value: from }, { value: (from + to) / 2 }, { value: to }];
+    },
     ticks: {
       color: style.muted,
-      maxTicksLimit: style.compact ? 3 : 4,
+      maxTicksLimit: 3,
+      autoSkip: false,
       maxRotation: 0,
       callback: (value) => historyTime(Number(value), to - from),
     },

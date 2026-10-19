@@ -3,9 +3,10 @@
   import type { Expose } from '@/types/device';
   import type { HistorySeries } from '@/domain/history/types';
   import { stateSegments, stateStats, stateDensity, type StateSegment } from '@/domain/history/state';
-  import { binaryOnValue, binaryOffValue, formatExposeValue } from '@/domain/exposes';
+  import { binaryOnValue, binaryOffValue, exposePalette, formatExposeValue } from '@/domain/exposes';
   const props = defineProps<{ series: HistorySeries; expose: Expose; compact?: boolean }>();
   const segments = computed(() => stateSegments(props.series, props.expose));
+  const palette = computed(() => exposePalette(props.expose));
   // Long timelines become a labelled density strip instead of hundreds of thin buttons.
   const DENSE_SEGMENT_LIMIT = 96;
   const dense = computed(() => segments.value.length > DENSE_SEGMENT_LIMIT);
@@ -19,7 +20,7 @@
   const ticks = computed(() => [props.series.from, (props.series.from + props.series.to) / 2, props.series.to]);
 </script>
 <template>
-  <div class="state-history">
+  <div class="state-history" :style="{ '--state-active': palette.active, '--state-inactive': palette.inactive }">
     <template v-if="dense">
       <p class="interval-detail">Activity density · {{ activeLabel }} portion of known time</p>
       <div class="density-strip" role="img" :aria-label="`${activeLabel} duration by time interval`">
@@ -81,7 +82,7 @@
   }
   .density-strip span {
     flex: 1;
-    background: var(--history-color);
+    background: var(--state-active);
   }
   .state-strip {
     display: flex;
@@ -95,14 +96,14 @@
     padding: 0;
     border: 0;
     cursor: pointer;
-    background: var(--nh-text-muted);
+    background: var(--state-inactive);
   }
   .state-strip button:focus-visible {
     outline: 3px solid var(--nh-focus);
     outline-offset: -3px;
   }
   .state-strip .is-active {
-    background: var(--history-color);
+    background: var(--state-active);
   }
   .state-strip .is-unknown {
     background: repeating-linear-gradient(
@@ -133,11 +134,11 @@
     width: 0.6rem;
     height: 0.6rem;
     border-radius: 50%;
-    background: var(--nh-text-muted);
+    background: var(--state-inactive);
     margin-right: 0.4rem;
   }
   .state-legend .active::before {
-    background: var(--history-color);
+    background: var(--state-active);
   }
   .state-legend .unknown::before {
     background: var(--nh-surface-2);

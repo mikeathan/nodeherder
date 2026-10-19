@@ -36,3 +36,13 @@ test('theme surface/text tokens drive tooltip colours when supplied', () => {
     borderColor: 'rgb(80, 80, 80)',
   });
 });
+
+
+test('final-sample markers retain contrast and chart guides stay subtle and dashed', () => {
+  const chart = historyOptions({ ...style, color: '#26a69a', text: '#fafafa' }, 0, 100, 'ppm', false, false);
+  expect(chart.datasets?.line).toMatchObject({ pointBackgroundColor: '#26a69a', pointBorderColor: '#fafafa', pointBorderWidth: 2, clip: 8 });
+  expect(chart.scales?.y?.border).toMatchObject({ display: false, dash: [4, 4] });
+  const axis = { ticks: [] as { value: number }[] };
+  (chart.scales?.x?.afterBuildTicks as (scale: typeof axis) => void)(axis);
+  expect(axis.ticks.map((tick) => tick.value)).toEqual([0, 50, 100]);
+});

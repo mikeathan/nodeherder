@@ -1,5 +1,7 @@
 <script setup lang="ts">
+  import { useId } from 'vue';
   defineProps<{ reading: string }>();
+  const gradientId = useId();
 </script>
 
 <template>
@@ -7,8 +9,15 @@
     <!-- A cumulative counter has no natural maximum. This arc frames the reading;
          it deliberately encodes no percentage, target, or invented safety bands. -->
     <svg viewBox="0 0 280 156" aria-hidden="true">
+      <defs>
+        <linearGradient :id="gradientId" x1="26" y1="130" x2="254" y2="130" gradientUnits="userSpaceOnUse">
+          <stop offset="0" class="meter-green" />
+          <stop offset="0.5" class="meter-yellow" />
+          <stop offset="1" class="meter-coral" />
+        </linearGradient>
+      </defs>
       <path class="meter-track" d="M 26 130 A 114 114 0 0 1 254 130" />
-      <path class="meter-accent" d="M 26 130 A 114 114 0 0 1 254 130" />
+      <path :stroke="`url(#${gradientId})`" d="M 26 130 A 114 114 0 0 1 254 130" />
     </svg>
     <div class="meter-reading">
       <output>{{ reading }}</output>
@@ -22,7 +31,6 @@
     position: relative;
     width: min(100%, 18rem);
     margin: 1rem auto 0.5rem;
-    color: var(--nh-kind-energy);
   }
   svg {
     display: block;
@@ -37,9 +45,14 @@
   .meter-track {
     stroke: var(--nh-border);
   }
-  .meter-accent {
-    stroke: currentColor;
-    opacity: 0.7;
+  .meter-green {
+    stop-color: var(--nh-kind-energy);
+  }
+  .meter-yellow {
+    stop-color: var(--nh-kind-light);
+  }
+  .meter-coral {
+    stop-color: var(--nh-kind-temp);
   }
   .meter-reading {
     position: absolute;

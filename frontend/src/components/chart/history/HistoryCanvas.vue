@@ -6,6 +6,7 @@
   const props = defineProps<{
     type: 'line' | 'bar';
     height: number;
+    endMarker?: boolean;
     options: HistoryChartOptions;
     series: { name: string; data: ChartPoint[] }[];
   }>();
@@ -16,12 +17,20 @@
   let chart: Chart<'line' | 'bar', ChartPoint[]> | null = null;
   let disposed = false;
   const datasets = () =>
-    props.series.map((series) => ({
-      label: series.name,
-      data: series.data,
-      // A lone reading still needs a visible mark when no line can be drawn.
-      pointRadius: series.data.length === 1 ? 3 : 0,
-    }));
+    props.series.map((series) => {
+      const last = lastKnownIndex(series.data);
+      return {
+        label: series.name,
+        data: series.data,
+        // Mark the last actual sample, never the right edge of an unknown gap.
+        pointRadius: (context: { dataIndex: number }) =>
+          series.data.length === 1 || (props.endMarker && context.dataIndex === last) ? 3 : 0,
+      };
+    });
+  function lastKnownIndex(data: ChartPoint[]) {
+    for (let i = data.length - 1; i >= 0; i--) if (data[i].y !== null) return i;
+    return -1;
+  }
   onMounted(async () => {
     try {
       const {
