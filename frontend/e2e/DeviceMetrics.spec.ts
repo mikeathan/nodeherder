@@ -115,7 +115,7 @@ test('read-only environmental view has approved chart treatment and no adjustmen
   await expect(dialog.locator('.nh-history-canvas[data-ready="true"]')).toBeVisible();
   await expect(dialog.getByRole('slider')).toHaveCount(0);
   await expect(dialog.getByText('Sample average', { exact: true })).toBeVisible();
-  await dialog.screenshot({ path: `/private/tmp/nodeherder-temperature-${info.project.name}.png` });
+  await dialog.screenshot({ path: info.outputPath('temperature.png') });
   await dialog.getByRole('button', { name: 'Close', exact: true }).click();
   for (const width of [320, 360, 768, 1280, 1920]) {
     await page.setViewportSize({ width, height: width === 768 ? 500 : 844 });

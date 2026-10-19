@@ -39,7 +39,7 @@ test('brightness uses native values, fullscreen mobile, shared confirmation and 
   await expect(dialog.getByLabel('Brightness preview')).toHaveText('72 %');
   await expect(dialog.locator('.nh-history-canvas[data-ready="true"]')).toBeVisible();
   await expect(dialog.locator('.entity-power-state')).toHaveText(/^(On|Off|Unknown)$/);
-  await dialog.screenshot({ path: `/private/tmp/nodeherder-brightness-${info.project.name}.png` });
+  await dialog.screenshot({ path: info.outputPath('brightness.png') });
   const gripDelta = await page.evaluate(() => {
     const track = document.querySelector('.nh-range')!.getBoundingClientRect();
     const grip = document.querySelector('.nh-range-grip')!.getBoundingClientRect();
@@ -353,7 +353,7 @@ test('continuous drag sends once and preserves the slider through confirmation',
     (element as HTMLInputElement & { dragSamples: { percent: number; error: number }[] }).dragSamples);
   expect(new Set(samples.map((sample) => sample.percent)).size).toBeGreaterThan(12);
   expect(Math.max(...samples.map((sample) => sample.error))).toBeLessThan(2);
-  await dialog.screenshot({ path: `/private/tmp/nodeherder-repaired-brightness-${info.project.name}.png` });
+  await dialog.screenshot({ path: info.outputPath('repaired-brightness.png') });
 });
 
 for (const viewport of [{ width: 768, height: 1024 }, { width: 844, height: 390 }]) {
@@ -398,7 +398,7 @@ for (const mode of ['dark', 'light']) {
     const colours = await meter.locator('stop').evaluateAll((stops) => stops.map((stop) => getComputedStyle(stop).stopColor));
     expect(new Set(colours).size).toBe(3);
     expect(await meter.locator('svg > path').last().evaluate((path) => getComputedStyle(path).stroke)).toContain('url(');
-    await page.getByRole('dialog').screenshot({ path: `/private/tmp/nodeherder-meter-${mode}-${info.project.name}.png`, scale: 'css' });
+    await page.getByRole('dialog').screenshot({ path: info.outputPath(`meter-${mode}.png`), scale: 'css' });
   });
 }
 
@@ -420,7 +420,7 @@ for (const level of [82, 0, null]) {
     if (level === null) await expect(bar).toHaveCount(0);
     else await expect(bar).toHaveAttribute('aria-valuenow', String(level));
     await expect(dialog.getByRole('region', { name: 'Other readings' })).toContainText('116');
-    await dialog.screenshot({ path: `/private/tmp/nodeherder-battery-${level}-${info.project.name}.png`, scale: 'css' });
+    await dialog.screenshot({ path: info.outputPath(`battery-${level}.png`), scale: 'css' });
   });
 }
 
