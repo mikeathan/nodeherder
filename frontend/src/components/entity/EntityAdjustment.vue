@@ -40,7 +40,6 @@
   const topText = computed(() => (temperature.value ? `Cool · ${top.value}` : top.value));
   const bottomText = computed(() => (temperature.value ? `Warm · ${bottom.value}` : bottom.value));
   const status = computed(() => {
-    if (pending.value) return 'Sending…';
     if (dragging.value) return 'Release to apply';
     return unknown.value ? 'No reading' : '';
   });

@@ -20,7 +20,11 @@
 
 <template>
   <article class="nh-dcard" :class="`is-${status}`" :data-device="device.id">
-    <RouterLink :to="{ name: RouteName.DevicePage, params: { id: device.id } }" class="nh-dcard-head">
+    <RouterLink
+      :to="{ name: RouteName.DevicePage, params: { id: device.id } }"
+      class="nh-dcard-head"
+      :aria-label="`Open ${device.friendly_name} device page`"
+      :title="device.friendly_name">
       <span class="nh-dcard-ic"><UiIcon :path="deviceIcon(device)" /></span>
       <span class="nh-dcard-t">
         <b>{{ device.friendly_name }}</b>
@@ -35,7 +39,7 @@
       <span v-else>Disabled in device settings</span>
     </div>
     <div v-else-if="rows.length" class="nh-dcard-rows">
-      <ExposeRow v-for="e in rows" :key="e.name" :device="device" :expose="e" />
+      <ExposeRow v-for="e in rows" :key="e.name" :device="device" :expose="e" card />
     </div>
     <p v-else class="nh-dcard-none">No live values. Open the device for details.</p>
     <footer class="nh-dcard-foot">
@@ -70,6 +74,10 @@
   .nh-dcard-head:hover {
     background: var(--nh-surface-2);
   }
+  .nh-dcard-head:focus-visible {
+    outline: 2px solid var(--nh-focus);
+    outline-offset: -3px;
+  }
   .nh-dcard-ic {
     display: grid;
     place-items: center;
@@ -96,7 +104,7 @@
     color: var(--nh-text-muted);
   }
   .nh-dcard-rows {
-    padding: 0.25rem 0;
+    padding: 0;
   }
   .nh-overlay {
     display: flex;
@@ -107,7 +115,7 @@
     color: var(--nh-text-muted);
     font-size: 0.875rem;
     text-align: center;
-    background: repeating-linear-gradient(-45deg, transparent 0 8px, var(--nh-surface-2) 8px 16px);
+    background: color-mix(in srgb, var(--nh-surface-2) 45%, var(--nh-surface));
   }
   .is-offline .nh-overlay .nh-ic {
     color: var(--nh-danger);

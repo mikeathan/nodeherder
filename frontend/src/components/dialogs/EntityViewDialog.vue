@@ -1,6 +1,7 @@
 <script setup lang="ts">
   import { computed, ref } from 'vue';
   import { onBeforeRouteLeave } from 'vue-router';
+  import { RouteName } from '@/types/router';
   import { useEntityDialog } from '@/composables/useEntityDialog';
   import { useHistoryQuery } from '@/composables/useHistoryQuery';
   import { useMediaQuery } from '@/composables/useMediaQuery';
@@ -125,7 +126,15 @@
       v-if="device && expose && adjustment"
       class="entity-detail"
       :class="[{ 'has-adjustment': adjustable }, `kind-${kind}`]">
-      <p class="entity-device">{{ device.friendly_name }}</p>
+      <RouterLink
+        class="entity-device"
+        :to="{ name: RouteName.DevicePage, params: { id: device.id } }"
+        :aria-label="`Open ${device.friendly_name} device page`"
+        title="Open device page"
+        @click.left.exact="close">
+        <span>{{ device.friendly_name }}</span>
+        <UiIcon name="chevronRight" />
+      </RouterLink>
       <p v-if="status !== 'online'" class="entity-warning" role="status">
         {{ status === 'disabled' ? 'Device disabled' : 'Device offline' }} · controls unavailable
       </p>
@@ -218,9 +227,33 @@
     min-width: 0;
   }
   .entity-device {
+    display: inline-flex;
+    align-items: center;
+    justify-self: start;
+    gap: 0.3rem;
+    min-width: 0;
+    max-width: 100%;
+    min-height: 1.5rem;
     color: var(--nh-text-muted);
     margin: 0;
     overflow-wrap: anywhere;
+    text-decoration: underline;
+    text-decoration-color: var(--nh-border-strong);
+    text-underline-offset: 0.2em;
+  }
+  .entity-device .nh-ic {
+    width: 1rem;
+    height: 1rem;
+    flex: none;
+  }
+  .entity-device:hover {
+    color: var(--nh-accent);
+    text-decoration-color: currentColor;
+  }
+  .entity-device:focus-visible {
+    outline: 2px solid var(--nh-focus);
+    outline-offset: 3px;
+    border-radius: var(--nh-radius-s);
   }
   .entity-primary {
     min-width: 0;

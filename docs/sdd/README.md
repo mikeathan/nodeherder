@@ -21,7 +21,8 @@ do not authorize violations. Parent governance defines conflicts and exceptions.
 
 1. Inspect affected code/tests with the map; record current behavior/gaps. README
    examples may lag actual contracts.
-2. Create `specs/<unique-id>-<name>/spec.md` using the
+2. Select the current branch's spec under [Branch scope](#branch-scope), or create
+   `specs/<unique-id>-<name>/spec.md` for new work, using the
    [spec template](../../.specify/templates/spec-template.md): stable IDs, prioritized
    scenarios, resolved questions before dependent work.
 3. Write `plan.md` using the [plan template](../../.specify/templates/plan-template.md):
@@ -39,6 +40,22 @@ do not authorize violations. Parent governance defines conflicts and exceptions.
 Scale artifact length to the change. NH-01 permits lightweight documentation/mechanical
 work; small security/persistence/protocol/device-control diffs still need relevant analysis.
 
+## Branch scope
+
+Keep one spec/plan/tasks set for the current branch or PR's work. Follow-up requests,
+review corrections and scope adjustments within that work MUST update the same files
+before implementation. Reopen affected tasks/checks even if a previous local iteration
+was marked complete; finishing an agent response does not finish the branch's work.
+
+Completed specs from earlier work stay as history. New work after that completion
+gets a new unique spec directory; do not reopen an unrelated completed spec. A new
+user message alone is not a reason to create a spec. Create separate plans within the
+same branch only when the user explicitly asks for them.
+
+When consolidating unmerged drafts, keep final acceptance, relevant decisions,
+verification evidence and unresolved rollout checks in the branch's single set.
+Remove rejected requirements and repair references; do not alter completed earlier work.
+
 ## Completion and history
 
 Complete means acceptance evidence, verified compatibility/recovery, accurate docs,
@@ -46,8 +63,9 @@ and truthful checks. Failed/unrun checks need cause and consequence. [CI](../ci.
 verifies tests/lint/builds/races/deployment tooling/images; SDD acceptance and
 constitutional review are not automatically enforced. Required status checks need
 GitHub branch protection/rulesets.
-Keep completed specs as history; follow-ups use new linked specs. Amend active specs
-openly, preserving IDs. Keep unspecified backlog in issues/`TODO.md`.
+Preserve completed earlier specs and stable IDs. Apply [Branch scope](#branch-scope)
+to further requests; update the current work openly. Keep unspecified backlog in
+issues/`TODO.md`.
 
 ## Tooling and document maintenance
 

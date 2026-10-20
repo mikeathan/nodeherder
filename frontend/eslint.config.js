@@ -3,7 +3,7 @@ import vueParser from 'vue-eslint-parser';
 
 export default [
   {
-    ignores: ['dist'], // Exclude the 'dist' folder
+    ignores: ['dist', 'playwright-report', 'test-results'], // Generated build and browser-test artifacts
   },
   {
     plugins: {

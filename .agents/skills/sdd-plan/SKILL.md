@@ -11,9 +11,13 @@ authorize planning artifacts, not application edits or implementation.
 ## Workflow
 
 1. Identify the goal, operation (new/update/review), and affected components. Inspect
-   code/tests and existing `specs/`. Reuse an unambiguous active spec; for new work
-   choose an unused `specs/<id>-<name>/`. Preserve completed history and unrelated plans.
-   Ask only when selecting the target would materially change scope.
+   code/tests, the current branch diff and existing `specs/`. Follow the workflow's
+   [branch scope rule](../../../docs/sdd/README.md#branch-scope): reuse the branch's
+   single spec/plan/tasks set for follow-up changes, including locally completed
+   iterations. Update its scope and reopen affected tasks/checks. New work after
+   completed earlier work gets an unused `specs/<id>-<name>/`; preserve that history.
+   Do not create a directory merely because another user message arrived. Ask only
+   when selecting the target would materially change scope.
 2. Read the [parent](../../../.specify/memory/constitution.md), applicable
    [backend](../../../backend/CONSTITUTION.md)/[frontend](../../../frontend/CONSTITUTION.md)
    rules, and [workflow](../../../docs/sdd/README.md). Use the

@@ -25,6 +25,72 @@ Dependency and component-specific image caches reduce repeat cost. Jobs have exp
 timeouts; verification gets read-only repository permission. Only the existing
 main-push tagging job can write, after all checks succeed.
 
+## E2E elapsed time and isolation
+
+E2E uses four jobs: desktop/mobile × file-level shards 1/2. Each runner starts a
+fresh mock hub and Vite server, with one Playwright worker. Keep `workers: 1` and
+`fullyParallel: false`: the hub has mutable shared state, and files retain their
+internal execution order. Matrix failures do not cancel other partitions. All four
+must pass through the existing `Run Tests` aggregate, on PRs, main and merge groups.
+The same tests, assertions, leak-cycle counts, retries and deadlines remain enabled.
+
+Each completed partition uploads `playwright-timings-<project>-<shard>` containing
+`timings.json` with per-test durations, including successful runs. Failed partitions
+also upload `playwright-report-<project>-<shard>` with HTML, traces and screenshots.
+Retention is seven days. This lets a future slowdown be traced to a test rather
+than inferred from the total job time.
+
+Measured before this change in [PR run 39298242659](https://github.com/mikeathan/nodeherder/actions/runs/39298242659)
+(2026-10-19):
+
+| Work | Elapsed time |
+| --- | --- |
+| Whole PR workflow | 6m57s |
+| E2E job, desktop then mobile on one worker | 6m45s |
+| Browser test step, including server startup/reporting | 6m08s |
+| Chromium/system dependency install | 21s |
+| Backend ordinary/race jobs, already in parallel | 1m28s / 1m50s |
+| Frontend unit/lint/build job | 37s |
+| Backend/frontend container jobs | 51s / 1m22s |
+
+The E2E log contains 155 passed cases and nine existing desktop skips for phone-only
+checks. Entity-dialog tests cost about 145s across both viewports, including about
+50s for the two 50-cycle leak checks. Confirmation-timeout tests cost about 31s;
+the home light tests wait for periodic mock updates (~20s combined). Layout checks
+visit eleven routes and use `networkidle` (~20s combined). These checks retain their
+current behavior. Ordinary backend package execution is heaviest in automations
+(21.7s) and controllers (16.3s); some tests use real-time waits. Compilation and
+package scheduling also contribute to job duration.
+
+The matching [main run 39299251928](https://github.com/mikeathan/nodeherder/actions/runs/39299251928)
+took 7m15s, with E2E at 6m53s. The earlier main run 39053480876 took 4m22s,
+with E2E at 4m02s; the intervening change expanded entity-dialog/history coverage.
+Main verifies the merged commit with the full suite again, then tags. The current
+adjustment speeds both PR and main runs. Based on the measured file durations, the
+four partitions should take roughly 2–3 minutes including setup on comparable warm
+runners; this is an estimate until the changed workflow runs on GitHub. Four E2E
+runners add installation/runner overhead and may queue under account concurrency
+limits. File-level sharding can become uneven as suites grow; inspect timing reports
+before increasing partition count. Tests execute afresh; existing dependency/build
+caches remain enabled.
+
+Reproduce one partition from `frontend/`, using Node from `.nvmrc` and only isolated
+mock servers (do not run these commands concurrently on the same default ports):
+
+```bash
+CI=true PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/timings.json \
+  npm run test:e2e -- --project=desktop --shard=1/2 --reporter=list,html,json
+```
+
+Repeat for desktop shard 2 and mobile shards 1/2. See
+[spec 023](../specs/023-ci-and-device-controls/plan.md) for discovery, local execution and
+remaining rollout verification. Sharding follows [Playwright's documented file-level behavior](https://playwright.dev/docs/test-sharding).
+
+Local validation (macOS/Node 24): the unchanged suite passed in 3.7 minutes;
+individual fresh-server partitions passed in 54.4s, 51.4s, 66.7s and 54.2s.
+The executed reports cover the same 164 cases exactly once (155 passes, nine
+existing skips). GitHub installation and queue time are excluded from these results.
+
 ## Enforce before merge
 
 In GitHub branch protection/rulesets, require **Run Tests**, the retained aggregate
