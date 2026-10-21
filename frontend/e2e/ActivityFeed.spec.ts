@@ -3,6 +3,17 @@ import { MOCK } from './support/mock';
 
 test('activity search filters devices without changing recording, links or clear-all', async ({ page, ws }, testInfo) => {
   // Controlled incoming reports only: no device command or live hub is involved.
+  const deviceErrors: string[] = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error' && /device .* not found/.test(message.text())) deviceErrors.push(message.text());
+  });
+  let releaseSnapshot!: () => void;
+  const snapshotGate = new Promise<void>((resolve) => { releaseSnapshot = resolve; });
+  await page.route('**/api/hubstate', async (route) => {
+    const response = await route.fetch();
+    await snapshotGate;
+    await route.fulfill({ response });
+  });
   let report: (id: string, data: Record<string, number>) => void;
   await page.routeWebSocket('ws://localhost:4110/ws', (socket) => {
     report = (id, data) => socket.send(JSON.stringify({ type: 'deviceUpdated', payload: { id, data } }));
@@ -14,6 +25,12 @@ test('activity search filters devices without changing recording, links or clear
   await expect(search).toBeVisible();
   await expect(feed.getByText(/Waiting for device changes/)).toBeVisible();
   await expect.poll(() => typeof report).toBe('function');
+  const inventory = page.getByRole('link', { name: /Devices online/ }).locator('.nh-stat-num');
+  // Feed rendering and the socket can beat initial HTTP on a cold CI runner.
+  // Hold that response deliberately, then wait for its device data to reach Vue.
+  await expect(inventory).toHaveText('0/0');
+  releaseSnapshot();
+  await expect(inventory).toHaveText(new RegExp(`^\\d+/${MOCK.deviceCount}$`));
   report!(MOCK.livingRoomLight.id, { brightness: 101 });
   report!(MOCK.atticSocket.id, { power: 12345 });
   await expect(rows).toHaveCount(2);
@@ -53,4 +70,5 @@ test('activity search filters devices without changing recording, links or clear
   await feed.getByRole('switch', { name: 'Record recent activity' }).click();
   await expect(feed.getByText(/Activity recording is off/)).toBeVisible();
   expect(ws.sentOf('deviceSetValue')).toHaveLength(0);
+  expect(deviceErrors).toEqual([]);
 });
