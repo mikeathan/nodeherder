@@ -38,6 +38,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 const device1BatterySource = `{"id":"device 1","conn":"mqtt","power_source":"battery","humidity":92.49999999999999,"temperature":19.000000000000004,"availability":"online","last_seen":"2023-07-20T19:48:35+01:00","linkquality":47,"battery":98}`
@@ -959,18 +961,36 @@ func TestQueryServiceReturnsLatestMetrics(t *testing.T) {
 	controllers.RegisterHubController(ws, store, mqtt)
 
 	mqtt.Publish("bridge/devices", deviceBridgeList)
-	time.Sleep(100 * time.Millisecond)
+	require.Eventually(t, func() bool {
+		_, err := store.FindDeviceById(lightDevice.Id)
+		return err == nil
+	}, hubharness.Timeout, time.Millisecond, "bridge did not register the light")
 
 	base := time.Date(2024, time.January, 1, 0, 0, 0, 0, time.UTC)
+	queryService := metricsservice.NewQueryService(store)
+	allSamples := metricsquery.MetricsQueryRequest{
+		DeviceIds:   []string{lightDevice.Id},
+		Exposes:     []string{"brightness"},
+		Time:        metrics.TimeQuery{From: base, To: base.Add(5 * time.Minute)},
+		Aggregation: metrics.AggNone,
+	}
 
 	brightnessValues := []float64{5, 10, 15, 20, 25}
 	for i, value := range brightnessValues {
-		mockClock.SetMockTime(base.Add(time.Duration(i+1) * time.Minute))
+		timestamp := base.Add(time.Duration(i+1) * time.Minute)
+		mockClock.SetMockTime(timestamp)
 		mqtt.Publish(lightDevice.FriendlyName, map[string]any{"brightness": value})
-		time.Sleep(100 * time.Millisecond)
+		// MQTT queues work asynchronously. Keep the clock fixed until this sample
+		// is persisted, otherwise later writes can share a key and overwrite it.
+		require.Eventually(t, func() bool {
+			responses, err := queryService.Query(context.Background(), allSamples)
+			if err != nil || responses == nil || len(*responses) != 1 || len((*responses)[0].Values) != 1 {
+				return false
+			}
+			values, ok := (*responses)[0].Values[0].Value.([]*metrics.NumericValue)
+			return ok && len(values) == i+1 && values[i].X == timestamp.UnixMilli() && values[i].Y == float32(value)
+		}, hubharness.Timeout, time.Millisecond, "brightness sample %d was not persisted at %s", i, timestamp)
 	}
-
-	queryService := metricsservice.NewQueryService(store)
 
 	testCases := []struct {
 		name   string
