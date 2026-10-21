@@ -24,7 +24,7 @@ func LogoutHandler(jwtService *JWTService, blacklist *TokenBlacklist) http.Handl
 			blacklist.Add(token, claims.ExpiresAt.Time)
 		}
 
-		clearCookie(w, CookieNameSession)
+		clearCookie(w, r, CookieNameSession)
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{"status": "success"})
 	}

@@ -60,6 +60,7 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store
 	// MCP routes
 	if mcpServer != nil {
 		sseHandler := mcphttp.NewSSEHandler(mcpServer)
+		context.AfterFunc(ctx, sseHandler.Close)
 		router.PublicPOST("/api/mcp", mcphttp.NewMCPHandler(mcpServer, sseHandler))
 		router.PublicGET("/api/mcp", sseHandler)
 		router.PublicGET("/api/mcp/events", sseHandler)
@@ -81,6 +82,7 @@ func Register(port int, store store.AppStore, ctx context.Context) (*api.ApiServ
 
 	ws := ws.NewWsHub()
 	ws.Start()
+	context.AfterFunc(ctx, func() { _ = ws.Close() })
 
 	utils.RegisterRemoteLoggerHook(ws)
 

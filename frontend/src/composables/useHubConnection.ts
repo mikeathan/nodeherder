@@ -2,30 +2,85 @@
 import { store } from '@/store';
 import { fetchHubState } from '@/services/hubstate.service';
 import { onMounted, onBeforeUnmount } from 'vue';
+import type { Device, DeviceUpdate } from '@/types/device';
+import type { HubStateSnapshot } from '@/types/hub.type';
 
 let generation = 0;
 let pendingConnection: Promise<void> | null = null;
 let pendingSnapshot: Promise<void> | null = null;
 let snapshotController: AbortController | null = null;
 
-async function requestSnapshot(signal: AbortSignal, owner: number) {
+function preserveLiveReports(data: HubStateSnapshot, updates: Map<string, DeviceUpdate>, added: Map<string, Device>): HubStateSnapshot {
+  const devices = new Map(data.devices.map((device) => [device.id, device]));
+  for (const [id, device] of added) devices.set(id, device);
+  for (const [id, update] of updates) {
+    const device = devices.get(id);
+    if (!device) continue;
+    const exposes = { ...device.exposes };
+    for (const [name, value] of Object.entries(update.data)) {
+      if (exposes[name]) exposes[name] = { ...exposes[name], data: value };
+    }
+    devices.set(id, { ...device, exposes, last_seen: update.last_seen || device.last_seen, availability: update.availability || device.availability });
+  }
+  return { ...data, devices: [...devices.values()] };
+}
+
+async function requestSnapshot(controller: AbortController, owner: number) {
+  const { signal } = controller;
+  // Coalesce by known device/field, bounded by the live registry rather than message count.
+  const updates = new Map<string, DeviceUpdate>();
+  const added = new Map<string, Device>();
+  let configChanged = false;
+  let listChanged = false;
+  let timedOut = false;
+  const timer = setTimeout(() => { timedOut = true; controller.abort(); }, 8000);
+  const unsubscribe = store.subscribe((mutation) => {
+    if (mutation.type === 'hub/updateDevice') {
+      const update = mutation.payload as DeviceUpdate;
+      const device = store.getters['hub/findDevice'](update.id) as Device | undefined;
+      if (!device) return;
+      const previous = updates.get(update.id);
+      const data = { ...previous?.data };
+      for (const [name, value] of Object.entries(update.data ?? {})) if (device.exposes[name]) data[name] = value;
+      updates.set(update.id, { ...previous, ...update, data, last_seen: update.last_seen || previous?.last_seen || '', availability: update.availability || previous?.availability || null });
+    } else if (mutation.type === 'hub/addDevice') {
+      const device = mutation.payload as Device;
+      added.set(device.id, device);
+    } else if (mutation.type === 'hub/setDevices') {
+      listChanged = true;
+    } else if (mutation.type.startsWith('hub/') && !['hub/clear', 'hub/setLoadStatus', 'hub/setInitialized', 'hub/setMCPStatus'].includes(mutation.type)) {
+      configChanged = true;
+    }
+  });
+  const dispose = () => {
+    clearTimeout(timer);
+    unsubscribe();
+    signal.removeEventListener('abort', dispose);
+  };
+  signal.addEventListener('abort', dispose, { once: true });
   try {
-    const data = await fetchHubState(signal);
+    let data = await fetchHubState(signal);
     if (signal.aborted || owner !== generation) return;
-    store.dispatch('hub/init', data);
+    if (listChanged) data = { ...data, devices: store.getters['hub/listAllDevices']() as Device[] };
+    else data = preserveLiveReports(data, updates, added);
+    if (configChanged) data = { ...data, config: store.getters['hub/appConfig']() as HubStateSnapshot['config'] };
+    unsubscribe();
+    store.dispatch(store.getters['hub/isInitialized']() ? 'hub/refresh' : 'hub/init', data);
     store.commit('hub/setLoadStatus', 'ready');
   } catch {
-    if (signal.aborted || owner !== generation) return;
+    if ((signal.aborted && !timedOut) || owner !== generation) return;
     store.commit('hub/setLoadStatus', 'failed');
+  } finally {
+    dispose();
   }
 }
 
-function loadHubState() {
-  if (store.getters['hub/isInitialized']()) return;
-  if (pendingSnapshot) return;
+function loadHubState(force = false) {
+  if (!force && (store.getters['hub/isInitialized']() || pendingSnapshot)) return;
+  if (force) snapshotController?.abort();
   snapshotController = new AbortController();
   store.commit('hub/setLoadStatus', 'loading');
-  const request = requestSnapshot(snapshotController.signal, generation).finally(() => {
+  const request = requestSnapshot(snapshotController, generation).finally(() => {
     if (pendingSnapshot !== request) return;
     pendingSnapshot = null;
     snapshotController = null;
@@ -67,6 +122,12 @@ export function stopHubConnection() {
 }
 
 export function useHubConnection() {
+  let connected = false;
+  const unsubscribe = store.subscribe((mutation) => {
+    if (mutation.type !== 'ws/setConnectionStatus' || mutation.payload !== 'connected') return;
+    if (connected) loadHubState(true);
+    connected = true;
+  });
   const retry = () => { void startHubConnection(); };
   const visible = () => { if (document.visibilityState === 'visible') retry(); };
   onMounted(() => {
@@ -76,6 +137,7 @@ export function useHubConnection() {
     document.addEventListener('visibilitychange', visible);
   });
   onBeforeUnmount(() => {
+    unsubscribe();
     window.removeEventListener('online', retry);
     window.removeEventListener('focus', retry);
     document.removeEventListener('visibilitychange', visible);

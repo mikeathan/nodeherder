@@ -17,8 +17,8 @@ func setupTestProvider(t *testing.T, forceOfflineMode bool) *auth.Provider {
 	setTestJWTSecret(t)
 
 	// Set environment for testing
-	// When OFFLINE_STRICT_LOCAL=false: always offline (dev mode)
-	// When OFFLINE_STRICT_LOCAL=true: offline for non-local, online for local IPs
+	// OFFLINE_STRICT_LOCAL=false disables local sign-in; true permits local clients
+	// according to the direct-peer/trusted-proxy policy.
 	if forceOfflineMode {
 		os.Setenv("OFFLINE_STRICT_LOCAL", "false")
 	} else {
@@ -610,6 +610,107 @@ func TestAuthModeAndLocalStartUseSamePolicy(t *testing.T) {
 			}
 			if tc.startStatus == 403 && len(w.Result().Cookies()) != 0 {
 				t.Fatal("denied request issued cookie")
+			}
+		})
+	}
+}
+
+func TestProxyTrustControlsModeAndLocalSession(t *testing.T) {
+	for _, tc := range []struct {
+		name, peer, trusted, clientIP, forwarded string
+		local                                    bool
+	}{
+		{"direct attacker", "203.0.113.10:1234", "", "127.0.0.1", "127.0.0.1", false},
+		{"unconfigured Nginx", "172.19.0.2:1234", "", "192.168.1.2", "192.168.1.2", false},
+		{"configured Nginx local", "172.19.0.2:1234", "172.19.0.2/32", "192.168.1.2", "192.168.1.2", true},
+		{"configured Nginx public with forged chain", "172.19.0.2:1234", "172.19.0.2/32", "203.0.113.10", "127.0.0.1, 203.0.113.10", false},
+		{"configured Nginx missing client", "172.19.0.2:1234", "172.19.0.2/32", "", "", false},
+		{"direct LAN remains local", "192.168.1.2:1234", "172.19.0.2/32", "", "", true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("JWT_SECRET_KEY", "test-secret")
+			t.Setenv("OFFLINE_STRICT_LOCAL", "true")
+			t.Setenv("TRUSTED_PROXY_CIDRS", tc.trusted)
+			t.Setenv("APP_ENV", "development")
+			t.Setenv("FRONTEND_BASE_URL", "http://localhost:4100")
+			p := auth.NewProvider(auth.WithDefaultJWTConfig(), "")
+			r := httptest.NewRequest(http.MethodGet, "/api/auth/mode", nil)
+			r.RemoteAddr = tc.peer
+			if tc.clientIP != "" {
+				r.Header.Set("X-Real-IP", tc.clientIP)
+			}
+			if tc.forwarded != "" {
+				r.Header.Set("X-Forwarded-For", tc.forwarded)
+			}
+			w := httptest.NewRecorder()
+			p.OAuth().(interface {
+				HandleMode(http.ResponseWriter, *http.Request)
+			}).HandleMode(w, r)
+			mode := "google"
+			if tc.local {
+				mode = "local"
+			}
+			if body := assertJSONResponse(t, w, http.StatusOK); body["mode"] != mode {
+				t.Fatalf("mode=%v, want %s", body["mode"], mode)
+			}
+			w = httptest.NewRecorder()
+			p.OAuth().(auth.OfflineAuth).HandleOfflineStart(w, r)
+			if !tc.local {
+				if w.Code != http.StatusForbidden || len(w.Result().Cookies()) != 0 {
+					t.Fatalf("untrusted request issued local session: status=%d", w.Code)
+				}
+				return
+			}
+			if w.Code != http.StatusFound {
+				t.Fatalf("trusted local start=%d, want redirect", w.Code)
+			}
+			cookie := assertCookie(t, w.Result().Cookies(), auth.CookieNameSession, true)
+			if cookie == nil {
+				return
+			}
+			if _, err := auth.NewJWTService(auth.WithDefaultJWTConfig()).ValidateJWT(cookie.Value); err != nil {
+				t.Fatalf("local session is not usable: %v", err)
+			}
+		})
+	}
+}
+
+func TestCookiePolicySupportsTLSAndExplicitTermination(t *testing.T) {
+	for _, tc := range []struct {
+		name, url, override string
+		secure              bool
+	}{
+		{"local HTTP", "http://localhost", "", false},
+		{"direct HTTPS", "https://localhost", "", true},
+		{"TLS terminator", "http://localhost", "true", true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("JWT_SECRET_KEY", "test-secret")
+			t.Setenv("AUTH_COOKIE_SECURE", tc.override)
+			t.Setenv("APP_ENV", "development")
+			t.Setenv("FRONTEND_BASE_URL", "http://localhost:4100")
+			provider := auth.NewProvider(auth.WithDefaultJWTConfig(), "")
+			request := httptest.NewRequest("POST", tc.url+"/api/auth/login", nil)
+			response := httptest.NewRecorder()
+			provider.OAuth().HandleLogin(response, request)
+			for _, cookie := range response.Result().Cookies() {
+				if cookie.Secure != tc.secure || !cookie.HttpOnly {
+					t.Fatalf("OAuth cookie %s flags: %+v", cookie.Name, cookie)
+				}
+			}
+			offline := auth.NewOfflineOAuth(auth.NewJWTService(auth.WithDefaultJWTConfig()), auth.NewTokenBlacklist(), "").(auth.OfflineAuth)
+			response = httptest.NewRecorder()
+			offline.HandleOfflineStart(response, request)
+			cookie := assertCookie(t, response.Result().Cookies(), auth.CookieNameSession, true)
+			if cookie.Secure != tc.secure || !cookie.HttpOnly {
+				t.Fatalf("session flags: %+v", cookie)
+			}
+			request.AddCookie(cookie)
+			response = httptest.NewRecorder()
+			offline.HandleLogout(response, request)
+			expired := assertCookie(t, response.Result().Cookies(), auth.CookieNameSession, true)
+			if expired.MaxAge >= 0 || expired.Secure != tc.secure {
+				t.Fatalf("logout cookie: %+v", expired)
 			}
 		})
 	}

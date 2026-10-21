@@ -8,6 +8,7 @@
   import { useRoute } from 'vue-router';
   import { useHubConnection } from '@/composables/useHubConnection';
   import { useActivityFeed } from '@/composables/useActivityFeed';
+  import { usePermitJoinTracking } from '@/composables/usePermitJoin';
   import Notifications from '@/components/hub/alerts/Notifications.vue';
   import DialogHost from '@/components/dialogs/DialogHost.vue';
   import UiConfirmHost from '@/components/ui/UiConfirmHost.vue';
@@ -23,6 +24,7 @@
   const main = ref<HTMLElement | null>(null);
 
   useActivityFeed();
+  usePermitJoinTracking();
   useHubConnection();
 
   watch(

@@ -49,7 +49,12 @@ OAUTH_CALLBACK_URL=http://nodeherder.local/api/auth/callback
 JWT_SECRET_KEY=<replace-with-random-secret>
 GOOGLE_CLIENT_ID=<your-google-client-id>
 GOOGLE_CLIENT_SECRET=<your-google-client-secret>
+# false uses Google; true permits eligible local clients (see proxy settings below).
 OFFLINE_STRICT_LOCAL=false
+# When enabling local sign-in behind Nginx, set its actual peer IP/CIDR in backend/.env:
+# TRUSTED_PROXY_CIDRS=
+# Enable only if HTTPS terminates at the proxy:
+# AUTH_COOKIE_SECURE=true
 ```
 
 Use a strong random JWT secret, for example output from `openssl rand -base64 32`.
@@ -76,7 +81,31 @@ FRONTEND_ALLOWED_ORIGINS=http://localhost:4100
 OAUTH_CALLBACK_URL=http://localhost:4110/api/auth/callback
 JWT_SECRET_KEY=<replace-with-random-secret>
 OFFLINE_STRICT_LOCAL=true
+# Direct HTTP defaults: no trusted proxy and no Secure-cookie override.
+# TRUSTED_PROXY_CIDRS=
+# AUTH_COOKIE_SECURE=false
 ```
+
+### Local and proxy settings
+
+For local sign-in, use OFFLINE_STRICT_LOCAL=true and the matching configuration:
+
+| How requests reach the backend | TRUSTED_PROXY_CIDRS | AUTH_COOKIE_SECURE |
+| --- | --- | --- |
+| Direct localhost/LAN over HTTP, without Nginx | Unset/empty | Unset/false |
+| Docker Nginx over HTTP | Actual immediate proxy IP/CIDR | Unset/false |
+| Nginx terminating HTTPS | Actual immediate proxy IP/CIDR | true |
+
+The code defaults are empty proxy trust and false for the Secure-cookie override;
+direct HTTPS always sets Secure. OFFLINE_STRICT_LOCAL=false uses Google regardless
+of the local/proxy settings. Checked-in backend env files include commented examples,
+so they do not override deployment values supplied in backend/.env. Remove inherited
+proxy/HTTPS overrides from backend/.env or the shell when switching to direct local HTTP.
+
+For local sign-in behind Docker Nginx, configure TRUSTED_PROXY_CIDRS in backend/.env
+before upgrading. It accepts explicit proxy IPs/CIDRs; the empty default cannot authorize
+forwarded local sign-in. Follow the
+[proxy identification, verification and recovery steps](runtime-reliability.md#nginx-trust-and-coordinated-upgrade).
 
 `APP_ENV` selects development/staging/production; callback URLs support `{PORT}`.
 Offline mode chooses the local login flow for requests the backend recognizes as local.

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"node-herder/utils"
+	"time"
 )
 
 type ApiServer struct {
@@ -24,7 +25,8 @@ func WithRouter(router *Router) func(s *ApiServer) {
 func NewHttpServer(port int, opts ...func(s *ApiServer)) *ApiServer {
 
 	api := &ApiServer{
-		router: &Router{},
+		router: NewRouter(),
+		ctx:    context.Background(),
 	}
 
 	for _, opt := range opts {
@@ -32,54 +34,21 @@ func NewHttpServer(port int, opts ...func(s *ApiServer)) *ApiServer {
 	}
 
 	api.httpServer = http.Server{
-		Addr:    fmt.Sprintf(":%d", port),
-		Handler: api.router,
+		Addr:              fmt.Sprintf(":%d", port),
+		Handler:           api.router,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		IdleTimeout:       60 * time.Second,
 	}
 
 	return api
 }
 
 func (s *ApiServer) Listen() {
-
-	done := make(chan bool)
-	errors := make(chan error)
-
-
-	go func() {
-		<-s.ctx.Done()
-		if err := s.httpServer.Close(); err != nil {
-			select {
-			case errors <- fmt.Errorf("HTTP close error: %v", err):
-			default:
-			}
-		}
-		utils.LogInfof("HTTP Server Closed")
-		select {
-		case done <- true:
-		default:
-		}
-	}()
-
-	go func() {
-		utils.LogInfof("HTTP Server Listening %s", s.httpServer.Addr)
-		if err := s.httpServer.ListenAndServe(); err != http.ErrServerClosed {
-			select {
-			case errors <- fmt.Errorf("HTTP server error: %v", err):
-			default:
-			}
-		}
-	}()
-
-	go func() {
-		err := <-errors
-		if err != nil {
-			utils.LogErrorf("Finished with error %s", err.Error())
-		}
-		select {
-		case done <- true:
-		default:
-		}
-	}()
-
-	<-done
+	stop := context.AfterFunc(s.ctx, func() { _ = s.httpServer.Close() })
+	defer stop()
+	utils.LogInfof("HTTP Server Listening %s", s.httpServer.Addr)
+	if err := s.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		utils.LogErrorf("HTTP server failed: %v", err)
+	}
 }

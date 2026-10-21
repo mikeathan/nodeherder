@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -97,32 +98,34 @@ func (s *JWTService) ValidateJWT(tokenStr string) (*Claims, error) {
 // =========================
 
 // setStateCookie stores the OAuth 2.0 state parameter in an HttpOnly cookie for CSRF protection.
-func setStateCookie(w http.ResponseWriter, state string) {
+func setStateCookie(w http.ResponseWriter, r *http.Request, state string) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     CookieNameOAuthState,
 		Value:    state,
 		Path:     "/",
 		HttpOnly: true,
+		Secure:   secureCookies(r),
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   300, // 5 minutes expiry
 	})
 }
 
 // setPKCECookie stores the PKCE code_verifier bound to a state value (format: state.verifier).
-func setPKCECookie(w http.ResponseWriter, state, verifier string) {
+func setPKCECookie(w http.ResponseWriter, r *http.Request, state, verifier string) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     CookieNameOAuthPKCE,
 		Value:    state + "." + verifier,
 		Path:     "/",
 		HttpOnly: true,
+		Secure:   secureCookies(r),
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   300, // 5 minutes expiry
 	})
 }
 
 // setSessionCookie persists the user's session (JWT) with HttpOnly and SameSite=Lax.
-// Note: set Secure=true in production when served over HTTPS.
-func setSessionCookie(w http.ResponseWriter, token string, expiresAt time.Time) {
+// TLS termination can require Secure explicitly using AUTH_COOKIE_SECURE=true.
+func setSessionCookie(w http.ResponseWriter, r *http.Request, token string, expiresAt time.Time) {
 	// Round up the remaining seconds; JWT validation enforces the precise expiry.
 	maxAge := int(time.Until(expiresAt).Seconds()) + 1
 	if maxAge <= 0 {
@@ -133,7 +136,7 @@ func setSessionCookie(w http.ResponseWriter, token string, expiresAt time.Time) 
 		Value:    token,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false, // Set to true in production with HTTPS
+		Secure:   secureCookies(r),
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   maxAge,
 		Expires:  expiresAt,
@@ -141,12 +144,15 @@ func setSessionCookie(w http.ResponseWriter, token string, expiresAt time.Time) 
 }
 
 // clearCookie expires a cookie immediately by name.
-func clearCookie(w http.ResponseWriter, name string) {
+func clearCookie(w http.ResponseWriter, r *http.Request, name string) {
 	http.SetCookie(w, &http.Cookie{
-		Name:   name,
-		Value:  "",
-		Path:   "/",
-		MaxAge: -1,
+		Name:     name,
+		Secure:   secureCookies(r),
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
 	})
 }
 
@@ -222,4 +228,10 @@ func generatePKCEVerifier(length int) string {
 func generatePKCEChallenge(verifier string) string {
 	sum := sha256.Sum256([]byte(verifier))
 	return base64.RawURLEncoding.EncodeToString(sum[:])
+}
+
+// secureCookies never trusts caller-supplied protocol headers. TLS terminators can
+// explicitly configure the public cookie policy; local HTTP remains supported.
+func secureCookies(r *http.Request) bool {
+	return r.TLS != nil || os.Getenv("AUTH_COOKIE_SECURE") == "true"
 }

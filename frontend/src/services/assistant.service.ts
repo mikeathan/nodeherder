@@ -1,15 +1,16 @@
 import { get, post } from '@/contracts/api';
+import { parseAssistantReply, parseConversationHistory, parseConversations } from '@/contracts/assistant';
 import type { ConversationHistoryResponse, ConversationsListResponse } from '@/types/assistant.type';
 import { fetchWithAuth } from '@/contracts/api';
 
 const CONTEXT_VERSION = 'v1';
 
-export async function sendMessageToLLM(conversationId: string, message: string): Promise<string> {
+export async function sendMessageToLLM(conversationId: string, message: string, signal?: AbortSignal): Promise<string> {
   const response = await post('assistant/message', {
     conversation_id: conversationId,
     context_version: CONTEXT_VERSION,
     message: message,
-  });
+  }, { signal });
 
   if (!response.ok) {
     let errorMessage = `HTTP error! status: ${response.status}`;
@@ -20,33 +21,33 @@ export async function sendMessageToLLM(conversationId: string, message: string):
     throw new Error(errorMessage);
   }
 
-  const data = await response.json();
-  return data.reply;
+  return parseAssistantReply(await response.json());
 }
 
-export async function fetchConversations(): Promise<ConversationsListResponse> {
-  const response = await get('assistant/conversations');
+export async function fetchConversations(signal?: AbortSignal): Promise<ConversationsListResponse> {
+  const response = await get('assistant/conversations', { signal });
 
   if (!response.ok) {
     throw new Error(`HTTP error! status: ${response.status}`);
   }
 
-  return response.json();
+  return parseConversations(await response.json());
 }
 
-export async function fetchConversationHistory(conversationId: string): Promise<ConversationHistoryResponse> {
-  const response = await get(`assistant/history/${conversationId}`);
+export async function fetchConversationHistory(conversationId: string, signal?: AbortSignal): Promise<ConversationHistoryResponse> {
+  const response = await get(`assistant/history/${encodeURIComponent(conversationId)}`, { signal });
 
   if (!response.ok) {
     throw new Error(`HTTP error! status: ${response.status}`);
   }
 
-  return response.json();
+  return parseConversationHistory(await response.json(), conversationId);
 }
 
-export async function deleteConversation(conversationId: string): Promise<void> {
-  const response = await fetchWithAuth(`assistant/history/${conversationId}`, {
+export async function deleteConversation(conversationId: string, signal?: AbortSignal): Promise<void> {
+  const response = await fetchWithAuth(`assistant/history/${encodeURIComponent(conversationId)}`, {
     method: 'DELETE',
+    signal,
   });
 
   if (!response.ok) {

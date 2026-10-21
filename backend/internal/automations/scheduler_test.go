@@ -124,68 +124,29 @@ func TestSchedulerPartialStartDoesNotLeaveTimers(t *testing.T) {
 }
 
 func TestAddTimeSchedule(t *testing.T) {
-
-	wg := sync.WaitGroup{}
-	wg.Add(4)
-
-	order := []int{1, 2, 1, 2}
-	done := make(chan int, 4)
-	loc, _ := time.LoadLocation("Europe/London")
-	now := time.Now().In(loc)
-	start := now.Add(500 * time.Millisecond)
-	end := now.Add(2000 * time.Millisecond)
-
-	schedules := utils_test.CreateTimeSchedules(start, end)
-	s := automations.NewScheduler(utils.NewRealClock(), context.Background())
-	defer s.Stop()
-	var mu sync.Mutex
-	doneCount := 0
-
-	// add start job
-	err := s.Name("Start job").At(schedules[0].StartAt).Every(time.Second * 4).Do(func() error {
-		mu.Lock()
-		defer mu.Unlock()
-		if doneCount < 4 {
-			done <- 1
-			wg.Done()
-			doneCount++
+	loc, err := time.LoadLocation("Europe/London")
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Date(2026, 1, 10, 12, 0, 0, 0, loc)
+	clock := mocks.NewMockClock(func() time.Time { return now })
+	schedules := utils_test.CreateTimeSchedules(now.Add(500*time.Millisecond), now.Add(2*time.Second))
+	scheduler := automations.NewScheduler(clock, context.Background())
+	defer scheduler.Stop()
+	var order []int
+	for i, schedule := range schedules {
+		id := i + 1
+		if err := scheduler.At(schedule.StartAt).Every(4 * time.Second).Do(func() error { order = append(order, id); return nil }); err != nil {
+			t.Fatal(err)
 		}
-		return nil
-	})
-
-	if err != nil {
-		t.Errorf("failed to add start job %s", err.Error())
 	}
-
-	err = s.Name("End job").At(schedules[1].StartAt).Every(time.Second * 4).Do(func() error {
-		mu.Lock()
-		defer mu.Unlock()
-		if doneCount < 4 {
-			done <- 2
-			wg.Done()
-			doneCount++
-		}
-		return nil
-	})
-
-	if err != nil {
-		t.Errorf("failed to add End job %s", err.Error())
+	if err := scheduler.Start(); err != nil {
+		t.Fatal(err)
 	}
-
-	err = s.Start()
-	if err != nil {
-		t.Errorf("failed to start scheduler %s", err.Error())
-	}
-
-	if !waitTimeout(&wg, 10*time.Second) {
-		t.Errorf("failed to execute jobs")
-	}
-
-	for i := 0; i < 4; i++ {
-		id := <-done
-
-		if order[i] != id {
-			t.Errorf("job %d executed before job %d", id, order[i])
+	for i, duration := range []time.Duration{500 * time.Millisecond, 1500 * time.Millisecond, 2500 * time.Millisecond, 1500 * time.Millisecond} {
+		clock.Advance(duration)
+		if len(order) != i+1 || order[i] != []int{1, 2, 1, 2}[i] {
+			t.Fatalf("schedule execution after step %d: %v", i, order)
 		}
 	}
 }

@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"node-herder/utils"
 	"os"
+	"time"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -123,7 +125,7 @@ func (o *offlineOAuth) HandleOfflineStart(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	setSessionCookie(w, token, expiresAt)
+	setSessionCookie(w, r, token, expiresAt)
 
 	// Build the frontend success redirect URL from environment.
 	frontendURL, err := frontendAuthSuccessURL()
@@ -150,6 +152,7 @@ type googleOAuth struct {
 	jwtService *JWTService
 	blacklist  *TokenBlacklist
 	basePath   string
+	client     *http.Client
 }
 
 func NewGoogleOAuth(jwtService *JWTService, blacklist *TokenBlacklist, callbackURL string) OAuth {
@@ -168,6 +171,7 @@ func NewGoogleOAuth(jwtService *JWTService, blacklist *TokenBlacklist, callbackU
 		jwtService: jwtService,
 		blacklist:  blacklist,
 		basePath:   "/api/auth",
+		client:     &http.Client{Timeout: 15 * time.Second},
 	}
 }
 
@@ -176,14 +180,14 @@ func (o *googleOAuth) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	state := generateState()
 	// Store an anti-CSRF state value. Google will return this value and we verify it in the callback.
 	// SameSite=Lax allows redirect back across ports on the same host and protects against CSRF on top-level nav.
-	setStateCookie(w, state)
+	setStateCookie(w, r, state)
 
 	// PKCE: generate verifier and challenge
 	verifier := generatePKCEVerifier(64)
 	challenge := generatePKCEChallenge(verifier)
 
 	// Store the PKCE code_verifier in an HttpOnly cookie, bound to the state (format: state.verifier).
-	setPKCECookie(w, state, verifier)
+	setPKCECookie(w, r, state, verifier)
 
 	url := o.config.AuthCodeURL(
 		state,
@@ -216,13 +220,16 @@ func (o *googleOAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		writeJSONAuthError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+	defer cancel()
+	ctx = context.WithValue(ctx, oauth2.HTTPClient, o.client)
 	token, err := o.config.Exchange(
-		context.Background(),
+		ctx,
 		code,
 		oauth2.SetAuthURLParam("code_verifier", verifier),
 	)
 	if err != nil {
-		writeJSONAuthError(w, http.StatusBadRequest, "Failed to exchange token: "+err.Error())
+		writeJSONAuthError(w, http.StatusBadRequest, "Failed to exchange token")
 		return
 	}
 
@@ -231,15 +238,24 @@ func (o *googleOAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := http.Get("https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + token.AccessToken)
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://www.googleapis.com/oauth2/v2/userinfo", nil)
 	if err != nil {
-		writeJSONAuthError(w, http.StatusBadRequest, "Failed to get user info: "+err.Error())
+		writeJSONAuthError(w, http.StatusBadGateway, "Failed to prepare user info request")
+		return
+	}
+	request.Header.Set("Authorization", "Bearer "+token.AccessToken)
+	resp, err := o.client.Do(request)
+	if err != nil {
+		writeJSONAuthError(w, http.StatusBadRequest, "Failed to get user info")
 		return
 	}
 	defer resp.Body.Close()
 
 	var user map[string]any
-	json.NewDecoder(resp.Body).Decode(&user)
+	if resp.StatusCode != http.StatusOK || json.NewDecoder(io.LimitReader(resp.Body, 64<<10)).Decode(&user) != nil {
+		writeJSONAuthError(w, http.StatusBadGateway, "Invalid user info response")
+		return
+	}
 
 	userID, okID := user["id"].(string)
 	userName, okName := user["name"].(string)
@@ -256,7 +272,7 @@ func (o *googleOAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Persist the authenticated session (JWT) as an HttpOnly cookie; SameSite=Lax works with top-level redirects.
-	setSessionCookie(w, jwt, expiresAt)
+	setSessionCookie(w, r, jwt, expiresAt)
 
 	// Build the frontend success redirect URL from environment.
 	frontendURL, err := frontendAuthSuccessURL()
@@ -266,8 +282,8 @@ func (o *googleOAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Clear the short-lived state and PKCE cookies; they're no longer needed after successful exchange.
-	clearCookie(w, CookieNameOAuthPKCE)
-	clearCookie(w, CookieNameOAuthState)
+	clearCookie(w, r, CookieNameOAuthPKCE)
+	clearCookie(w, r, CookieNameOAuthState)
 
 	// Always redirect back to frontend for full-page OAuth flow.
 	http.Redirect(w, r, frontendURL, http.StatusFound)

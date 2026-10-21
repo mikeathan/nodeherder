@@ -28,8 +28,11 @@ function start() {
         break;
       case 'hub/setDevices':
       case 'hub/addDevice':
-      case 'hub/clear':
         snapshot = snapshotDevices(allDevices());
+        break;
+      case 'hub/clear':
+        entries.value = [];
+        snapshot = new Map();
         break;
     }
   });

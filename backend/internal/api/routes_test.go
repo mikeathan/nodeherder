@@ -39,6 +39,29 @@ const device1InvalidRootPayloadBatterySource = `{"name":"device 1", "timestamp":
 const missingDeviceIdPayload = `{"conn":"mqtt","power_source":"battery","humidity":92.49999999999999,"temperature":19.000000000000004,"availability":"online","last_seen":"2023-07-20T19:48:35+01:00","linkquality":47,"battery":98}`
 const gasNodePayload = `{"label": "gas_monitor", "node_id": "3", "temperature": "22.2 *C", "humidity": "33 %RH", "air_quality_score": "95 %", "PM1.0": "1 ug/m3 (ultrafine particles)", "PM2.5": "1 ug/m3 (combustion particles, organic compounds, metal)", "PM10.0": "2 ug/m3 (dust, pollen, mould spores)", "timestamp": 1691517687.940329}`
 
+type unreadRequestBody struct{ t *testing.T }
+
+func (b unreadRequestBody) Read([]byte) (int, error) {
+	b.t.Error("unauthorized body was read")
+	return 0, io.EOF
+}
+func (unreadRequestBody) Close() error { return nil }
+
+func TestRouterAuthenticatesBeforeReadingBoundedBody(t *testing.T) {
+	router := api.NewRouter()
+	router.UseProtected(func(http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusUnauthorized) })
+	})
+	router.POST("/protected", http.HandlerFunc(func(http.ResponseWriter, *http.Request) { t.Error("unauthorized handler called") }))
+	request := httptest.NewRequest(http.MethodPost, "/protected", nil)
+	request.Body = unreadRequestBody{t}
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+	if response.Code != 401 {
+		t.Fatalf("status %d", response.Code)
+	}
+}
+
 func TestHandleMissingDeviceIdPayload(t *testing.T) {
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
@@ -1255,5 +1278,84 @@ func TestMetricsQueryHandlerRawHistory(t *testing.T) {
 	api.NewMetricsQueryHandler(ratelimiter.NewWindowRateLimiter(5, time.Second), s).ServeHTTP(w, req)
 	if w.Code != http.StatusInternalServerError || !strings.Contains(w.Body.String(), "History could not be read") {
 		t.Fatalf("scan failure hidden or not actionable: %d %s", w.Code, w.Body.String())
+	}
+}
+
+func TestAssistantMessageHandlerCancelsUpstream(t *testing.T) {
+	arrived, canceled := make(chan struct{}), make(chan struct{})
+	release := make(chan struct{})
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = io.Copy(io.Discard, r.Body)
+		close(arrived)
+		select {
+		case <-r.Context().Done():
+			close(canceled)
+		case <-release:
+		}
+	}))
+	defer upstream.Close()
+	defer close(release)
+	cfg := settings.NewAppConfig()
+	cfg.Hub.Assistant.Url = upstream.URL
+	app, cleanup := utils_test.CreateAssistantStore(t, mocks.NewMockAssistantRepo(), cfg)
+	defer cleanup()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	request := httptest.NewRequest("POST", "/api/assistant/message", strings.NewReader(`{"conversation_id":"audit","message":"question"}`)).WithContext(ctx)
+	request.Header.Set("Content-Type", "application/json")
+	response := httptest.NewRecorder()
+	done := make(chan struct{})
+	go func() { api.NewAssistantMessageHandler(app).ServeHTTP(response, request); close(done) }()
+	select {
+	case <-arrived:
+	case <-time.After(5 * time.Second):
+		t.Fatal("upstream did not start")
+	}
+	cancel()
+	for _, signal := range []chan struct{}{canceled, done} {
+		select {
+		case <-signal:
+		case <-time.After(5 * time.Second):
+			t.Fatal("canceled request retained upstream work")
+		}
+	}
+	if response.Code != http.StatusBadGateway {
+		t.Fatalf("status %d", response.Code)
+	}
+}
+func TestAssistantMessageHandlerRejectsOversizedReply(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { _, _ = io.WriteString(w, strings.Repeat("x", (4<<20)+1)) }))
+	defer upstream.Close()
+	cfg := settings.NewAppConfig()
+	cfg.Hub.Assistant.Url = upstream.URL
+	app, cleanup := utils_test.CreateAssistantStore(t, mocks.NewMockAssistantRepo(), cfg)
+	defer cleanup()
+	request := httptest.NewRequest("POST", "/api/assistant/message", strings.NewReader(`{"conversation_id":"audit","message":"question"}`))
+	request.Header.Set("Content-Type", "application/json")
+	response := httptest.NewRecorder()
+	api.NewAssistantMessageHandler(app).ServeHTTP(response, request)
+	if response.Code != http.StatusBadGateway || response.Body.Len() > 1024 {
+		t.Fatalf("oversized reply status=%d bytes=%d", response.Code, response.Body.Len())
+	}
+}
+
+type failingAssistantStore struct{ store.AppStore }
+
+func (f failingAssistantStore) AppendAssistantMessage(string, assistant.Role, string) error {
+	return errors.New("write failed")
+}
+func TestAssistantMessageHandlerDoesNotConcealFailedWrite(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { t.Error("provider called after persistence failed") }))
+	defer upstream.Close()
+	cfg := settings.NewAppConfig()
+	cfg.Hub.Assistant.Url = upstream.URL
+	app, cleanup := utils_test.CreateAssistantStore(t, mocks.NewMockAssistantRepo(), cfg)
+	defer cleanup()
+	request := httptest.NewRequest("POST", "/api/assistant/message", strings.NewReader(`{"conversation_id":"audit","message":"question"}`))
+	request.Header.Set("Content-Type", "application/json")
+	response := httptest.NewRecorder()
+	api.NewAssistantMessageHandler(failingAssistantStore{app}).ServeHTTP(response, request)
+	if response.Code != 500 {
+		t.Fatalf("failed write status=%d", response.Code)
 	}
 }

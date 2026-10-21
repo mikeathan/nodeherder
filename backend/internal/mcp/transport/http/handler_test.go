@@ -1,16 +1,23 @@
 package http_test
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	mcphttp "node-herder/internal/mcp/transport/http"
+	"runtime"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
+	mcpclient "github.com/mark3labs/mcp-go/client"
+	"github.com/mark3labs/mcp-go/mcp"
+	mcpserver "github.com/mark3labs/mcp-go/server"
 )
 
 // mockMCPServer implements mcphttp.MCPServer for testing
@@ -210,5 +217,150 @@ func TestSSEHandler_ReceivesNotification(t *testing.T) {
 	body := rec.Body.String()
 	if !bytes.Contains([]byte(body), []byte(`nodeherder://devices`)) {
 		t.Errorf("Expected devices notification, got: %s", body)
+	}
+}
+
+func readSSEData(t *testing.T, reader *bufio.Reader) string {
+	t.Helper()
+	var data string
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			t.Fatal(err)
+		}
+		if strings.HasPrefix(line, "data: ") {
+			data = strings.TrimSpace(strings.TrimPrefix(line, "data: "))
+		}
+		if line == "\n" && data != "" {
+			return data
+		}
+	}
+}
+func TestMCPRepliesAreIsolatedAndSessionsCleanUp(t *testing.T) {
+	backend := &mockMCPServer{running: true}
+	sse := mcphttp.NewSSEHandler(backend)
+	defer sse.Close()
+	mux := http.NewServeMux()
+	mux.Handle("/api/mcp/events", sse)
+	mux.Handle("/api/mcp", mcphttp.NewMCPHandler(backend, sse))
+	server := httptest.NewServer(mux)
+	defer server.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	open := func() (*http.Response, *bufio.Reader, string) {
+		req, _ := http.NewRequestWithContext(ctx, "GET", server.URL+"/api/mcp/events", nil)
+		response, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		reader := bufio.NewReader(response.Body)
+		if data := readSSEData(t, reader); !strings.Contains(data, "connected") {
+			t.Fatal(data)
+		}
+		endpoint := readSSEData(t, reader)
+		if !strings.HasPrefix(endpoint, "/api/mcp?sessionId=") {
+			t.Fatalf("unscoped endpoint: %s", endpoint)
+		}
+		return response, reader, endpoint
+	}
+	a, ar, endpoint := open()
+	defer a.Body.Close()
+	b, br, _ := open()
+	defer b.Body.Close()
+	post := func(endpoint string) *http.Response {
+		response, err := http.Post(server.URL+endpoint, "application/json", strings.NewReader(`{"jsonrpc":"2.0","id":1,"method":"resources/list"}`))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return response
+	}
+	response := post(endpoint)
+	io.Copy(io.Discard, response.Body)
+	response.Body.Close()
+	if response.StatusCode != 200 {
+		t.Fatal(response.StatusCode)
+	}
+	if data := readSSEData(t, ar); !strings.Contains(data, `"result"`) {
+		t.Fatal(data)
+	}
+	backend.triggerNotification("nodeherder://barrier")
+	for _, reader := range []*bufio.Reader{ar, br} {
+		if data := readSSEData(t, reader); !strings.Contains(data, "nodeherder://barrier") {
+			t.Fatalf("another client's response leaked: %s", data)
+		}
+	}
+	// HTTP-only responses must not be duplicated into any SSE stream.
+	response = post("/api/mcp")
+	response.Body.Close()
+	backend.triggerNotification("nodeherder://http-only-barrier")
+	for _, reader := range []*bufio.Reader{ar, br} {
+		if data := readSSEData(t, reader); !strings.Contains(data, "http-only-barrier") {
+			t.Fatal(data)
+		}
+	}
+	response = post("/api/mcp?sessionId=unknown")
+	response.Body.Close()
+	if response.StatusCode != 404 {
+		t.Fatalf("unknown session status=%d", response.StatusCode)
+	}
+	cancel()
+	a.Body.Close()
+	b.Body.Close()
+	deadline := time.Now().Add(time.Second)
+	for sse.ClientCount() != 0 {
+		if time.Now().After(deadline) {
+			t.Fatal("disconnected streams retained")
+		}
+		runtime.Gosched()
+	}
+	sse.Close()
+	if backend.unregisteredListenerID == "" {
+		t.Fatal("notification listener retained")
+	}
+}
+
+func TestLegacySSESDKUsesAdvertisedSessionEndpoint(t *testing.T) {
+	protocol := mcpserver.NewMCPServer("test-server", "1.0.0", mcpserver.WithResourceCapabilities(true, true))
+	backend := &mockMCPServer{running: true, handleRequestFn: func(ctx context.Context, raw json.RawMessage) json.RawMessage {
+		response := protocol.HandleMessage(ctx, raw)
+		if response == nil {
+			return nil
+		}
+		body, err := json.Marshal(response)
+		if err != nil {
+			panic(err)
+		}
+		return body
+	}}
+	sse := mcphttp.NewSSEHandler(backend)
+	mux := http.NewServeMux()
+	mux.Handle("/api/mcp/events", sse)
+	mux.Handle("/api/mcp", mcphttp.NewMCPHandler(backend, sse))
+	server := httptest.NewServer(mux)
+	defer server.Close()
+	defer sse.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	client, err := mcpclient.NewSSEMCPClient(server.URL + "/api/mcp/events")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer client.Close()
+	if err := client.Start(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if mcpclient.GetEndpoint(client).Query().Get("sessionId") == "" {
+		t.Fatal("SDK ignored session endpoint")
+	}
+	request := mcp.InitializeRequest{}
+	request.Params.ProtocolVersion = mcp.LATEST_PROTOCOL_VERSION
+	request.Params.ClientInfo = mcp.Implementation{Name: "test-client", Version: "1.0.0"}
+	initialized, err := client.Initialize(ctx, request)
+	if err != nil || initialized.ServerInfo.Name != "test-server" {
+		t.Fatalf("initialize: %+v %v", initialized, err)
+	}
+	resources, err := client.ListResources(ctx, mcp.ListResourcesRequest{})
+	if err != nil || len(resources.Resources) != 0 {
+		t.Fatalf("list resources: %+v %v", resources, err)
 	}
 }

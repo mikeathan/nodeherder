@@ -2,11 +2,13 @@ package services_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"node-herder/internal/metrics/domain"
 	"node-herder/internal/metrics/query"
 	"node-herder/internal/metrics/services"
 	"node-herder/models/devices"
+	"node-herder/utils"
 	"testing"
 	"time"
 )
@@ -20,14 +22,17 @@ func (f fakeQueryStore) FindDeviceByIds(ids []string) ([]*devices.Device, error)
 }
 
 func (f fakeQueryStore) QueryDevice(deviceID string, from, to time.Time, filters []domain.MetricFilter, collectors map[string]domain.ExposeResult) (*domain.DeviceMetricsResult, error) {
-	collector, ok := collectors["temperature"].(*domain.ExposeNumericMetricsResult)
+	collector, ok := collectors["temperature"]
 	if !ok {
 		return nil, fmt.Errorf("collector not found")
 	}
 
-	collector.Add(1, time.UnixMilli(1))
-	collector.Add(2, time.UnixMilli(2))
-	collector.Add(3, time.UnixMilli(3))
+	for n := 1; n <= 3; n++ {
+		raw, _ := utils.AnyToByteArray(float32(n))
+		if err := collector.Collect(time.UnixMilli(int64(n)), raw); err != nil {
+			return nil, err
+		}
+	}
 	return nil, nil
 }
 
@@ -96,8 +101,11 @@ func (f fakeMultiMetricStore) QueryDevice(deviceID string, from, to time.Time, f
 		}
 
 		// Add sample data for numeric metrics
-		if numericCollector, ok := collector.(*domain.ExposeNumericMetricsResult); ok {
-			numericCollector.Add(42, time.UnixMilli(1000))
+		if collector.GetType() == "numeric" {
+			raw, _ := utils.AnyToByteArray(float32(42))
+			if err := collector.Collect(time.UnixMilli(1000), raw); err != nil {
+				return nil, err
+			}
 		}
 	}
 	return nil, nil
@@ -283,5 +291,78 @@ func TestQueryServiceFormattedTime(t *testing.T) {
 	expected := time.UnixMilli(1000).UTC().Format(time.RFC3339)
 	if val.FormattedTime != expected {
 		t.Errorf("expected formatted time %q, got %q", expected, val.FormattedTime)
+	}
+}
+
+type countingQueryStore struct {
+	fakeMultiMetricStore
+	calls int
+	scan  func(map[string]domain.ExposeResult) error
+}
+
+func (s *countingQueryStore) QueryDevice(id string, from, to time.Time, filters []domain.MetricFilter, collectors map[string]domain.ExposeResult) (*domain.DeviceMetricsResult, error) {
+	s.calls++
+	if s.scan != nil {
+		return nil, s.scan(collectors)
+	}
+	return s.fakeMultiMetricStore.QueryDevice(id, from, to, filters, collectors)
+}
+func TestQueryServiceSharesOneScanAndHonorsCancellation(t *testing.T) {
+	device := &devices.Device{Id: "d", Exposes: map[string]*devices.Entity{}}
+	for _, name := range []string{"temperature", "humidity"} {
+		entity := devices.NewEntity(name)
+		entity.Type = "numeric"
+		device.Exposes[name] = entity
+	}
+	source := &countingQueryStore{fakeMultiMetricStore: fakeMultiMetricStore{devices: []*devices.Device{device}}}
+	service := services.NewQueryService(source)
+	req := query.MetricsQueryRequest{DeviceIds: []string{"d"}, Exposes: []string{"temperature", "humidity", "temperature"}, Aggregation: domain.AggLast}
+	result, err := service.Query(context.Background(), req)
+	if err != nil || len(*result) != 2 || source.calls != 1 {
+		t.Fatalf("result=%v, error=%v, scans=%d", result, err, source.calls)
+	}
+	for _, response := range *result {
+		if len(response.Values) != 1 || response.Values[0].Value != float64(42) {
+			t.Fatalf("changed result: %+v", response)
+		}
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if _, err := service.Query(ctx, req); !errors.Is(err, context.Canceled) {
+		t.Fatalf("canceled query: %v", err)
+	}
+	if source.calls != 1 {
+		t.Fatal("canceled query scanned storage")
+	}
+}
+func TestQueryServicePropagatesScanBudgetAndCancellation(t *testing.T) {
+	entity := devices.NewEntity("temperature")
+	entity.Type = "numeric"
+	device := &devices.Device{Id: "d", Exposes: map[string]*devices.Entity{"temperature": entity}}
+	for _, exhausted := range []bool{false, true} {
+		t.Run(fmt.Sprint(exhausted), func(t *testing.T) {
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			source := &countingQueryStore{fakeMultiMetricStore: fakeMultiMetricStore{devices: []*devices.Device{device}}}
+			source.scan = func(collectors map[string]domain.ExposeResult) error {
+				if !exhausted {
+					cancel()
+				}
+				guard := collectors["temperature"].(domain.ScanGuard)
+				for i := 0; i <= 250000; i++ {
+					if err := guard.CheckScan(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}
+			_, err := services.NewQueryService(source).Query(ctx, query.MetricsQueryRequest{DeviceIds: []string{"d"}, Exposes: []string{"temperature"}, Aggregation: domain.AggNone, Limit: 1})
+			if err == nil || source.calls != 1 {
+				t.Fatalf("bounded query error=%v scans=%d", err, source.calls)
+			}
+			if !exhausted && !errors.Is(err, context.Canceled) {
+				t.Fatalf("lost cancellation: %v", err)
+			}
+		})
 	}
 }

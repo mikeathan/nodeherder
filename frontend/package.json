@@ -118,5 +118,10 @@
     "last 2 versions",
     "not dead",
     "not ie 11"
-  ]
+  ],
+  "overrides": {
+    "serve": {
+      "compression": "1.8.2"
+    }
+  }
 }

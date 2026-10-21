@@ -56,6 +56,7 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
     },
 
     // AppConfig getters
+    appConfig: (state) => (): AppConfig => state.appConfig,
     history: (state) => (): HistorySettingsType => {
       return state.appConfig.hub.history;
     },
@@ -201,6 +202,11 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
   },
 
   actions: {
+    refresh({ commit }, payload: HubStateSnapshot) {
+      commit('setAppConfig', payload.config);
+      commit('setDevices', payload.devices);
+      commit('setInitialized', true);
+    },
     init({ commit }, payload: HubStateSnapshot) {
       commit('clear');
       commit('setAppConfig', payload.config);

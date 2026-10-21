@@ -109,3 +109,28 @@ for (const path of ['/groupdashboard', '/panel']) {
     expect((await content.boundingBox())?.y).toBe(before?.y);
   });
 }
+
+test('permit countdown survives panel navigation and resets for the next confirmed session', async ({ page }) => {
+  let send!: (active: boolean) => void;
+  await page.routeWebSocket('ws://localhost:4110/ws', (socket) => {
+    socket.connectToServer();
+    send = (permitJoin) => socket.send(JSON.stringify({ type: 'bridgeConfig', payload: { permitJoin, maxTimeAllowed: { value: 120, unit: 'seconds' } } }));
+  });
+  await signIn(page, '/groupdashboard');
+  await expect(page.locator('.nh-conn.is-connected')).toBeVisible();
+  send(true);
+  const banner = page.getByRole('status').filter({ hasText: 'Permit join is open' });
+  await expect(banner).toContainText('2:00 left');
+  await ui.shell.openNav(page);
+  await ui.shell.nav(page).getByRole('link', { name: /panel/i }).click();
+  await expect(page).toHaveURL(/\/panel$/);
+  send(false);
+  send(true);
+  await ui.panel.exit(page).click();
+  await expect(banner).toContainText(/1:5\d left|2:00 left/);
+  send(false);
+  await expect(banner).toHaveCount(0);
+  send(true);
+  await expect(banner).toContainText('2:00 left');
+  send(false);
+});

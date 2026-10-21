@@ -5,7 +5,9 @@ NodeHerder includes an MCP (Model Context Protocol) server exposed via HTTP and 
 ## Protocol Support
 
 - **HTTP POST** (`/api/mcp`): Standard JSON-RPC 2.0 endpoint for tool calls and resource reading.
-- **SSE** (`/api/mcp/events`): Notifications for resource updates (e.g., system prompt changes).
+- **SSE** (`/api/mcp/events`): Resource notifications and session-scoped replies.
+  Post to the advertised `/api/mcp?sessionId=...` endpoint; direct HTTP callers
+  continue reading the POST response. See [runtime contracts and rollout](../../../docs/runtime-reliability.md).
 
 ## Startup Flow
 
@@ -25,35 +27,17 @@ main.go
 
 ## Configuration
 
-The MCP server is enabled by default. You can control it via flags:
-
-```bash
-# Default: HTTP API + MCP enabled
-./nodeherder
-
-# Disable MCP endpoints
-./nodeherder --mcp=false
-```
+Persisted `hub.mcp.enabled` controls initialization; its default is false. Existing
+hub MCP controls manage runtime status. The normal backend process owns HTTP/SSE;
+there is no separate stdio or `--mcp-only` mode.
 
 ## Testing with MCP Inspector
 
 The MCP Inspector is a free tool from Anthropic for testing MCP servers without needing an LLM. It provides a web UI to interactively test tools and resources.
 
-### Prerequisites
-
-- Node.js installed (for npx)
-- Backend built: `npx @modelcontextprotocol/inspector ./nodeherder --mcp-only`
-
-### Running the Inspector
-
-```bash
-# From the backend directory
-cd /path/to/nodeherder/backend
-go build -o nodeherder .
-npx @modelcontextprotocol/inspector ./nodeherder --mcp-only
-```
-
-This opens a web UI at `http://localhost:5173` (or similar).
+Run the backend normally and connect the inspector's HTTP/SSE transport to the
+endpoints above. Use an isolated fixture for automated testing; never send routine
+test commands to household devices.
 
 ### Using the Inspector
 
@@ -68,7 +52,7 @@ This opens a web UI at `http://localhost:5173` (or similar).
        "target_name": "attic temperature",
        "metrics": ["temperature"],
        "time_scope": "today",
-       "aggregation": "latest_value"
+       "aggregation": "last"
      }
      ```
    - Ambiguous: `{"status": "ambiguous", "candidates": [...]}`
@@ -187,7 +171,7 @@ internal/mcp/
   "target_name": "attic temperature",
   "metrics": ["temperature"],
   "time_scope": "today",
-  "aggregation": "latest_value"
+  "aggregation": "last"
 }
 ```
 
@@ -373,7 +357,7 @@ When NodeHerder is used with a frontend and LLM proxy, here's the complete flow:
    {
      "target_name": "attic",
      "metrics": ["temperature"],
-     "aggregation": "latest_value"
+     "aggregation": "last"
    }
    ```
 

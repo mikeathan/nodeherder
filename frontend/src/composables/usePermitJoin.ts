@@ -3,7 +3,7 @@
  * bridgeConfig messages; the countdown is derived from the reported duration and the moment
  * this tab saw it start (the hub does not send a start time).
  */
-import { computed, ref, watch } from 'vue';
+import { computed, onScopeDispose, ref, watch } from 'vue';
 import { store } from '@/store';
 import { BridgeSettingsType } from '@/types/settings.type';
 
@@ -11,30 +11,27 @@ export const PERMIT_JOIN_SECONDS = 120;
 
 const startedAt = ref<number | null>(null);
 const now = ref(Date.now());
-let ticker: ReturnType<typeof setInterval> | null = null;
-let watching = false;
 
 const bridge = () => store.getters['hub/bridge']() as BridgeSettingsType | undefined;
 
-function follow() {
-  if (watching) return;
-  watching = true;
+/** The application shell owns tracking, including while panel mode hides its consumers. */
+export function usePermitJoinTracking() {
   watch(
     () => bridge()?.permitJoin === true,
-    (active) => {
+    (active, _previous, cleanup) => {
       startedAt.value = active ? Date.now() : null;
-      if (active && !ticker) ticker = setInterval(() => (now.value = Date.now()), 1000);
-      if (!active && ticker) {
-        clearInterval(ticker);
-        ticker = null;
+      now.value = Date.now();
+      if (active) {
+        const ticker = setInterval(() => (now.value = Date.now()), 1000);
+        cleanup(() => clearInterval(ticker));
       }
     },
     { immediate: true }
   );
+  onScopeDispose(() => { startedAt.value = null; });
 }
 
 export function usePermitJoin() {
-  follow();
   const active = computed(() => bridge()?.permitJoin === true);
   const duration = computed(() => bridge()?.maxTimeAllowed?.value || PERMIT_JOIN_SECONDS);
   const remaining = computed(() => {

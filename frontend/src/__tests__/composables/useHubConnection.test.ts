@@ -156,3 +156,62 @@ test('a disposed failed request cannot overwrite the next successful load', asyn
  expect(store.getters['hub/loadStatus']).toBe('ready');
  expect(store.getters['hub/isInitialized']()).toBe(true);
 });
+
+test('reconnect refreshes missed state and preserves reports arriving during the snapshot', async () => {
+  useHubConnection();
+  jest.mocked(onMounted).mock.calls[0][0](); await settle();
+  Socket.latest.open(); await settle();
+  expect(fetchHubState).toHaveBeenCalledTimes(1);
+  const staleSnapshot = JSON.parse(JSON.stringify(payload)) as typeof payload;
+  const snapshot = deferred<typeof payload>();
+  jest.mocked(fetchHubState).mockReturnValueOnce(snapshot.promise);
+  store.commit('ws/setConnectionStatus', 'reconnecting');
+  store.commit('ws/setConnectionStatus', 'connected');
+  expect(fetchHubState).toHaveBeenCalledTimes(2);
+  const device = payload.devices.find((d) => Object.keys(d.exposes).length > 0)!;
+  const field = Object.keys(device.exposes)[0];
+  store.commit('hub/updateDevice', { id: device.id, data: { [field]: 123 }, last_seen: 'new', availability: 'online' });
+  const bridge = { permitJoin: true, maxTimeAllowed: { value: 120, unit: 'seconds' } };
+  store.commit('hub/setBridgeSettings', bridge);
+  store.commit('hub/setMCPStatus', { running: true, connectedClients: 1 });
+  snapshot.resolve(staleSnapshot); await settle();
+  expect(store.getters['hub/findDevice'](device.id).exposes[field].data).toBe(123);
+  expect(store.getters['hub/findDevice'](device.id).last_seen).toBe('new');
+  expect(store.getters['hub/bridge']()).toEqual(bridge);
+  expect(store.getters['hub/mcpStatus']()).toEqual({ running: true, connectedClients: 1 });
+  expect(store.getters['hub/loadStatus']).toBe('ready');
+  jest.mocked(onBeforeUnmount).mock.calls[0][0]();
+});
+
+test('a later reconnect invalidates an older pending snapshot', async () => {
+  useHubConnection();
+  jest.mocked(onMounted).mock.calls[0][0](); await settle(); Socket.latest.open();
+  const first = deferred<typeof payload>(), second = deferred<typeof payload>();
+  jest.mocked(fetchHubState).mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
+  store.commit('ws/setConnectionStatus', 'connected');
+  const oldSignal = jest.mocked(fetchHubState).mock.calls[1][0];
+  store.commit('ws/setConnectionStatus', 'connected');
+  expect(oldSignal?.aborted).toBe(true);
+  second.resolve(payload); await settle();
+  first.resolve({ ...payload, devices: [] }); await settle();
+  expect(store.getters['hub/listAllDevices']()).toHaveLength(payload.devices.length);
+  jest.mocked(onBeforeUnmount).mock.calls[0][0]();
+});
+
+test('snapshot timeout reports failure while preserving socket truth and supports retry', async () => {
+  jest.useFakeTimers();
+  jest.mocked(fetchHubState).mockImplementationOnce((signal) => new Promise((_resolve, reject) => {
+    signal?.addEventListener('abort', () => reject(new Error('aborted')), { once: true });
+  }));
+  useHubConnection();
+  jest.mocked(onMounted).mock.calls[0][0](); await settle(); Socket.latest.open();
+  jest.advanceTimersByTime(8000); await settle();
+  expect(store.getters['hub/loadStatus']).toBe('failed');
+  expect(store.getters['ws/getConnectionStatus']).toBe('connected');
+  jest.mocked(fetchHubState).mockResolvedValueOnce(payload);
+  await startHubConnection(); await settle();
+  expect(store.getters['hub/loadStatus']).toBe('ready');
+  jest.mocked(onBeforeUnmount).mock.calls[0][0]();
+  expect(jest.getTimerCount()).toBe(0);
+  jest.useRealTimers();
+});

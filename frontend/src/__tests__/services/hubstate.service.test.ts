@@ -1,10 +1,11 @@
+import { createAppconfig } from '@/contracts/settings';
 import { fetchHubState } from '@/services/hubstate.service';
 
 beforeEach(() => { jest.spyOn(console, 'error').mockImplementation(() => {}); });
 afterEach(() => { jest.restoreAllMocks(); });
 
 test('snapshot uses established authenticated HTTP helper and forwards cancellation', async () => {
-  const body = { devices: [], config: {} };
+  const body = { devices: [], config: createAppconfig() };
   const fetch = jest.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: async () => body } as Response);
   const controller = new AbortController();
   expect(await fetchHubState(controller.signal)).toEqual(body);
@@ -17,3 +18,8 @@ test('failed HTTP snapshot is rejected rather than accepted as initialized data'
   jest.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: false, status: 503 } as Response);
   await expect(fetchHubState()).rejects.toThrow('hubstate fetch failed');
 });
+
+ test('malformed snapshot does not enter shared state', async () => {
+  jest.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: async () => ({ devices: [null], config: {} }) } as Response);
+  await expect(fetchHubState()).rejects.toThrow('Invalid hub snapshot');
+ });

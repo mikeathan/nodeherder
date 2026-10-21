@@ -1,17 +1,16 @@
 import { Module } from 'vuex';
 import { RootState } from '../../state';
 import { AssistantState } from './state';
-import { Conversation, ConversationSummary } from '@/types/assistant.type';
+import { AssistantMessage, Conversation, ConversationSummary } from '@/types/assistant.type';
 import { generateConversationId } from '@/utils/unique';
+
+const emptyConversation = (): Conversation => ({ id: generateConversationId(), messages: [] });
 
 export const AssistantModule: Module<AssistantState, RootState> = {
   namespaced: true,
 
   state: () => ({
-    activeConversation: {
-      id: generateConversationId(),
-      messages: [],
-    },
+    activeConversation: emptyConversation(),
     conversations: [],
   }),
 
@@ -25,19 +24,20 @@ export const AssistantModule: Module<AssistantState, RootState> = {
   },
 
   mutations: {
+    clear(state) {
+      state.activeConversation = emptyConversation();
+      state.conversations = [];
+    },
     setActiveConversation(state, conversation: Conversation) {
       state.activeConversation = conversation;
     },
     clearActiveConversation(state) {
-      state.activeConversation = {
-        id: generateConversationId(),
-        messages: [],
-      };
+      state.activeConversation = emptyConversation();
     },
     setConversations(state, conversations: ConversationSummary[]) {
       state.conversations = conversations;
     },
-    addMessage(state, message) {
+    addMessage(state, message: AssistantMessage) {
       state.activeConversation.messages.push(message);
     },
     removeConversationFromList(state, conversationId: string) {
@@ -52,7 +52,7 @@ export const AssistantModule: Module<AssistantState, RootState> = {
     setConversations({ commit }, conversations: ConversationSummary[]) {
       commit('setConversations', conversations);
     },
-    addMessage({ commit }, message: any) {
+    addMessage({ commit }, message: AssistantMessage) {
       commit('addMessage', message);
     },
     removeConversationFromList({ commit, state, dispatch }, conversationId: string) {

@@ -5,11 +5,56 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"time"
 )
 
 type contextKey string
 
 const userKey contextKey = "user"
+const sessionKey contextKey = "session"
+
+type requestSession struct {
+	token     string
+	expires   time.Time
+	blacklist *TokenBlacklist
+}
+
+// SessionValid rechecks the lifetime of an authenticated transport request.
+// Unauthenticated transports retain their routing policy; Auth installs the lease.
+func SessionValid(r *http.Request) bool {
+	session, ok := r.Context().Value(sessionKey).(requestSession)
+	if !ok {
+		return true
+	}
+	return (session.expires.IsZero() || time.Now().Before(session.expires)) &&
+		(session.blacklist == nil || !session.blacklist.IsBlacklisted(session.token))
+}
+
+// WatchSession closes long-lived transports on expiry/revocation. The transport
+// must stop the watcher when it disconnects, including failed upgrades.
+func WatchSession(r *http.Request, closeTransport func()) func() {
+	session, ok := r.Context().Value(sessionKey).(requestSession)
+	if !ok {
+		return func() {}
+	}
+	var timer *time.Timer
+	if !session.expires.IsZero() {
+		timer = time.AfterFunc(time.Until(session.expires), closeTransport)
+	}
+	stop := func() {}
+	if session.blacklist != nil {
+		stop = session.blacklist.OnRevoke(session.token, closeTransport)
+	}
+	if !SessionValid(r) {
+		closeTransport()
+	}
+	return func() {
+		if timer != nil {
+			timer.Stop()
+		}
+		stop()
+	}
+}
 
 func Auth(jwtService *JWTService, blacklist *TokenBlacklist) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -42,6 +87,11 @@ func Auth(jwtService *JWTService, blacklist *TokenBlacklist) func(http.Handler) 
 			}
 
 			ctx := context.WithValue(r.Context(), userKey, user)
+			session := requestSession{token: token, blacklist: blacklist}
+			if user.ExpiresAt != nil {
+				session.expires = user.ExpiresAt.Time
+			}
+			ctx = context.WithValue(ctx, sessionKey, session)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
