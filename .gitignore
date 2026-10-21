@@ -6,3 +6,4 @@ backend/.gocache/*
 .env
 
 frontend/coverage/*
+.DS_Store

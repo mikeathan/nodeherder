@@ -38,10 +38,13 @@
 
 <style scoped>
   .nh-dcards {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
-    gap: var(--nh-space);
-    align-items: start;
+    columns: 19rem;
+    column-gap: var(--nh-space);
+  }
+  .nh-dcards > :deep(.nh-dcard),
+  .nh-dcards > .nh-skel-card {
+    break-inside: avoid;
+    margin: 0 0 var(--nh-space);
   }
   .nh-skel-card {
     display: flex;

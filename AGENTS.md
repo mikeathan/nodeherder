@@ -23,10 +23,11 @@ workflows. Read only relevant files; constitutions retain policy authority.
 ## Planning requests
 
 For new, updated, or reviewed implementation plans, use
-[$sdd-plan](.agents/skills/sdd-plan/SKILL.md). Reuse the relevant active spec or create
-a unique feature directory; follow the plan template. Planning-only requests stop at
-the requested artifacts; do not start implementation. If skills are unavailable,
-read the linked skill as workflow guidance.
+[$sdd-plan](.agents/skills/sdd-plan/SKILL.md). Follow the
+[branch scope rule](docs/sdd/README.md#branch-scope): update the current branch's one
+spec/plan/tasks set for follow-up changes; new work after completed earlier work gets
+a new spec. Planning-only requests stop at the requested artifacts; do not start
+implementation. If skills are unavailable, read the linked skill as workflow guidance.
 
 ## Commands
 

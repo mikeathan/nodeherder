@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  /* On/off switch (role="switch"). `pending` shows a command in flight (FR-04). */
+  /* On/off switch; pending is exposed through aria-busy without changing its appearance. */
   defineProps<{ modelValue: boolean; label: string; disabled?: boolean; pending?: boolean }>();
   defineEmits<{ (e: 'update:modelValue', value: boolean): void }>();
 </script>
@@ -9,7 +9,6 @@
     type="button"
     role="switch"
     class="nh-toggle"
-    :class="{ 'is-pending': pending }"
     :aria-checked="modelValue"
     :aria-label="label"
     :aria-busy="pending || undefined"
@@ -52,10 +51,9 @@
     transform: translateX(1.3rem);
   }
   .nh-toggle:disabled {
-    opacity: 0.45;
     cursor: not-allowed;
   }
-  .nh-toggle.is-pending .nh-toggle-knob {
-    animation: nh-pulse 0.9s infinite;
+  .nh-toggle:disabled:not([aria-busy='true']) {
+    opacity: 0.45;
   }
 </style>

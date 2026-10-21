@@ -34,7 +34,6 @@
     if (status.value === 'missing') return 'Removed';
     if (status.value === 'offline') return 'Offline';
     if (status.value === 'disabled') return 'Disabled';
-    if (pending.value) return 'Sending…';
     if (sw.value) return (on.value ? 'On' : 'Off') + (ring.value !== null && brightness.value ? ` · ${formatExposeValue(brightness.value)}` : '');
     return entity.value ? formatExposeValue(entity.value) : '—';
   });
@@ -52,8 +51,9 @@
     v-if="sw"
     type="button"
     class="pb"
-    :class="[`kind-${exposeKind(expose)}`, { 'is-on': on, 'is-pending': pending, 'is-off': status !== 'online' }]"
+    :class="[`kind-${exposeKind(expose)}`, { 'is-on': on, 'is-off': status !== 'online' }]"
     :aria-pressed="on"
+    :aria-busy="pending || undefined"
     :disabled="!canControl(device)"
     :aria-label="`${label}: ${text}. Tap to turn ${on ? 'off' : 'on'}`"
     @click="toggle">
@@ -152,9 +152,6 @@
   .pb.is-on .pb-ic {
     background: rgb(255 255 255 / 0.45);
     color: #2b1a00;
-  }
-  .pb.is-pending {
-    animation: nh-pulse 0.8s infinite;
   }
   .pb.is-off {
     opacity: 0.6;

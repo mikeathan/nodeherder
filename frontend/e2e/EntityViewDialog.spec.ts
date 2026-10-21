@@ -73,6 +73,51 @@ test('brightness uses native values, fullscreen mobile, shared confirmation and 
   expect(errors).toEqual([]);
 });
 
+test('device-name shortcut opens the device page and releases the entity dialog', async ({ page, ws }) => {
+  await signIn(page, ui.home.path);
+  await ui.home.tile(page, 'living room group', 'Brightness').locator('.nh-tile-body').click();
+  const dialog = page.getByRole('dialog', { name: 'Brightness', exact: true });
+  const link = dialog.getByRole('link', { name: `Open ${MOCK.livingRoomLight.name} device page`, exact: true });
+  await expect(link).toHaveAttribute('href', `/devicepage/${MOCK.livingRoomLight.id}`);
+  const [otherTab] = await Promise.all([
+    page.context().waitForEvent('page'),
+    link.click({ modifiers: ['ControlOrMeta'] }),
+  ]);
+  await otherTab.waitForURL(new RegExp(`/devicepage/${MOCK.livingRoomLight.id}$`));
+  await otherTab.close();
+  await expect(dialog).toBeVisible();
+  await link.focus();
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(new RegExp(`/devicepage/${MOCK.livingRoomLight.id}$`));
+  await expect(dialog).toHaveCount(0);
+  expect(await page.evaluate(() => document.body.style.overflow)).toBe('');
+  await page.goBack();
+  await expect(page).toHaveURL(new RegExp(ui.home.path));
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  const smoke = ui.home.tile(page, 'attic room', 'Smoke');
+  const smokeId = await smoke.getAttribute('data-device');
+  await smoke.locator('.nh-tile-body').click();
+  await page.getByRole('dialog').getByRole('link', { name: /device page$/ }).click();
+  await expect(page).toHaveURL(new RegExp(`/devicepage/${smokeId}$`));
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  expect(ws.sentOf('deviceSetValue')).toHaveLength(0);
+});
+
+test('unavailable entity shows no device shortcut', async ({ page }) => {
+  await page.route('**/api/hubstate', async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    const light = body.devices.find((d: { id: string }) => d.id === MOCK.livingRoomLight.id);
+    delete light.exposes.brightness;
+    await route.fulfill({ response, json: body });
+  });
+  await signIn(page, ui.home.path);
+  await ui.home.tile(page, 'living room group', 'Brightness').locator('.nh-tile-body').click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByText('This entity is no longer available.')).toBeVisible();
+  await expect(dialog.getByRole('link', { name: /device page$/ })).toHaveCount(0);
+});
+
 test('history failures are explicit and refresh retries a read', async ({ page }) => {
   let fail = true;
   await page.route('**/api/metrics/query', async (route) => {
@@ -468,11 +513,11 @@ for (const control of [
   { name: 'color_temp', label: 'Colour temperature', during: 490, pending: 480 },
 ]) {
   test(`${control.name} ignores live reports during native drag and pending confirmation`, async ({ page }) => {
-    const commands: { id: string; name: string; value: number }[] = [];
-    let report!: (value: number) => void;
+    const commands: { id: string; name: string; value: unknown }[] = [];
+    let report!: (value: unknown, name?: string) => void;
     await page.routeWebSocket('ws://localhost:4110/ws', (socket) => {
-      report = (value) => socket.send(JSON.stringify({
-        type: 'deviceUpdated', payload: { id: MOCK.livingRoomLight.id, data: { [control.name]: value } },
+      report = (value, name = control.name) => socket.send(JSON.stringify({
+        type: 'deviceUpdated', payload: { id: MOCK.livingRoomLight.id, data: { [name]: value } },
       }));
       socket.onMessage((raw) => {
         const frame = JSON.parse(String(raw));
@@ -503,6 +548,8 @@ for (const control of [
       });
     await expect.poll(() => commands.length).toBe(1);
     await expect(slider).toBeDisabled();
+    await expect(dialog.getByText(/Sending|Waiting for device confirmation/)).toHaveCount(0);
+    await expect(dialog.locator('.nh-spin')).toHaveCount(0);
     report(control.pending);
     await paint();
     await expect(preview).toHaveText(heldPreview);
@@ -510,5 +557,19 @@ for (const control of [
     report(commands[0].value);
     await expect(slider).toBeEnabled();
     await expect(preview).toHaveText(heldPreview);
+    const power = dialog.getByRole('switch', { name: /^Power,/ });
+    const state = dialog.locator('.entity-power-state');
+    const confirmed = await state.innerText();
+    await power.click();
+    await expect(power).toHaveAttribute('aria-busy', 'true');
+    await expect(power).toBeDisabled();
+    await expect(power).toHaveCSS('opacity', '1');
+    await expect(state).toHaveText(confirmed);
+    await expect(dialog.getByText(/Sending|Waiting for device confirmation/)).toHaveCount(0);
+    await expect.poll(() => commands.length).toBe(2);
+    expect(commands[1].name).toBe('state');
+    report(commands[1].value, 'state');
+    await expect(power).toBeEnabled();
+    await expect(state).not.toHaveText(confirmed);
   });
 }

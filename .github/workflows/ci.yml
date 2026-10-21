@@ -152,9 +152,15 @@ jobs:
         run: npm run build -- --mode production
 
   frontend-e2e:
-    name: Frontend E2E (mock hub)
+    name: Frontend E2E (${{ matrix.project }}, ${{ matrix.shard }}/2, mock hub)
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      # Each runner owns its mock hub. Keep one worker per hub: its state is shared.
+      fail-fast: false
+      matrix:
+        project: [desktop, mobile]
+        shard: [1, 2]
     defaults:
       run:
         working-directory: frontend
@@ -171,15 +177,25 @@ jobs:
         run: npm ci
       - name: Install Chromium for Playwright
         run: npx playwright install --with-deps chromium
-      - name: Browser tests against the mock hub (desktop + phone)
+      - name: Browser tests against the isolated mock hub
         env:
           CI: "true"
-        run: npm run test:e2e
+          PLAYWRIGHT_JSON_OUTPUT_FILE: test-results/timings.json
+          E2E_PROJECT: ${{ matrix.project }}
+          E2E_SHARD: ${{ matrix.shard }}
+        run: npm run test:e2e -- --project="$E2E_PROJECT" --shard="$E2E_SHARD/2" --reporter=list,html,json
+      - name: Keep per-test timings
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-timings-${{ matrix.project }}-${{ matrix.shard }}
+          path: frontend/test-results/timings.json
+          retention-days: 7
       - name: Keep the report when tests fail
         if: ${{ failure() }}
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.project }}-${{ matrix.shard }}
           path: |
             frontend/playwright-report
             frontend/test-results

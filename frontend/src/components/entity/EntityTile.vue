@@ -44,7 +44,6 @@
     if (status.value === 'missing') return 'Device removed';
     if (status.value === 'offline') return 'Offline';
     if (status.value === 'disabled') return 'Disabled';
-    if (pending.value) return 'Sending…';
     return entity.value ? formatExposeValue(entity.value) : 'Not reported';
   });
 
@@ -63,7 +62,7 @@
 <template>
   <div
     class="nh-tile"
-    :class="[`kind-${exposeKind(expose)}`, `is-${status}`, { 'is-on': isOn, 'is-alert': isAlert, 'is-pending': pending }]"
+    :class="[`kind-${exposeKind(expose)}`, `is-${status}`, { 'is-on': isOn, 'is-alert': isAlert }]"
     :data-device="deviceId"
     :data-expose="expose"
     :title="entity?.description || undefined">
@@ -73,6 +72,7 @@
       class="nh-tile-ic"
       :aria-label="`${isOn ? 'Turn off' : 'Turn on'} ${device?.friendly_name ?? label}`"
       :aria-pressed="isOn"
+      :aria-busy="pending || undefined"
       :disabled="!toggleable"
       @click="toggle">
       <UiIcon :path="exposeIcon(expose, isOn)" />
@@ -203,9 +203,6 @@
     background: var(--nh-danger);
     color: #fff;
     animation: nh-pulse 1.2s infinite;
-  }
-  .nh-tile.is-pending .nh-tile-value {
-    color: var(--nh-accent);
   }
   .nh-tile.is-offline,
   .nh-tile.is-disabled,

@@ -30,12 +30,13 @@
       :class="{ 'is-on': on === true, 'is-unknown': on === null }"
       :aria-checked="on === true"
       :aria-label="`Power, ${text}`"
+      :aria-busy="pending || undefined"
       :disabled="disabled"
       @click="toggle">
       <UiIcon name="power" />
     </button>
     <span class="entity-power-label">Power</span>
-    <span class="entity-power-state" role="status">{{ pending ? 'Sending…' : text }}</span>
+    <span class="entity-power-state" role="status">{{ text }}</span>
   </div>
 </template>
 <style scoped>
@@ -75,8 +76,10 @@
     outline-offset: 3px;
   }
   .entity-power:disabled {
-    opacity: 0.45;
     cursor: not-allowed;
+  }
+  .entity-power:disabled:not([aria-busy='true']) {
+    opacity: 0.45;
   }
   .entity-power-label {
     color: var(--nh-text);
