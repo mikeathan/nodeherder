@@ -79,10 +79,14 @@ Independent verification: Jest for domain/state, Playwright for the flows at 128
   (never the decimated render set), drawn as bars, and states how many samples it used. Binary and
   enum/event series keep their state timeline and recent-event list with no Statistics switch, and
   energy counters keep their existing observed-consumption summary instead of daily statistics.
-- AC-08: Statistics buckets follow the browser's named zone, are DST-correct, and an empty bucket is
-  a gap (not a zero). A partial series states the window it actually covers and that newer samples
-  may be missing, keeps uncovered buckets empty, disables export, and offers a one-tap narrower
-  range instead of changing the user's selection by itself.
+- AC-08: Statistics buckets follow the browser's named zone and are DST-correct. There is one bucket
+  per intersecting local day, so a valid 31-day range can produce **32** buckets (1 Jan 12:00 →
+  1 Feb 12:00); ownership is `[midnight, next midnight)`, a sample at exactly midnight belongs to the
+  day starting there, and the first/last buckets are marked partial when the range does not start or
+  end at midnight, so no sample is dropped or counted twice. An empty bucket is a gap (not a zero). A
+  partial series states the window it actually covers and that newer samples may be missing, keeps
+  uncovered buckets empty, disables export, and offers a one-tap narrower range instead of changing
+  the user's selection by itself.
 - AC-09: CSV export follows the **selected** range (preset or custom), not the zoomed viewport, and
   uses the schema of the active mode: history = `timestamp,value,unit`; statistics =
   `bucket_start,bucket_end,min,average,max,last,samples,unit`. Timestamps are ISO-8601 with offset,

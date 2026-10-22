@@ -30,10 +30,14 @@ Data volume is already handled at four layers; 029 must not add a fifth:
 | Decoder | `HISTORY_LIMIT` 10 000 | Rejects >10 001, slices to 10 000, sets `partial` |
 | Renderer | `RENDER_LIMIT` 1 000 | `decimate` keeps gaps and per-bucket extrema; may return nothing when too fragmented |
 
-Consequences for this change: statistics bucket the raw samples (0–10 000) into at most 31 daily
-buckets, so they never need dropping; the chart keeps `decimate`; and a `partial` series must show
-which window it covers, keep uncovered buckets empty, refuse export, and offer a narrower range
-instead of silently changing the user's selection.
+Consequences for this change: statistics bucket the raw samples (0–10 000) into one bucket per
+**intersecting local calendar day**. A valid range of at most 31 days can touch **32 dates** (for
+example 1 Jan 12:00 → 1 Feb 12:00 covers 1 Jan…1 Feb), so the bucket count is ≤ 32, not 31. Bucket
+ownership is `[local midnight, next local midnight)`: a sample at exactly midnight belongs to the day
+starting there, and the first and last buckets are marked partial when the range does not start or
+end at midnight, so samples are neither dropped nor counted twice. The chart keeps `decimate`; a
+`partial` series must show which window it covers, keep uncovered buckets empty, refuse export, and
+offer a narrower range instead of silently changing the user's selection.
 
 Design — one shared history stack, three presentations:
 
@@ -80,12 +84,32 @@ Export contract: history = `timestamp,value,unit`; statistics =
 is a view transform), write ISO-8601 timestamps with offset, leave gap and empty-bucket cells empty
 rather than `0`, and are disabled while the series is partial or empty.
 
-Interaction (ADR-006): one local Chart.js plugin supplies wheel zoom, mouse and single-finger
-drag-select, two-pointer pinch, pan and keyboard (`+ - 0`, arrows) on a focusable container, all
-funnelling into one `applyRange(from, to)` that clamps to 5 min…31 days and never leaves the loaded
-window. The `−  +  Reset` buttons call the same function, and `touch-action` keeps gestures from
-scrolling the page. No gesture library is added: `chartjs-plugin-zoom` was rejected because it pulls
-`hammerjs` (unmaintained since 2017). Range policy stays in `domain/history/range.ts`.
+Interaction (ADR-006): one local Chart.js plugin supplies the gestures, all funnelling into one
+`applyRange(from, to)` that clamps to 5 min…31 days and never leaves the loaded window. Gestures are
+split by pointer type so no input does two things at once:
+
+| Input | Action |
+| --- | --- |
+| Mouse drag on the plot | select a range and zoom to it |
+| Mouse wheel | zoom around the pointer |
+| Single-finger drag (touch) | move the time/value readout only — never zoom (AC-05) |
+| Two-finger pinch (touch) | zoom around the midpoint |
+| Double-click / double-tap | reset to the selected preset |
+| `−  +  Reset` buttons, `+ - 0`, arrows | the same range actions, keyboard and touch parity |
+
+Touch range selection is deliberately not offered by drag: pinch and the buttons cover it, and
+reserving one-finger drag for scrubbing avoids the conflict AC-05 describes. `touch-action` keeps all
+gestures from scrolling the page. No gesture library is added: `chartjs-plugin-zoom` was rejected
+because it pulls `hammerjs` (unmaintained since 2017). Range policy stays in
+`domain/history/range.ts`.
+
+Zooming must rebuild the chart options, not just move the axis. `components/chart/history/options.ts`
+captures the range in `afterBuildTicks` (ticks at from/mid/to) and in the tick formatter
+(`historyTime` chooses time vs date labels from the duration), so changing `scales.x.min/max` alone
+would leave ticks outside the new window and labels formatted for the old span. The plugin therefore
+emits the new range to `HistoryChart.vue`, which stores it as the view range and recomputes
+`historyOptions(...)` with the new `from`/`to`; `HistoryCanvas` applies that options object as it
+already does. One source of truth, and tick positions and labels always match the visible window.
 
 Statistics (ADR-006): `domain/history/stats.ts` buckets the **raw decoded** series by local calendar
 day, producing `{ start, end, min, avg, max, last, count }` with `null` for empty buckets, reusing
@@ -128,8 +152,10 @@ tasks run. Final column is filled before merge.
 ## Contracts, data, rollout
 
 - No HTTP/WS/MQTT/MCP/persistence change; the statistics view is derived from data already fetched.
-- New browser storage: `nh-history-pref:<deviceId>` = `{ version, range, expose }`, read defensively
-  (unknown version or missing expose falls back to defaults, never throws).
+- New browser storage: `nh-history-pref:<deviceId>` =
+  `{ version: 1, preset, expose, custom?: { from, to } }`, validated on read (known preset, expose
+  present on the device, custom bounds finite, ordered and ≤31 days) with a `24h` + stored-expose
+  fallback; unreadable or unknown-version entries are ignored rather than thrown.
 - New static files: `public/manifest.webmanifest`, an SVG icon, `theme-color` and
   `viewport-fit=cover` in `index.html`. No service worker in this change.
 - Tokens: add `--nh-safe-bottom`; `--nh-bottom-nav-h` starts being used.

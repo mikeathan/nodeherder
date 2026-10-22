@@ -15,14 +15,21 @@ interval/bucket parameter.
 Add one small Chart.js plugin of our own (`components/chart/history/interactions.ts`, roughly
 150–200 lines) registering `afterInit`/`beforeDestroy` on the existing chart, handling:
 
-- wheel zoom around the pointer,
-- pointer drag-select (mouse and single-finger touch),
+- wheel zoom around the pointer (mouse/trackpad),
+- mouse drag-select to zoom a chosen range,
+- single-finger drag that **only moves the readout** — never zooms, per AC-05,
 - two-pointer pinch (tracked from pointer events, not a gesture library),
 - keyboard `+ - 0` and arrows on a focusable container,
 - `touch-action` rules so the plot never scrolls the page.
 
-Range policy stays in `domain/history/range.ts`; the plugin only applies `scales.x.min/max` and calls
-`chart.update('none')`.
+Pointer type decides the gesture, so one finger and one mouse button never mean two different things
+on the same device. Touch range selection is covered by pinch and the buttons.
+
+Range policy stays in `domain/history/range.ts`. The plugin does **not** write `scales.x.min/max`
+directly: `options.ts` derives tick instants in `afterBuildTicks` and chooses label formatting from
+the range duration, so the plugin reports the new range to `HistoryChart.vue`, which recomputes
+`historyOptions(from, to, …)` and lets `HistoryCanvas` apply it. That keeps ticks, labels and bounds
+consistent after every zoom, pan and reset.
 
 **Rejected: `chartjs-plugin-zoom` 2.2.0.** Its peer is `chart.js >=3.2.0`, but its own
 `dependencies` are `hammerjs ^2.0.8` and `@types/hammerjs ^2.0.45`, so adopting it adds an
@@ -35,7 +42,9 @@ server-side resampling per gesture (network chatter; the API has no bucket param
 
 Consequences: about 150–200 lines of gesture code we own and must harden for real input devices,
 covered by Playwright with CDP-driven multi-touch; no supply-chain addition; the chart chunk grows
-by roughly 2–4 kB gzip. If pinch turns out to be unreliable on a target browser, drag-select and the
+by roughly 2–4 kB gzip. The range is recomputed through the existing options factory rather than
+patched on the scale, so zoom/pan/reset have a single rendering path and are tested for tick
+positions and labels, not just axis bounds. If pinch turns out to be unreliable on a target browser, drag-select and the
 buttons remain, and that deviation is recorded rather than hidden.
 
 ## Decision 2 — statistics are computed in the browser for this change

@@ -14,10 +14,11 @@ evidence. New tests go in the companion file of the source they cover (for examp
       stated gaps (no zoom, no Yesterday, sheet dead end) before editing. IDs: NH-01, NH-05;
       done: baseline numbers and screenshots/traces attached to the PR description.
 - [ ] T002 — Prototype the local interaction plugin against Chart.js 4.5.1 on a throwaway chart:
-      wheel, drag-select (mouse and single finger), two-pointer pinch, pan, keyboard, and `touch-action`
-      behaviour, all clamped to 5 min…31 days and to the loaded window. IDs: FR-03, AC-04/06;
-      depends: T001; done: findings recorded (including any browser that intercepts pinch), and the
-      plugin registered only after `Chart.register` in `HistoryCanvas.vue`.
+      mouse drag-select, wheel, two-pointer pinch, keyboard, `touch-action`, and single-finger drag
+      scrubbing the readout **without** zooming (AC-05). Confirm that recomputing `historyOptions`
+      after a range change moves the `afterBuildTicks` instants and the label format. IDs: FR-03,
+      AC-04/05/06; depends: T001; done: findings recorded (including any browser that intercepts
+      pinch), plugin registered after `Chart.register` in `HistoryCanvas.vue`.
 
 ## Phase 2 — Pure domain (no Vue, fully unit tested)
 
@@ -37,20 +38,23 @@ evidence. New tests go in the companion file of the source they cover (for examp
       IDs: FR-04, AC-08/09; depends: T011; done:
       `src/__tests__/domain/history/export.test.ts` covers both headers, gap/empty-bucket cells,
       escaping, offset formatting and partial refusal.
-- [ ] T013 — Add `frontend/src/domain/history/preferences.ts` for `nh-history-pref:<deviceId>`
-      (versioned read/write, defensive parse, no throw on storage failure); IDs: FR-01, AC-02,
-      FE-02, FE-05; depends: T010; done: `src/__tests__/domain/history/preferences.test.ts` covers
-      version mismatch, unreadable storage and unknown expose.
+- [ ] T013 — Add `frontend/src/domain/history/preferences.ts` for `nh-history-pref:<deviceId>` =
+      `{ version: 1, preset, expose, custom?: { from, to } }` (versioned read/write, defensive parse,
+      no throw on storage failure); IDs: FR-01, AC-02, FE-02, FE-05; depends: T010; done:
+      `src/__tests__/domain/history/preferences.test.ts` covers a valid custom range restoring
+      exactly, missing/unparsable/unordered/>31-day bounds falling back to `24h` with the stored
+      expose kept, version mismatch, unreadable storage and unknown expose.
 
 ## Phase 3 — Chart component and interactions
 
 - [ ] T014 — Implement `frontend/src/components/chart/history/interactions.ts` as our own Chart.js
-      plugin: wheel, drag-select, two-pointer pinch, pan, keyboard and `touch-action`, all through one
-      `applyRange` that clamps and never leaves the loaded window; the buttons call the same function.
-      No new dependency. IDs: FR-03, AC-04/05/06, NFR-01/02; depends: T010, T002; done:
+      plugin: mouse drag-select, wheel, two-pointer pinch, keyboard, `touch-action`, and single-finger
+      scrub that changes only the readout; every range change goes through one `applyRange` that
+      clamps and never leaves the loaded window, and the view recomputes `historyOptions` for the new
+      range. No new dependency. IDs: FR-03, AC-04/05/06, NFR-01/02; depends: T010, T002; done:
       `src/__tests__/components/chart/history/interactions.test.ts` covers clamp mapping, keyboard
-      steps, pinch scale maths, disabled gestures and no-op bounds; the build shows no new import in
-      the chart chunk.
+      steps, pinch scale maths, one-finger scrub leaving the range untouched, and no-op bounds; the
+      build shows no new import in the chart chunk.
 - [ ] T015 — Add `HistoryChart.vue` (responsive height by breakpoint, focusable container with
       accessible name and range, readout slot, end marker, `touch-action`); IDs: FR-02, FR-03,
       AC-03/05/06, FE-04; depends: T014; done: component covered by options/render tests and used by
@@ -106,7 +110,7 @@ evidence. New tests go in the companion file of the source they cover (for examp
 - [ ] T030 — Component checks from `frontend/`: `npm test -- --runInBand`, `npm run lint`,
       `npm run build`, `npm run type-check:e2e`. IDs: NH-05, NFR-01; depends: T017–T022; done: pass
       with the recorded bundle delta, compared per chunk (initial entry unchanged, chart chunk
-      within +15 kB gzip).
+      within +4 kB gzip per NFR-01).
 - [ ] T031 — Browser checks: migrate the existing `e2e/DeviceMetrics.spec.ts` Entity/Period
       `selectOption()` assertions to the new chips in this same change, then run
       `CI=true npx playwright test` on desktop and mobile projects, including new gesture tests driven
