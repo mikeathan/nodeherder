@@ -1,10 +1,17 @@
 # Plan: History, charts and mobile shell
 
-Spec: [spec.md](spec.md) | ADR: [adr-006](adr-006-chart-interactions.md) | Status: Draft
+Spec: [spec.md](spec.md) | ADR: [adr-006](adr-006-chart-interactions.md) | Status: Implemented; manual verification pending
 Author: NodeHerder contributors | Updated: 2026-10-22
 Constitutions: parent proposed 1.0.0; frontend 1.0.0; backend 1.0.0 (no backend change in scope)
 
 ## Context and design
+
+Implementation refinement (2026-10-22): the signed-in `AppShell` will be loaded asynchronously
+from `App.vue`, with a named loading status, so the new mobile navigation does not increase the
+initial entry payload. Chart.js and interaction code remain deferred. The five-minute zoom minimum
+is bounded by the fetched duration for a valid shorter Custom/early-Today range; zoom never widens
+the query. Statistics convert all raw samples to display units before aggregation (especially
+mired → kelvin); statistics CSV uses those same values/units, while raw history CSV keeps native units.
 
 Observed facts (verified in code):
 
@@ -54,9 +61,9 @@ Design — one shared history stack, three presentations:
 domain/history/          pure: range presets, decimation, stats, bucketing, CSV rows
 services + store         unchanged transport and query identity
 components/chart/history/
-  HistoryChart.vue       owns the Chart.js instance, our interaction plugin, buttons, keyboard, a11y
+  HistoryChart.vue       owns view range, gestures, buttons and a11y; HistoryCanvas owns Chart.js
   HistoryToolbar.vue     presets, expose chips, mode switch, actions
-  HistoryStats.vue       min/avg/max/last strip
+  HistoryStats.vue       sample summary, daily bars and accessible statistics table
   HistorySamples.vue     existing table, extracted
   HistoryView.vue        composes them; keeps `compact` prop for the sheet
 components/device/DeviceMetrics.vue   full page: wide layout, desktop density
@@ -80,8 +87,7 @@ Navigation (mobile): the bottom bar uses existing routes only — **Home** (`Gro
 **Devices** (`Devices`), **Automations** (`Viewer`), **Assistant** (`Assistant`), and **More**, which
 opens the existing drawer. History is not a destination because it is device-scoped. A tab is current
 when the route matches it or its `includes` list; More is current for any route outside the four and
-exposes `aria-expanded` for the drawer. `NAV_ITEMS` gains a `primary` marker plus a derived drawer
-list, so there is still one navigation source.
+exposes `aria-expanded` for the drawer. `NAV_ITEMS` gains a `primary` marker; CSS filters primary links from the phone drawer, so there is still one navigation source.
 
 Statistics availability: `numeric` series get the History/Statistics switch; `binary` and `enum`/
 event series keep the state timeline and recent-event list without a switch; energy counters keep the
@@ -137,26 +143,26 @@ transport or store contract changes.
 
 ## Constitution Check
 
-Before implementation, PASS cites the supported design; execution evidence stays pending until the
-tasks run. Final column is filled before merge.
+Before implementation, PASS cites the supported design. The verification record below names actual
+execution results; pending manual checks are not implied by an automated pass.
 
 | Rule | Design/verification evidence | Before implementation | Before merge |
 | --- | --- | --- | --- |
-| NH-01 | Spec records reproduction, ACs and exclusions; ADR-006 records the decisions | PASS | Pending |
-| NH-02 | Read-only view of stored samples; no commands, no optimistic state; gaps/unknown preserved (AC-13) | PASS | Pending |
-| NH-03 | No new entry point, auth change or household data; only range/expose persisted locally (documented) | PASS | Pending |
-| NH-04 | Reuses domain/transport/store/chart boundaries; one new pure module + presentational components; ADR for the dependency decision | PASS | Pending |
-| NH-05 | Companion Jest tests per source file, Playwright gestures with real input, recorded manual pass | PASS | Pending |
-| NH-06 | No metrics/storage/retention change; bounded work per pointer move; manifest needs no background service | PASS | Pending |
+| NH-01 | Spec records reproduction, ACs and exclusions; ADR-006 records the decisions | PASS | Code/automated evidence below |
+| NH-02 | Read-only view of stored samples; no commands, no optimistic state; gaps/unknown preserved (AC-13) | PASS | Code/automated evidence below |
+| NH-03 | No new entry point, auth change or household data; only range/expose persisted locally (documented) | PASS | Code/automated evidence below |
+| NH-04 | Reuses domain/transport/store/chart boundaries; pure range/statistics/export/preferences modules + presentation components; ADR for the dependency decision | PASS | Code/automated evidence below |
+| NH-05 | Companion Jest for domain/interaction helpers, real-input Playwright for Vue wiring; physical manual pass pending | PASS | Automated evidence below; physical manual pass pending |
+| NH-06 | No metrics/storage/retention change; bounded work per pointer move; manifest needs no background service | PASS | Code/automated evidence below |
 | BE-01 | No backend change; statistics computed client-side from the existing decoded series | N/A | N/A |
 | BE-02/03 | No ingestion, lifetime, concurrency or goroutine change | N/A | N/A |
 | BE-04 | No query meaning, aggregation or persistence change | N/A | N/A |
 | BE-05 | No route, auth or payload change | N/A | N/A |
-| FE-01 | History state stays in the existing Vuex module + composables; components remain presentational | PASS | Pending |
-| FE-02 | Reuses `contracts/history.ts` decoding; no new payload; preferences validated on read | PASS | Pending |
-| FE-03 | Keeps loading/error/empty/partial/offline states; no retries added; no optimistic readings | PASS | Pending |
-| FE-04 | Named controls, keyboard operation, focus ring, 44 px targets, mobile/desktop verification | PASS | Pending |
-| FE-05 | No secrets; no new authenticated call; only non-sensitive UI preferences stored | PASS | Pending |
+| FE-01 | History state stays in the existing Vuex module + composables; components remain presentational | PASS | Code/automated evidence below |
+| FE-02 | Reuses `contracts/history.ts` decoding; no new payload; preferences validated on read | PASS | Code/automated evidence below |
+| FE-03 | Keeps loading/error/empty/partial/offline states; no retries added; no optimistic readings | PASS | Code/automated evidence below |
+| FE-04 | Named controls, keyboard operation, focus ring, 44 px targets, mobile/desktop verification | PASS | Automated evidence below; physical manual pass pending |
+| FE-05 | No secrets; no new authenticated call; only non-sensitive UI preferences stored | PASS | Code/automated evidence below |
 
 ## Contracts, data, rollout
 
@@ -178,13 +184,13 @@ tasks run. Final column is filled before merge.
 
 | IDs | Paths | Test/manual procedure | Actual result |
 | --- | --- | --- | --- |
-| FR-01, AC-01/02 | `domain/history/range.ts`, `HistoryToolbar.vue`, `DeviceMetrics.vue` | `src/__tests__/domain/history/range.test.ts`, `src/__tests__/components/chart/history/*` | Pending |
-| FR-02, AC-03/10 | `DeviceMetrics.vue`, `HistoryChart.vue`, `AppShell.vue`, `BottomNav.vue` | Playwright at 1280×800, 768×1024 and 390×844; no horizontal scroll assertion | Pending |
-| FR-03, AC-04/05/06 | `components/chart/history/plugin-interactions.ts`, `HistoryChart.vue` | Playwright mouse drag, wheel, CDP two-pointer pinch, keyboard; Jest for clamp helpers | Pending |
-| FR-04, AC-07/08/09 | `domain/history/stats.ts`, `HistoryStats.vue`, `HistoryView.vue` | Jest DST/empty/partial buckets; Playwright statistics + export | Pending |
-| FR-05, AC-11/12 | `EntityViewDialog.vue`, `AppShell.vue`, `index.html`, `public/manifest.webmanifest` | Playwright sheet drag/Escape/safe area; manifest fetch assertion | Pending |
-| FR-06, AC-13/14/15 | all touched files | Existing Jest + Playwright suites unchanged, plus budget assertions | Pending |
-| NFR-01/02/03 | bundle output, chart component | `npm run build` size delta; interaction timing trace; a11y assertions (focus, names, contrast tokens) | Pending |
+| FR-01, AC-01/02 | `domain/history/{range,preferences}.ts`, `HistoryToolbar.vue`, `DeviceMetrics.vue` | Companion Jest; DeviceMetrics browser reload/custom/Yesterday flows | Passed (London TZ) |
+| FR-02, AC-03/10 | `DeviceMetrics.vue`, `HistoryChart.vue`, `AppShell.vue`, `BottomNav.vue` | Both-theme viewport, chart-height and overflow assertions at 1280/768/390 widths; mobile bar targets and safe padding | Passed in Chromium (both themes) |
+| FR-03, AC-04/05/06 | `components/chart/history/interactions.ts`, `HistoryChart.vue` | Real mouse/wheel/keyboard, CDP horizontal/vertical pinch and one-finger readout; no extra query or command | Passed in Chromium; Safari manual pending |
+| FR-04, AC-07/08/09 | `domain/history/{stats,export}.ts`, `HistoryStats.vue`, `HistoryView.vue` | London 33-day case, missing/zero/partial/decimation/unit conversion; both downloaded CSV schemas | Passed |
+| FR-05, AC-11/12 | `EntityViewDialog.vue`, `UiDialog.vue`, `AppShell.vue`, manifest | Sheet drag and existing Escape/close tests, expose-vs-preference deep link, safe padding and manifest-404 boot | Passed in Chromium |
+| FR-06, AC-13/14/15 | all touched files | Existing suites plus 10 000-sample truncation, ≤1 000 rendered points, sample paging, no gesture requests/commands | Passed; one RAF and binary-search readout bound pointer work |
+| NFR-01/02/03 | bundle output, chart component | Build delta; keyboard, names, focus, targets and both-theme screenshots | Bundle/automated a11y passed; real-phone frame timing and physical Safari/safe-area checks unrun |
 
 Planned checks (to run in the tasks, not yet executed): from `frontend/` —
 `npm test -- --runInBand`, `npm run lint`, `npm run build`, `npm run type-check:e2e`,
@@ -207,8 +213,54 @@ isolated Go fixture.
 - **Layout regressions** from removing the 64 rem cap and adding a bottom bar: covered by viewport
   assertions in existing layout tests.
 - **No new dependency**: the interaction plugin is our code in the lazily loaded chart chunk. The
-  budget is ≤ 4 kB gzip there and an unchanged initial entry; a Jest assertion pins that the chart
-  chunk imports nothing new.
+  budget is ≤ 4 kB gzip for the lazy adapter/interaction chunk, with no initial-entry growth.
+  Build output and the unchanged package/lockfile verify the dependency and loading boundaries.
 - **Existing debt untouched**: cross-device comparison (contract limits one device per series) and
   automation markers (no run history stored) remain out of scope.
+- Deferred ideas from the retired chart backlog: alternate chart types, JSON/image export,
+  comparison across periods, moving averages/trends/anomalies, threshold overlays, live streaming,
+  cursor pagination, cache/retention resampling, and worker-based progressive rendering. These are
+  future work, not new performance promises or acceptance requirements for 029.
 - No exceptions requested; no approval implied.
+
+## Execution and acceptance record — 2026-10-22
+
+Implementation branch: `spec/029-review-fixes`; no backend, API request shape, dependency or lockfile
+change. Spec/plan/task reviews preceded production edits; no maintainer approval or ratification is
+claimed. Baseline was inspected at `f9cc6e62`: 235/105px chart, fixed ticks, no interaction plugin,
+no Yesterday, and no full-history link in the sheet. Baseline browser inventory: 188 tests.
+Baseline build passed. No baseline screenshots were captured before edits; new browser artifacts
+show the resulting behaviour rather than purporting to demonstrate the old UI.
+
+| Check | Actual outcome |
+| --- | --- |
+| Frontend `TZ=Europe/London npm test -- --runInBand` | 53 suites, 338 tests passed; includes the 33-date DST case, native/display conversion, malformed date bounds, null/zero/partial, decimation divergence and CSV guards |
+| Frontend `npm run lint` | Passed |
+| Frontend `npm run build` | Passed with Node 24; existing DeviceCard auto-import naming warning remains |
+| Frontend `npm run type-check:e2e` | Passed |
+| Frontend `CI=true npm run test:e2e` | 193 passed, 9 pre-existing desktop skips for phone-only cases; no failures (202 cases) |
+| Final focused `CI=true npm run test:e2e -- DeviceMetrics.spec.ts layout.spec.ts` | 18 passed, no skips, after the resize fix and final preference validation; includes both themes and 1280/768/390 widths, horizontal/vertical pinch, scrubbing, keyboard/focus, paging and ≤1,000 rendered points |
+| Statistics visual/export follow-up (`DeviceMetrics.spec.ts --grep 'daily statistics'`) | 2 passed, desktop/mobile; daily bars use calendar-date labels and both CSV downloads retain the specified schemas |
+| Backend `go test ./...` | Passed with isolated test listeners/cache access; no backend diff |
+| `git diff --check` and transport/dependency diff inspection | Passed; history request contract and package/lockfile unchanged |
+
+The initial sandbox-only browser/backend attempts failed because local test listeners and the Go
+cache were restricted. Authorized reruns passed. The new resize assertion first exposed a transient
+canvas overflow; the canvas now has `max-width:100%`, and geometry assertions wait for Chart.js's
+ResizeObserver. The focused rerun passed after that correction. The local interaction proof uses
+the real isolated fixture chart instead of a disposable prototype, so the proof remains executable.
+
+Bundle evidence (gzip): initial entry **141.46 → 115.96 kB**; Chart.js chunk **71.35 → 71.35 kB**;
+HistoryCanvas adapter/interaction chunk **0.93 → 2.19 kB** (+1.26 kB, within +4 kB). The signed-in
+shell and mobile bar are deferred. No chart dependency becomes eager and no package is added.
+
+Visual/input evidence: real browser input checks and generated screenshots under
+`frontend/test-results/`; desktop light, phone dark and desktop/mobile daily-statistics screenshots were inspected. Keyboard
+focus, accessible control names, 44px targets, overflow and a synthetic 20px safe inset are asserted.
+The samples table and daily table supply textual alternatives to the canvases. Unit tests remain
+companion files; Vue wiring uses the existing browser runner rather than adding mounting tooling.
+
+**Still unrun:** physical iOS Safari pinch/cancellation, real cutout safe areas, measured frame timing
+on a mid-range phone, and a human desktop/mobile acceptance pass. Chromium/CDP emulation and visual
+inspection do not establish those results or full WCAG conformance. T031/T033 remain open for that
+manual evidence; the implementation is not represented as fully verified for merge.

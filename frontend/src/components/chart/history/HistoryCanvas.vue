@@ -2,12 +2,14 @@
   import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
   import type { Chart } from 'chart.js';
   import type { HistoryChartOptions } from './options';
+  import { historyInteractionPlugin, type HistoryInteraction } from './interactions';
   type ChartPoint = { x: number; y: number | null };
   const props = defineProps<{
     type: 'line' | 'bar';
     height: number;
     endMarker?: boolean;
     options: HistoryChartOptions;
+    interaction?: HistoryInteraction;
     series: { name: string; data: ChartPoint[] }[];
   }>();
   const canvas = ref<HTMLCanvasElement | null>(null);
@@ -59,6 +61,7 @@
         type: props.type,
         data: { datasets: datasets() },
         options: props.options,
+        plugins: props.interaction ? [historyInteractionPlugin(props.interaction)] : [],
       });
       ready.value = true;
     } catch {
@@ -78,15 +81,26 @@
   });
 </script>
 <template>
-  <div class="history-canvas-wrap" :style="{ height: `${height}px` }">
+  <div class="history-canvas-wrap" :style="{ '--history-height': `${height}px` }">
     <p v-if="error" role="alert">{{ error }}</p>
-    <canvas ref="canvas" class="nh-history-canvas" :data-ready="ready" aria-hidden="true" />
+    <canvas ref="canvas" class="nh-history-canvas" :data-ready="ready" :data-points="series.reduce((total, item) => total + item.data.length, 0)" aria-hidden="true" />
   </div>
 </template>
-<style scoped>
+<style>
   .history-canvas-wrap {
     position: relative;
     width: 100%;
     min-width: 0;
+    height: var(--history-height);
   }
+  [data-history-chart]:not(.is-compact) .history-canvas-wrap {
+    height: 380px;
+  }
+  @media (max-width: 1023px) {
+    [data-history-chart]:not(.is-compact) .history-canvas-wrap { height: 300px; }
+  }
+  @media (max-width: 719px) {
+    [data-history-chart]:not(.is-compact) .history-canvas-wrap { height: 240px; }
+  }
+  .history-canvas-wrap canvas { touch-action: none; max-width: 100%; }
 </style>

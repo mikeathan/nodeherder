@@ -1,0 +1,9 @@
+{
+  "name": "NodeHerder",
+  "short_name": "NodeHerder",
+  "start_url": "/groupdashboard",
+  "display": "standalone",
+  "background_color": "#17181c",
+  "theme_color": "#17181c",
+  "icons": [{ "src": "/nodeherder.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

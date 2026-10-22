@@ -1,35 +1,26 @@
 <script setup lang="ts">
-  import { computed, ref, watch } from 'vue';
+  import { computed } from 'vue';
   import type { Expose } from '@/types/device';
   import type { HistorySeries } from '@/domain/history/types';
   import { isEnergyCounter, energyBuckets, energySummary } from '@/domain/history/energy';
   import { eventCounts } from '@/domain/history/events';
-  import { numericStats } from '@/domain/history/numeric';
+  import HistoryChart from './HistoryChart.vue';
+  import HistoryStats from './HistoryStats.vue';
+  import HistorySamples from './HistorySamples.vue';
+  import type { HistoryMode } from '@/domain/history/export';
+  import { coveredHistoryWindow } from '@/domain/history/stats';
   import { exposeKind, exposeValueColor, formatExposeValue } from '@/domain/exposes';
   import NumericHistory from './NumericHistory.vue';
   import StateHistory from './StateHistory.vue';
   import UiIcon from '@/components/ui/UiIcon.vue';
-  const props = defineProps<{ series: HistorySeries; expose: Expose; compact?: boolean }>();
+  const props = defineProps<{ series: HistorySeries; expose: Expose; compact?: boolean; mode?: HistoryMode; interactive?: boolean }>();
   const isEnergy = computed(() => isEnergyCounter(props.series));
   const buckets = computed(() =>
     isEnergy.value ? energyBuckets(props.series.data, props.series.from, props.series.to) : []
   );
   const consumption = computed(() => energySummary(buckets.value));
-  const stats = computed(() =>
-    props.series.type === 'numeric' && !isEnergy.value ? numericStats(props.series.data) : null
-  );
   const recent = computed(() => props.series.data.slice(-6).reverse());
-  const samplePage = ref(0);
-  const pageCount = computed(() => Math.ceil(props.series.data.length / 100));
-  const samples = computed(() =>
-    [...props.series.data].reverse().slice(samplePage.value * 100, (samplePage.value + 1) * 100)
-  );
-  watch(
-    () => props.series,
-    () => {
-      samplePage.value = 0;
-    }
-  );
+  const covered = computed(() => coveredHistoryWindow(props.series));
   const format = (value: unknown) =>
     formatExposeValue({ ...props.expose, unit: props.series.unit || props.expose.unit }, value);
   const time = (value: number) =>
@@ -44,29 +35,23 @@
     <p v-if="series.partial" class="history-notice" role="status">
       Partial history · narrow the period for complete results.
     </p>
+    <p v-if="series.partial && covered" class="history-notice">Covered samples: {{ new Date(covered.from).toLocaleString() }} – {{ new Date(covered.to).toLocaleString() }}. Newer samples may be missing.</p>
     <div v-if="!series.data.length" class="history-empty">
       <UiIcon name="chart" />
       <p>No recorded history for this period.</p>
       <small>Charts appear when this device reports and metrics are recorded.</small>
     </div>
     <template v-else>
-      <NumericHistory v-if="series.type === 'numeric'" :series="series" :expose="expose" :compact="compact" />
+      <HistoryStats v-if="mode === 'statistics' && series.type === 'numeric' && !isEnergy" :series="series" :expose="expose" daily />
+      <HistoryChart v-else-if="interactive && series.type === 'numeric'" :series="series" :expose="expose" :compact="compact" />
+      <NumericHistory v-else-if="series.type === 'numeric'" :series="series" :expose="expose" :compact="compact" />
       <StateHistory v-else-if="series.type === 'binary'" :series="series" :expose="expose" :compact="compact" />
       <NumericHistory
         v-else
         :series="counts"
         :expose="{ ...expose, name: 'event_count', type: 'numeric', unit: 'events' }"
         :compact="compact" />
-      <dl v-if="stats && !compact && series.type === 'numeric' && !isEnergy" class="history-summary">
-        <div>
-          <dt>Range</dt>
-          <dd>{{ format(stats.min) }} – {{ format(stats.max) }}</dd>
-        </div>
-        <div>
-          <dt>Sample average</dt>
-          <dd>{{ format(stats.avg) }}</dd>
-        </div>
-      </dl>
+      <HistoryStats v-if="!compact && series.type === 'numeric' && !isEnergy && mode !== 'statistics'" :series="series" :expose="expose" />
       <dl v-if="isEnergy" class="history-summary">
         <div>
           <dt>Observed consumption</dt>
@@ -84,33 +69,7 @@
           ><span :style="{ '--report-color': reportColor(point.value) }">{{ format(point.value) }}</span>
         </div>
       </div>
-      <details v-if="!compact" class="history-samples">
-        <summary>Inspect recorded samples</summary>
-        <p>
-          Page {{ samplePage + 1 }} of {{ pageCount }} · {{ series.data.length }} recorded samples ·
-          {{ Intl.DateTimeFormat().resolvedOptions().timeZone }}
-        </p>
-        <table>
-          <thead>
-            <tr>
-              <th>Time</th>
-              <th>Value</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(point, i) in samples" :key="i">
-              <td :title="new Date(point.timestamp).toISOString()">{{ new Date(point.timestamp).toLocaleString() }}</td>
-              <td>{{ format(point.value) }}</td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="sample-pages">
-          <button type="button" class="nh-btn" :disabled="samplePage === 0" @click="samplePage--">Newer samples</button>
-          <button type="button" class="nh-btn" :disabled="samplePage + 1 >= pageCount" @click="samplePage++">
-            Older samples
-          </button>
-        </div>
-      </details>
+      <HistorySamples v-if="!compact" :series="series" :expose="expose" />
     </template>
   </section>
 </template>

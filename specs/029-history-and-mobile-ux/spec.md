@@ -1,6 +1,6 @@
 # Spec: History, charts and mobile shell
 
-ID: 029 | Status: Draft | Owner: NodeHerder contributors | Updated: 2026-10-22
+ID: 029 | Status: Implemented; manual verification pending | Owner: NodeHerder contributors | Updated: 2026-10-22
 Constitution: proposed 1.0.0 | Components: both (frontend-led; no backend change in scope)
 
 ## Problem, scope, exclusions
@@ -66,7 +66,8 @@ Independent verification: Jest for domain/state, Playwright for the flows at 128
 - AC-04: Given a rendered chart, zoom in, zoom out and reset are reachable by (a) buttons of at
   least 44×44&nbsp;px on touch layouts, (b) two-finger pinch, (c) mouse drag-select, (d) wheel, and
   (e) `+` `-` `0` and arrow keys when the chart has focus; each path applies the same range rules
-  and clamps to between five minutes and 31 days.
+  and clamps to between five minutes and 31 days, within the loaded window. When that window is
+  shorter than five minutes (early Today or a valid Custom range), its duration is the lower bound.
 - AC-05: The chart exposes an accessible name and the current range, has a visible focus ring, and
   one-finger drag on touch moves a readout showing time and value without changing zoom.
 - AC-06: Zooming, panning or scrubbing never scrolls the page on touch (`touch-action` handles the
@@ -135,7 +136,7 @@ Independent verification: Jest for domain/state, Playwright for the flows at 128
 - FR-04: Provide a statistics mode and CSV export over the loaded series; acceptance: AC-07…AC-09.
 - FR-05: Provide mobile navigation, safe-area handling and a manifest; acceptance: AC-10…AC-12.
 - FR-06: Preserve truthfulness and compatibility; acceptance: AC-13…AC-15.
-- NFR-01: No new runtime dependency; the initial entry is unchanged and the lazily loaded chart
+- NFR-01: No new runtime dependency; the initial entry does not grow and the lazily loaded chart
   chunk grows by no more than 4&nbsp;kB gzip.
 - NFR-02: Crosshair and zoom stay responsive on a 1&nbsp;000-point chart (no dropped frames during a
   drag on a mid-range phone); `prefers-reduced-motion` disables chart and sheet animation.

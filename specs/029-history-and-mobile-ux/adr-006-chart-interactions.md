@@ -69,9 +69,10 @@ replace the client computation without changing the view contract.
 
 ## Decision 3 — bottom navigation below 720px, drawer above it
 
-`NAV_ITEMS` stays the single navigation source. The shell renders a bottom bar containing the five
-primary routes and keeps the drawer for the remainder, driven by CSS breakpoints so only one DOM
-tree exists. Safe areas are applied through a new `--nh-safe-bottom` token fed by
+`NAV_ITEMS` stays the single navigation source. The bottom bar contains Home, Devices, Automations,
+Assistant and a More action opening the drawer. Below 720px, CSS hides primary links in the drawer;
+at wider widths, the full sidebar/drawer remains available and the bottom bar is hidden. The same
+route metadata drives both presentations. Safe areas use `--nh-safe-bottom` fed by
 `env(safe-area-inset-bottom)` after adding `viewport-fit=cover`.
 
 Rejected: a second navigation list (two sources of truth), and always-on bottom tabs on desktop

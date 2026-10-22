@@ -7,7 +7,7 @@
   import UiButton from './UiButton.vue';
 
   const props = withDefaults(
-    defineProps<{ open: boolean; title: string; wide?: boolean; dismissible?: boolean; fullscreenMobile?: boolean }>(),
+    defineProps<{ open: boolean; title: string; wide?: boolean; dismissible?: boolean; fullscreenMobile?: boolean; dragDismiss?: boolean }>(),
     { dismissible: true }
   );
   const emit = defineEmits<{ (e: 'close'): void }>();
@@ -16,6 +16,17 @@
   const panel = ref<HTMLElement | null>(null);
   let opener: HTMLElement | null = null;
   let previousOverflow: string | null = null;
+  let dragStart: { id: number; y: number } | null = null;
+  function startDrag(event: PointerEvent) {
+    if (!props.dragDismiss || !window.matchMedia('(max-width: 899px)').matches || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if ((event.target as HTMLElement).closest('button, a') || (panel.value?.querySelector('.nh-dialog-body')?.scrollTop ?? 0) > 0) return;
+    dragStart = { id: event.pointerId, y: event.clientY };
+    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+  }
+  function endDrag(event: PointerEvent) {
+    if (dragStart?.id === event.pointerId && event.clientY - dragStart.y > 120) close();
+    dragStart = null;
+  }
 
   function unlockScroll() {
     document.removeEventListener('keydown', onDocumentKeydown, true);
@@ -101,7 +112,7 @@
         aria-modal="true"
         :aria-labelledby="titleId"
         tabindex="-1">
-        <header class="nh-dialog-head">
+        <header class="nh-dialog-head" :class="{ 'is-draggable': dragDismiss }" @pointerdown="startDrag" @pointerup="endDrag" @pointercancel="dragStart = null">
           <h2 :id="titleId">{{ title }}</h2>
           <UiButton v-if="dismissible !== false" variant="ghost" icon="close" label="Close" @click="close" />
         </header>
@@ -151,6 +162,7 @@
     font-size: 1.05rem;
     flex: 1;
   }
+  .nh-dialog-head.is-draggable { touch-action: none; }
   .nh-dialog-body {
     padding: var(--nh-space);
     display: flex;
@@ -166,7 +178,7 @@
     justify-content: flex-end;
     flex-wrap: wrap;
     gap: 0.5rem;
-    padding: 0.75rem var(--nh-space);
+    padding: 0.75rem var(--nh-space) max(0.75rem, var(--nh-safe-bottom));
     border-top: var(--nh-border-w) solid var(--nh-border);
   }
   @media (max-width: 640px) {

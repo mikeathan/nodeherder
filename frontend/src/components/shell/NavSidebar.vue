@@ -36,7 +36,7 @@
       <AppLogo :size="42" :version="version" />
     </RouterLink>
     <ul class="nh-nav-list">
-      <li v-for="item in NAV_ITEMS" :key="item.route">
+      <li v-for="item in NAV_ITEMS" :key="item.route" :class="{ 'is-primary': item.primary }">
         <RouterLink
           :to="{ name: item.route }"
           class="nh-nav-item"
@@ -126,4 +126,6 @@
   .nh-nav-item.is-on {
     color: var(--nh-accent);
   }
+  /* The full sidebar/drawer remains available whenever the bottom bar is absent. */
+  @media (max-width: 719px) { .is-primary { display: none; } }
 </style>

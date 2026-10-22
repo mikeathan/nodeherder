@@ -23,6 +23,7 @@
   --nh-motion: 160ms;
   --nh-header-h: 3.5rem;
   --nh-bottom-nav-h: 3.75rem;
+  --nh-safe-bottom: env(safe-area-inset-bottom, 0px);
 
   /* status colours shared by every theme */
   --nh-ok: #2e9e5b;
