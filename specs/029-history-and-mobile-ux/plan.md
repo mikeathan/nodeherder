@@ -26,7 +26,7 @@ Design — one shared history stack, three presentations:
 domain/history/          pure: range presets, decimation, stats, bucketing, CSV rows
 services + store         unchanged transport and query identity
 components/chart/history/
-  HistoryChart.vue       owns the Chart.js instance, interaction plugin, a11y container
+  HistoryChart.vue       owns the Chart.js instance, zoom plugin config, buttons, keyboard, a11y
   HistoryToolbar.vue     presets, expose chips, mode switch, actions
   HistoryStats.vue       min/avg/max/last strip
   HistorySamples.vue     existing table, extracted
@@ -48,10 +48,11 @@ Per-viewport contract (this is the "mobile focused, desktop full" requirement):
 | 720–1023 px | Single column, content padding reduced | 300 px | Chips wrap, no wheel-only affordances | Medium: stats strip, table collapsed |
 | <720 px | Bottom bar, sheet flow, no sidebar | 220–260 px, compact axes | 44 px buttons, pinch, one-finger readout, horizontally scrolling chips | Focused: stats strip, table behind a disclosure |
 
-Interaction (ADR-006): a local Chart.js plugin supplies wheel, mouse drag-select, two-pointer pinch,
-one-finger scrub and keyboard, all funnelling into one `applyRange(from, to)` that clamps to
-5 min…31 days and re-renders from the existing decimated data. Gestures are inert unless the chart
-has focus or the pointer starts inside it, and `touch-action` prevents page scroll on the plot.
+Interaction (ADR-006): `chartjs-plugin-zoom` supplies wheel, mouse drag-select, two-pointer pinch and
+pan; its `limits` are derived from the same clamp policy (5 min…31 days, never outside the loaded
+window). Our code adds the `−  +  Reset` buttons, a focusable container with `+ - 0` and arrow keys,
+the time/value readout, and `touch-action` so gestures never scroll the page. Range policy stays in
+`domain/history/range.ts`; the plugin only renders the consequence.
 
 Statistics (ADR-006): `domain/history/stats.ts` buckets the loaded series by local calendar day,
 producing `{ start, end, min, avg, max, last, count }` with `null` for empty buckets, reusing
@@ -131,8 +132,10 @@ isolated Go fixture.
   data is labelled and export disabled (AC-07/08). Server-side bucketing is follow-up debt.
 - **Layout regressions** from removing the 64 rem cap and adding a bottom bar: covered by viewport
   assertions in existing layout tests.
-- **Bundle budget**: no new dependency; the interaction plugin and components must stay within the
-  12 kB gzip allowance or the plan is amended.
+- **Dependency**: `chartjs-plugin-zoom` joins the deep-imported chart bundle. Chart.js is loaded
+  lazily, so the measured cost is in the `chart-*.js` chunk (budget +15 kB gzip), not in the initial
+  entry. Chart.js and the plugin must be upgraded together; the version guard is a Jest assertion on
+  the pinned pair.
 - **Existing debt untouched**: cross-device comparison (contract limits one device per series) and
   automation markers (no run history stored) remain out of scope.
 - No exceptions requested; no approval implied.

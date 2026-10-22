@@ -113,7 +113,8 @@ Independent verification: Jest for domain/state, Playwright for the flows at 128
 - FR-04: Provide a statistics mode and CSV export over the loaded series; acceptance: AC-07…AC-09.
 - FR-05: Provide mobile navigation, safe-area handling and a manifest; acceptance: AC-10…AC-12.
 - FR-06: Preserve truthfulness and compatibility; acceptance: AC-13…AC-15.
-- NFR-01: No new runtime dependency; the initial bundle grows by no more than 12&nbsp;kB gzip.
+- NFR-01: Chart interaction may add one dependency, but only inside the lazily loaded chart chunk
+  (no growth of the initial entry); the change must stay within +15&nbsp;kB gzip in that chunk.
 - NFR-02: Crosshair and zoom stay responsive on a 1&nbsp;000-point chart (no dropped frames during a
   drag on a mid-range phone); `prefers-reduced-motion` disables chart and sheet animation.
 - NFR-03: History and sheet meet WCAG 2.1 AA in both themes (contrast, focus visible, keyboard
@@ -136,9 +137,9 @@ Independent verification: Jest for domain/state, Playwright for the flows at 128
 
 No blocking questions. Assumptions to validate during implementation:
 
-- A local (in-repo) Chart.js plugin can cover wheel, drag, pinch and keyboard without
-  `chartjs-plugin-zoom`; if a gesture proves impractical, the fallback is the buttons plus drag
-  (recorded as a plan deviation, not a silent omission).
+- `chartjs-plugin-zoom` covers wheel, drag-select and pinch on Chart.js 4; keyboard and the readout
+  stay ours. If a gesture proves impractical on a target browser, the fallback is the buttons plus
+  drag, recorded as a plan deviation rather than a silent omission.
 - Statistics over already-fetched samples is acceptable for 24&nbsp;h–30&nbsp;d with reporting
   cadences in use today; if a household cadence yields more than 10&nbsp;000 samples, the view must
   say the series is partial instead of widening the query.

@@ -13,9 +13,10 @@ evidence. New tests go in the companion file of the source they cover (for examp
       bundle size from `npm run build`, and the existing history e2e list. Reproduce the three
       stated gaps (no zoom, no Yesterday, sheet dead end) before editing. IDs: NH-01, NH-05;
       done: baseline numbers and screenshots/traces attached to the PR description.
-- [ ] T002 — Freeze the interaction contract in ADR-006 and confirm on a throwaway prototype that a
-      local plugin can drive x-scale zoom with wheel, drag, pinch and keys. IDs: FR-03, AC-04;
-      depends: T001; done: prototype findings recorded, ADR amended if a gesture is dropped.
+- [ ] T002 — Confirm `chartjs-plugin-zoom` v2 against Chart.js 4.5.1 on a throwaway chart: wheel,
+      drag-select, pinch and pan, with `limits` clamping to 5 min…31 days and to the loaded window.
+      IDs: FR-03, AC-04; depends: T001; done: findings recorded; ADR amended with the pinned versions
+      and any gesture that needs our own handling.
 
 ## Phase 2 — Pure domain (no Vue, fully unit tested)
 
@@ -37,11 +38,12 @@ evidence. New tests go in the companion file of the source they cover (for examp
 
 ## Phase 3 — Chart component and interactions
 
-- [ ] T014 — Implement the local Chart.js interaction plugin in
-      `frontend/src/components/chart/history/interactions.ts` (wheel, mouse drag-select, two-pointer
-      pinch, one-finger scrub, keyboard) with one `applyRange` path; IDs: FR-03, AC-04/05/06,
-      NFR-02; depends: T010, T002; done: `src/__tests__/components/chart/history/interactions.test.ts`
-      covers clamp mapping, gesture thresholds and no-op bounds.
+- [ ] T014 — Add the zoom plugin to the lazy chart chunk and implement
+      `frontend/src/components/chart/history/interactions.ts` around it: `limits` from the range
+      policy, button and keyboard actions (plugin has no keyboard), readout scrub, `touch-action`
+      rules and reduced-motion handling; IDs: FR-03, AC-04/05/06, NFR-01/02; depends: T010, T002;
+      done: `src/__tests__/components/chart/history/interactions.test.ts` covers clamp mapping,
+      keyboard steps, disabled gestures and no-op bounds.
 - [ ] T015 — Add `HistoryChart.vue` (responsive height by breakpoint, focusable container with
       accessible name and range, readout slot, end marker, `touch-action`); IDs: FR-02, FR-03,
       AC-03/05/06, FE-04; depends: T014; done: component covered by options/render tests and used by
