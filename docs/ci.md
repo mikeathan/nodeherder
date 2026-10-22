@@ -13,7 +13,7 @@ cancel the other component. Superseded PR runs are cancelled; main runs are not.
 | Backend Tests and Build | Go module checksum changes, Linux compilation failures, uncached unit regressions, `go vet` findings |
 | Backend Race Detection | Concurrent accesses exercised by backend tests; not proof that all races are absent |
 | Frontend Tests, Lint and Build | Locked install failures, existing ESLint errors, Jest regressions, Vue/browser-test TypeScript compilation and production bundle failures |
-| Frontend E2E (desktop/mobile, shard 1/2) | Broken user flows in a real Chromium at desktop and phone sizes: OAuth sign-in/out, dashboards and device commands, automation save payloads, device pages; UI-created dial toggles also execute through the real Go engine with in-memory MQTT (never real devices) |
+| Frontend E2E (desktop/mobile, shard 1/4) | Broken user flows in a real Chromium at desktop and phone sizes: OAuth sign-in/out, dashboards and device commands, automation save payloads, device pages; UI-created dial toggles also execute through the real Go engine with in-memory MQTT (never real devices) |
 | Container (backend/frontend) | Real Dockerfile/context/build failures on Linux/amd64; backend executable help; nginx config and built index smoke checks |
 
 Images are built/loaded on disposable runners, never published. Smoke containers
@@ -27,7 +27,7 @@ main-push tagging job can write, after all checks succeed.
 
 ## E2E elapsed time and isolation
 
-E2E uses four jobs: desktop/mobile × file-level shards 1/2. Each job starts a
+E2E uses eight jobs: desktop/mobile × file-level shards 1/4. Each job starts a
 fresh mock hub, isolated Go automation hub, and Vite server, with one Playwright worker. Keep `workers: 1` and
 `fullyParallel: false`: the hub has mutable shared state, and files retain their
 internal execution order. Matrix failures do not cancel other partitions. All four
@@ -102,8 +102,11 @@ took 7m15s, with E2E at 6m53s. The earlier main run 39053480876 took 4m22s,
 with E2E at 4m02s; the intervening change expanded entity-dialog/history coverage.
 Main verifies the merged commit with the full suite again, then tags. The current
 adjustment speeds both PR and main runs. Based on the measured file durations, the
-four partitions should take roughly 2–3 minutes including setup on comparable warm
-runners; this is an estimate until the changed workflow runs on GitHub. Four E2E
+partitions should take roughly 1.5–2 minutes each including setup once the
+Playwright image removes the install step. Four shards per project are used because
+the remaining floor is fixed overhead (about 33s container start plus Go/Node setup)
+and ~30 tests per shard, so more shards buy little while the repository is public and
+run minutes are not billed. Four E2E
 runners add installation/runner overhead and may queue under account concurrency
 limits. File-level sharding can become uneven as suites grow; inspect timing reports
 before increasing partition count. Tests execute afresh; existing dependency/build
@@ -114,10 +117,10 @@ mock servers (do not run these commands concurrently on the same default ports):
 
 ```bash
 CI=true PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/timings.json \
-  npm run test:e2e -- --project=desktop --shard=1/2 --reporter=list,html,json
+  npm run test:e2e -- --project=desktop --shard=1/4 --reporter=list,html,json
 ```
 
-Repeat for desktop shard 2 and mobile shards 1/2. See
+Repeat for desktop shards 2–4 and mobile shards 1–4. See
 [spec 023](../specs/023-ci-and-device-controls/plan.md) for discovery, local execution and
 remaining rollout verification. Sharding follows [Playwright's documented file-level behavior](https://playwright.dev/docs/test-sharding).
 
