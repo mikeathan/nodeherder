@@ -33,7 +33,7 @@ jobs:
         run: |
           go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
           "$GOBIN/actionlint"
-      - name: Check scripts without executing them
+      - name: Check shell scripts without executing them
         run: |
           while IFS= read -r -d '' script; do
             bash -n "$script"
@@ -41,7 +41,7 @@ jobs:
           shellcheck scripts/manage-stack.sh
 
   stack-tools:
-    name: Stack Manager (Ubuntu)
+    name: Deployment Tooling (Ubuntu)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -125,7 +125,7 @@ jobs:
         run: go test -race -count=1 -timeout=5m ./...
 
   frontend:
-    name: Frontend Tests and Build
+    name: Frontend Tests, Lint and Build
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -148,17 +148,23 @@ jobs:
         run: npm test -- --ci --runInBand
       - name: Type-check browser tests
         run: npm run type-check:e2e
-      - name: Type-check and production build
+      - name: Type-check and build production bundle
         env:
           APP_VERSION: ci-${{ github.sha }}
         run: npm run build -- --mode production
 
   frontend-e2e:
-    name: Frontend E2E (${{ matrix.project }}, ${{ matrix.shard }}/2, mock and Go hubs)
+    name: Frontend E2E (${{ matrix.project }}, shard ${{ matrix.shard }}/2)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
+    # Browsers and their system libraries are baked into this image, so no apt/Chromium
+    # download runs per job (it ranged 20s-11m on hosted apt mirrors). Keep the tag equal
+    # to the @playwright/test version; the first step fails with a fix if they drift.
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+      options: --ipc=host
     strategy:
-      # Each runner owns its isolated hubs. Keep one worker per set: their state is shared.
+      # Each job owns its isolated hubs. Keep one worker per set: their state is shared.
       fail-fast: false
       matrix:
         project: [desktop, mobile]
@@ -174,7 +180,7 @@ jobs:
         with:
           go-version-file: backend/go.mod
           cache-dependency-path: backend/go.sum
-      - name: Warm the Go build cache for the browser fixture
+      - name: Prebuild the Go browser-fixture test binary
         working-directory: backend
         run: go test -run '^$' ./internal
       - uses: actions/setup-node@v4
@@ -184,9 +190,16 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - name: Install locked dependencies
         run: npm ci
-      - name: Install Chromium for Playwright
-        run: npx playwright install --with-deps chromium
-      - name: Browser tests against the isolated hubs
+      - name: Verify the Playwright image matches the installed version
+        run: |
+          installed=$(node -p "require('./node_modules/@playwright/test/package.json').version")
+          if [[ "$installed" != "1.56.1" ]]; then
+            echo "::error::@playwright/test $installed does not match the Playwright container image v1.56.1."
+            echo "Update the container image tag in .github/workflows/ci.yml together with frontend/package.json."
+            exit 1
+          fi
+          echo "Playwright $installed matches the browser image."
+      - name: Run browser tests against the mock and Go hubs
         env:
           CI: "true"
           PLAYWRIGHT_JSON_OUTPUT_FILE: test-results/timings.json

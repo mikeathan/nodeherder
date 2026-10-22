@@ -167,21 +167,40 @@ test('closing 50 completed views releases chart instances, keyboard listeners an
   page.on('requestfailed', (request) => pending.delete(request.url()));
   const cdp = await page.context().newCDPSession(page);
   const heaps: { cycles: number; usedBytes: number; nodes: number; listeners: number }[] = [];
+  const sampleHeap = async (cycles: number) => {
+    await cdp.send('HeapProfiler.collectGarbage');
+    const heap = await cdp.send('Runtime.getHeapUsage');
+    const dom = await cdp.send('Memory.getDOMCounters');
+    return { cycles, usedBytes: heap.usedSize, nodes: dom.nodes, listeners: dom.jsEventListeners };
+  };
+  /**
+   * A closed dialog can stay reachable for a frame or two, and the dashboard behind it
+   * changes as mock reports arrive, so a single reading is noisy. Sample repeatedly and
+   * keep the smallest reading: pending release only inflates the counters, while a real
+   * leak stays reachable in every sample and is therefore still measured.
+   */
+  const settledHeap = async (cycles: number) => {
+    let best = await sampleHeap(cycles);
+    for (let attempt = 0; attempt < 6; attempt++) {
+      await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+      const next = await sampleHeap(cycles);
+      if (next.nodes < best.nodes || (next.nodes === best.nodes && next.listeners < best.listeners)) best = next;
+    }
+    return best;
+  };
   for (let i = 0; i < 50; i++) {
     await opener.click();
     const dialog = page.getByRole('dialog');
     await expect(dialog.locator('.nh-history-canvas[data-ready="true"]')).toBeVisible();
     await dialog.getByRole('button', { name: 'Close', exact: true }).click();
     await expect(dialog).toHaveCount(0);
-    if ([4, 24, 49].includes(i)) {
-      await cdp.send('HeapProfiler.collectGarbage');
-      const heap = await cdp.send('Runtime.getHeapUsage');
-      const dom = await cdp.send('Memory.getDOMCounters');
-      heaps.push({ cycles: i + 1, usedBytes: heap.usedSize, nodes: dom.nodes, listeners: dom.jsEventListeners });
-    }
+    if ([4, 24].includes(i)) heaps.push(await settledHeap(i + 1));
   }
-  await cdp.detach();
+  // Measure the final state only after every history read has finished, so a late
+  // response cannot be mistaken for retained memory.
   await expect.poll(() => pending.size).toBe(0);
+  heaps.push(await settledHeap(50));
+  await cdp.detach();
   await test.info().attach('retained-heap-trend', { body: JSON.stringify(heaps), contentType: 'application/json' });
   console.log(`Entity retained heap (${test.info().project.name}): ${JSON.stringify(heaps)}`);
   expect(await page.evaluate(() => document.body.style.overflow)).toBe('');
