@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sample 5 · Mobile sheet to full history · NodeHerder design</title>
+    <link rel="stylesheet" href="mock.css" />
+  </head>
+  <body>
+    <!--
+      Variant 5 — phone flow. Left: the entity sheet with a compact chart and an explicit
+      "full history" entry. Right: the full history screen it opens.
+    -->
+    <div class="note">
+      <h2>Sample 5 — from a tile, to a sheet, to full history</h2>
+      <p>
+        Today the entity dialog always shows “Last 4 hours” with no way forward, and history lives in a
+        device tab. This is the phone path: tap a tile, read the sheet, open full history in one tap.
+      </p>
+      <ul>
+        <li><b>Sheet</b> keeps the confirmed value, one control and a 170&nbsp;px chart; actions sit above the safe area.</li>
+        <li><b>View full history</b> is a primary action, not a hidden tab.</li>
+        <li><b>Full screen</b> repeats the same chart model at 220&nbsp;px with range chips and a 2×2 stats grid.</li>
+        <li>Drag-to-dismiss and the bottom safe area are the missing platform pieces today (<code>viewport-fit=cover</code> is absent, so <code>env(safe-area-inset-*)</code> is 0).</li>
+      </ul>
+    </div>
+
+    <div class="devices-phone">
+      <div class="phone">
+        <div class="phone-status"><span>9:41</span><span class="notch"></span><span>▮▮▮</span></div>
+        <div class="phone-topbar">
+          <span class="muted">←</span>
+          <h1>Home</h1>
+        </div>
+        <div class="phone-body is-sheet">
+          <div class="sheet">
+            <div class="sheet-grip"></div>
+            <div class="row between">
+              <div>
+                <h2>Temperature</h2>
+                <p class="tiny muted" style="margin:0">Living room sensor</p>
+              </div>
+              <span class="chip">Read-only</span>
+            </div>
+            <div class="row" style="margin-top:0.6rem;align-items:baseline;gap:0.4rem">
+              <span class="value">21.4</span><span class="muted">°C</span>
+              <span class="tiny muted">2 min ago</span>
+            </div>
+            <div id="sheet-chart" class="chart-wrap" style="margin-top:0.4rem"></div>
+            <div class="sheet-actions">
+              <button class="btn is-primary" type="button">View full history</button>
+              <button class="btn" type="button">Device</button>
+            </div>
+            <p class="tiny muted" style="margin:0.6rem 0 0;text-align:center">Last 4 hours · swipe down to close</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="phone">
+        <div class="phone-status"><span>9:41</span><span class="notch"></span><span>▮▮▮</span></div>
+        <div class="phone-topbar">
+          <span class="muted">←</span>
+          <h1>History</h1>
+          <span style="flex:1"></span>
+          <span class="muted">⋯</span>
+        </div>
+        <div class="phone-body">
+          <div class="chips is-scroll" id="phone-ranges" style="margin:0.6rem 0 0.4rem"></div>
+          <div class="chips is-scroll" id="phone-entities" style="margin-bottom:0.6rem"></div>
+          <div class="card chart-card" style="padding:0.7rem 0.8rem">
+            <div id="phone-readout"></div>
+            <div id="phone-chart" class="chart-wrap"></div>
+          </div>
+          <dl class="stats" id="phone-stats"></dl>
+          <p class="tiny muted" style="margin:0.6rem 0 0">Inspect recorded samples · 100 of 486</p>
+        </div>
+        <nav class="bottom-nav">
+          <a href="#"><span class="ic"></span>Home</a>
+          <a href="#"><span class="ic"></span>Devices</a>
+          <a href="#"><span class="ic"></span>Automations</a>
+          <a href="#" class="is-active"><span class="ic"></span>History</a>
+          <a href="#"><span class="ic"></span>More</a>
+        </nav>
+      </div>
+    </div>
+
+    <script src="mock.js"></script>
+    <script>
+      (function () {
+        NH.mountBar('v5-mobile-sheet.html');
+        var HOUR = 3600000;
+        var now = Date.now();
+        var state = { range: '24h', entity: 'temperature' };
+
+        /* sheet preview: last four hours, no readout, no zoom */
+        var preview = NH.makeSeries({ id: 'preview', label: 'Temperature', kind: 'temperature', from: now - 4 * HOUR, to: now, points: 60, seed: 9 });
+        NH.chart(document.getElementById('sheet-chart'), {
+          from: now - 4 * HOUR,
+          to: now,
+          unit: '°C',
+          height: 170,
+          series: [preview]
+        });
+
+        /* full history screen */
+        var readout = NH.el('div', { class: 'readout' });
+        document.getElementById('phone-readout').appendChild(readout);
+        var chartHost = document.getElementById('phone-chart');
+        var statsHost = document.getElementById('phone-stats');
+        var chartApi = null;
+
+        function spanFor(range) {
+          if (range === '1h') return HOUR;
+          if (range === '6h') return 6 * HOUR;
+          if (range === '7d') return 7 * 24 * HOUR;
+          return 24 * HOUR;
+        }
+
+        function paint() {
+          var span = spanFor(state.range);
+          var from = now - span;
+          var unit = state.entity === 'temperature' ? '°C' : '%';
+          var series = NH.makeSeries({
+            id: state.entity,
+            label: state.entity,
+            kind: state.entity,
+            from: from,
+            to: now,
+            points: 90,
+            seed: state.entity.length * 7
+          });
+
+          if (chartApi) chartApi.destroy();
+          chartApi = NH.chart(chartHost, {
+            from: from,
+            to: now,
+            unit: unit,
+            height: 220,
+            series: [series],
+            readout: readout,
+            zoom: true,
+            hint: 'Drag to zoom',
+            onZoom: function (nextFrom, nextTo) {
+              chartApi.setRange(nextFrom, nextTo);
+            },
+            onReset: function () {
+              chartApi.setRange(from, now);
+            }
+          });
+
+          var values = series.data.map(function (point) {
+            return point.v;
+          });
+          var total = values.reduce(function (sum, value) {
+            return sum + value;
+          }, 0);
+          statsHost.innerHTML = '';
+          [
+            ['Min', Math.min.apply(null, values)],
+            ['Avg', total / values.length],
+            ['Max', Math.max.apply(null, values)],
+            ['Last', values[values.length - 1]]
+          ].forEach(function (row) {
+            var block = NH.el('div', { class: 'stat' });
+            block.appendChild(NH.el('dt', {}, row[0]));
+            block.appendChild(NH.el('dd', {}, NH.formatValue(row[1], unit)));
+            statsHost.appendChild(block);
+          });
+        }
+
+        NH.chips(document.getElementById('phone-ranges'), {
+          active: state.range,
+          items: [
+            { value: '1h', label: '1 h' },
+            { value: '6h', label: '6 h' },
+            { value: '24h', label: '24 h' },
+            { value: '7d', label: '7 d' },
+            { value: 'today', label: 'Today' },
+            { value: 'yesterday', label: 'Yest.' }
+          ],
+          onChange: function (value) {
+            state.range = value;
+            paint();
+          }
+        });
+        NH.chips(document.getElementById('phone-entities'), {
+          active: state.entity,
+          items: [
+            { value: 'temperature', label: 'Temperature', color: 'var(--nh-kind-temp)' },
+            { value: 'humidity', label: 'Humidity', color: 'var(--nh-kind-humidity)' },
+            { value: 'battery', label: 'Battery', color: 'var(--nh-ok)' }
+          ],
+          onChange: function (value) {
+            state.entity = value;
+            paint();
+          }
+        });
+
+        paint();
+      })();
+    </script>
+  </body>
+</html>

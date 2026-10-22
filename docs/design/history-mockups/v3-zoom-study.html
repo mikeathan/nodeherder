@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sample 3 · Zoom, layers and expand · NodeHerder design</title>
+    <link rel="stylesheet" href="mock.css" />
+  </head>
+  <body>
+    <!--
+      Variant 3 — chart control study: zoom in/out/reset, drag-to-zoom, an expanded chart
+      layer with its own controls, and line / step / bars over the same history model.
+    -->
+    <div id="shell"></div>
+
+    <div class="note">
+      <h2>Sample 3 — chart control and expansion</h2>
+      <p>
+        Spec 007 T211 asks for “inspection/zoom/reset” and never shipped: only <code>chart.js</code>
+        is installed, with no zoom plugin, and the x-axis is hard-limited to three ticks. This
+        sample is the control study.
+      </p>
+      <ul>
+        <li><b>Zoom controls</b> <code>−  +  Reset</code> for keyboard and touch users, drag a region with the pointer, wheel to zoom on desktop, double-click to reset.</li>
+        <li><b>Expand</b> opens a full-screen chart layer with its own bar and a Close button — the current chart is 235&nbsp;px and cannot grow.</li>
+        <li><b>Chart type</b>: line, step (state-like) and bars over one model.</li>
+        <li><b>Automation marker</b> explains a jump in the line.</li>
+        <li>Target behaviour on phones: two-finger pinch. Drag-to-zoom stands in for it here.</li>
+      </ul>
+      <p>Decision to make: is a zoom plugin worth ~8&nbsp;kB, or are preset ranges plus drag-zoom enough?</p>
+    </div>
+
+    <div class="chart-overlay" id="overlay" hidden>
+      <div class="overlay-bar">
+        <strong>Living room · temperature</strong>
+        <span class="spacer"></span>
+        <div class="chart-actions">
+          <button class="btn is-sm" type="button" data-zoom="out" aria-label="Zoom out">−</button>
+          <button class="btn is-sm" type="button" data-zoom="in" aria-label="Zoom in">+</button>
+          <button class="btn is-sm" type="button" data-zoom="reset">Reset</button>
+          <button class="btn is-sm is-primary" type="button" id="overlay-close">Close</button>
+        </div>
+      </div>
+      <div class="overlay-chart" id="overlay-chart"></div>
+    </div>
+
+    <script src="mock.js"></script>
+    <script>
+      (function () {
+        NH.mountBar('v3-zoom-study.html');
+        var shell = NH.mountShell({ active: 'History', title: 'History', subtitle: 'Living room · zoom study' });
+        var DAY = 86400000;
+        var now = Date.now();
+        var full = { from: now - DAY, to: now };
+        var state = { type: 'line', expanded: false };
+        var chartApi = null;
+        var overlay = document.getElementById('overlay');
+        var overlayHost = document.getElementById('overlay-chart');
+
+        var head = NH.el('div', { class: 'row between' });
+        head.appendChild(NH.el('h2', {}, 'Living room sensor · temperature'));
+        var expandButton = NH.el('button', { class: 'btn is-sm', type: 'button' }, 'Expand');
+        var actions = NH.el('div', { class: 'chart-actions' });
+        actions.appendChild(expandButton);
+        head.appendChild(actions);
+        shell.content.appendChild(head);
+
+        var toolbar = NH.el('div', { class: 'row between', style: 'margin:0.9rem 0 0.7rem' });
+        var typeSeg = NH.el('div', { class: 'segmented' });
+        ['line', 'step', 'bars'].forEach(function (type) {
+          var button = NH.el('button', { type: 'button', 'aria-pressed': String(state.type === type) }, type.charAt(0).toUpperCase() + type.slice(1));
+          button.addEventListener('click', function () {
+            state.type = type;
+            typeSeg.querySelectorAll('button').forEach(function (node) {
+              node.setAttribute('aria-pressed', String(node.textContent.toLowerCase() === type));
+            });
+            draw();
+          });
+          typeSeg.appendChild(button);
+        });
+        toolbar.appendChild(typeSeg);
+
+        var zoomActions = NH.el('div', { class: 'chart-actions' });
+        zoomActions.appendChild(zoomButton('out', '−', 'Zoom out'));
+        zoomActions.appendChild(zoomButton('in', '+', 'Zoom in'));
+        zoomActions.appendChild(zoomButton('reset', 'Reset'));
+        toolbar.appendChild(zoomActions);
+        shell.content.appendChild(toolbar);
+
+        var card = NH.el('div', { class: 'card chart-card' });
+        var readout = NH.el('div', { class: 'readout' });
+        var wrap = NH.el('div', { class: 'chart-wrap' });
+        card.appendChild(readout);
+        card.appendChild(wrap);
+        card.appendChild(
+          NH.el(
+            'p',
+            { class: 'tiny muted', style: 'margin:0.6rem 0 0' },
+            'Drag a region to zoom · wheel to zoom · double-click or Reset to return'
+          )
+        );
+        shell.content.appendChild(card);
+
+        function zoomButton(action, label, ariaLabel) {
+          var button = NH.el('button', { class: 'btn is-sm', type: 'button' }, label);
+          if (ariaLabel) button.setAttribute('aria-label', ariaLabel);
+          button.addEventListener('click', function () {
+            zoom(action);
+          });
+          return button;
+        }
+
+        function zoom(action) {
+          if (!chartApi) return;
+          if (action === 'reset') {
+            chartApi.setRange(full.from, full.to);
+            return;
+          }
+          var range = chartApi.range();
+          var center = (range.from + range.to) / 2;
+          var span = action === 'in' ? (range.to - range.from) * 0.6 : (range.to - range.from) * 1.6;
+          span = Math.max(10 * 60000, Math.min(DAY, span));
+          chartApi.setRange(center - span / 2, center + span / 2);
+        }
+
+        overlay.querySelectorAll('[data-zoom]').forEach(function (button) {
+          button.addEventListener('click', function () {
+            zoom(button.getAttribute('data-zoom'));
+          });
+        });
+        document.getElementById('overlay-close').addEventListener('click', function () {
+          setExpanded(false);
+        });
+        document.addEventListener('keydown', function (event) {
+          if (event.key === 'Escape' && state.expanded) setExpanded(false);
+        });
+
+        function draw() {
+          var series = NH.makeSeries({ id: 'temp', label: 'Temperature', kind: 'temperature', from: full.from, to: full.to, points: 180, seed: 5 });
+          var range = chartApi ? chartApi.range() : { from: full.from, to: full.to };
+          var host = state.expanded ? overlayHost : wrap;
+          var height = state.expanded ? Math.max(320, window.innerHeight - 160) : 320;
+
+          if (chartApi) chartApi.destroy();
+          chartApi = NH.chart(host, {
+            from: range.from,
+            to: range.to,
+            unit: '°C',
+            height: height,
+            series: [series],
+            readout: state.expanded ? null : readout,
+            zoom: true,
+            bars: state.type === 'bars',
+            step: state.type === 'step',
+            area: state.type !== 'step',
+            bands: state.type === 'line' ? [{ from: 18, to: 24, label: 'Comfort band', color: 'var(--nh-ok)' }] : [],
+            markers: [{ t: full.to - 7 * 3600000, label: 'Automation' }],
+            onZoom: function (from, to) {
+              chartApi.setRange(from, to);
+            },
+            onReset: function () {
+              chartApi.setRange(full.from, full.to);
+            }
+          });
+        }
+
+        function setExpanded(next) {
+          state.expanded = next;
+          overlay.hidden = !next;
+          document.body.style.overflow = next ? 'hidden' : '';
+          expandButton.textContent = next ? 'Expanded' : 'Expand';
+          draw();
+        }
+
+        expandButton.addEventListener('click', function () {
+          setExpanded(true);
+        });
+
+        draw();
+      })();
+    </script>
+  </body>
+</html>

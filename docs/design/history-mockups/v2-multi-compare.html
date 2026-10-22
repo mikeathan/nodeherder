@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sample 2 · Multi-series and compare · NodeHerder design</title>
+    <link rel="stylesheet" href="mock.css" />
+  </head>
+  <body>
+    <!--
+      Variant 2 — several series at once, legend toggles, threshold band, automation marker
+      and a "previous period" ghost line. Same window, so units stay comparable.
+    -->
+    <div id="shell"></div>
+
+    <div class="note">
+      <h2>Sample 2 — multi-series, legend, thresholds, compare</h2>
+      <p>
+        The transport already sends an <em>array</em> of exposes (<code>HistoryRequest.exposes</code>,
+        backend <code>exposes[]</code>), but the UI only ever asks for one. This sample shows what
+        overlapping series would look like, plus comparison and annotations.
+      </p>
+      <ul>
+        <li><b>Two series, one window</b>: measured temperature and its target setpoint (same unit, no second axis needed).</li>
+        <li><b>Legend toggles</b> hide or show a series without losing the query.</li>
+        <li><b>Compare</b> overlays the same window from the previous day as a dashed ghost.</li>
+        <li><b>Threshold band</b> (comfort 18–24&nbsp;°C) and an <b>automation marker</b> explain why the line moved.</li>
+        <li>Mixed units (temperature + humidity) would need a second y-axis — shown here as a deliberate decision, not a free win.</li>
+      </ul>
+    </div>
+
+    <script src="mock.js"></script>
+    <script>
+      (function () {
+        NH.mountBar('v2-multi-compare.html');
+        var shell = NH.mountShell({ active: 'History', title: 'History', subtitle: 'Living room · 24 hours' });
+        var DAY = 86400000;
+        var now = Date.now();
+        var state = { compare: true, target: true };
+
+        var head = NH.el('div', { class: 'row between' });
+        head.appendChild(NH.el('h2', {}, 'Living room sensor'));
+        var actions = NH.el('div', { class: 'row' });
+        head.appendChild(actions);
+        shell.content.appendChild(head);
+
+        var toolbar = NH.el('div', { class: 'history-toolbar' });
+        var rangeRow = NH.el('div', { class: 'chips' });
+        var optionRow = NH.el('div', { class: 'chips' });
+        toolbar.appendChild(rangeRow);
+        toolbar.appendChild(optionRow);
+        shell.content.appendChild(toolbar);
+
+        var card = NH.el('div', { class: 'card chart-card', style: 'margin-top:1rem' });
+        var readout = NH.el('div', { class: 'readout' });
+        var legend = NH.el('div', { class: 'legend' });
+        var wrap = NH.el('div', { class: 'chart-wrap' });
+        card.appendChild(readout);
+        card.appendChild(wrap);
+        card.appendChild(legend);
+        shell.content.appendChild(card);
+
+        var chartApi = null;
+
+        function shift(series, delta) {
+          return {
+            id: series.id,
+            label: series.label,
+            color: series.color,
+            unit: series.unit,
+            ghost: series.ghost,
+            data: series.data.map(function (point) {
+              return { t: point.t + delta, v: point.v };
+            })
+          };
+        }
+
+        function paint() {
+          var from = now - DAY;
+          var to = now;
+          var measured = NH.makeSeries({ id: 'temp', label: 'Temperature', kind: 'temperature', from: from, to: to, points: 160, seed: 11 });
+          var series = [measured];
+          if (state.target) {
+            series.push(
+              NH.makeSeries({
+                id: 'target',
+                label: 'Target setpoint',
+                kind: 'temperature',
+                from: from,
+                to: to,
+                points: 40,
+                seed: 3,
+                base: 20.5,
+                amp: 0.35
+              })
+            );
+          }
+          if (state.compare) {
+            var yesterday = NH.makeSeries({
+              id: 'temp-yesterday',
+              label: 'Yesterday',
+              kind: 'temperature',
+              from: from - DAY,
+              to: to - DAY,
+              points: 160,
+              seed: 11
+            });
+            yesterday.ghost = true;
+            yesterday.label = 'Yesterday (same window)';
+            series.push(shift(yesterday, DAY));
+          }
+
+          if (chartApi) chartApi.destroy();
+          chartApi = NH.chart(wrap, {
+            from: from,
+            to: to,
+            unit: '°C',
+            height: 340,
+            label: 'Temperature with target and previous day',
+            hint: 'Hover for a value · click a legend item to hide a series',
+            series: series,
+            readout: readout,
+            legend: legend,
+            step: false,
+            bands: [{ from: 18, to: 24, label: 'Comfort band', color: 'var(--nh-ok)' }],
+            markers: [{ t: now - 6 * 3600000, label: 'Automation: evening heat' }],
+            zoom: true,
+            onZoom: function (nextFrom, nextTo) {
+              chartApi.setRange(nextFrom, nextTo);
+            },
+            onReset: function () {
+              chartApi.setRange(from, to);
+            }
+          });
+        }
+
+        NH.chips(rangeRow, {
+          active: '24h',
+          items: [
+            { value: '1h', label: '1 h' },
+            { value: '6h', label: '6 h' },
+            { value: '24h', label: '24 h' },
+            { value: '7d', label: '7 d' },
+            { value: '30d', label: '30 d' },
+            { value: 'today', label: 'Today' },
+            { value: 'yesterday', label: 'Yesterday' }
+          ],
+          onChange: function () {
+            paint();
+          }
+        });
+
+        NH.chips(optionRow, {
+          active: state.compare ? 'compare' : 'none',
+          items: [
+            { value: 'compare', label: 'Compare previous day' },
+            { value: 'target', label: 'Target setpoint' }
+          ],
+          onChange: function (value) {
+            if (value === 'compare') state.compare = !state.compare;
+            if (value === 'target') state.target = !state.target;
+            paint();
+            optionRow.querySelectorAll('.chip').forEach(function (chip) {
+              var text = chip.textContent || '';
+              var on = text.indexOf('Compare') === 0 ? state.compare : state.target;
+              chip.classList.toggle('is-active', on);
+            });
+          }
+        });
+        optionRow.querySelectorAll('.chip').forEach(function (chip) {
+          var text = chip.textContent || '';
+          chip.classList.toggle('is-active', text.indexOf('Compare') === 0 ? state.compare : state.target);
+        });
+
+        actions.appendChild(NH.el('button', { class: 'btn is-sm', type: 'button' }, 'Add series…'));
+        actions.appendChild(NH.el('button', { class: 'btn is-sm', type: 'button' }, 'Export CSV'));
+
+        paint();
+      })();
+    </script>
+  </body>
+</html>

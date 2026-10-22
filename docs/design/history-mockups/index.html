@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>History and mobile design samples · NodeHerder</title>
+    <link rel="stylesheet" href="mock.css" />
+    <style>
+      .gallery { max-width: 78rem; margin: 0 auto; padding: 1.5rem 1.2rem 4rem; }
+      .gallery h1 { font-size: 1.6rem; letter-spacing: -0.02em; margin: 0.4rem 0 0.2rem; }
+      .gallery > p { color: var(--nh-text-muted); max-width: 62ch; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr)); gap: 1rem; margin-top: 1.4rem; }
+      .card h2 { margin: 0; font-size: 1.02rem; }
+      .card .tagline { color: var(--nh-text-muted); font-size: 0.86rem; margin: 0.35rem 0 0.7rem; }
+      .card ul { margin: 0 0 0.8rem; padding-left: 1.05rem; color: var(--nh-text-muted); font-size: 0.83rem; }
+      .card li { margin: 0.15rem 0; }
+      .decision { font-size: 0.8rem; border-top: 1px dashed var(--nh-border); padding-top: 0.6rem; color: var(--nh-text-muted); }
+      .decision b { color: var(--nh-text); }
+      table.map { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 0.6rem; }
+      table.map th, table.map td { text-align: left; padding: 0.45rem 0.4rem; border-bottom: 1px solid var(--nh-border); vertical-align: top; }
+      table.map th { color: var(--nh-text-muted); font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.03em; }
+      .legend { display: flex; flex-wrap: wrap; gap: 0.9rem; margin-top: 0.8rem; font-size: 0.8rem; color: var(--nh-text-muted); }
+      .legend span { display: inline-flex; align-items: center; gap: 0.35rem; }
+      .legend i { width: 0.7rem; height: 0.7rem; border-radius: 50%; display: inline-block; }
+    </style>
+  </head>
+  <body>
+    <div class="gallery">
+      <h1>History, charts and mobile — design samples</h1>
+      <p>
+        Six static prototypes for the history/chart rework (spec 007 follow-up, T209–T212) and the
+        mobile shell. Synthetic data, real tokens, no build step and no application code. Open any
+        sample, then use the top bar to switch theme (Fleece / Daylight) and mode (dark / light).
+      </p>
+
+      <div class="legend">
+        <span><i style="background: var(--nh-kind-temp)"></i> temperature</span>
+        <span><i style="background: var(--nh-kind-humidity)"></i> humidity</span>
+        <span><i style="background: var(--nh-kind-light)"></i> illuminance</span>
+        <span><i style="background: var(--nh-ok)"></i> battery / comfort</span>
+        <span>Chart interactions: hover for a value, drag a region to zoom, double-click to reset, click a legend entry to toggle a series.</span>
+      </div>
+
+      <div class="grid">
+        <article class="card">
+          <h2>1 · Discoverable history</h2>
+          <p class="tagline">Range and entity become visible controls; the chart gets the full width.</p>
+          <ul>
+            <li>Range chips incl. Today / Yesterday</li>
+            <li>Entity chips with sensor colours</li>
+            <li>360 px chart, readout, stats strip</li>
+          </ul>
+          <p class="decision"><b>Decide:</b> chips vs select; history as a nav entry.</p>
+          <a class="btn is-primary is-sm" href="v1-history-chips.html">Open sample 1</a>
+        </article>
+
+        <article class="card">
+          <h2>2 · Multi-series and compare</h2>
+          <p class="tagline">More than one series at a time, with legend toggles and annotations.</p>
+          <ul>
+            <li>Measured value + target setpoint</li>
+            <li>Previous-day ghost comparison</li>
+            <li>Comfort band and automation marker</li>
+          </ul>
+          <p class="decision"><b>Decide:</b> second y-axis for mixed units, or same-unit only.</p>
+          <a class="btn is-primary is-sm" href="v2-multi-compare.html">Open sample 2</a>
+        </article>
+
+        <article class="card">
+          <h2>3 · Zoom, layers, expand</h2>
+          <p class="tagline">The T211 “inspection / zoom / reset” control study.</p>
+          <ul>
+            <li>− / + / Reset, drag-zoom, wheel, double-click</li>
+            <li>Expand to a 540 px overlay</li>
+            <li>Line / step / bars on the same data</li>
+          </ul>
+          <p class="decision"><b>Decide:</b> add the zoom plugin (~8 kB) or rely on presets.</p>
+          <a class="btn is-primary is-sm" href="v3-zoom-study.html">Open sample 3</a>
+        </article>
+
+        <article class="card">
+          <h2>4 · History vs statistics</h2>
+          <p class="tagline">Aggregated long ranges, using the aggregations the backend already has.</p>
+          <ul>
+            <li>Daily bars for 7 / 30 days</li>
+            <li>Min / average / max / samples table</li>
+            <li>CSV export affordance</li>
+          </ul>
+          <p class="decision"><b>Decide:</b> mode switch on one page vs separate Statistics page.</p>
+          <a class="btn is-primary is-sm" href="v4-statistics.html">Open sample 4</a>
+        </article>
+
+        <article class="card">
+          <h2>5 · Mobile: sheet → full history</h2>
+          <p class="tagline">Two phone frames: the entity sheet and the full history it opens.</p>
+          <ul>
+            <li>Compact 170 px preview with a primary “View full history”</li>
+            <li>220 px full chart, chips, 2×2 stats</li>
+            <li>Safe-area aware actions</li>
+          </ul>
+          <p class="decision"><b>Decide:</b> entry points (tile long-press, sheet button, nav).</p>
+          <a class="btn is-primary is-sm" href="v5-mobile-sheet.html">Open sample 5</a>
+        </article>
+
+        <article class="card">
+          <h2>6 · Bottom navigation</h2>
+          <p class="tagline">Thumb-reachable tabs instead of the hamburger, with mobile history.</p>
+          <ul>
+            <li>Five bottom tabs, safe-area padding</li>
+            <li>Scrollable chip rows, pull-to-refresh</li>
+            <li>Home tile that hints at the sheet</li>
+          </ul>
+          <p class="decision"><b>Decide:</b> five tabs vs four plus a menu.</p>
+          <a class="btn is-primary is-sm" href="v6-mobile-nav.html">Open sample 6</a>
+        </article>
+      </div>
+
+      <h2 style="margin-top:2rem;font-size:1.1rem">How these map to the plan</h2>
+      <table class="map">
+        <thead>
+          <tr><th>Plan item</th><th>Status today</th><th>Sample</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Range presets incl. Today / Yesterday (<code>entities-and-history.md</code>)</td><td>1h/6h/24h/7d/30d/Today only; no Yesterday, no UTC</td><td>1</td></tr>
+          <tr><td>Explicit, discoverable entity selection</td><td>Single <code>&lt;select&gt;</code> in a device tab</td><td>1, 5, 6</td></tr>
+          <tr><td>Larger chart and stats</td><td>235 px in a 64 rem column; min–max + average rows</td><td>1, 3</td></tr>
+          <tr><td>Inspection / zoom / reset (T211)</td><td>Not implemented; no zoom plugin</td><td>3</td></tr>
+          <tr><td>Multi-series and comparison</td><td>Transport supports it; UI asks for one expose</td><td>2</td></tr>
+          <tr><td>Thresholds / annotations</td><td>Not implemented</td><td>2, 3</td></tr>
+          <tr><td>Aggregated statistics and export</td><td>Backend has avg/min/max/count; UI never uses them</td><td>4</td></tr>
+          <tr><td>Compact and full history share one model</td><td>Shared today, but the compact view is a dead end</td><td>5</td></tr>
+          <tr><td>Mobile shell / bottom navigation</td><td>Hamburger drawer; <code>--nh-bottom-nav-h</code> unused</td><td>6</td></tr>
+          <tr><td>Safe areas / PWA</td><td><code>viewport-fit=cover</code> and a manifest are missing</td><td>5, 6</td></tr>
+        </tbody>
+      </table>
+
+      <p class="tiny muted" style="margin-top:1.6rem">
+        Not built here, kept as options: tablet split view (list + detail), PWA install prompt and
+        offline shell, chart screenshot sharing, cross-device comparison page.
+      </p>
+    </div>
+
+    <script src="mock.js"></script>
+    <script>
+      NH.mountBar('index.html');
+    </script>
+  </body>
+</html>

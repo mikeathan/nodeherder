@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Sample 6 · Bottom navigation and mobile history · NodeHerder design</title>
+    <link rel="stylesheet" href="mock.css" />
+  </head>
+  <body>
+    <!--
+      Variant 6 — phone shell with a bottom tab bar instead of a hamburger, and the history
+      screen tuned for one-handed use: scrolled chips, pull-to-refresh, 220 px chart.
+    -->
+    <div class="note">
+      <h2>Sample 6 — bottom navigation and thumb-first history</h2>
+      <p>
+        Below 960&nbsp;px the app hides the sidebar behind a hamburger. This sample tests a five-item
+        bottom bar (the token <code>--nh-bottom-nav-h: 3.75rem</code> already exists, unused).
+      </p>
+      <ul>
+        <li><b>Bottom tabs</b> keep the five destinations a thumb can reach; “More” holds console, assistant and settings.</li>
+        <li><b>Scrollable chip rows</b> for range and entity instead of wrapping selects.</li>
+        <li><b>Pull to refresh</b> matches the manual refresh button, with a visible gesture affordance.</li>
+        <li><b>Safe areas</b>: the nav sits above <code>env(safe-area-inset-bottom)</code>, which only works with <code>viewport-fit=cover</code> (set on this page, missing in the app).</li>
+      </ul>
+      <p>Decision to make: five tabs (Home, Devices, Automations, History, More) vs four plus a menu.</p>
+    </div>
+
+    <div class="devices-phone">
+      <div class="phone">
+        <div class="phone-status"><span>9:41</span><span class="notch"></span><span>▮▮▮</span></div>
+        <div class="phone-topbar">
+          <h1>History</h1>
+          <span style="flex:1"></span>
+          <span class="muted">⟳</span>
+        </div>
+        <div class="phone-body">
+          <div class="pull"><span class="arc"></span> Pull to refresh</div>
+          <div class="chips is-scroll" id="nav-ranges" style="margin:0.2rem 0 0.4rem"></div>
+          <div class="chips is-scroll" id="nav-entities" style="margin-bottom:0.6rem"></div>
+          <div class="card chart-card" style="padding:0.7rem 0.8rem">
+            <div id="nav-readout"></div>
+            <div id="nav-chart" class="chart-wrap"></div>
+          </div>
+          <dl class="stats" id="nav-stats"></dl>
+          <div class="card" style="margin-top:0.8rem">
+            <div class="row between">
+              <b style="font-size:0.86rem">Automation</b>
+              <span class="tiny muted">Evening heat</span>
+            </div>
+            <p class="tiny muted" style="margin:0.35rem 0 0">Fired at 18:02 · target 21 °C</p>
+          </div>
+        </div>
+        <nav class="bottom-nav">
+          <a href="#"><span class="ic"></span>Home</a>
+          <a href="#"><span class="ic"></span>Devices</a>
+          <a href="#"><span class="ic"></span>Automations</a>
+          <a href="#" class="is-active"><span class="ic"></span>History</a>
+          <a href="#"><span class="ic"></span>More</a>
+        </nav>
+      </div>
+
+      <div class="phone">
+        <div class="phone-status"><span>9:41</span><span class="notch"></span><span>▮▮▮</span></div>
+        <div class="phone-topbar">
+          <h1>Home</h1>
+          <span style="flex:1"></span>
+          <span class="muted">☰</span>
+        </div>
+        <div class="phone-body">
+          <h2 style="margin-top:0.4rem">Living room</h2>
+          <div class="card" style="margin-bottom:0.6rem">
+            <div class="row between">
+              <div>
+                <b style="font-size:0.9rem">Temperature</b>
+                <p class="tiny muted" style="margin:0">2 min ago</p>
+              </div>
+              <span style="font-size:1.35rem;font-weight:650">21.4 °C</span>
+            </div>
+            <div class="tiny muted" style="margin-top:0.5rem">Tap the tile for the sheet, long-press for history</div>
+          </div>
+          <div class="card" style="margin-bottom:0.6rem">
+            <div class="row between">
+              <div>
+                <b style="font-size:0.9rem">Desk lamp</b>
+                <p class="tiny muted" style="margin:0">On · 62 %</p>
+              </div>
+              <span class="chip is-active">On</span>
+            </div>
+          </div>
+          <p class="tiny muted">The bottom bar keeps Home, Devices, Automations, History and More within reach; the hamburger stays for secondary pages.</p>
+        </div>
+        <nav class="bottom-nav">
+          <a href="#" class="is-active"><span class="ic"></span>Home</a>
+          <a href="#"><span class="ic"></span>Devices</a>
+          <a href="#"><span class="ic"></span>Automations</a>
+          <a href="#"><span class="ic"></span>History</a>
+          <a href="#"><span class="ic"></span>More</a>
+        </nav>
+      </div>
+    </div>
+
+    <script src="mock.js"></script>
+    <script>
+      (function () {
+        NH.mountBar('v6-mobile-nav.html');
+        var HOUR = 3600000;
+        var now = Date.now();
+        var state = { range: '24h', entity: 'temperature' };
+
+        var readout = NH.el('div', { class: 'readout' });
+        document.getElementById('nav-readout').appendChild(readout);
+        var chartHost = document.getElementById('nav-chart');
+        var statsHost = document.getElementById('nav-stats');
+        var chartApi = null;
+
+        function spanFor(range) {
+          if (range === '1h') return HOUR;
+          if (range === '6h') return 6 * HOUR;
+          if (range === '7d') return 7 * 24 * HOUR;
+          return 24 * HOUR;
+        }
+
+        function paint() {
+          var from = now - spanFor(state.range);
+          var unit = state.entity === 'temperature' ? '°C' : state.entity === 'humidity' ? '%' : '%';
+          var series = NH.makeSeries({
+            id: state.entity,
+            label: state.entity,
+            kind: state.entity,
+            from: from,
+            to: now,
+            points: 90,
+            seed: state.entity.length * 5
+          });
+
+          if (chartApi) chartApi.destroy();
+          chartApi = NH.chart(chartHost, {
+            from: from,
+            to: now,
+            unit: unit,
+            height: 220,
+            series: [series],
+            readout: readout,
+            zoom: true,
+            hint: 'Drag to zoom',
+            onZoom: function (nextFrom, nextTo) {
+              chartApi.setRange(nextFrom, nextTo);
+            },
+            onReset: function () {
+              chartApi.setRange(from, now);
+            }
+          });
+
+          var values = series.data.map(function (point) {
+            return point.v;
+          });
+          var total = values.reduce(function (sum, value) {
+            return sum + value;
+          }, 0);
+          statsHost.innerHTML = '';
+          [
+            ['Min', Math.min.apply(null, values)],
+            ['Avg', total / values.length],
+            ['Max', Math.max.apply(null, values)],
+            ['Last', values[values.length - 1]]
+          ].forEach(function (row) {
+            var block = NH.el('div', { class: 'stat' });
+            block.appendChild(NH.el('dt', {}, row[0]));
+            block.appendChild(NH.el('dd', {}, NH.formatValue(row[1], unit)));
+            statsHost.appendChild(block);
+          });
+        }
+
+        NH.chips(document.getElementById('nav-ranges'), {
+          active: state.range,
+          items: [
+            { value: '1h', label: '1 h' },
+            { value: '6h', label: '6 h' },
+            { value: '24h', label: '24 h' },
+            { value: '7d', label: '7 d' },
+            { value: 'today', label: 'Today' },
+            { value: 'yesterday', label: 'Yest.' }
+          ],
+          onChange: function (value) {
+            state.range = value;
+            paint();
+          }
+        });
+        NH.chips(document.getElementById('nav-entities'), {
+          active: state.entity,
+          items: [
+            { value: 'temperature', label: 'Temperature', color: 'var(--nh-kind-temp)' },
+            { value: 'humidity', label: 'Humidity', color: 'var(--nh-kind-humidity)' },
+            { value: 'battery', label: 'Battery', color: 'var(--nh-ok)' }
+          ],
+          onChange: function (value) {
+            state.entity = value;
+            paint();
+          }
+        });
+
+        paint();
+      })();
+    </script>
+  </body>
+</html>

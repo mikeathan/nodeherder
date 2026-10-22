@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sample 4 · History vs statistics · NodeHerder design</title>
+    <link rel="stylesheet" href="mock.css" />
+  </head>
+  <body>
+    <!--
+      Variant 4 — two reading modes over the same data: raw history and aggregated
+      statistics (daily averages as bars plus a table and CSV export).
+    -->
+    <div id="shell"></div>
+
+    <div class="note">
+      <h2>Sample 4 — History vs Statistics</h2>
+      <p>
+        Home Assistant separates <em>History</em> (samples) from <em>Statistics</em> (aggregates for
+        long ranges). NodeHerder already computes <code>avg</code>, <code>min</code>,
+        <code>max</code> and <code>count</code> server-side but never asks for them, so a 30-day
+        view is limited to 10&nbsp;000 raw points.
+      </p>
+      <ul>
+        <li><b>Statistics</b> shows daily aggregates as bars — cheap to read and cheap to query.</li>
+        <li><b>Table</b> gives min / average / max / samples per day, with the same numbers as the chart.</li>
+        <li><b>Export CSV</b> uses the same range, and the file is generated from the loaded data.</li>
+        <li>Raw <b>History</b> stays available for zoomed inspection of a single day.</li>
+      </ul>
+      <p>Decision to make: one control with a mode switch (shown) vs a separate Statistics page.</p>
+    </div>
+
+    <script src="mock.js"></script>
+    <script>
+      (function () {
+        NH.mountBar('v4-statistics.html');
+        var shell = NH.mountShell({ active: 'History', title: 'History', subtitle: 'Living room · last 7 days' });
+        var DAY = 86400000;
+        var now = Date.now();
+        var from = now - 7 * DAY;
+        var mode = 'statistics';
+
+        var head = NH.el('div', { class: 'row between' });
+        head.appendChild(NH.el('h2', {}, 'Living room sensor · temperature'));
+        var tabs = NH.el('div', { class: 'segmented' });
+        ['history', 'statistics'].forEach(function (value) {
+          var button = NH.el('button', { type: 'button', 'aria-pressed': String(mode === value) }, value === 'history' ? 'History' : 'Statistics');
+          button.addEventListener('click', function () {
+            mode = value;
+            tabs.querySelectorAll('button').forEach(function (node) {
+              node.setAttribute('aria-pressed', String(node.textContent.toLowerCase() === value));
+            });
+            paint();
+          });
+          tabs.appendChild(button);
+        });
+        head.appendChild(tabs);
+        shell.content.appendChild(head);
+
+        var toolbar = NH.el('div', { class: 'history-toolbar' });
+        var rangeRow = NH.el('div', { class: 'chips' });
+        var actions = NH.el('div', { class: 'chips' });
+        toolbar.appendChild(rangeRow);
+        toolbar.appendChild(actions);
+        shell.content.appendChild(toolbar);
+
+        var card = NH.el('div', { class: 'card chart-card', style: 'margin-top:1rem' });
+        var readout = NH.el('div', { class: 'readout' });
+        var wrap = NH.el('div', { class: 'chart-wrap' });
+        var tableHost = NH.el('div');
+        card.appendChild(readout);
+        card.appendChild(wrap);
+        card.appendChild(tableHost);
+        shell.content.appendChild(card);
+
+        var chartApi = null;
+        var rows = [];
+
+        function dailyAverages() {
+          var series = NH.makeSeries({ id: 'daily', label: 'Daily average', kind: 'temperature', from: from, to: now, points: 6, seed: 21, amp: 1.4 });
+          rows = series.data.map(function (point, index) {
+            var spread = 1.2 + (index % 3) * 0.35;
+            return {
+              day: new Date(point.t).toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' }),
+              min: Math.round((point.v - spread) * 10) / 10,
+              avg: point.v,
+              max: Math.round((point.v + spread) * 10) / 10,
+              samples: 96 + index * 4
+            };
+          });
+          return series;
+        }
+
+        function paintTable() {
+          tableHost.innerHTML = '';
+          var table = NH.el('table', { class: 'samples' });
+          var headRow = NH.el('tr');
+          ['Day', 'Min', 'Average', 'Max', 'Samples'].forEach(function (label, index) {
+            headRow.appendChild(NH.el('th', index === 0 ? {} : { class: 'num' }, label));
+          });
+          var thead = NH.el('thead');
+          thead.appendChild(headRow);
+          table.appendChild(thead);
+          var tbody = NH.el('tbody');
+          rows.forEach(function (row) {
+            var tr = NH.el('tr');
+            tr.appendChild(NH.el('td', {}, row.day));
+            tr.appendChild(NH.el('td', { class: 'num' }, NH.formatValue(row.min, '°C')));
+            tr.appendChild(NH.el('td', { class: 'num' }, NH.formatValue(row.avg, '°C')));
+            tr.appendChild(NH.el('td', { class: 'num' }, NH.formatValue(row.max, '°C')));
+            tr.appendChild(NH.el('td', { class: 'num' }, String(row.samples)));
+            tbody.appendChild(tr);
+          });
+          table.appendChild(tbody);
+          tableHost.appendChild(table);
+        }
+
+        function paint() {
+          if (chartApi) chartApi.destroy();
+          tableHost.innerHTML = '';
+
+          if (mode === 'statistics') {
+            var series = dailyAverages();
+            chartApi = NH.chart(wrap, {
+              from: from,
+              to: now,
+              unit: '°C',
+              height: 300,
+              bars: true,
+              series: [series],
+              readout: readout,
+              hint: 'Daily averages · served by the existing avg aggregation'
+            });
+            paintTable();
+            return;
+          }
+
+          var raw = NH.makeSeries({ id: 'raw', label: 'Temperature', kind: 'temperature', from: from, to: now, points: 200, seed: 21 });
+          chartApi = NH.chart(wrap, {
+            from: from,
+            to: now,
+            unit: '°C',
+            height: 300,
+            series: [raw],
+            readout: readout,
+            zoom: true,
+            hint: 'Raw samples · zoom for a single day',
+            onZoom: function (nextFrom, nextTo) {
+              chartApi.setRange(nextFrom, nextTo);
+            },
+            onReset: function () {
+              chartApi.setRange(from, now);
+            }
+          });
+        }
+
+        NH.chips(rangeRow, {
+          active: '7d',
+          items: [
+            { value: '24h', label: '24 h' },
+            { value: '7d', label: '7 d' },
+            { value: '30d', label: '30 d' },
+            { value: 'custom', label: 'Custom…' }
+          ],
+          onChange: function () {
+            paint();
+          }
+        });
+        actions.appendChild(NH.el('button', { class: 'btn is-sm', type: 'button' }, 'Export CSV'));
+        actions.appendChild(NH.el('button', { class: 'btn is-quiet is-sm', type: 'button' }, 'Refresh'));
+
+        paint();
+      })();
+    </script>
+  </body>
+</html>

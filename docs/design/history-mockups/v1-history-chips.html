@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sample 1 · Discoverable history · NodeHerder design</title>
+    <link rel="stylesheet" href="mock.css" />
+  </head>
+  <body>
+    <!--
+      Variant 1 — history discovery and a larger chart.
+      Explores: range presets as chips, entity selection as visible chips instead of a
+      hidden select, a full-width chart, a live readout, and a stats strip.
+    -->
+    <div id="shell"></div>
+
+    <div class="note">
+      <h2>Sample 1 — discoverable history, bigger chart</h2>
+      <p>
+        Today the entity and period are two selects inside a <em>History</em> tab. This sample
+        makes both visible and one tap away, uses the full content width, and keeps a value
+        readout above the chart.
+      </p>
+      <ul>
+        <li><b>Range chips</b> replace the period select, including <b>Today</b> and <b>Yesterday</b> which the plan (spec 007 T211) requires and the app lacks.</li>
+        <li><b>Entity chips</b> show every chartable expose with its sensor colour, so nobody has to guess what is selectable.</li>
+        <li><b>Full-width, 360&nbsp;px tall</b> chart instead of 235&nbsp;px inside a 64&nbsp;rem column.</li>
+        <li><b>Readout above the chart</b> (hover or drag) so touch users are not dependent on a transient tooltip.</li>
+        <li><b>Stats strip</b> (min / average / max / last) instead of a two-row definition list.</li>
+      </ul>
+      <p>Decision to make: chips vs select on desktop, and whether history gets its own nav entry or stays inside a device.</p>
+    </div>
+
+    <script src="mock.js"></script>
+    <script>
+      (function () {
+        NH.mountBar('v1-history-chips.html');
+        var shell = NH.mountShell({ active: 'History', title: 'History', subtitle: 'Living room sensor' });
+
+        var ENTITIES = [
+          { value: 'temperature', label: 'Temperature', kind: 'temperature', unit: '°C' },
+          { value: 'humidity', label: 'Humidity', kind: 'humidity', unit: '%' },
+          { value: 'illuminance', label: 'Illuminance', kind: 'illuminance', unit: 'lx' },
+          { value: 'battery', label: 'Battery', kind: 'battery', unit: '%' }
+        ];
+        var RANGES = [
+          ['1h', '1 h'],
+          ['6h', '6 h'],
+          ['24h', '24 h'],
+          ['7d', '7 d'],
+          ['30d', '30 d'],
+          ['today', 'Today'],
+          ['yesterday', 'Yesterday'],
+          ['custom', 'Custom…']
+        ];
+        var DAY = 86400000;
+        var HOUR = 3600000;
+        var current = { range: '24h', entity: 'temperature' };
+        var chartApi = null;
+
+        function windowFor(preset) {
+          var now = Date.now();
+          var midnight = new Date();
+          midnight.setHours(0, 0, 0, 0);
+          if (preset === '1h') return { from: now - HOUR, to: now };
+          if (preset === '6h') return { from: now - 6 * HOUR, to: now };
+          if (preset === '7d') return { from: now - 7 * DAY, to: now };
+          if (preset === '30d') return { from: now - 30 * DAY, to: now };
+          if (preset === 'today') return { from: midnight.getTime(), to: now };
+          if (preset === 'yesterday') return { from: midnight.getTime() - DAY, to: midnight.getTime() };
+          if (preset === 'custom') return { from: now - 3 * DAY, to: now };
+          return { from: now - DAY, to: now };
+        }
+
+        /* ---------------------------------------------------------- header */
+
+        var head = NH.el('div', { class: 'row between' });
+        var titleWrap = NH.el('div');
+        titleWrap.appendChild(NH.el('h2', {}, 'Living room sensor'));
+        titleWrap.appendChild(NH.el('p', { class: 'tiny muted', style: 'margin:0' }, 'Office · Zigbee · reported 2 minutes ago'));
+        head.appendChild(titleWrap);
+        var actions = NH.el('div', { class: 'chart-actions' });
+        actions.appendChild(NH.el('button', { class: 'btn is-quiet is-sm', type: 'button' }, 'Expand'));
+        actions.appendChild(NH.el('button', { class: 'btn is-sm', type: 'button' }, 'Refresh'));
+        head.appendChild(actions);
+        shell.content.appendChild(head);
+
+        /* ---------------------------------------------------------- toolbar */
+
+        var toolbar = NH.el('div', { class: 'history-toolbar' });
+        var rangeRow = NH.el('div', { class: 'chips' });
+        var entityRow = NH.el('div', { class: 'chips' });
+        toolbar.appendChild(rangeRow);
+        toolbar.appendChild(entityRow);
+        shell.content.appendChild(toolbar);
+
+        /* ---------------------------------------------------------- chart card */
+
+        var card = NH.el('div', { class: 'card chart-card', style: 'margin-top:1rem' });
+        var readout = NH.el('div', { class: 'readout' });
+        var wrap = NH.el('div', { class: 'chart-wrap' });
+        var stats = NH.el('dl', { class: 'stats' });
+        var thresholds = NH.el('div', { class: 'thresholds' });
+        card.appendChild(readout);
+        card.appendChild(wrap);
+        card.appendChild(stats);
+        card.appendChild(thresholds);
+        shell.content.appendChild(card);
+
+        var samples = NH.el('details', { class: 'samples' });
+        samples.appendChild(NH.el('summary', {}, 'Inspect recorded samples'));
+        samples.appendChild(NH.el('p', { class: 'tiny muted' }, '100 of 486 samples · Europe/London · accessible table, unchanged from today'));
+        shell.content.appendChild(samples);
+
+        /* ---------------------------------------------------------- state */
+
+        function entity() {
+          return ENTITIES.filter(function (item) {
+            return item.value === current.entity;
+          })[0];
+        }
+
+        function paintStats(series, from, to) {
+          var values = series.data
+            .filter(function (point) {
+              return point.t >= from && point.t <= to;
+            })
+            .map(function (point) {
+              return point.v;
+            });
+          var rows = [];
+          if (values.length) {
+            var total = values.reduce(function (sum, value) {
+              return sum + value;
+            }, 0);
+            rows = [
+              ['Min', Math.min.apply(null, values)],
+              ['Average', total / values.length],
+              ['Max', Math.max.apply(null, values)],
+              ['Last', values[values.length - 1]]
+            ];
+          }
+          stats.innerHTML = '';
+          rows.forEach(function (row) {
+            var block = NH.el('div', { class: 'stat' });
+            block.appendChild(NH.el('dt', {}, row[0]));
+            block.appendChild(NH.el('dd', {}, NH.formatValue(row[1], series.unit)));
+            stats.appendChild(block);
+          });
+        }
+
+        function paintThresholds(active) {
+          thresholds.innerHTML = '';
+          var label = active.value === 'temperature' ? 'Comfort 18–24 °C' : 'No thresholds for this entity';
+          thresholds.appendChild(NH.el('button', { class: 'chip is-active', type: 'button' }, label));
+          thresholds.appendChild(NH.el('button', { class: 'chip', type: 'button' }, '+ Add threshold'));
+        }
+
+        function paint() {
+          var win = windowFor(current.range);
+          var active = entity();
+          var series = NH.makeSeries({
+            id: active.value,
+            label: active.label,
+            kind: active.kind,
+            unit: active.unit,
+            from: win.from,
+            to: win.to,
+            points: 150,
+            seed: active.value.length * 31
+          });
+
+          if (chartApi) chartApi.destroy();
+          chartApi = NH.chart(wrap, {
+            from: win.from,
+            to: win.to,
+            unit: active.unit,
+            height: 360,
+            label: active.label + ' history',
+            hint: 'Drag to zoom · double-click to reset',
+            series: [series],
+            readout: readout,
+            zoom: true,
+            bands: active.value === 'temperature' ? [{ from: 18, to: 24, label: 'Comfort band', color: 'var(--nh-ok)' }] : [],
+            onZoom: function (from, to) {
+              chartApi.setRange(from, to);
+              paintStats(series, from, to);
+            },
+            onReset: function () {
+              chartApi.setRange(win.from, win.to);
+              paintStats(series, win.from, win.to);
+            }
+          });
+          paintStats(series, win.from, win.to);
+          paintThresholds(active);
+        }
+
+        NH.chips(rangeRow, {
+          active: current.range,
+          items: RANGES.map(function (entry) {
+            return { value: entry[0], label: entry[1] };
+          }),
+          onChange: function (value) {
+            current.range = value;
+            paint();
+          }
+        });
+
+        NH.chips(entityRow, {
+          active: current.entity,
+          items: ENTITIES.map(function (item) {
+            return { value: item.value, label: item.label, color: item.value === 'temperature' ? 'var(--nh-kind-temp)' : item.value === 'humidity' ? 'var(--nh-kind-humidity)' : item.value === 'illuminance' ? 'var(--nh-kind-light)' : 'var(--nh-ok)' };
+          }),
+          onChange: function (value) {
+            current.entity = value;
+            paint();
+          }
+        });
+
+        paint();
+      })();
+    </script>
+  </body>
+</html>
