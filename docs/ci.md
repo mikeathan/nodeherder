@@ -9,11 +9,11 @@ cancel the other component. Superseded PR runs are cancelled; main runs are not.
 | Check | Errors caught |
 | --- | --- |
 | Workflow and Shell Checks | Invalid Actions syntax/expressions/inline shell; Bash syntax in tracked scripts; stack-manager ShellCheck findings |
-| Stack Manager (Ubuntu) | Local launcher startup/shutdown/descendant cleanup; generated reporting-defaults drift and generator regressions; CLI scope/failure/dry-run/version regressions; real Compose merge, required variables, paths/ports/network using dummy fixtures |
+| Deployment Tooling (Ubuntu) | Local launcher startup/shutdown/descendant cleanup; generated reporting-defaults drift and generator regressions; CLI scope/failure/dry-run/version regressions; real Compose merge, required variables, paths/ports/network using dummy fixtures |
 | Backend Tests and Build | Go module checksum changes, Linux compilation failures, uncached unit regressions, `go vet` findings |
 | Backend Race Detection | Concurrent accesses exercised by backend tests; not proof that all races are absent |
-| Frontend Tests and Build | Locked install failures, existing ESLint errors, Jest regressions, Vue/browser-test TypeScript compilation and production bundle failures |
-| Frontend E2E (mock and Go hubs) | Broken user flows in a real Chromium at desktop and phone sizes: OAuth sign-in/out, dashboards and device commands, automation save payloads, device pages; UI-created dial toggles also execute through the real Go engine with in-memory MQTT (never real devices) |
+| Frontend Tests, Lint and Build | Locked install failures, existing ESLint errors, Jest regressions, Vue/browser-test TypeScript compilation and production bundle failures |
+| Frontend E2E (desktop/mobile, shard 1/2) | Broken user flows in a real Chromium at desktop and phone sizes: OAuth sign-in/out, dashboards and device commands, automation save payloads, device pages; UI-created dial toggles also execute through the real Go engine with in-memory MQTT (never real devices) |
 | Container (backend/frontend) | Real Dockerfile/context/build failures on Linux/amd64; backend executable help; nginx config and built index smoke checks |
 
 Images are built/loaded on disposable runners, never published. Smoke containers
@@ -27,12 +27,20 @@ main-push tagging job can write, after all checks succeed.
 
 ## E2E elapsed time and isolation
 
-E2E uses four jobs: desktop/mobile × file-level shards 1/2. Each runner starts a
+E2E uses four jobs: desktop/mobile × file-level shards 1/2. Each job starts a
 fresh mock hub, isolated Go automation hub, and Vite server, with one Playwright worker. Keep `workers: 1` and
 `fullyParallel: false`: the hub has mutable shared state, and files retain their
 internal execution order. Matrix failures do not cancel other partitions. All four
 must pass through the existing `Run Tests` aggregate, on PRs, main and merge groups.
 The same tests, assertions, leak-cycle counts, retries and deadlines remain enabled.
+
+E2E jobs run inside `mcr.microsoft.com/playwright:v<version>-noble`, which ships
+Chromium and every system library it needs. Nothing is installed from apt at run
+time: doing that per job previously ranged from 20 seconds to 11 minutes depending on
+hosted mirror load, and was the dominant cost of the whole workflow. The image tag
+must equal the `@playwright/test` version in `frontend/package.json`; a dedicated step
+fails with the fix if they drift. Container jobs use `--ipc=host`, as Playwright
+recommends for Chromium.
 
 Playwright manages ports 4100 (UI), 4110 (Node mock), and 4120 (Go fixture).
 The Go toolchain comes from `backend/go.mod`; CI installs it alongside Node and
@@ -71,6 +79,14 @@ Measured before this change in [PR run 39298242659](https://github.com/mikeathan
 | Backend ordinary/race jobs, already in parallel | 1m28s / 1m50s |
 | Frontend unit/lint/build job | 37s |
 | Backend/frontend container jobs | 51s / 1m22s |
+
+After the Go browser fixture landed, [main run 39781252241](https://github.com/mikeathan/nodeherder/actions/runs/39781252241)
+showed where the time actually went: E2E jobs finished their tests in about two
+minutes, but the `playwright install --with-deps` step took 11m24s and 11m10s on two
+of the four jobs while the other two took 18–21s. The run therefore ended at 14m15s
+because of apt mirror variance, not test cost. The Playwright container image removes
+that step entirely, so a shard is now compile, install dependencies, and about two
+minutes of tests.
 
 The E2E log contains 155 passed cases and nine existing desktop skips for phone-only
 checks. Entity-dialog tests cost about 145s across both viewports, including about
