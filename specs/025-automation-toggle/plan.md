@@ -77,14 +77,20 @@ below. PASS is a local assessment, not maintainer approval or a GitHub CI result
 
 ## Contracts, data, rollout
 
-No production schema, endpoints, environment variables, persistence, or MQTT changes.
-Backend producer already provides `values.toggle`; UI stops discarding it. Deploy
+No production persistence schema, endpoints, environment variables, or MQTT payloads
+change. Backend producer already provides `values.toggle`; UI stops discarding it.
+Automation JSON normalizes an empty trigger list to `[]` (previously `null`); existing
+consumers treat both as empty and no persistence migration is required. Deploy
 UI independently for Toggle; deploy the backend for the callback and empty-list
-fixes. No migration is needed. Rollback restores previous behavior without changing saved
-automations. Unknown/unsupported values remain preserved until explicitly edited.
-At save, a zero delay becomes absence, the backend's existing representation of
+normalization. No migration is needed. Rollback restores previous behavior without
+changing saved automations. Unknown/unsupported values remain preserved until explicitly
+edited. At save, a zero delay becomes absence, the backend's existing representation of
 immediate execution; positive delays are unchanged. No engine semantics change.
 Fixture-only health/control endpoints never compile into the application binary.
+The frontend package minor version is bumped from 0.12.0 to 0.13.0 in
+`frontend/package.json` and its lockfile, so the next release tag starts a new minor
+line. `scripts/tag_build.sh` and `scripts/manage-stack.sh` read that package version;
+no separate version file exists.
 
 ## Traceability and verification
 
@@ -93,7 +99,7 @@ Fixture-only health/control endpoints never compile into the application binary.
 | FR-01, AC-01/02/04, NFR-01 | exposes.ts, automation.ts, editor inputs | Companion Jest regressions; bounded helper review | PASS: native/absent/invalid/duplicate values; commands excluded from readings/conditions; keyboard input at both widths |
 | FR-02, AC-03, NFR-02 | hub_test.go, hubharness, automations.spec.ts | UI creates/saves/reloads; identical dial events; native commands; confirmed On/Off | PASS: both viewports, then three repeats each under Go race instrumentation; unauthorized fixture controls return 401 |
 | AC-05 | Existing domain/scenario/browser suites | Round-trip, disabled/ignored/offline/reconnect/confirmation and leak-cycle checks | PASS: full suites below; unchanged valid automation payload retained |
-| AC-06 | contracts/automations.ts, Vuex save | Companion contract/store tests and real-engine save acknowledgement | PASS: zero delay omitted once at shared save boundary; positive delay and draft preserved |
+| AC-06 | contracts/automations.ts, Vuex save | Companion contract/store tests and real-engine save acknowledgement | PASS: zero delay omitted once at shared save boundary; positive delay and draft preserved; validation copy explains zero |
 | AC-07 | store/store.go | Concurrent registration/write and reentrant callback regressions | PASS: race reproduced before fix; full race suite and race-instrumented browser startup/shutdown clean afterward |
 | AC-08 | internal/automations/trigger.go | Empty/replacement/invalid list regression; UI empty-save/reload/add-trigger | PASS: [] decoded as null before fix; companion and final browser cases pass afterward |
 | NH-05, SC-01 | frontend/backend/workflow | Checks below | PASS locally; remote CI and real devices unrun |
@@ -117,6 +123,56 @@ Actual execution (2026-10-22, macOS, Node 24.21.0, Go application toolchain 1.24
 - Pinned actionlint 1.7.12 (built with the installed Go 1.26.1, matching the
   checker's Go >=1.25 requirement): passed. `git diff --check`: passed.
 
+Follow-up review corrections rerun on the final files (available Go 1.26.1,
+Node 26.0.0; the repository-pinned toolchains were used for the original runs above):
+
+- Frontend `npm test -- --runInBand`: 49 suites, 327 tests passed (new zero-wait
+  validation-copy regression). `npm run lint`: passed, same seven pre-existing
+  warnings. `npm run build`: passed after the TypeScript 6 config migration and
+  dependency upgrades; Vite prints its default >500 kB chunk warning.
+- Playwright/e2e TypeScript: `npm run type-check:e2e` passed after making node types
+  explicit and typing the blocked-storage stub; `npm ci --dry-run` reports the lock
+  in sync.
+- TypeScript 6.0.3 config diagnostics (`rootDir`, `baseUrl`, `moduleResolution=node10`)
+  are gone; `type-check:e2e` is clean under TS 6 and the TypeScript next build, and
+  the project build uses `vue-tsc`, which passes.
+- Backend `gofmt`, `go vet ./...`, `go test -count=1 ./...`, and
+  `go test -race -count=1 ./...`: passed.
+- `go test -run '^$' ./internal`: passed; this is the CI fixture warm-up and does
+  not start the browser server.
+- Playwright `e2e/automations.spec.ts` desktop and mobile: 8 passed. The dial case
+  now leaves the light ON and verifies `/__test/reset` returns 204 and reports OFF.
+- Pinned actionlint 1.7.12 on the updated workflow and `git diff --check`: passed.
+- Dependency audit: `npm audit --omit=dev` reports zero vulnerabilities; the full
+audit reports zero high and 20 moderate dev-only advisories (see residual risk).
+- Post-upgrade browser subset: automations + panel desktop and mobile (28 passed),
+  plus Home and DeviceDashboard desktop (8 passed).
+- After the Aura subset and nginx gzip change: full `npx playwright test` passed
+  (179 passed, nine existing skips, 4.1 minutes); main entry 501.7 -> 438.8 kB
+  (149.4 -> 141.5 kB gzip) and the Vite chunk-size warning is gone.
+- `frontend/config/nginx.conf` gzip was validated in the built frontend container:
+  `nginx -t` passed and a JS response returned `Content-Encoding: gzip`.
+
+CI-equivalent local run (Node 24.21.0, Go 1.24.8):
+
+- Workflow lint: actionlint 1.7.12, `bash -n` on tracked scripts, shellcheck 0.11.0:
+  passed.
+- Stack tools: reporting-defaults check, 4 reporting tests, 61 deployment tests,
+  and 12 real Compose config tests: passed. Compose used the standalone
+  `docker-compose` adapter because this host's Docker CLI lacked plugin discovery;
+  CI uses the Ubuntu plugin.
+- Backend: `go mod verify`, Linux/amd64 build, tests, vet, and race detection:
+  passed.
+- Frontend: `npm ci`, lint, Jest 49 suites/327 tests, `type-check:e2e`, and production
+  build: passed.
+- Browser: `CI=true npx playwright test` passed 179 tests with nine existing skips
+  in 4.3 minutes.
+- Containers: backend/frontend images built; `-h`, `nginx -t`, index presence, and
+  gzip response smoke checks passed. Images were built natively (arm64) because the
+  local Docker CLI lacks buildx; GitHub's linux/amd64 buildx job remains unrun.
+- Remote GitHub CI and GitHub-hosted runner specifics remain unrun; the warm-up plus
+  300s startup timeout is the pre-merge CI verification step above.
+
 Regression evidence: the original action summary said Unknown; native-option helper
 regressions initially failed. Real-backend browser save then exposed zero-delay
 rejection. The isolated race run reproduced callback registration versus markDirty;
@@ -125,7 +181,8 @@ unit test failed with [] encoded as null before the decoder fix. All now pass.
 Temporary local execution logs are under `/private/tmp/nodeherder-toggle-*`; enduring
 coverage is in the committed tests. No household device, coordinator, broker, or
 production deployment was used. GitHub CI/container builds were not run for this
-local branch; Dockerfiles, dependencies, and deployment configuration are unchanged.
+local branch; Dockerfiles and deployment configuration are unchanged. Frontend
+dependencies were upgraded for security and TypeScript support (see follow-ups).
 
 ## Debt, risks, exceptions
 
@@ -135,6 +192,36 @@ verified using real auth/routes (passed). Test-only fixture routes are absent fr
 application binaries; normal Go suites skip the long-running fixture. Existing
 empty-recipe and zero-wait issues found by integration are fixed, not deferred.
 No exceptions requested or approval invented.
+
+Follow-up review corrections on the same branch: the browser E2E job warms the Go
+fixture build before Playwright starts it and allows 300s for fixture startup, so a
+cold build is not reported as a server failure. Fixture reset drains stale control
+queues and reports the light OFF when a failed case left it ON. Round-trip comments
+now state the intentional zero-delay exception, the delay validation copy explains
+zero, and the plan contract wording covers empty-list normalization. Node types are
+now explicit, `tsconfig.e2e.json` type-checks the Playwright config/tests, and the
+frontend CI job runs `type-check:e2e`; the blocked-storage browser stub is typed
+explicitly. The root TypeScript config now sets `rootDir`, uses relative `paths`,
+and uses `moduleResolution: bundler` (the e2e config uses `rootDir: "."`), so
+TypeScript 6 no longer reports migration errors in the editor; a vuex types path
+covers its package-exports gap. The frontend package version is 0.13.0. No
+device-command or automation semantics changed.
+
+Dependency audit follow-up: the high advisories are resolved by Vue 3.5.44,
+eslint-plugin-vue 10 + vue-eslint-parser 10, unplugin-vue-components 32,
+Jest 30/ts-jest 29.4/@types/jest 30, and a `qs` 6.16.x override; `npm audit --omit=dev`
+is clean. Twenty moderate advisories remain in the dev-only Jest coverage chain
+(`@istanbuljs/load-nyc-config` -> js-yaml 3 -> argparse 1 -> sprintf-js); sprintf-js
+has no patched version, and `npm audit fix --force` only suggests incompatible
+downgrades. Mitigation: dev-only, not reachable from app traffic or untrusted format
+strings; revisit when Jest/istanbul replace the chain or coverage tooling changes.
+
+The Vue security patch initially lifted the main bundle to about 502 kB. Importing only
+the Aura component token modules the app uses (rather than all 100) reduces the main
+entry chunk to about 439 kB (141 kB gzip) and removes Vite's 500 kB warning. `nginx`
+now gzips text assets and proxied JSON/JS, so the wire transfer for that chunk is
+roughly 141–145 kB at gzip level 6. Add the matching Aura token module when adding a
+new PrimeVue component.
 
 ## Completion
 

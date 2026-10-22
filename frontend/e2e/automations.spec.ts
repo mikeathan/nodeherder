@@ -4,6 +4,8 @@ import { MOCK } from './support/mock';
 
 // Spec 007 US-04 / AC-14: automations list, and saving an unchanged automation must send
 // exactly the payload the hub provided (no fields added, removed or reordered in arrays).
+// Spec 025 AC-06 is the one exception: a zero trigger-action delay is omitted because the
+// hub rejects it; the editor's zero delay means "no wait".
 test.describe('automations', () => {
   test('binary conditions exclude commands and switching action properties retains typed inputs', async ({ page, ws, request }) => {
     const unauthorized = await request.post(`${AUTOMATION_HUB_API}/__test/dial`);
@@ -85,6 +87,12 @@ test.describe('automations', () => {
       await ws.waitForReceived('deviceUpdated', (p) => p.id === light && p.data.state === state);
     }
     expect(ws.sentOf('deviceSetValue')).toHaveLength(0);
+    // Reset must clear a light left ON, not fail the next case at sign-in.
+    const leftover = await page.request.post(`${AUTOMATION_HUB_API}/__test/dial`);
+    expect(leftover.ok(), await leftover.text()).toBeTruthy();
+    expect((await leftover.json()).confirmedState).toBe('ON');
+    expect((await page.request.post(`${AUTOMATION_HUB_API}/__test/reset`)).status()).toBe(204);
+    await expect(ui.devices.state(page)).toBeChecked({ checked: false });
   });
 
   test('list shows hub automations', async ({ page, ws }) => {

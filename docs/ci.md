@@ -12,8 +12,8 @@ cancel the other component. Superseded PR runs are cancelled; main runs are not.
 | Stack Manager (Ubuntu) | Local launcher startup/shutdown/descendant cleanup; generated reporting-defaults drift and generator regressions; CLI scope/failure/dry-run/version regressions; real Compose merge, required variables, paths/ports/network using dummy fixtures |
 | Backend Tests and Build | Go module checksum changes, Linux compilation failures, uncached unit regressions, `go vet` findings |
 | Backend Race Detection | Concurrent accesses exercised by backend tests; not proof that all races are absent |
-| Frontend Tests and Build | Locked install failures, existing ESLint errors, Jest regressions, Vue/TypeScript compilation and production bundle failures |
-| Frontend E2E (mock hub) | Broken user flows in a real Chromium at desktop and phone sizes: OAuth sign-in/out, dashboards and device commands, automation save payloads, device pages; UI-created dial toggles also execute through the real Go engine with in-memory MQTT (never real devices) |
+| Frontend Tests and Build | Locked install failures, existing ESLint errors, Jest regressions, Vue/browser-test TypeScript compilation and production bundle failures |
+| Frontend E2E (mock and Go hubs) | Broken user flows in a real Chromium at desktop and phone sizes: OAuth sign-in/out, dashboards and device commands, automation save payloads, device pages; UI-created dial toggles also execute through the real Go engine with in-memory MQTT (never real devices) |
 | Container (backend/frontend) | Real Dockerfile/context/build failures on Linux/amd64; backend executable help; nginx config and built index smoke checks |
 
 Images are built/loaded on disposable runners, never published. Smoke containers
@@ -35,7 +35,9 @@ must pass through the existing `Run Tests` aggregate, on PRs, main and merge gro
 The same tests, assertions, leak-cycle counts, retries and deadlines remain enabled.
 
 Playwright manages ports 4100 (UI), 4110 (Node mock), and 4120 (Go fixture).
-The Go toolchain comes from `backend/go.mod`; CI installs it alongside Node.
+The Go toolchain comes from `backend/go.mod`; CI installs it alongside Node and
+compiles the fixture test binary before Playwright starts it. Fixture startup allows
+300s, so a slow cold build is not reported as a server failure.
 `backend/internal/hub_test.go` skips its long-running fixture unless
 `NODEHERDER_BROWSER_HUB=1`. It binds loopback, uses production auth/WS/routes and
 `testing/hubharness` with synthetic dial/light metadata and in-memory MQTT. Its

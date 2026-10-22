@@ -48,8 +48,9 @@ conversion to null crashes the editor when a user saves after deleting every tri
   ignored dial events, offline warnings, and confirmed-state handling remain covered
   by existing tests. No new command retries or optimistic light reports are added.
 - AC-06: No wait (zero delay) saves as an absent optional delay; positive delays
-  retain their value/unit. Existing valid payloads round trip unchanged, and the
-  editor's local draft is not mutated by serialization.
+  retain their value/unit. The delay validation copy explains that zero means no wait.
+  Existing valid payloads round trip unchanged, and the editor's local draft is not
+  mutated by serialization.
 - AC-07: Concurrent device writes and dirty-callback registration are race-free;
   callbacks may register another callback without deadlock. Newly registered callbacks
   participate in subsequent notifications; existing callbacks retain their order.

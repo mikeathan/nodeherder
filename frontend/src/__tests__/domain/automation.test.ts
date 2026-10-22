@@ -56,6 +56,16 @@ describe('validateAutomation', () => {
     expect(validateAutomation(automation([trigger()]), lookup)).toEqual({ errors: [], warnings: [] });
   });
 
+  it('treats no wait as valid and explains zero in the delay error', () => {
+    const withDelay = (value: number): AutomationTrigger => trigger({
+      actions: [{ id: 'lamp', type: 'trigger', exposes: [{ name: 'state', data: 'ON' }], delay: { value, unit: 'seconds' } } as never],
+    });
+    expect(validateAutomation(automation([withDelay(0)]), lookup).errors).toEqual([]);
+    const errors = validateAutomation(automation([withDelay(-1)]), lookup).errors;
+    expect(errors.find((e) => e.path === 'triggers.0.actions.0.delay.value')?.message)
+      .toBe('Enter a wait of 0 or more; 0 means no wait.');
+  });
+
   it('reports field errors with dot paths', () => {
     const t = trigger({
       name: '',

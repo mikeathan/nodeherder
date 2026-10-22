@@ -21,6 +21,17 @@ import (
 
 const browserDialID = "0x0000000000000001"
 
+// drainChannel empties a buffered fixture queue without blocking.
+func drainChannel[T any](ch <-chan T) {
+	for {
+		select {
+		case <-ch:
+		default:
+			return
+		}
+	}
+}
+
 // Synthetic Zigbee2MQTT metadata. This fixture never creates a network MQTT client.
 var browserBridge = []byte(`[
  {"ieee_address":"0x0000000000000001","friendly_name":"Test dial","type":"EndDevice","power_source":"Battery","interview_completed":true,
@@ -125,21 +136,38 @@ func TestAutomationBrowserHub(t *testing.T) {
 	router.POST("/api/__test/reset", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		controlMu.Lock()
 		defer controlMu.Unlock()
+		drainChannel(commands)
+		drainChannel(reports)
+		drainChannel(dialDone)
 		err := h.EventHub.DeleteAutomation(map[string]any{"id": browserDialID})
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		// A successful run finishes OFF. Refuse stale state rather than silently
-		// acknowledging a reset that has not travelled through the device lane.
+		// A failed run can leave the light ON. Report it OFF through the same lane
+		// as a device confirmation so the next case starts from the seeded state.
 		lightMu.Lock()
-		on := lightOn
+		wasOn := lightOn
+		lightOn = false
 		lightMu.Unlock()
-		if on {
-			http.Error(w, "previous browser run did not finish OFF", http.StatusConflict)
+		if !wasOn {
+			w.WriteHeader(http.StatusNoContent)
 			return
 		}
-		w.WriteHeader(http.StatusNoContent)
+		h.Paho.Deliver("zigbee2mqtt/Test light", []byte(`{"state":"OFF"}`))
+		timeout := time.After(hubharness.Timeout)
+		for {
+			select {
+			case state := <-reports:
+				if state == "OFF" {
+					w.WriteHeader(http.StatusNoContent)
+					return
+				}
+			case <-timeout:
+				http.Error(w, "light did not confirm OFF during reset", http.StatusGatewayTimeout)
+				return
+			}
+		}
 	}))
 	router.POST("/api/__test/dial", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		controlMu.Lock()

@@ -10,6 +10,7 @@ describe('automationPayload', () => {
     }] }],
   });
 
+  // Spec 025 AC-06: the intentional exception to spec 007 AC-14's exact-payload rule.
   it('omits a zero wait, preserving native commands and the local draft', () => {
     const a = recipe({ unit: 'minutes', value: 0 });
     const before = JSON.stringify(a);

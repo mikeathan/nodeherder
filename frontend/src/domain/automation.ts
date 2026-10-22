@@ -121,7 +121,7 @@ export function validateAutomation(a: Automation, lookup: DeviceLookup): Validat
           else if (blank(row.data)) err(`${ap}.exposes.${n}.data`, 'Enter a value.');
           if (x.id === a.id && row.name && row.name === t.name) warn(ap, 'This sets the property that starts the trigger. The hub prevents loops, but check it is intended.');
         });
-        if (x.delay && (!Number.isFinite(x.delay.value) || x.delay.value < 0)) err(`${ap}.delay.value`, 'Enter a wait of 0 or more.');
+        if (x.delay && (!Number.isFinite(x.delay.value) || x.delay.value < 0)) err(`${ap}.delay.value`, 'Enter a wait of 0 or more; 0 means no wait.');
       } else if (isStepAction(x)) {
         if (!x.property) err(`${ap}.property`, 'Choose a number property.');
         // the hub reads the amount as a JSON number (operations.go), never a string
