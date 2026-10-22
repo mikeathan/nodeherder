@@ -26,6 +26,16 @@ Job timeout drops 20 → 15 minutes: with no install, a shard is compile + `npm 
 ~2 minutes of tests, and 15 minutes still absorbs queue/slow-runner variance while
 failing faster on a real hang.
 
+The main-branch run that followed exposed a flaky leak assertion in the same suite.
+`closing 50 completed views...` sampled `Memory.getDOMCounters` immediately after the
+last close, so a dialog that was still reachable for a frame or two counted as retained
+(observed 1520 → 1512 → 2075 nodes and 87 → 87 → 109 listeners against `warm + 100`).
+The check now samples after a double `requestAnimationFrame` with `collectGarbage`,
+repeats six times and keeps the smallest reading, and takes the final sample only after
+every pending `/metrics/query` read has finished. Pending release only inflates the
+counters, so a genuine per-dialog leak remains reachable in every sample and is still
+measured; the assertion bounds are unchanged.
+
 Renamed for accuracy: `Stack Manager (Ubuntu)` → `Deployment Tooling (Ubuntu)`,
 `Frontend Tests and Build` → `Frontend Tests, Lint and Build`, the E2E matrix label now
 states project and shard only, and steps no longer claim to install or warm things
@@ -64,6 +74,7 @@ version + image tag), enforced by the guard.
 | AC-01 | .github/workflows/ci.yml | Run the desktop shard 1/2 inside the pinned image locally | PASS: 52 passed, 9 skipped in 1.4 minutes, Go hub fixture included |
 | AC-02 | .github/workflows/ci.yml, docs/ci.md | Compare matrix, reporters, artifacts and gate | PASS: unchanged partitions and artifact names; suite not modified |
 | AC-03 | .github/workflows/ci.yml | Guard step logic and image/package versions | PASS: image v1.56.1 == @playwright/test 1.56.1; mismatch exits 1 |
+| AC-05, AC-06 | e2e/EntityViewDialog.spec.ts | Repeated leak runs on macOS and in the pinned Linux image | PASS: 1512/1512 nodes at 25 and 50 cycles, 6/6 passes |
 | AC-04 | workflow, docs/ci.md | Name review | PASS |
 
 Local validation (macOS arm64, Colima, Docker, image
@@ -74,6 +85,10 @@ Local validation (macOS arm64, Colima, Docker, image
 - Containerized run from a clean copy of the repo (Go 1.24.8 installed in the
   container, `npm ci`, then `--project=desktop --shard=1/2`): 52 passed, 9 skipped,
   1.4 minutes — including the Go automation fixture.
+- Leak sample after the change: desktop and mobile, `--repeat-each=3` in the pinned
+  Linux image — 6/6 passed with `nodes` 1512 and `listeners` 87/85 at both 25 and 50
+  cycles; macOS repeated runs matched. Before the change the same code produced 2075
+  nodes at the final sample, which is the pending-release reading that failed on main.
 - `actionlint`, workflow YAML parse, and version-guard cross-check passed.
 - Not run: the GitHub-hosted job itself until this PR runs; that run is the timing
   evidence for SC-01.

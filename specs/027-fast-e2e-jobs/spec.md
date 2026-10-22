@@ -21,6 +21,13 @@ Reduce and stabilize CI wall clock for the browser jobs without changing what th
 tests verify. Exclude test content, assertions, sharding, retries, viewport coverage,
 product behavior, and release versioning.
 
+The first run after this change surfaced a second problem on main: the 50-cycle
+`EntityViewDialog` leak assertion failed in [run 39790664098](https://github.com/mikeathan/nodeherder/actions/runs/39790664098)
+with `nodes` 1520 → 1512 → 2075 against a `warm + 100` bound, while the same commit
+passed two hours earlier. The extra 563 nodes and 22 listeners at the final sample are
+a closed dialog that was still reachable, not growth across the 50 cycles. Make that
+measurement deterministic without weakening what it proves.
+
 ## Scenarios and acceptance
 
 ### US-01 — Browser jobs no longer install browsers (P1)
@@ -36,7 +43,14 @@ product behavior, and release versioning.
   browser job runs, then it fails before testing with a message naming both versions
   and the file to update.
 
-### US-03 — Names describe what runs (P2)
+### US-03 — The leak check measures settled state (P1)
+
+- AC-05: Given a run where a closed dialog is still pending release, when the heap is
+  sampled, then sampling settles first and a real per-dialog leak is still detected.
+- AC-06: The leak assertions keep their existing bounds (`nodes <= warm + 100`,
+  `listeners <= warm + 5`, `< 2 MiB`), so no guarantee is relaxed.
+
+### US-04 — Names describe what runs (P2)
 
 - AC-04: Job and step names state the work actually performed; `Run Tests` keeps its
   name because it is the required status check.
@@ -46,6 +60,8 @@ product behavior, and release versioning.
 - FR-01: Run browser jobs inside a Playwright image matching the installed version;
   acceptance: AC-01, AC-02.
 - FR-02: Add a fail-fast version guard; acceptance: AC-03.
+- FR-03: Sample the leak check after release has settled and after pending reads
+  finish; acceptance: AC-05, AC-06.
 - NFR-01: No new dependency, secret, or self-hosted resource; no change to test
   assertions, shard count, retry policy, or timeouts other than a tighter job cap.
 - SC-01: Slowest browser job well under the previous worst case, with variance removed;

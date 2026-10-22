@@ -13,5 +13,8 @@ Spec: [spec.md](spec.md) | Plan: [plan.md](plan.md) | Status: Complete
   AC-04; depends T002; done: workflow and `docs/ci.md` agree.
 - [x] T005 — Validate the workflow and record evidence; NH-05, SC-01; depends T002–T004;
   done: actionlint and YAML parse passed; GitHub timing evidence comes from this PR.
+- [x] T006 — Make the 50-cycle leak assertion sample settled state and drain pending
+  reads before the final sample, keeping the existing bounds; AC-05/06; depends T005;
+  done: 6/6 repeated passes on Linux and macOS with stable 1512-node readings.
 
 Completion evidence: [plan verification](plan.md#traceability-and-verification).
