@@ -13,10 +13,11 @@ evidence. New tests go in the companion file of the source they cover (for examp
       bundle size from `npm run build`, and the existing history e2e list. Reproduce the three
       stated gaps (no zoom, no Yesterday, sheet dead end) before editing. IDs: NH-01, NH-05;
       done: baseline numbers and screenshots/traces attached to the PR description.
-- [ ] T002 — Confirm `chartjs-plugin-zoom` v2 against Chart.js 4.5.1 on a throwaway chart: wheel,
-      drag-select, pinch and pan, with `limits` clamping to 5 min…31 days and to the loaded window.
-      IDs: FR-03, AC-04; depends: T001; done: findings recorded; ADR amended with the pinned versions
-      and any gesture that needs our own handling.
+- [ ] T002 — Prototype the local interaction plugin against Chart.js 4.5.1 on a throwaway chart:
+      wheel, drag-select (mouse and single finger), two-pointer pinch, pan, keyboard, and `touch-action`
+      behaviour, all clamped to 5 min…31 days and to the loaded window. IDs: FR-03, AC-04/06;
+      depends: T001; done: findings recorded (including any browser that intercepts pinch), and the
+      plugin registered only after `Chart.register` in `HistoryCanvas.vue`.
 
 ## Phase 2 — Pure domain (no Vue, fully unit tested)
 
@@ -29,9 +30,13 @@ evidence. New tests go in the companion file of the source they cover (for examp
       flag); IDs: FR-04, AC-07, AC-08, AC-13; depends: T010; done:
       `src/__tests__/domain/history/stats.test.ts` covers DST, empty buckets, single sample, all-null
       series, partial input, and asserts the result differs when decimated input is passed by mistake.
-- [ ] T012 — Add `frontend/src/domain/history/export.ts` producing CSV rows (ISO timestamp, value,
-      unit) and a guard for partial/empty series; IDs: FR-04, AC-09; depends: T011; done:
-      `src/__tests__/domain/history/export.test.ts` covers escaping, units, partial refusal.
+- [ ] T012 — Add `frontend/src/domain/history/export.ts` with the two documented schemas
+      (`timestamp,value,unit` for history; `bucket_start,bucket_end,min,average,max,last,samples,unit`
+      for statistics), ISO-8601 timestamps with offset, empty cells for gaps and empty buckets, and a
+      partial/empty guard; export always covers the selected range, never the zoomed viewport.
+      IDs: FR-04, AC-08/09; depends: T011; done:
+      `src/__tests__/domain/history/export.test.ts` covers both headers, gap/empty-bucket cells,
+      escaping, offset formatting and partial refusal.
 - [ ] T013 — Add `frontend/src/domain/history/preferences.ts` for `nh-history-pref:<deviceId>`
       (versioned read/write, defensive parse, no throw on storage failure); IDs: FR-01, AC-02,
       FE-02, FE-05; depends: T010; done: `src/__tests__/domain/history/preferences.test.ts` covers
@@ -39,12 +44,13 @@ evidence. New tests go in the companion file of the source they cover (for examp
 
 ## Phase 3 — Chart component and interactions
 
-- [ ] T014 — Add the zoom plugin to the lazy chart chunk and implement
-      `frontend/src/components/chart/history/interactions.ts` around it: `limits` from the range
-      policy, button and keyboard actions (plugin has no keyboard), readout scrub, `touch-action`
-      rules and reduced-motion handling; IDs: FR-03, AC-04/05/06, NFR-01/02; depends: T010, T002;
-      done: `src/__tests__/components/chart/history/interactions.test.ts` covers clamp mapping,
-      keyboard steps, disabled gestures and no-op bounds.
+- [ ] T014 — Implement `frontend/src/components/chart/history/interactions.ts` as our own Chart.js
+      plugin: wheel, drag-select, two-pointer pinch, pan, keyboard and `touch-action`, all through one
+      `applyRange` that clamps and never leaves the loaded window; the buttons call the same function.
+      No new dependency. IDs: FR-03, AC-04/05/06, NFR-01/02; depends: T010, T002; done:
+      `src/__tests__/components/chart/history/interactions.test.ts` covers clamp mapping, keyboard
+      steps, pinch scale maths, disabled gestures and no-op bounds; the build shows no new import in
+      the chart chunk.
 - [ ] T015 — Add `HistoryChart.vue` (responsive height by breakpoint, focusable container with
       accessible name and range, readout slot, end marker, `touch-action`); IDs: FR-02, FR-03,
       AC-03/05/06, FE-04; depends: T014; done: component covered by options/render tests and used by
@@ -60,19 +66,24 @@ evidence. New tests go in the companion file of the source they cover (for examp
 
 ## Phase 4 — Pages, sheet and shell
 
-- [ ] T019 — `DeviceMetrics.vue`: wide layout for the history route, preference restore, statistics
-      mode, export, keyboard hints, and a “narrow this range” action when the series is partial;
-      IDs: FR-01, FR-02, FR-04, AC-01/02/03/08/09; depends: T017, T013; done: desktop e2e covers
-      preset/expose switch, persistence across reload, export, and a truncated series showing its
-      covered window plus the narrower-range action without changing the selection on its own.
+- [ ] T019 — `DeviceMetrics.vue`: wide layout for the history route, preference restore (including
+      validated custom bounds with the `24h` fallback), statistics mode for numeric series only,
+      export, keyboard hints, and a “narrow this range” action when the series is partial. Expose
+      precedence is URL → saved preference → first chartable expose. IDs: FR-01/02/04,
+      AC-01/02/03/07/08/09; depends: T017, T013; done: desktop e2e covers preset/expose switching,
+      restore after reload, a stale/invalid custom range falling back to `24h`, a binary series
+      without the switch, export, and a truncated series naming its covered window.
 - [ ] T020 — `EntityViewDialog.vue`: compact chart, "View full history" to
-      `/devicepage/:id?tab=history`, drag-to-dismiss (top-of-scroll, 120 px, reduced-motion aware),
-      safe-area actions; IDs: FR-05, AC-11; depends: T015; done: sheet e2e covers drag, Escape,
-      close and deep link; existing dialog tests unchanged.
-- [ ] T021 — Shell: mark primary destinations in `navigation.ts`, add `BottomNav.vue`, render it in
+      `/devicepage/:id?tab=history&expose=<name>`, drag-to-dismiss (top-of-scroll, 120 px,
+      reduced-motion aware), safe-area actions; IDs: FR-05, AC-11; depends: T015; done: sheet e2e
+      covers drag, Escape, close, and the deep link landing on the same expose even when a different
+      one is saved in preferences.
+- [ ] T021 — Shell: add a `primary` marker and a derived drawer list in `navigation.ts`, add
+      `BottomNav.vue` (Home, Devices, Automations, Assistant, More→drawer), render it in
       `AppShell.vue` below 720 px, keep the drawer, add `--nh-safe-bottom`; IDs: FR-05, AC-10,
-      NFR-03; depends: T001; done: layout e2e asserts 44 px targets, `aria-current`, no horizontal
-      scroll and safe-area padding at 390×844.
+      NFR-03; depends: T001; done: layout e2e asserts 44 px targets, `aria-current` for tabs and the
+      `includes` rule, More current on other routes with `aria-expanded` toggling the drawer, no
+      horizontal scroll and safe-area padding at 390×844.
 - [ ] T022 — Platform: `index.html` gains `viewport-fit=cover` and `theme-color`;
       `public/manifest.webmanifest` plus icon; verify the app still boots when the manifest 404s;
       IDs: FR-05, AC-12, NFR-03; depends: T021; done: e2e asserts the meta tags and manifest fetch.
@@ -82,9 +93,13 @@ evidence. New tests go in the companion file of the source they cover (for examp
 - [ ] T023 — Retire the root `charts_todo.md`: move anything still relevant into `plan.md` debt,
       delete the file, and note the supersession. IDs: NH-01; depends: T001; done: no dangling
       references (`rg charts_todo`).
-- [ ] T024 — Mark spec 007 T209–T212 superseded with a pointer to 029 and update the history
-      description in the docs that still show the select-based flow. IDs: NH-01; depends: T023;
-      done: links resolve and the older tasks are not silently re-opened.
+- [ ] T024 — Supersede **only the covered portions** of spec 007: T209 (history query correctness),
+      T210 (pure history domain) and T211 (history rebuild) are delivered by 029; T212 stays open for
+      Assistant layout, palette/contrast checks and legacy cleanup, with a note that its
+      history-dependent parts move to 029; T213 stays open for the flows 029 does not cover. Update
+      the docs that still show the select-based history flow. IDs: NH-01; depends: T023; done:
+      links resolve, each superseded task names where its obligation went, and nothing unrelated is
+      closed.
 
 ## Phase 6 — Verification and handoff
 
@@ -92,10 +107,13 @@ evidence. New tests go in the companion file of the source they cover (for examp
       `npm run build`, `npm run type-check:e2e`. IDs: NH-05, NFR-01; depends: T017–T022; done: pass
       with the recorded bundle delta, compared per chunk (initial entry unchanged, chart chunk
       within +15 kB gzip).
-- [ ] T031 — Browser checks: `CI=true npx playwright test` on desktop and mobile projects, including
-      new gesture tests driven by real input (mouse drag, wheel, CDP two-pointer pinch, keyboard) and
-      the a11y assertions (names, focus ring, 44 px targets, no horizontal scroll). IDs: FR-03,
-      AC-04…AC-12, NFR-03; depends: T030; done: pass, with the manual desktop/mobile pass recorded.
+- [ ] T031 — Browser checks: migrate the existing `e2e/DeviceMetrics.spec.ts` Entity/Period
+      `selectOption()` assertions to the new chips in this same change, then run
+      `CI=true npx playwright test` on desktop and mobile projects, including new gesture tests driven
+      by real input (mouse drag, wheel, CDP two-pointer pinch, keyboard) and the a11y assertions
+      (names, focus ring, 44 px targets, no horizontal scroll). IDs: FR-03, AC-04…AC-12, AC-14,
+      NFR-03; depends: T030; done: pass, no skipped selector, with the manual desktop/mobile pass
+      recorded.
 - [ ] T032 — Prove no backend or contract drift: `backend/`: `go test ./...`; confirm no diff under
       `backend/` and no change to `contracts/history.ts` request shape. IDs: AC-13/14, BE-01…BE-05;
       depends: T030; done: command output recorded, diff shows frontend + docs only.

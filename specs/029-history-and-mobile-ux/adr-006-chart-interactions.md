@@ -10,29 +10,33 @@ a statistics reading, while the metrics API aggregates a **whole window** into o
 (`min/avg/max/count/last` in `backend/internal/metrics/query/aggregates.go`) and exposes no
 interval/bucket parameter.
 
-## Decision 1 — use `chartjs-plugin-zoom`, own the parts it does not cover
+## Decision 1 — implement the interaction locally (no new dependency)
 
-Adopt `chartjs-plugin-zoom` (v2, Chart.js 4 compatible) for wheel, drag-select, pinch and pan, and
-keep in our code only what the plugin does not do: the range policy (clamp to 5 min…31 days and to
-the loaded window via `limits`), the `−  +  Reset` buttons, the focusable container with keyboard
-handling (`+ - 0`, arrows), the time/value readout, and `prefers-reduced-motion` behaviour.
+Add one small Chart.js plugin of our own (`components/chart/history/interactions.ts`, roughly
+150–200 lines) registering `afterInit`/`beforeDestroy` on the existing chart, handling:
 
-Rationale, revised after checking the build: Chart.js is **lazily imported**, so the plugin lands in
-the existing chart chunk (`chart-*.js`, 208 kB in the current build) and does not touch the 438.8 kB
-initial entry. The pinned candidate is `chartjs-plugin-zoom` 2.2.0 (peer `chart.js >=3.2.0`, no
-runtime dependencies of its own; ~94 kB unpacked, mostly source and maps). The
-"no new dependency" argument therefore buys very little, while hand-written pinch/pointer code is
-exactly where cross-browser bugs live (pointer capture, cancellation, two-finger tracking, iOS Safari
-intercepting gestures, drag-vs-double-click conflicts, `touch-action` interplay with page scroll).
+- wheel zoom around the pointer,
+- pointer drag-select (mouse and single-finger touch),
+- two-pointer pinch (tracked from pointer events, not a gesture library),
+- keyboard `+ - 0` and arrows on a focusable container,
+- `touch-action` rules so the plot never scrolls the page.
 
-Rejected: a local interaction plugin (about 150 lines of gesture code we would own and have to harden
-for every input device); a DOM overlay with its own canvas (duplicates rendering and hit-testing);
-server-side resampling per gesture (network chatter, and the API has no bucket parameter).
+Range policy stays in `domain/history/range.ts`; the plugin only applies `scales.x.min/max` and calls
+`chart.update('none')`.
 
-Consequences: one small, actively maintained dependency in a lazy chunk; we adapt its config rather
-than its internals; version coupling to Chart.js is checked when either moves. Acceptance is
-unchanged: every gesture still has a button and keyboard equivalent, and range policy stays in our
-pure domain layer so truthfulness rules do not live inside a plugin.
+**Rejected: `chartjs-plugin-zoom` 2.2.0.** Its peer is `chart.js >=3.2.0`, but its own
+`dependencies` are `hammerjs ^2.0.8` and `@types/hammerjs ^2.0.45`, so adopting it adds an
+unmaintained gesture library (last release 2017) to the tree, plus a runtime-declared types package.
+Hammer duplicates gesture recognition we need in only one narrow form, and we would still write the
+keyboard, readout, clamp policy and `touch-action` handling ourselves.
+
+Rejected as well: a DOM overlay with its own canvas (duplicates rendering and hit-testing), and
+server-side resampling per gesture (network chatter; the API has no bucket parameter).
+
+Consequences: about 150–200 lines of gesture code we own and must harden for real input devices,
+covered by Playwright with CDP-driven multi-touch; no supply-chain addition; the chart chunk grows
+by roughly 2–4 kB gzip. If pinch turns out to be unreliable on a target browser, drag-select and the
+buttons remain, and that deviation is recorded rather than hidden.
 
 ## Decision 2 — statistics are computed in the browser for this change
 

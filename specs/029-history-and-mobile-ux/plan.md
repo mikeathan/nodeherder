@@ -41,7 +41,7 @@ Design — one shared history stack, three presentations:
 domain/history/          pure: range presets, decimation, stats, bucketing, CSV rows
 services + store         unchanged transport and query identity
 components/chart/history/
-  HistoryChart.vue       owns the Chart.js instance, zoom plugin config, buttons, keyboard, a11y
+  HistoryChart.vue       owns the Chart.js instance, our interaction plugin, buttons, keyboard, a11y
   HistoryToolbar.vue     presets, expose chips, mode switch, actions
   HistoryStats.vue       min/avg/max/last strip
   HistorySamples.vue     existing table, extracted
@@ -63,11 +63,29 @@ Per-viewport contract (this is the "mobile focused, desktop full" requirement):
 | 720–1023 px | Single column, content padding reduced | 300 px | Chips wrap, no wheel-only affordances | Medium: stats strip, table collapsed |
 | <720 px | Bottom bar, sheet flow, no sidebar | 220–260 px, compact axes | 44 px buttons, pinch, one-finger readout, horizontally scrolling chips | Focused: stats strip, table behind a disclosure |
 
-Interaction (ADR-006): `chartjs-plugin-zoom` supplies wheel, mouse drag-select, two-pointer pinch and
-pan; its `limits` are derived from the same clamp policy (5 min…31 days, never outside the loaded
-window). Our code adds the `−  +  Reset` buttons, a focusable container with `+ - 0` and arrow keys,
-the time/value readout, and `touch-action` so gestures never scroll the page. Range policy stays in
-`domain/history/range.ts`; the plugin only renders the consequence.
+Navigation (mobile): the bottom bar uses existing routes only — **Home** (`GroupDashboard`),
+**Devices** (`Devices`), **Automations** (`Viewer`), **Assistant** (`Assistant`), and **More**, which
+opens the existing drawer. History is not a destination because it is device-scoped. A tab is current
+when the route matches it or its `includes` list; More is current for any route outside the four and
+exposes `aria-expanded` for the drawer. `NAV_ITEMS` gains a `primary` marker plus a derived drawer
+list, so there is still one navigation source.
+
+Statistics availability: `numeric` series get the History/Statistics switch; `binary` and `enum`/
+event series keep the state timeline and recent-event list without a switch; energy counters keep the
+existing observed-consumption summary. `numericStats` only understands numbers, so offering it for
+other types would silently produce an empty view.
+
+Export contract: history = `timestamp,value,unit`; statistics =
+`bucket_start,bucket_end,min,average,max,last,samples,unit`. Both follow the **selected** range (zoom
+is a view transform), write ISO-8601 timestamps with offset, leave gap and empty-bucket cells empty
+rather than `0`, and are disabled while the series is partial or empty.
+
+Interaction (ADR-006): one local Chart.js plugin supplies wheel zoom, mouse and single-finger
+drag-select, two-pointer pinch, pan and keyboard (`+ - 0`, arrows) on a focusable container, all
+funnelling into one `applyRange(from, to)` that clamps to 5 min…31 days and never leaves the loaded
+window. The `−  +  Reset` buttons call the same function, and `touch-action` keeps gestures from
+scrolling the page. No gesture library is added: `chartjs-plugin-zoom` was rejected because it pulls
+`hammerjs` (unmaintained since 2017). Range policy stays in `domain/history/range.ts`.
 
 Statistics (ADR-006): `domain/history/stats.ts` buckets the **raw decoded** series by local calendar
 day, producing `{ start, end, min, avg, max, last, count }` with `null` for empty buckets, reusing
@@ -118,7 +136,8 @@ tasks run. Final column is filled before merge.
 - Deployment: UI-only. Rollback restores the previous frontend image; stored preferences are
   additive and ignored by older code, so no migration or cleanup is required.
 - Docs: retire the root `charts_todo.md` (superseded), update `docs/` where the history flow is
-  described, and mark spec 007 T209–T212 superseded with a pointer to 029.
+  described, and mark spec 007 T209–T211 superseded with a pointer to 029 while T212
+  (Assistant layout, palette/contrast, legacy cleanup) and T213 stay open.
 
 ## Traceability and verification
 
@@ -152,10 +171,9 @@ isolated Go fixture.
   long-range statistics become a primary use, that is the point to write it.
 - **Layout regressions** from removing the 64 rem cap and adding a bottom bar: covered by viewport
   assertions in existing layout tests.
-- **Dependency**: `chartjs-plugin-zoom` joins the deep-imported chart bundle. Chart.js is loaded
-  lazily, so the measured cost is in the `chart-*.js` chunk (budget +15 kB gzip), not in the initial
-  entry. Chart.js and the plugin must be upgraded together; the version guard is a Jest assertion on
-  the pinned pair.
+- **No new dependency**: the interaction plugin is our code in the lazily loaded chart chunk. The
+  budget is ≤ 4 kB gzip there and an unchanged initial entry; a Jest assertion pins that the chart
+  chunk imports nothing new.
 - **Existing debt untouched**: cross-device comparison (contract limits one device per series) and
   automation markers (no run history stored) remain out of scope.
 - No exceptions requested; no approval implied.
