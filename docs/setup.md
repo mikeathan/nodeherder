@@ -93,7 +93,8 @@ For local sign-in, use OFFLINE_STRICT_LOCAL=true and the matching configuration:
 | How requests reach the backend | TRUSTED_PROXY_CIDRS | AUTH_COOKIE_SECURE |
 | --- | --- | --- |
 | Direct localhost/LAN over HTTP, without Nginx | Unset/empty | Unset/false |
-| Docker Nginx over HTTP | Actual immediate proxy IP/CIDR | Unset/false |
+| Docker Nginx over HTTP via `scripts/manage-stack.sh` | Computed automatically | Unset/false |
+| Docker Nginx over HTTP started by hand | Actual immediate proxy IP/CIDR | Unset/false |
 | Nginx terminating HTTPS | Actual immediate proxy IP/CIDR | true |
 
 The code defaults are empty proxy trust and false for the Secure-cookie override;
@@ -101,6 +102,16 @@ direct HTTPS always sets Secure. OFFLINE_STRICT_LOCAL=false uses Google regardle
 of the local/proxy settings. Checked-in backend env files include commented examples,
 so they do not override deployment values supplied in backend/.env. Remove inherited
 proxy/HTTPS overrides from backend/.env or the shell when switching to direct local HTTP.
+
+`scripts/manage-stack.sh start|rebuild` resolves the proxy peers for you: once the
+Compose network exists it reads that network's gateway (and the frontend container
+address when the frontend is part of the stack) and passes them to the backend through
+a generated override in `.generated/` (ignored by version control). Nothing has to be
+pasted into backend/.env, and a clean install signs in locally without contacting
+Google. An explicit `TRUSTED_PROXY_CIDRS` in the shell or backend/.env still wins, and
+if the peers cannot be resolved the stack starts with a warning naming the setting.
+Only those dedicated addresses are trusted — never a whole Docker subnet or all
+private ranges.
 
 For local sign-in behind Docker Nginx, configure TRUSTED_PROXY_CIDRS in backend/.env
 before upgrading. It accepts explicit proxy IPs/CIDRs; the empty default cannot authorize

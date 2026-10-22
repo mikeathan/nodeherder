@@ -17,7 +17,7 @@ function fixture(t) {
   fs.writeFileSync(path.join(root, 'scripts/manage-stack.sh'), source);
   fs.writeFileSync(path.join(root, 'frontend/scripts/get-version.cjs'), versionSource);
   // Only explicitly supplied tools are visible: never fall through to real Docker/Node/Git.
-  for (const tool of ['dirname', 'sed']) {
+  for (const tool of ['dirname', 'sed', 'tr', 'mkdir', 'grep']) {
     const found = spawnSync('/bin/sh', ['-c', `command -v ${tool}`], { encoding: 'utf8' });
     assert.equal(found.status, 0);
     fs.symlinkSync(found.stdout.trim(), path.join(root, 'bin', tool));
@@ -29,6 +29,9 @@ function fixture(t) {
   fs.writeFileSync(path.join(root, 'bin/docker'), `#!/bin/bash
 printf '%s\\t' "$@" >> "$MOCK_LOG"
 printf '\\n' >> "$MOCK_LOG"
+if [[ " $* " == *" network inspect "* && -n "\${MOCK_GATEWAY:-}" ]]; then printf '%s\\n' "$MOCK_GATEWAY"; fi
+if [[ " $* " == *" ps -aq frontend "* && -n "\${MOCK_FRONTEND_IP:-}" ]]; then printf 'frontend-id\\n'; fi
+if [[ " $* " == *" inspect frontend-id "* && -n "\${MOCK_FRONTEND_IP:-}" ]]; then printf '%s\\n' "$MOCK_FRONTEND_IP"; fi
 if [[ -n "\${MOCK_FAIL:-}" && " $* " == *" $MOCK_FAIL "* ]]; then exit 17; fi
 `, { mode: 0o755 });
   const log = path.join(root, 'calls');
@@ -300,3 +303,76 @@ for (const action of ['start', 'stop', 'down', 'restart', 'pull', 'build', 'rebu
     assert.match(r.output, /Preview complete/);
   });
 }
+
+test('start resolves trusted proxy peers for a clean install', t => {
+  const f = fixture(t);
+  const r = f.run(['start', 'backend'], { MOCK_GATEWAY: '172.18.0.1' });
+  assert.equal(r.status, 0, r.output);
+  const override = path.join(f.root, '.generated', 'compose.proxy-allowlist.yml');
+  assert.equal(
+    fs.readFileSync(override, 'utf8'),
+    'services:\n  backend:\n    environment:\n      TRUSTED_PROXY_CIDRS: "172.18.0.1/32"\n',
+  );
+  assert.ok(operation(r, 'up').includes(override));
+  assert.match(r.output, /Trusted proxy peers: 172\.18\.0\.1\/32/);
+});
+
+test('resolved peers include the frontend container without duplicating the gateway', t => {
+  const f = fixture(t);
+  const override = path.join(f.root, '.generated', 'compose.proxy-allowlist.yml');
+  const both = f.run(['start'], { MOCK_GATEWAY: '172.18.0.1', MOCK_FRONTEND_IP: '172.18.0.2' });
+  assert.equal(both.status, 0, both.output);
+  assert.match(fs.readFileSync(override, 'utf8'), /TRUSTED_PROXY_CIDRS: "172\.18\.0\.1\/32,172\.18\.0\.2\/32"/);
+
+  const same = f.run(['start'], { MOCK_GATEWAY: '172.18.0.1', MOCK_FRONTEND_IP: '172.18.0.1' });
+  assert.equal(same.status, 0, same.output);
+  assert.match(fs.readFileSync(override, 'utf8'), /TRUSTED_PROXY_CIDRS: "172\.18\.0\.1\/32"/);
+});
+
+test('configured proxy allowlist is never overridden', t => {
+  const f = fixture(t);
+  fs.writeFileSync(path.join(f.root, 'backend/.env'), 'TRUSTED_PROXY_CIDRS=10.0.0.5/32\n');
+  const fromFile = f.run(['start', 'backend'], { MOCK_GATEWAY: '172.18.0.1' });
+  assert.equal(fromFile.status, 0, fromFile.output);
+  assert.equal(has(fromFile, 'create'), false);
+  assert.equal(fs.existsSync(path.join(f.root, '.generated')), false);
+  assert.match(fromFile.output, /Using configured TRUSTED_PROXY_CIDRS/);
+
+  const fromShell = f.run(['start', 'backend'], { MOCK_GATEWAY: '172.18.0.1', TRUSTED_PROXY_CIDRS: '10.0.0.6/32' });
+  assert.equal(fromShell.status, 0, fromShell.output);
+  assert.equal(fs.existsSync(path.join(f.root, '.generated')), false);
+});
+
+test('unresolvable proxy peer warns and still starts', t => {
+  const f = fixture(t);
+  const r = f.run(['start', 'backend']);
+  assert.equal(r.status, 0, r.output);
+  assert.match(r.output, /TRUSTED_PROXY_CIDRS manually/);
+  assert.equal(fs.existsSync(path.join(f.root, '.generated')), false);
+  assert.ok(has(r, 'up'));
+
+  const placeholder = f.run(['start', 'backend'], { MOCK_GATEWAY: '<no value>' });
+  assert.equal(placeholder.status, 0, placeholder.output);
+  assert.equal(fs.existsSync(path.join(f.root, '.generated')), false);
+});
+
+test('frontend-only start never resolves backend proxy peers', t => {
+  const f = fixture(t);
+  const r = f.run(['start', 'frontend'], { MOCK_GATEWAY: '172.18.0.1' });
+  assert.equal(r.status, 0, r.output);
+  assert.equal(has(r, 'create'), false);
+  assert.equal(fs.existsSync(path.join(f.root, '.generated')), false);
+});
+
+test('malformed inspector output is never trusted', t => {
+  const f = fixture(t);
+  const override = path.join(f.root, '.generated', 'compose.proxy-allowlist.yml');
+  const r = f.run(['start'], { MOCK_GATEWAY: 'invalid IP', MOCK_FRONTEND_IP: 'not-an-address' });
+  assert.equal(r.status, 0, r.output);
+  assert.match(r.output, /TRUSTED_PROXY_CIDRS manually/);
+  assert.equal(fs.existsSync(override), false);
+
+  const ipv6 = f.run(['start', 'backend'], { MOCK_GATEWAY: 'fd00::1' });
+  assert.equal(ipv6.status, 0, ipv6.output);
+  assert.match(fs.readFileSync(override, 'utf8'), /TRUSTED_PROXY_CIDRS: "fd00::1\/128"/);
+});
