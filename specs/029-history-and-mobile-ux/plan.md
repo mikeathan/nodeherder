@@ -19,6 +19,21 @@ Observed facts (verified in code):
 | Statistics API | Whole-window aggregation; no interval/bucket parameter; one device per series | `backend/internal/metrics/query/{request,aggregates}.go` |
 | Shell | Sidebar ≥960 px, drawer below; `--nh-bottom-nav-h` unused | `components/shell/AppShell.vue`, `NavSidebar.vue`, `tokens.css` |
 | Platform | No `viewport-fit=cover`, no manifest, safe-area insets inert | `index.html`, `public/` |
+| Data volume | Already bounded four times, see below — no new dropping needed | backend + decoder + renderer |
+
+Data volume is already handled at four layers; 029 must not add a fifth:
+
+| Layer | Bound | Behaviour when exceeded |
+| --- | --- | --- |
+| Repository scan | `maxScannedRows` 250 000 rows / 8 s budget | Hard error: "history scan budget exceeded; narrow the range" |
+| Query limit | `maxQueryPoints` 10001, ascending | `data[:limit]` keeps the **oldest** 10 001 samples |
+| Decoder | `HISTORY_LIMIT` 10 000 | Rejects >10 001, slices to 10 000, sets `partial` |
+| Renderer | `RENDER_LIMIT` 1 000 | `decimate` keeps gaps and per-bucket extrema; may return nothing when too fragmented |
+
+Consequences for this change: statistics bucket the raw samples (0–10 000) into at most 31 daily
+buckets, so they never need dropping; the chart keeps `decimate`; and a `partial` series must show
+which window it covers, keep uncovered buckets empty, refuse export, and offer a narrower range
+instead of silently changing the user's selection.
 
 Design — one shared history stack, three presentations:
 

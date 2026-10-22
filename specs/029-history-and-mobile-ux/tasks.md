@@ -61,8 +61,10 @@ evidence. New tests go in the companion file of the source they cover (for examp
 ## Phase 4 — Pages, sheet and shell
 
 - [ ] T019 — `DeviceMetrics.vue`: wide layout for the history route, preference restore, statistics
-      mode, export, keyboard hints; IDs: FR-01, FR-02, FR-04, AC-01/02/03/09; depends: T017, T013;
-      done: desktop e2e covers preset/expose switch, persistence across reload and export.
+      mode, export, keyboard hints, and a “narrow this range” action when the series is partial;
+      IDs: FR-01, FR-02, FR-04, AC-01/02/03/08/09; depends: T017, T013; done: desktop e2e covers
+      preset/expose switch, persistence across reload, export, and a truncated series showing its
+      covered window plus the narrower-range action without changing the selection on its own.
 - [ ] T020 — `EntityViewDialog.vue`: compact chart, "View full history" to
       `/devicepage/:id?tab=history`, drag-to-dismiss (top-of-scroll, 120 px, reduced-motion aware),
       safe-area actions; IDs: FR-05, AC-11; depends: T015; done: sheet e2e covers drag, Escape,

@@ -77,7 +77,8 @@ Independent verification: Jest for domain/state, Playwright for the flows at 128
   render set), drawn as bars, and states how many samples it used.
 - AC-08: Statistics buckets follow the browser's named zone, are DST-correct, and an empty bucket is
   a gap (not a zero). A partial series states the window it actually covers and that newer samples
-  may be missing, keeps uncovered buckets empty, and disables export.
+  may be missing, keeps uncovered buckets empty, disables export, and offers a one-tap narrower
+  range instead of changing the user's selection by itself.
 - AC-09: CSV export of the current mode and range downloads ISO-8601 timestamps with values and
   units, and is unavailable (with an explanation) while the series is partial or empty.
 
@@ -132,6 +133,11 @@ Independent verification: Jest for domain/state, Playwright for the flows at 128
   nothing else; no household values are stored. Keys are namespaced and versioned.
 - New static interface: `public/manifest.webmanifest` plus an icon; `index.html` gains
   `viewport-fit=cover` and `theme-color`.
+- Data volume is unchanged and already bounded end to end: 250 000 scanned rows per query with an 8 s
+  timeout, 10 001 points per request, 10 000 decoded samples with a `partial` flag, and at most 1 000
+  rendered points through extrema-preserving decimation. This change adds no new dropping mechanism;
+  it fixes **provenance** (statistics read the raw samples, never the decimated set) and **surfacing**
+  (covered window, uncovered buckets, export refusal).
 - No HTTP, WS, MQTT, MCP, persistence or configuration contract changes; no new auth surface.
 
 ## Questions and assumptions
