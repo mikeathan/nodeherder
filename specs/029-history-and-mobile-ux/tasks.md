@@ -26,11 +26,14 @@ evidence. New tests go in the companion file of the source they cover (for examp
       clamp/step helpers (5 min…31 days, 20 % pan); IDs: FR-01, AC-01, AC-04; depends: T001;
       done: `src/__tests__/domain/history/range.test.ts` covers midnight boundaries, DST day
       lengths, custom ranges and clamping.
-- [ ] T011 — Add `frontend/src/domain/history/stats.ts`: bucket the **raw decoded** samples by local
-      day (`null` for empty buckets, reuse `numericStats`, sample count, covered window, partial
-      flag); IDs: FR-04, AC-07, AC-08, AC-13; depends: T010; done:
-      `src/__tests__/domain/history/stats.test.ts` covers DST, empty buckets, single sample, all-null
-      series, partial input, and asserts the result differs when decimated input is passed by mistake.
+- [ ] T011 — Add `frontend/src/domain/history/stats.ts`: enumerate every intersecting local day
+      (no `MAX_BUCKETS` constant; step with `setDate(+1)` + `setHours(0,0,0,0)`), bucket the **raw
+      decoded** samples, `null` for empty buckets, reuse `numericStats`, expose sample count, covered
+      window and partial flag; IDs: FR-04, AC-07, AC-08, AC-13; depends: T010; done:
+      `src/__tests__/domain/history/stats.test.ts` covers empty buckets, single sample, all-null
+      series, partial input, decimated-input divergence, and DST including the pinned case
+      `TZ=Europe/London`, 1 Mar 2026 23:30 GMT → 2 Apr 2026 00:30 BST (744 h, **33 buckets**, first
+      and last flagged partial, a sample at 00:00 local counted once in the day starting there).
 - [ ] T012 — Add `frontend/src/domain/history/export.ts` with the two documented schemas
       (`timestamp,value,unit` for history; `bucket_start,bucket_end,min,average,max,last,samples,unit`
       for statistics), ISO-8601 timestamps with offset, empty cells for gaps and empty buckets, and a

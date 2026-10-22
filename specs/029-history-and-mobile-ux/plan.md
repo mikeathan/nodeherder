@@ -31,11 +31,20 @@ Data volume is already handled at four layers; 029 must not add a fifth:
 | Renderer | `RENDER_LIMIT` 1 000 | `decimate` keeps gaps and per-bucket extrema; may return nothing when too fragmented |
 
 Consequences for this change: statistics bucket the raw samples (0–10 000) into one bucket per
-**intersecting local calendar day**. A valid range of at most 31 days can touch **32 dates** (for
-example 1 Jan 12:00 → 1 Feb 12:00 covers 1 Jan…1 Feb), so the bucket count is ≤ 32, not 31. Bucket
-ownership is `[local midnight, next local midnight)`: a sample at exactly midnight belongs to the day
-starting there, and the first and last buckets are marked partial when the range does not start or
-end at midnight, so samples are neither dropped nor counted twice. The chart keeps `decimate`; a
+**intersecting local calendar day**, enumerated rather than capped. The view must not hard-code a
+bucket count: iterate local midnights from the start day while the bucket start is ≤ the range end,
+stepping with `setDate(+1)` then `setHours(0,0,0,0)` so each step is DST-correct.
+
+The count is larger than "31 days ⇒ 31 or 32 dates" suggests. Both endpoints can be mid-day (+2) and a
+DST transition moves a local midnight, so a 31-day (744 h) range can intersect **33** local dates —
+verified in `Europe/London`: 1 Mar 2026 23:30 GMT → 2 Apr 2026 00:30 BST is exactly 744 h and touches
+1 Mar…2 Apr. The widest possible count follows from midnights being at least 23 h apart:
+`floor(744 / 23) = 32` midnights plus the start date, so ≤ 33. Treat that as a derived bound for
+sizing/tests, never as a `MAX_BUCKETS` constant.
+
+Bucket ownership is `[local midnight, next local midnight)`: a sample at exactly midnight belongs to
+the day starting there, and the first and last buckets are marked partial when the range does not
+start or end at midnight, so samples are neither dropped nor counted twice. The chart keeps `decimate`; a
 `partial` series must show which window it covers, keep uncovered buckets empty, refuse export, and
 offer a narrower range instead of silently changing the user's selection.
 
