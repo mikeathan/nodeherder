@@ -264,3 +264,21 @@ companion files; Vue wiring uses the existing browser runner rather than adding 
 on a mid-range phone, and a human desktop/mobile acceptance pass. Chromium/CDP emulation and visual
 inspection do not establish those results or full WCAG conformance. T031/T033 remain open for that
 manual evidence; the implementation is not represented as fully verified for merge.
+
+## CI follow-up — deferred-shell sign-out readiness
+
+The mobile shard 4/4 run on `af764ca4` timed out in the existing browser-default-view sign-out flow.
+The shared `e2e/support/ui.ts` helper checks menu visibility once: while the deferred AppShell is
+loading it can see no menu, skip opening the phone drawer, then wait forever for its hidden Sign out
+button. Reproduce with an explicitly gated AppShell module in the existing `panel.spec.ts` companion
+flow; make the shared helper await the attached navigation, open it only if closed, and await its
+visibility. Preserve desktop sidebar behavior. This is test readiness, with no production or protocol
+change. Reopen T031/T033 for the regression, both-project checks, the reported mobile shard and CI.
+
+Evidence: the gated mobile regression failed with the exact hidden-Sign-out locator timeout before
+the helper fix. Afterward, the three browser-default-view flows passed on both projects (6/6), and
+the exact reported command `npm run test:e2e -- --project=mobile --shard=4/4 --reporter=list,html,json`
+passed all 25 tests with zero unexpected/skipped results. `npm run lint`, `npm run type-check:e2e`
+and `git diff --check` passed. No timeout increase or retry was added; the 10-second override was
+used only to capture the pre-fix failure quickly. Other application suites were not rerun for this
+test-only correction. GitHub CI remains a separate check after push.

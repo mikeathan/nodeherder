@@ -134,3 +134,7 @@ Execution results and design refinements are recorded in [plan.md](plan.md#execu
 T031's automated runs passed (full regression and final focused history/layout run); the remaining
 physical Safari/safe-area/frame-timing and human acceptance pass are unrun. T033's code and
 constitutional review is recorded; it stays open until those manual results are available.
+
+CI follow-up: T031/T033 also cover deferred AppShell readiness in the shared `openNav` helper.
+Add a controlled delayed-shell regression to existing `e2e/panel.spec.ts`, demonstrate the failure,
+then verify both projects and the reported mobile shard before updating PR #74.

@@ -71,6 +71,30 @@ test.describe('browser default view', () => {
     await expect(page.getByRole('button', { name: pinName })).toHaveCount(0);
   });
 
+  test('sign-out waits for a deferred shell before opening navigation', async ({ page }) => {
+    await signIn(page, '/overview');
+    await expect(page.getByRole('navigation', { name: 'Main', includeHidden: true })).toBeAttached();
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    await page.route('**/src/components/shell/AppShell.vue', async (route) => {
+      await gate;
+      await route.continue();
+    });
+    try {
+      await page.goto('/overview', { waitUntil: 'domcontentloaded' });
+      await expect(page.getByRole('status').filter({ hasText: 'Loading NodeHerder…' })).toBeVisible();
+      const signingOut = ui.shell.signOut(page);
+      // Complete an ordered browser read while the module gate is still closed. The old
+      // helper's one-shot visibility check skips the phone drawer in this state.
+      expect(await page.getByRole('button', { name: 'Open navigation' }).isVisible()).toBe(false);
+      release();
+      await signingOut;
+      await expect(ui.login.signInButton(page)).toBeVisible();
+    } finally {
+      release();
+    }
+  });
+
   test('invalid storage falls back; blocked preference storage still allows navigation', async ({ page }) => {
     await signIn(page);
     await page.evaluate(() => localStorage.setItem('nodeherder_default_view', 'unknown-view'));

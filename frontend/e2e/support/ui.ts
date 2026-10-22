@@ -8,8 +8,12 @@ import { Locator, Page } from '@playwright/test';
 
 /** Opens the navigation drawer on narrow screens; no-op when the sidebar is visible. */
 async function openNav(page: Page) {
+  // AppShell is deferred: absence of its menu is not evidence of a desktop sidebar.
+  const nav = page.getByRole('navigation', { name: 'Main', includeHidden: true });
+  await nav.waitFor({ state: 'attached' });
   const menu = page.getByRole('button', { name: 'Open navigation' });
-  if (await menu.isVisible()) await menu.click();
+  if (await menu.isVisible() && await menu.getAttribute('aria-expanded') !== 'true') await menu.click();
+  await nav.waitFor({ state: 'visible' });
 }
 
 export const ui = {
