@@ -115,7 +115,9 @@ func splitPath(path string) []string {
 }
 
 func (r *Router) addRoute(method, path string, handler http.Handler, public bool) {
-	rt := route{method: method, handler: handler, public: public}
+	// Bound bodies once per route; protected middleware remains outside this
+	// wrapper so unauthorized clients are rejected before reading their payload.
+	rt := route{method: method, handler: LimitRequestBody(handler), public: public}
 	r.knownPaths[path] = true
 
 	if !strings.Contains(path, ParametirsedSuffix) {
@@ -633,12 +635,16 @@ func (h *MetricsQueryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 // Assistant Message Proxy
 type AssistantMessageHandler struct {
-	store store.AppStore
+	store  store.AppStore
+	client *http.Client
 }
+
+const maxAssistantResponseBytes = 4 << 20
 
 func NewAssistantMessageHandler(store store.AppStore) *AssistantMessageHandler {
 	return &AssistantMessageHandler{
-		store: store,
+		store:  store,
+		client: &http.Client{Timeout: 60 * time.Second},
 	}
 }
 
@@ -675,23 +681,34 @@ func (h *AssistantMessageHandler) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	upstream, err := http.NewRequestWithContext(r.Context(), http.MethodPost, url, bytes.NewReader(bodyBytes))
+	if err != nil {
+		writeJSONError(w, http.StatusBadGateway, "Invalid assistant endpoint")
+		return
+	}
+	upstream.Header.Set("Content-Type", "application/json")
+	if r.Context().Err() != nil {
+		writeJSONError(w, http.StatusGatewayTimeout, "Assistant request canceled")
+		return
+	}
 	// Store user message
 	if reqPayload.ConversationID != "" && reqPayload.Message != "" {
 		if err := h.store.AppendAssistantMessage(reqPayload.ConversationID, assistant.RoleUser, reqPayload.Message); err != nil {
-			utils.LogErrorf("AssistantMessageHandler: failed to save user message: %v", err)
+			writeJSONError(w, http.StatusInternalServerError, "Failed to save assistant message")
+			return
 		}
 	}
 
 	// Proxy to LLM
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(bodyBytes))
+	resp, err := h.client.Do(upstream)
 	if err != nil {
-		writeJSONError(w, http.StatusBadGateway, "Failed to connect to assistant: "+err.Error())
+		writeJSONError(w, http.StatusBadGateway, "Failed to connect to assistant")
 		return
 	}
 	defer resp.Body.Close()
 
-	respBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
+	respBytes, err := io.ReadAll(io.LimitReader(resp.Body, maxAssistantResponseBytes+1))
+	if err != nil || len(respBytes) > maxAssistantResponseBytes {
 		writeJSONError(w, http.StatusBadGateway, "Failed to read assistant response")
 		return
 	}
@@ -703,7 +720,8 @@ func (h *AssistantMessageHandler) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		}
 		if err := json.Unmarshal(respBytes, &respPayload); err == nil && respPayload.Reply != "" {
 			if err := h.store.AppendAssistantMessage(reqPayload.ConversationID, assistant.RoleAssistant, respPayload.Reply); err != nil {
-				utils.LogErrorf("AssistantMessageHandler: failed to save assistant reply: %v", err)
+				writeJSONError(w, http.StatusInternalServerError, "Failed to save assistant reply")
+				return
 			}
 		}
 	}

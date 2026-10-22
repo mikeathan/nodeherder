@@ -34,11 +34,15 @@ export const store = createStore<RootState>({
   ],
   state: {},
   actions: {
-    cleanup({ commit }) {
+    cleanup({ commit, dispatch }) {
+      void dispatch('ws/disconnect');
       commit('hub/clear');
       commit('automations/clear');
       commit('metrics/clear');
       commit('alerts/clear');
+      commit('assistant/clear');
+      commit('console/clear');
+      commit('console/setEnabled', false);
     },
   },
   modules: {

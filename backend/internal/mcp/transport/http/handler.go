@@ -6,10 +6,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"node-herder/internal/auth"
 	"sync"
 	"time"
 
 	"node-herder/utils"
+
+	"github.com/google/uuid"
 )
 
 type MCPServer interface {
@@ -54,13 +57,18 @@ func (h *MCPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	sessionID := r.URL.Query().Get("sessionId")
+	if sessionID != "" && (h.sse == nil || !h.sse.hasSession(sessionID, r)) {
+		writeJSONError(w, http.StatusNotFound, "MCP session not found")
+		return
+	}
 	response := h.server.HandleRequest(r.Context(), rawMessage)
 
 	w.Header().Set("Content-Type", "application/json")
 	if response != nil {
-		// Dual-send: Broadcast via SSE if available, to support clients that expect it
-		if h.sse != nil {
-			h.sse.Send(response)
+		// Legacy SSE replies are scoped to the advertised session endpoint.
+		if h.sse != nil && sessionID != "" {
+			h.sse.send(sessionID, response)
 		}
 		w.WriteHeader(http.StatusOK)
 		w.Write(response)
@@ -69,22 +77,56 @@ func (h *MCPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+const maxSSEClients = 64
+
+type sseClient struct {
+	messages  chan string
+	principal string
+	cancel    context.CancelFunc
+}
+
 type SSEHandler struct {
-	server  MCPServer
-	clients map[chan string]struct{}
-	mu      sync.RWMutex
+	server     MCPServer
+	clients    map[string]*sseClient
+	mu         sync.RWMutex
+	statusMu   sync.Mutex
+	listenerID string
+	closed     bool
 }
 
 func NewSSEHandler(server MCPServer) *SSEHandler {
-	h := &SSEHandler{
-		server:  server,
-		clients: make(map[chan string]struct{}),
-	}
-
-	// We discard the ID because the global handler persists for the app lifetime
-	server.RegisterNotificationListener(h.broadcast)
-
+	h := &SSEHandler{server: server, clients: make(map[string]*sseClient)}
+	h.listenerID = server.RegisterNotificationListener(h.broadcast)
 	return h
+}
+
+// Close releases the app-owned notification listener and cancels active streams.
+func (h *SSEHandler) Close() {
+	h.mu.Lock()
+	if h.closed {
+		h.mu.Unlock()
+		return
+	}
+	h.closed = true
+	for _, client := range h.clients {
+		client.cancel()
+	}
+	h.mu.Unlock()
+	h.server.UnregisterNotificationListener(h.listenerID)
+}
+
+func requestPrincipal(r *http.Request) string {
+	if user, ok := auth.GetUserFromContext(r); ok {
+		return user.UserID
+	}
+	return ""
+}
+
+func (h *SSEHandler) hasSession(id string, r *http.Request) bool {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	client := h.clients[id]
+	return client != nil && !h.closed && client.principal == requestPrincipal(r)
 }
 
 type notification struct {
@@ -115,96 +157,103 @@ func (h *SSEHandler) broadcast(uri string) {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 
-	for ch := range h.clients {
+	for _, client := range h.clients {
 		select {
-		case ch <- message:
+		case client.messages <- message:
 		default:
 			// Client buffer full, skip
 		}
 	}
 }
 
-func (h *SSEHandler) Send(data []byte) {
-	message := fmt.Sprintf("data: %s\n\n", string(data))
-
+func (h *SSEHandler) send(id string, data []byte) {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
-
-	for ch := range h.clients {
+	if client := h.clients[id]; client != nil {
 		select {
-		case ch <- message:
+		case client.messages <- fmt.Sprintf("data: %s\n\n", data):
 		default:
-			// Client buffer full, skip
+			client.cancel() // Reconnect rather than silently lose a response.
 		}
 	}
+}
+
+func (h *SSEHandler) notifyClientCount() {
+	h.statusMu.Lock()
+	defer h.statusMu.Unlock()
+	h.server.OnClientConnectionChange(h.ClientCount())
+}
+
+// writeEvent refreshes the write deadline without limiting a healthy stream's lifetime.
+func writeEvent(w http.ResponseWriter, event string) error {
+	controller := http.NewResponseController(w)
+	_ = controller.SetWriteDeadline(time.Now().Add(10 * time.Second))
+	if _, err := io.WriteString(w, event); err != nil {
+		return err
+	}
+	return controller.Flush()
 }
 
 func (h *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	flusher, ok := w.(http.Flusher)
-	if !ok {
+	if _, ok := w.(http.Flusher); !ok {
 		http.Error(w, "SSE not supported", http.StatusInternalServerError)
 		return
 	}
-
 	if !h.server.Running() {
 		http.Error(w, "MCP server is stopped", http.StatusServiceUnavailable)
 		return
 	}
-
+	ctx, cancel := context.WithCancel(r.Context())
+	defer cancel()
+	stop := auth.WatchSession(r, cancel)
+	defer stop()
+	id := uuid.NewString()
+	client := &sseClient{messages: make(chan string, 10), principal: requestPrincipal(r), cancel: cancel}
+	h.mu.Lock()
+	if h.closed || len(h.clients) >= maxSSEClients {
+		h.mu.Unlock()
+		http.Error(w, "MCP stream capacity reached", http.StatusServiceUnavailable)
+		return
+	}
+	h.clients[id] = client
+	h.mu.Unlock()
+	defer func() {
+		h.mu.Lock()
+		delete(h.clients, id)
+		h.mu.Unlock()
+		h.notifyClientCount()
+	}()
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-
-	clientChan := make(chan string, 10)
-
-	h.mu.Lock()
-	h.clients[clientChan] = struct{}{}
-	h.mu.Unlock()
-
-	defer func() {
-		h.mu.Lock()
-		delete(h.clients, clientChan)
-		clientCount := len(h.clients)
-		h.mu.Unlock()
-
-		// Notify server of client change (outside lock)
-		h.server.OnClientConnectionChange(clientCount)
-
-		close(clientChan)
-	}()
-
-	utils.LogInfo("SSEHandler: Sending 'connected' event")
-	fmt.Fprintf(w, "data: {\"type\":\"connected\"}\n\n")
-
-	// Send endpoint event (Required by MCP spec for SSE)
-	fmt.Fprintf(w, "event: endpoint\ndata: /api/mcp\n\n")
-
-	flusher.Flush()
-	utils.LogInfo("SSEHandler: Flushed initial events")
-
-	// Update client count after successful flush
-	h.mu.Lock()
-	count := len(h.clients)
-	h.mu.Unlock()
-	h.server.OnClientConnectionChange(count)
-
+	defer func() { _ = http.NewResponseController(w).SetWriteDeadline(time.Time{}) }()
+	if ctx.Err() != nil {
+		return
+	}
+	initial := fmt.Sprintf("data: {\"type\":\"connected\"}\n\nevent: endpoint\ndata: /api/mcp?sessionId=%s\n\n", id)
+	if err := writeEvent(w, initial); err != nil {
+		return
+	}
+	h.notifyClientCount()
 	ticker := time.NewTicker(15 * time.Second)
 	defer ticker.Stop()
-
 	for {
 		select {
-		case msg := <-clientChan:
-			fmt.Fprint(w, msg)
-			flusher.Flush()
-		case <-ticker.C:
-			if !h.server.Running() {
-				// Server stopped, close connection
+		case message := <-client.messages:
+			if ctx.Err() != nil || !auth.SessionValid(r) {
 				return
 			}
-			fmt.Fprint(w, ": heartbeat\n\n")
-			flusher.Flush()
-		case <-r.Context().Done():
+			if err := writeEvent(w, message); err != nil {
+				return
+			}
+		case <-ticker.C:
+			if !h.server.Running() || !auth.SessionValid(r) {
+				return
+			}
+			if err := writeEvent(w, ": heartbeat\n\n"); err != nil {
+				return
+			}
+		case <-ctx.Done():
 			return
 		}
 	}

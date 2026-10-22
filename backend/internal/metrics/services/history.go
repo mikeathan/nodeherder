@@ -19,7 +19,7 @@ func ValidateHistory(req query.MetricsQueryRequest) error {
 	if len(req.Exposes) == 0 || len(req.Exposes) > 32 {
 		return fmt.Errorf("history requires 1–32 exposes")
 	}
-	if req.Limit < 1 || req.Limit > 10001 {
+	if req.Limit < 1 || req.Limit > maxQueryPoints {
 		return fmt.Errorf("history limit must be 1–10001")
 	}
 	if req.Aggregation != domain.AggNone || len(req.Filters) != 0 || req.SortDesc {
@@ -54,9 +54,9 @@ func (s *QueryService) QueryHistory(ctx context.Context, req query.MetricsQueryR
 	if len(found) != 1 {
 		return nil, fmt.Errorf("history device not found")
 	}
-	ctx, cancel := context.WithTimeout(ctx, 8*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
 	defer cancel()
-	budget := &domain.HistoryBudget{Context: ctx, Remaining: 250000}
+	budget := &domain.HistoryBudget{Context: ctx, Remaining: maxScannedRows}
 	results, collectors := historyCollectors(found[0], req, budget)
 	if err := s.readHistory(req, collectors); err != nil {
 		return nil, err

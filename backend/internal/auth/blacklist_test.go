@@ -96,7 +96,7 @@ func TestTokenBlacklist_IsBlacklisted_EmptyBlacklist(t *testing.T) {
 	}
 }
 
-func TestTokenBlacklist_Cleanup_ExpiredTokensRemoved(t *testing.T) {
+func TestTokenBlacklist_ExpiredEntriesWaitForSweep(t *testing.T) {
 	bl := auth.NewTokenBlacklist()
 	now := time.Now()
 
@@ -111,11 +111,8 @@ func TestTokenBlacklist_Cleanup_ExpiredTokensRemoved(t *testing.T) {
 		t.Fatal("expired tokens should be initially blacklisted")
 	}
 
-	// Wait for automatic cleanup (1 hour is too long, so we test immediate behavior)
-	// Since cleanup runs every hour, we test that expired tokens are still queryable
-	// The cleanup goroutine will remove them eventually
-
-	// For now, verify the tokens exist (cleanup hasn't run yet)
+	// Sweep runs on a later write after the hourly interval, without a worker.
+	// Expiry is separately enforced by JWT validation and stream leases.
 	if !bl.IsBlacklisted(expiredToken1) {
 		t.Error("token should still be in blacklist before cleanup runs")
 	}
@@ -292,5 +289,36 @@ func TestTokenBlacklist_MultipleInstancesIndependent(t *testing.T) {
 
 	if bl2.IsBlacklisted(token) {
 		t.Error("token should not be in second blacklist")
+	}
+}
+
+func TestTokenBlacklistRevocationListenersAreCancelableAndReentrant(t *testing.T) {
+	blacklist := auth.NewTokenBlacklist()
+	called := make(chan bool, 2)
+	stop := blacklist.OnRevoke("token", func() { called <- blacklist.IsBlacklisted("token") })
+	canceled := blacklist.OnRevoke("token", func() { t.Error("canceled observer invoked") })
+	canceled()
+	canceled()
+	blacklist.Add("token", time.Now().Add(time.Hour))
+	select {
+	case revoked := <-called:
+		if !revoked {
+			t.Fatal("callback ran before revocation")
+		}
+	default:
+		t.Fatal("revocation did not notify observer")
+	}
+	stop()
+	stop()
+	blacklist.Add("token", time.Now().Add(time.Hour))
+	select {
+	case <-called:
+		t.Fatal("observer retained after revocation")
+	default:
+	}
+	immediate := false
+	blacklist.OnRevoke("token", func() { immediate = true })()
+	if !immediate {
+		t.Fatal("late observer missed revocation")
 	}
 }

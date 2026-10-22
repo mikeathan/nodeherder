@@ -1,14 +1,140 @@
 package storage
 
 import (
+	"bytes"
 	"compress/gzip"
 	"encoding/base64"
+	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
+	"time"
 )
+
+func TestBoltKeyValueDatabase_GetOwnsBytes(t *testing.T) {
+	db, err := NewBoltKeyValueDatabase(filepath.Join(t.TempDir(), "owned.db"), "root")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	want := bytes.Repeat([]byte("value"), 16384)
+	if err := db.Set([]byte("key"), want); err != nil {
+		t.Fatal(err)
+	}
+	first, err := db.Get([]byte("key"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := db.Get([]byte("key"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if &first[0] == &second[0] {
+		t.Fatal("Get returned borrowed database bytes")
+	}
+	first[0] = 'X'
+	if !bytes.Equal(second, want) {
+		t.Fatal("independent reads share mutable bytes")
+	}
+	for _, value := range [][]byte{nil, {}} {
+		if err := db.Set([]byte("empty"), value); err != nil {
+			t.Fatal(err)
+		}
+		got, err := db.Get([]byte("empty"))
+		if err != nil || got == nil || len(got) != 0 {
+			t.Fatalf("empty value = %v, %v", got, err)
+		}
+	}
+	missing, err := db.Get([]byte("absent"))
+	if err != nil || missing != nil {
+		t.Fatalf("missing value = %v, %v", missing, err)
+	}
+}
+
+func TestBoltKeyValueDatabase_PruneWithConcurrentWrites(t *testing.T) {
+	db, err := NewBoltKeyValueDatabase(filepath.Join(t.TempDir(), "concurrent.db"), "root")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Do not defer Close until workers finish: a broken lock order would hang cleanup.
+	data := make(map[string]any, 1000)
+	for i := 0; i < 1000; i++ {
+		data[fmt.Sprintf("%04d", i)] = "value"
+	}
+	if err := db.SetBatch("device", data, func(k string, _ any) ([]byte, []byte, error) {
+		return []byte(k), []byte("value"), nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	start, writerStarted := make(chan struct{}), make(chan struct{})
+	writeDone, pruneDone := make(chan error, 1), make(chan error, 1)
+	go func() { <-start; close(writerStarted); writeDone <- db.Set([]byte("other"), []byte("write")) }()
+	go func() {
+		first := true
+		pruneDone <- db.Prune(func([]byte) (bool, error) {
+			if first {
+				first = false
+				close(start)
+				<-writerStarted
+			}
+			runtime.Gosched()
+			return true, nil
+		})
+	}()
+	deadline := time.NewTimer(5 * time.Second)
+	defer deadline.Stop()
+	for _, done := range []chan error{pruneDone, writeDone} {
+		select {
+		case err := <-done:
+			if err != nil {
+				t.Fatal(err)
+			}
+		case <-deadline.C:
+			t.Fatal("prune and write did not finish")
+		}
+	}
+	defer db.Close()
+	count := 0
+	if err := db.ViewInRange("device", []byte("0000"), []byte("9999"), func(_, _ []byte) error { count++; return nil }); err != nil {
+		t.Fatal(err)
+	}
+	if count != 0 {
+		t.Fatalf("prune skipped %d adjacent keys", count)
+	}
+}
+
+func TestBoltKeyValueDatabase_PruneFailureRollsBack(t *testing.T) {
+	db, err := NewBoltKeyValueDatabase(filepath.Join(t.TempDir(), "rollback.db"), "root")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	if err := db.SetBatch("device", map[string]any{"a": 1, "b": 2}, func(k string, _ any) ([]byte, []byte, error) {
+		return []byte(k), []byte("value"), nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	want := errors.New("predicate failed")
+	if err := db.Prune(func(k []byte) (bool, error) {
+		if string(k) == "b" {
+			return false, want
+		}
+		return true, nil
+	}); !errors.Is(err, want) {
+		t.Fatalf("prune error = %v", err)
+	}
+	count := 0
+	if err := db.ViewInRange("device", []byte("a"), []byte("b"), func(_, _ []byte) error { count++; return nil }); err != nil {
+		t.Fatal(err)
+	}
+	if count != 2 {
+		t.Fatalf("rollback retained %d keys, want 2", count)
+	}
+}
 
 func TestBoltKeyValueDatabase_DeleteKey(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "kvtest")

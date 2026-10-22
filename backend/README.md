@@ -38,6 +38,11 @@ General configuration:
 - `APP_ENV` - Application environment (`development` or `production`)
 - `FRONTEND_BASE_URL` - Frontend URL for login redirects (required)
 - `FRONTEND_ALLOWED_ORIGINS` - Comma-separated browser origins allowed by CORS
+- `OFFLINE_STRICT_LOCAL` - `true` enables eligible local sign-in; `false` uses Google
+- `TRUSTED_PROXY_CIDRS` - Explicit proxy IPs/CIDRs allowed to supply client IPs for
+  local sign-in; configure before upgrading Nginx deployments ([rollout steps](../docs/runtime-reliability.md#nginx-trust-and-coordinated-upgrade))
+- `AUTH_COOKIE_SECURE` - `true` for HTTPS termination; unset/`false` for local HTTP
+  (direct HTTPS always sets Secure). See the [local/proxy settings](../docs/setup.md#local-and-proxy-settings).
 
 Full environment/authentication and Docker lifecycle instructions: [setup guide](../docs/setup.md).
 
@@ -293,3 +298,5 @@ For optimal performance:
 - Use appropriate log levels in production (`info` or `warn`)
 - Monitor BoltDB size and compact if needed
 - Configure rate limiting based on your use case
+
+Resource limits, session cleanup and MCP compatibility: [runtime behavior](../docs/runtime-reliability.md).

@@ -1,10 +1,39 @@
 package api
 
 import (
+	"bytes"
+	"errors"
+	"io"
 	"net/http"
 
 	"node-herder/utils"
 )
+
+// MaxRequestBodyBytes bounds JSON commands, collection reports and imports.
+const MaxRequestBodyBytes = 1 << 20
+
+// LimitRequestBody rejects oversized input before any handler changes domain state.
+func LimitRequestBody(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Body == nil || r.Body == http.NoBody {
+			next.ServeHTTP(w, r)
+			return
+		}
+		body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, MaxRequestBodyBytes))
+		_ = r.Body.Close()
+		if err != nil {
+			var tooLarge *http.MaxBytesError
+			if errors.As(err, &tooLarge) {
+				writeJSONError(w, http.StatusRequestEntityTooLarge, "request body exceeds 1 MiB")
+			} else {
+				writeJSONError(w, http.StatusBadRequest, "failed to read request body")
+			}
+			return
+		}
+		r.Body = io.NopCloser(bytes.NewReader(body))
+		next.ServeHTTP(w, r)
+	})
+}
 
 func CORS(next http.Handler) http.Handler {
 	allowedOrigins := allowedOriginsMap()

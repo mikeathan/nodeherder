@@ -199,3 +199,5 @@ When contributing to the frontend:
 2. Ensure types are correct: `npm run type-check`
 3. Format your code: `npm run format`
 4. Run tests if applicable: `npm test`
+
+Resource limits, session cleanup and MCP compatibility: [runtime behavior](../docs/runtime-reliability.md).
