@@ -85,10 +85,14 @@ Before upgrading a deployment that uses local sign-in behind Nginx:
    alone does not prove what the backend sees. Trust only dedicated proxy addresses,
    never all private networks, all Docker peers or 0.0.0.0/0. Keep direct backend access
    behind the deployment's firewall/access controls.
-2. Set TRUSTED_PROXY_CIDRS in backend/.env to that address (/32 for IPv4, /128 for
-   IPv6). The value accepts comma-separated IPs/CIDRs; multiple addresses are useful
-   during coordinated proxy replacement. Compose already reads this file. Retain
-   OFFLINE_STRICT_LOCAL=true where local sign-in is intended; false disables it.
+2. `scripts/manage-stack.sh start|rebuild` does this automatically: it creates the
+   Compose network, reads the network gateway (and the frontend container address when
+   that service is in scope), and passes them to the backend through
+   `.generated/compose.proxy-allowlist.yml`. Keep `OFFLINE_STRICT_LOCAL=true` where
+   local sign-in is intended; false disables it. If you started the stack by hand, or
+   want to pin peers yourself, set `TRUSTED_PROXY_CIDRS` in backend/.env instead — an
+   explicit value always wins over the computed one. Do not trust all private networks,
+   all Docker peers or 0.0.0.0/0.
 3. Rebuild/recreate the backend and frontend together using the existing stack
    lifecycle. Confirm GET /api/auth/mode through Nginx returns local for a LAN client
    and google for an external client. Confirm local sign-in still creates a usable
@@ -96,7 +100,9 @@ Before upgrading a deployment that uses local sign-in behind Nginx:
    These are deployment checks, not checks run against household services here.
 4. [Docker may assign new addresses when containers are recreated](https://docs.docker.com/compose/how-tos/networking/#updating-containers-on-the-network). Recheck the immediate
    peer and update/recreate the backend with the allowlist when it changes. A narrow
-   dedicated proxy range can be used where the operator controls that network.
+   dedicated proxy range can be used where the operator controls that network. The
+   stack manager recomputes the peers on every `start`/`rebuild`, so a manual value in
+   backend/.env is the only thing that can go stale.
 
 The allowlist is empty by default. Unlisted peers with forwarding metadata, invalid
 allowlist entries, malformed client IPs and listed proxies lacking a client IP cannot

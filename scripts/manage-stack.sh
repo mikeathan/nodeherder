@@ -38,6 +38,7 @@ usage() {
     '' \
     'backend includes backend, mqtt, zigbee2mqtt; frontend includes frontend.' \
     'all uses both Compose files as one project. Run from any directory.' \
+    'start/rebuild also resolve TRUSTED_PROXY_CIDRS for local sign-in.' \
     'Ubuntu/Linux: Bash, dirname, sed, Docker Engine + Compose v2; host Node optional.' \
     'APP_VERSION overrides build version; COMPOSE_PROJECT_NAME overrides project.' \
     'Setup and lifecycle details: docs/setup.md'
@@ -155,9 +156,83 @@ build_images() {
   heading "Build version $VERSION"
   run "${COMPOSE[@]}" "${args[@]}" "${SERVICES[@]}"
 }
+
+# Local sign-in needs the backend to trust its proxy peers. Compose Nginx reaches the
+# backend through the host, so the observed peer is the network gateway; a
+# container-to-container proxy appears as the frontend address. Resolve both per run so
+# a clean install needs no host-specific TRUSTED_PROXY_CIDRS. Explicit configuration in
+# the shell or backend/.env* always wins.
+PROXY_OVERRIDE="$ROOT_DIR/.generated/compose.proxy-allowlist.yml"
+
+proxy_allowlist_configured() {
+  [[ -n "${TRUSTED_PROXY_CIDRS:-}" ]] && return 0
+  grep -qsE '^[[:space:]]*TRUSTED_PROXY_CIDRS=[^[:space:]]' \
+    "$ROOT_DIR/backend/.env" "$ROOT_DIR/backend/.env.production" \
+    "$ROOT_DIR/backend/.env.staging" "$ROOT_DIR/backend/.env.development" 2>/dev/null
+}
+
+# addressed_cidr prints one address as a single-host prefix, or nothing if it is not one.
+addressed_cidr() {
+  local address=${1:-}
+  [[ "$address" == *[.:]* ]] || return 0
+  [[ "$address" =~ ^[0-9A-Fa-f:.]+$ ]] || return 0
+  if [[ "$address" == *:* ]]; then
+    printf '%s/128' "$address"
+  else
+    printf '%s/32' "$address"
+  fi
+}
+
+prepare_proxy_allowlist() {
+  [[ " $* " == *" backend "* ]] || return 0
+  if $DRY_RUN; then
+    printf '  # TRUSTED_PROXY_CIDRS resolved from the Compose network before services start\n'
+    return 0
+  fi
+  heading "Proxy trust"
+  if proxy_allowlist_configured; then
+    printf 'Using configured TRUSTED_PROXY_CIDRS.\n'
+    return 0
+  fi
+  local project network gateway frontend frontend_id gateway_cidr frontend_cidr peers
+  STEP="creating the Compose network to resolve proxy peers"
+  "${COMPOSE[@]}" create "${SERVICES[@]}" >/dev/null
+  project=$(printf '%s' "${COMPOSE_PROJECT_NAME:-${ROOT_DIR##*/}}" | tr '[:upper:]' '[:lower:]')
+  network="${project}_nodeherder"
+  gateway=$(docker network inspect "$network" \
+    --format '{{(index .IPAM.Config 0).Gateway}}' 2>/dev/null | sed -n '1p' || true)
+  if [[ "$gateway" == '<no value>' ]]; then gateway=''; fi
+  frontend=''
+  if [[ " $* " == *" frontend "* ]]; then
+    frontend_id=$("${COMPOSE[@]}" ps -aq frontend 2>/dev/null | sed -n '1p' || true)
+    if [[ -n "$frontend_id" ]]; then
+      frontend=$(docker inspect "$frontend_id" \
+        --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{"\n"}}{{end}}' 2>/dev/null | sed -n '1p' || true)
+      frontend=${frontend//[[:space:]]/}
+    fi
+  fi
+  gateway_cidr=$(addressed_cidr "$gateway")
+  frontend_cidr=$(addressed_cidr "$frontend")
+  peers="$gateway_cidr"
+  if [[ -n "$frontend_cidr" && "$frontend_cidr" != "$gateway_cidr" ]]; then
+    peers="${peers:+$peers,}$frontend_cidr"
+  fi
+  if [[ -z "$peers" ]]; then
+    printf 'Warning: could not resolve the Compose proxy peer; set TRUSTED_PROXY_CIDRS manually (docs/setup.md).\n' >&2
+    return 0
+  fi
+  mkdir -p "$(dirname "$PROXY_OVERRIDE")"
+  printf 'services:\n  backend:\n    environment:\n      TRUSTED_PROXY_CIDRS: "%s"\n' "$peers" \
+    >"$PROXY_OVERRIDE"
+  COMPOSE+=(-f "$PROXY_OVERRIDE")
+  printf 'Trusted proxy peers: %s\n' "$peers"
+}
 STEP="$ACTION services"
 case "$ACTION" in
-  start) run "${COMPOSE[@]}" up -d "${SERVICES[@]}" ;;
+  start)
+    prepare_proxy_allowlist "${SERVICES[@]}"
+    STEP="$ACTION services"
+    run "${COMPOSE[@]}" up -d "${SERVICES[@]}" ;;
   stop) run "${COMPOSE[@]}" stop "${SERVICES[@]}" ;;
   down)
     if [[ "$STACK" == all ]]; then
@@ -175,6 +250,7 @@ case "$ACTION" in
     heading "Pull external images"
     run "${COMPOSE[@]}" pull --ignore-buildable "${SERVICES[@]}"
     build_images
+    prepare_proxy_allowlist "${SERVICES[@]}"
     STEP="replacing changed containers"
     heading "Apply built images"
     run "${COMPOSE[@]}" up -d --no-build "${SERVICES[@]}" ;;
