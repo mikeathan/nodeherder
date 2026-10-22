@@ -108,7 +108,11 @@ Compose network exists it reads that network's gateway (and the frontend contain
 address when the frontend is part of the stack) and passes them to the backend through
 a generated override in `.generated/` (ignored by version control). Nothing has to be
 pasted into backend/.env, and a clean install signs in locally without contacting
-Google. An explicit `TRUSTED_PROXY_CIDRS` in the shell or backend/.env still wins, and
+Google. The value exists only in the backend container's environment, never in an env
+file, so inspect it with
+`docker inspect nodeherder-backend --format '{{range .Config.Env}}{{println .}}{{end}}' | grep TRUSTED_PROXY_CIDRS`
+or read `.generated/compose.proxy-allowlist.yml`. The network name comes from Compose's
+own project name, so checkouts whose directory name Compose normalizes still work. An explicit `TRUSTED_PROXY_CIDRS` in the shell or backend/.env still wins, and
 if the peers cannot be resolved the stack starts with a warning naming the setting.
 Only those dedicated addresses are trusted — never a whole Docker subnet or all
 private ranges.
