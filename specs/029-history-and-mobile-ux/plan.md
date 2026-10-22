@@ -54,9 +54,11 @@ window). Our code adds the `−  +  Reset` buttons, a focusable container with `
 the time/value readout, and `touch-action` so gestures never scroll the page. Range policy stays in
 `domain/history/range.ts`; the plugin only renders the consequence.
 
-Statistics (ADR-006): `domain/history/stats.ts` buckets the loaded series by local calendar day,
-producing `{ start, end, min, avg, max, last, count }` with `null` for empty buckets, reusing
-`numericStats` for per-bucket maths. Partial series disable export and say why.
+Statistics (ADR-006): `domain/history/stats.ts` buckets the **raw decoded** series by local calendar
+day, producing `{ start, end, min, avg, max, last, count }` with `null` for empty buckets, reusing
+`numericStats` per bucket. The decimated render set is never used, because it keeps extrema but would
+skew averages and counts. Buckets outside the covered sample window stay empty; a partial series names
+the covered window, warns that newer samples may be missing, and disables export.
 
 Mobile shell: `NAV_ITEMS` gains a `primary` marker; `AppShell` renders `BottomNav` (five items) below
 720 px and keeps the drawer. `--nh-safe-bottom` token + `viewport-fit=cover`; the manifest lives in
@@ -128,8 +130,11 @@ isolated Go fixture.
 - **Pinch vs browser zoom** on iOS Safari requires `touch-action: none` on the plot; iOS may still
   intercept some gestures above the page. Mitigation: buttons remain primary, and the manual pass
   records behaviour.
-- **Statistics fidelity**: client-side buckets are only as complete as the fetched series; partial
-  data is labelled and export disabled (AC-07/08). Server-side bucketing is follow-up debt.
+- **Statistics fidelity**: client-side buckets are only as complete as the fetched series. History
+  mode is ascending-only and the backend keeps the **oldest** 10 001 samples, so a truncated response
+  can lack recent days; the view must name the covered window, keep uncovered buckets empty and
+  disable export (AC-07/08). Server-side bucketing with an interval parameter is follow-up debt; if
+  long-range statistics become a primary use, that is the point to write it.
 - **Layout regressions** from removing the 64 rem cap and adding a bottom bar: covered by viewport
   assertions in existing layout tests.
 - **Dependency**: `chartjs-plugin-zoom` joins the deep-imported chart bundle. Chart.js is loaded

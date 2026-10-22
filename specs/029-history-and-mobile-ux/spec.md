@@ -73,10 +73,11 @@ Independent verification: Jest for domain/state, Playwright for the flows at 128
 ### US-03 — Read the same data two ways (P1)
 
 - AC-07: A History/Statistics switch is present; Statistics shows per-day `min`, `average`, `max`,
-  `last` and sample count computed from the loaded series, drawn as bars, and states how many
-  samples it used.
+  `last` and sample count computed from the loaded **raw decoded samples** (never the decimated
+  render set), drawn as bars, and states how many samples it used.
 - AC-08: Statistics buckets follow the browser's named zone, are DST-correct, and an empty bucket is
-  a gap (not a zero); a partial series is labelled and disables export.
+  a gap (not a zero). A partial series states the window it actually covers and that newer samples
+  may be missing, keeps uncovered buckets empty, and disables export.
 - AC-09: CSV export of the current mode and range downloads ISO-8601 timestamps with values and
   units, and is unavailable (with an explanation) while the series is partial or empty.
 

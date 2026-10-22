@@ -24,10 +24,11 @@ evidence. New tests go in the companion file of the source they cover (for examp
       clamp/step helpers (5 min…31 days, 20 % pan); IDs: FR-01, AC-01, AC-04; depends: T001;
       done: `src/__tests__/domain/history/range.test.ts` covers midnight boundaries, DST day
       lengths, custom ranges and clamping.
-- [ ] T011 — Add `frontend/src/domain/history/stats.ts` (bucket by local day, `null` for empty
-      buckets, reuse `numericStats`, sample count, partial flag); IDs: FR-04, AC-07, AC-08, AC-13;
-      depends: T010; done: `src/__tests__/domain/history/stats.test.ts` covers DST, empty buckets,
-      single sample, all-null series and partial input.
+- [ ] T011 — Add `frontend/src/domain/history/stats.ts`: bucket the **raw decoded** samples by local
+      day (`null` for empty buckets, reuse `numericStats`, sample count, covered window, partial
+      flag); IDs: FR-04, AC-07, AC-08, AC-13; depends: T010; done:
+      `src/__tests__/domain/history/stats.test.ts` covers DST, empty buckets, single sample, all-null
+      series, partial input, and asserts the result differs when decimated input is passed by mistake.
 - [ ] T012 — Add `frontend/src/domain/history/export.ts` producing CSV rows (ISO timestamp, value,
       unit) and a guard for partial/empty series; IDs: FR-04, AC-09; depends: T011; done:
       `src/__tests__/domain/history/export.test.ts` covers escaping, units, partial refusal.
@@ -87,7 +88,8 @@ evidence. New tests go in the companion file of the source they cover (for examp
 
 - [ ] T030 — Component checks from `frontend/`: `npm test -- --runInBand`, `npm run lint`,
       `npm run build`, `npm run type-check:e2e`. IDs: NH-05, NFR-01; depends: T017–T022; done: pass
-      with the recorded bundle delta (≤ 12 kB gzip).
+      with the recorded bundle delta, compared per chunk (initial entry unchanged, chart chunk
+      within +15 kB gzip).
 - [ ] T031 — Browser checks: `CI=true npx playwright test` on desktop and mobile projects, including
       new gesture tests driven by real input (mouse drag, wheel, CDP two-pointer pinch, keyboard) and
       the a11y assertions (names, focus ring, 44 px targets, no horizontal scroll). IDs: FR-03,

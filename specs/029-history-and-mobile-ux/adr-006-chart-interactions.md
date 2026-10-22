@@ -37,8 +37,14 @@ pure domain layer so truthfulness rules do not live inside a plugin.
 ## Decision 2 — statistics are computed in the browser for this change
 
 Statistics bucket the already-fetched series by local calendar day (`min/avg/max/last/count`) in
-`domain/history/stats.ts`, reusing `numericStats`. The view states the sample count and marks the
-result partial when the decoder flagged it.
+`domain/history/stats.ts`, reusing `numericStats`. Two constraints come straight from the code:
+
+- Bucket the **raw decoded samples**, never the `decimate()` render set: decimation preserves extrema
+  for drawing but would bias averages and sample counts.
+- History mode is ascending-only, and `ApplyLimitSortBy` keeps `data[:limit]`, so an over-cap response
+  keeps the **oldest** 10 001 samples and may be missing recent data. A partial series must therefore
+  say which window is actually covered (first/last sample), keep buckets outside it as gaps, and
+  disable export rather than presenting "today" as measured.
 
 Rejected for now: N parallel per-day queries (the client serialises one request and the endpoint is
 rate-limited to 4/s, so a 30-day view would be 30 serial round trips), and a new backend bucket
