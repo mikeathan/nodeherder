@@ -54,8 +54,27 @@ export const ui = {
   editor: {
     path: (id: string) => `/editor/${id}`,
     save: async (page: Page) => page.getByRole('button', { name: 'Save', exact: true }).click(),
+    enabled: (page: Page) => page.getByRole('switch', { name: 'Automation on' }),
+    addTrigger: (page: Page) => page.getByRole('button', { name: 'Add trigger', exact: true }),
+    removeTrigger: async (page: Page) => {
+      await page.getByRole('button', { name: 'Delete trigger', exact: true }).click();
+      await page.getByRole('dialog', { name: 'Delete trigger 1?' }).getByRole('button', { name: 'Delete trigger', exact: true }).click();
+    },
+    when: (page: Page) => page.getByRole('combobox', { name: 'Property that starts this trigger', exact: true }),
+    addCondition: (page: Page) => page.getByRole('button', { name: 'Value condition', exact: true }),
+    conditionProperty: (page: Page) => page.getByRole('combobox', { name: 'Property', exact: true }),
+    compareWith: (page: Page) => page.getByRole('combobox', { name: 'Compare with', exact: true }),
+    addAction: (page: Page) => page.getByRole('button', { name: 'Add action', exact: true }),
+    actionDevice: (page: Page) => page.getByRole('combobox', { name: 'Action 1 device', exact: true }),
+    addValue: (page: Page) => page.getByRole('button', { name: 'Add value', exact: true }),
+    propertyToSet: (page: Page) => page.getByRole('combobox', { name: 'Property to set', exact: true }),
+    newValue: (page: Page) => page.getByRole('combobox', { name: 'New value', exact: true }),
+    numericValue: (page: Page) => page.getByRole('spinbutton', { name: 'New value', exact: true }),
+    summary: (page: Page) => page.locator('.nh-sentence'),
   },
   devices: {
+    path: (id: string) => `/devicepage/${id}`,
+    state: (page: Page) => page.getByRole('switch', { name: 'State', exact: true }),
     listPath: '/devicelist',
     listRows: (page: Page): Locator => page.locator('tbody tr'),
     openFromList: async (page: Page, name: string) => page.getByRole('link', { name: new RegExp(`^${name}`) }).first().click(),

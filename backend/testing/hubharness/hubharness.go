@@ -29,21 +29,23 @@ import (
 // Timeout bounds every wait the harness performs.
 const Timeout = 5 * time.Second
 
-// EventHub records broadcasts and exposes the UI "set value" and "save
-// automation" handlers so a test can drive the same paths as the UI.
+// EventHub records broadcasts and exposes UI command handlers so a test can
+// drive the same paths as the UI, optionally through a real transport.
 type EventHub struct {
-	*mocks.MockEventHub
-	mu             sync.Mutex
-	setValue       func(p interface{}) error
-	saveAutomation func(p interface{}) error
-	broadcast      func(eventName string, data interface{})
-	broadcastErr   error
+	ws.EventHub
+	mu               sync.Mutex
+	setValue         func(p interface{}) error
+	saveAutomation   func(p interface{}) error
+	deleteAutomation func(p interface{}) (interface{}, error)
+	broadcast        func(eventName string, data interface{})
+	broadcastErr     error
 }
 
 func (h *EventHub) OnSaveAutomation(action func(p interface{}) error) {
 	h.mu.Lock()
-	defer h.mu.Unlock()
 	h.saveAutomation = action
+	h.mu.Unlock()
+	h.EventHub.OnSaveAutomation(action)
 }
 
 // SaveAutomation invokes the registered UI "save automation" handler.
@@ -52,6 +54,22 @@ func (h *EventHub) SaveAutomation(p interface{}) error {
 	action := h.saveAutomation
 	h.mu.Unlock()
 	return action(p)
+}
+
+func (h *EventHub) OnDeleteAutomation(action func(p interface{}) (interface{}, error)) {
+	h.mu.Lock()
+	h.deleteAutomation = action
+	h.mu.Unlock()
+	h.EventHub.OnDeleteAutomation(action)
+}
+
+// DeleteAutomation invokes the registered UI "delete automation" handler.
+func (h *EventHub) DeleteAutomation(p interface{}) error {
+	h.mu.Lock()
+	action := h.deleteAutomation
+	h.mu.Unlock()
+	_, err := action(p)
+	return err
 }
 
 // FailBroadcasts makes every later broadcast return err (nil restores success).
@@ -64,8 +82,9 @@ func (h *EventHub) FailBroadcasts(err error) {
 
 func (h *EventHub) OnDeviceSetValue(action func(p interface{}) error) {
 	h.mu.Lock()
-	defer h.mu.Unlock()
 	h.setValue = action
+	h.mu.Unlock()
+	h.EventHub.OnDeviceSetValue(action)
 }
 
 // SetValue invokes the registered UI "set value" handler.
@@ -90,7 +109,10 @@ func (h *EventHub) Broadcast(eventName string, data interface{}) error {
 	if fn != nil {
 		fn(eventName, data)
 	}
-	return err
+	if err != nil {
+		return err
+	}
+	return h.EventHub.Broadcast(eventName, data)
 }
 
 // Store is the hub's real test store with injectable device/metrics write failures.
@@ -162,8 +184,22 @@ func New(tb testing.TB, devs []*devices.Device, automationList ...automations.Au
 // deviceCount devices.
 func NewFromBridge(tb testing.TB, bridgeList []byte, deviceCount int, automationList ...automations.Automation) *Harness {
 	tb.Helper()
+	transport := mocks.NewMockEventHub()
+	transport.SetMockBroadcastEvent(func(string, interface{}) error { return nil })
+	return newFromBridge(tb, bridgeList, deviceCount, transport, automationList)
+}
 
-	eventHub := &EventHub{MockEventHub: mocks.NewMockEventHub()}
+// NewFromBridgeWithEventHub uses a caller-owned transport, for browser integration
+// tests that need real WebSocket delivery as well as in-memory MQTT.
+func NewFromBridgeWithEventHub(tb testing.TB, bridgeList []byte, deviceCount int, eventHub ws.EventHub, options ...controllers.HubControllerOption) *Harness {
+	tb.Helper()
+	return newFromBridge(tb, bridgeList, deviceCount, eventHub, nil, options...)
+}
+
+func newFromBridge(tb testing.TB, bridgeList []byte, deviceCount int, transport ws.EventHub, automationList []automations.Automation, options ...controllers.HubControllerOption) *Harness {
+	tb.Helper()
+
+	eventHub := &EventHub{EventHub: transport}
 	appStore := &Store{AppStore: utils_test.CreateStore()}
 
 	var paho *mocks.FakePahoClient
@@ -172,7 +208,7 @@ func NewFromBridge(tb testing.TB, bridgeList []byte, deviceCount int, automation
 		return paho
 	}))
 
-	hub := controllers.RegisterHubController(eventHub, appStore, client)
+	hub := controllers.RegisterHubController(eventHub, appStore, client, options...)
 	if hub == nil {
 		tb.Fatal("hub controller failed to start")
 	}

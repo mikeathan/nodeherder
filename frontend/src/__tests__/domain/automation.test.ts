@@ -1,9 +1,9 @@
-import { cloneAutomation, describeTrigger, issuesUnder, newAutomation, sameAutomation, validateAutomation } from '@/domain/automation';
+import { cloneAutomation, describeCondition, describeTrigger, issuesUnder, newAutomation, sameAutomation, validateAutomation } from '@/domain/automation';
 import { Automation, AutomationTrigger } from '@/types/automation.type';
 import { device, expose } from '../helpers/devices';
 
 const lamp = device('lamp', { friendly_name: 'Desk lamp' }, [
-  expose('state', { type: 'binary' as never, access_mode: 'readwrite' as never, values: { on: 'ON', off: 'OFF' } }),
+  expose('state', { type: 'binary' as never, access_mode: 'readwrite' as never, values: { on: 'ON', off: 'OFF', toggle: 'TOGGLE' } }),
   expose('brightness', { access_mode: 'readwrite' as never, attributes: { min: 0, max: 254 } }),
 ]);
 const sensor = device('pir', { friendly_name: 'Hall sensor' }, [expose('occupancy', { type: 'binary' as never, values: { on: true, off: false } })]);
@@ -22,6 +22,15 @@ const automation = (triggers: AutomationTrigger[]): Automation => ({
 });
 
 describe('describeTrigger', () => {
+  it('summarises a native toggle as a command, while conditions remain state comparisons', () => {
+    const t = trigger({ actions: [{ id: 'lamp', type: 'trigger', exposes: [{ name: 'state', data: 'TOGGLE' }] } as never] });
+    const a = automation([t]);
+    expect(describeTrigger(a, t, lookup)).toContain('then set Desk lamp state to Toggle.');
+    expect(describeCondition({ ...a, id: 'lamp' }, { type: 'expose', name: 'state', equality: '=', value: 'TOGGLE' }, lookup)).toBe('state = Unknown');
+    expect(sameAutomation(a, cloneAutomation(a))).toBe(true);
+    expect(validateAutomation(a, lookup).errors).toEqual([]);
+  });
+
   it('summarises a device trigger as a sentence', () => {
     const a = automation([trigger()]);
     expect(describeTrigger(a, a.triggers[0], lookup)).toBe('When Hall sensor occupancy changes, if occupancy = Detected, then set Desk lamp state to On.');

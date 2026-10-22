@@ -4,7 +4,10 @@ import {
   expect,
   test,
   beforeEach,
+  jest,
 } from '@jest/globals';
+import { createStore } from 'vuex';
+import { AutomationModule } from '@/store/modules/automation';
 import { store } from '../../../../store/index';
 import { default as automation1 } from '../../../../../../backend/configs/automations/0x001788010d7d9d3f.json';
 import { default as automation2 } from '../../../../../../backend/configs/automations/0xa4c13894070052fc.json';
@@ -15,6 +18,28 @@ import {
 } from '../../../../types/automation.type';
 
 describe('test automation module', () => {
+  test('save uses the same canonical command for Vuex and the wire without changing the draft', async () => {
+    const emit = jest.fn();
+    const isolated = createStore({ modules: {
+      automations: AutomationModule,
+      ws: { namespaced: true, actions: { emit } },
+    } });
+    const draft: Automation = {
+      id: 'dial', type: 'device', friendlyname: 'Test dial', description: '', enabled: true, schedules: [],
+      triggers: [{ name: 'action', type: 'deviceTrigger', conditions: [], actions: [{
+        id: 'light', type: 'trigger', publishMode: 'batch', exposes: [{ name: 'state', data: 'TOGGLE' }], delay: { unit: 'seconds', value: 0 },
+      }] }],
+    };
+    const before = JSON.stringify(draft);
+    await isolated.dispatch('automations/save', draft);
+    const stored = isolated.getters['automations/find']('dial');
+    expect(stored.triggers[0].actions[0]).not.toHaveProperty('delay');
+    expect(stored.triggers[0].actions[0].exposes).toEqual([{ name: 'state', data: 'TOGGLE' }]);
+    expect(emit).toHaveBeenCalledTimes(1);
+    expect(emit.mock.calls[0][1]).toEqual({ event: 'saveAutomation', message: stored });
+    expect(JSON.stringify(draft)).toBe(before);
+  });
+
   beforeEach(() => {
     store.commit('automations/clear');
   });

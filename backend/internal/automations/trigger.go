@@ -211,6 +211,7 @@ func (tl *TriggerList) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	decoded := make(TriggerList, 0, len(rawList))
 	for _, raw := range rawList {
 		var peek struct {
 			Type TriggerType `json:"type"`
@@ -230,7 +231,8 @@ func (tl *TriggerList) UnmarshalJSON(data []byte) error {
 			return fmt.Errorf("unmarshal %s: %w", peek.Type, err)
 		}
 
-		*tl = append(*tl, trigger.(Trigger))
+		decoded = append(decoded, trigger.(Trigger))
 	}
+	*tl = decoded
 	return nil
 }

@@ -19,6 +19,72 @@ import (
 	"time"
 )
 
+func TestDirtyCallbackMayRegisterAnotherCallback(t *testing.T) {
+	app, err := store.NewAppStore(&mocks.NopRepository{}, nil, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var order []int
+	var once sync.Once
+	app.RegisterIsDirtyCallback(func() {
+		order = append(order, 1)
+		once.Do(func() { app.RegisterIsDirtyCallback(func() { order = append(order, 3) }) })
+	})
+	app.RegisterIsDirtyCallback(func() { order = append(order, 2) })
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for i := 0; i < 2; i++ {
+			if err := app.RemoveDeviceById("synthetic"); err != nil {
+				t.Error(err)
+				return
+			}
+		}
+	}()
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("callback registration deadlocked inside a notification")
+	}
+	if fmt.Sprint(order) != "[1 2 1 2 3]" {
+		t.Fatalf("callback snapshots/order = %v", order)
+	}
+}
+
+func TestDirtyCallbackRegistrationConcurrentWithDeviceWrites(t *testing.T) {
+	app, err := store.NewAppStore(&mocks.NopRepository{}, nil, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var notified atomic.Int64
+	app.RegisterIsDirtyCallback(func() { notified.Add(1) })
+	start := make(chan struct{})
+	var work sync.WaitGroup
+	work.Add(2)
+	go func() {
+		defer work.Done()
+		<-start
+		for i := 0; i < 256; i++ {
+			app.RegisterIsDirtyCallback(func() {})
+		}
+	}()
+	go func() {
+		defer work.Done()
+		<-start
+		for i := 0; i < 256; i++ {
+			if err := app.RemoveDeviceById("synthetic"); err != nil {
+				t.Error(err)
+				return
+			}
+		}
+	}()
+	close(start)
+	work.Wait()
+	if notified.Load() != 256 {
+		t.Fatalf("lost notifications: %d", notified.Load())
+	}
+}
+
 type cleanupLifecycleRepo struct {
 	mocks.NopMetricsRepo
 	prune func(time.Duration) error

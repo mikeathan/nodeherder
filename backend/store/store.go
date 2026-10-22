@@ -10,6 +10,7 @@ import (
 	"node-herder/repository"
 	"node-herder/utils"
 	"sort"
+	"sync"
 	"time"
 )
 
@@ -48,6 +49,7 @@ type appStore struct {
 	config           *settings.AppConfigCache
 	assistantRepo    assistant.Repository
 	deviceIdMapper   *repository.DeviceIdMapper
+	dirtyMu          sync.RWMutex
 	isDirtyCallbacks []AppStoreDirtyFlagCallback
 }
 
@@ -66,11 +68,21 @@ func NewAppStore(devices devices.Repository, metrics metrics.Repository, config 
 }
 
 func (s *appStore) RegisterIsDirtyCallback(cb AppStoreDirtyFlagCallback) {
-	s.isDirtyCallbacks = append(s.isDirtyCallbacks, cb)
+	s.dirtyMu.Lock()
+	defer s.dirtyMu.Unlock()
+	// Publish an immutable slice: notifications can retain their snapshot after
+	// releasing the lock, including when a callback registers another callback.
+	callbacks := make([]AppStoreDirtyFlagCallback, len(s.isDirtyCallbacks)+1)
+	copy(callbacks, s.isDirtyCallbacks)
+	callbacks[len(s.isDirtyCallbacks)] = cb
+	s.isDirtyCallbacks = callbacks
 }
 
 func (s *appStore) markDirty() {
-	for _, cb := range s.isDirtyCallbacks {
+	s.dirtyMu.RLock()
+	callbacks := s.isDirtyCallbacks
+	s.dirtyMu.RUnlock()
+	for _, cb := range callbacks {
 		cb()
 	}
 }

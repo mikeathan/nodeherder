@@ -43,7 +43,7 @@
     <div v-for="(row, i) in action.exposes" :key="i" class="nh-set-row">
       <UiSelect :model-value="row.name" :options="exposeOptions(target, writable, row.name)" label="Property to set" placeholder="Choose a property" :invalid="has(`exposes.${i}.name`)" @update:model-value="setProperty(row, $event)" />
       <span class="nh-arrow" aria-hidden="true">→</span>
-      <ExposeValueInput v-model="row.data" :expose="target?.exposes[row.name]" label="New value" :invalid="has(`exposes.${i}.data`)" :disabled="!row.name" />
+      <ExposeValueInput v-model="row.data" :expose="target?.exposes[row.name]" label="New value" allow-commands :invalid="has(`exposes.${i}.data`)" :disabled="!row.name" />
       <UiButton size="sm" variant="ghost" icon="remove" label="Remove this value" @click="removeRow(i)" />
       <IssueText :issues="issues" :path="`${path}.exposes.${i}.name`" />
       <IssueText :issues="issues" :path="`${path}.exposes.${i}.data`" />

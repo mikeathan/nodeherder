@@ -2,6 +2,7 @@ import { Module } from 'vuex';
 import { RootState } from '../../state';
 import { AutomationModuleState } from './state';
 import { AutomationMap, Automation, Automations } from '../../../types/automation.type';
+import { automationPayload } from '@/contracts/automations';
 
 export const AutomationModule: Module<AutomationModuleState, RootState> = {
   namespaced: true,
@@ -59,9 +60,10 @@ export const AutomationModule: Module<AutomationModuleState, RootState> = {
       state.initialized = true;
     },
 
-    save({ commit, dispatch, rootState }, automation: Automations) {
-      commit('add', automation);
-      dispatch('ws/emit', { event: 'saveAutomation', message: automation }, { root: true });
+    save({ commit, dispatch }, automation: Automation) {
+      const payload = automationPayload(automation);
+      commit('add', payload);
+      dispatch('ws/emit', { event: 'saveAutomation', message: payload }, { root: true });
     },
 
     delete({ commit, dispatch, rootState }, id: string) {

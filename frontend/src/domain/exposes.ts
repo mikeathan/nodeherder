@@ -164,6 +164,26 @@ export function binaryOnValue(e: Expose): unknown {
 export function binaryOffValue(e: Expose): unknown {
   return e.values && 'off' in e.values ? e.values['off'] : false;
 }
+
+/** A toggle is a device-declared command, never a confirmed binary state. */
+function binaryToggleValue(e: Expose): string | undefined {
+  const value = e.values?.['toggle'];
+  return e.type === ExposeTypes.Binary && typeof value === 'string' && value.trim() !== '' &&
+    value !== binaryOnValue(e) && value !== binaryOffValue(e) ? value : undefined;
+}
+
+export function binaryValueOptions(e: Expose, allowCommands = false): { value: unknown; label: string }[] {
+  const options = [binaryOnValue(e), binaryOffValue(e)].map((value) => ({ value, label: formatExposeValue(e, value) }));
+  const toggle = allowCommands ? binaryToggleValue(e) : undefined;
+  if (toggle !== undefined) options.push({ value: toggle, label: 'Toggle' });
+  return options;
+}
+
+/** Action presentation includes supported commands; readings/conditions stay strict. */
+export function formatExposeCommandValue(e: Expose, value: unknown): string {
+  const toggle = binaryToggleValue(e);
+  return toggle !== undefined && value === toggle ? 'Toggle' : formatExposeValue(e, value);
+}
 export function isBinaryOn(e: Expose, value: unknown = e.data): boolean {
   return binaryStateOf(e, value) === true;
 }

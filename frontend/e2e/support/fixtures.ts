@@ -54,6 +54,34 @@ export async function signIn(page: Page, path = '/'): Promise<void> {
   if (path !== '/') await page.goto(path);
 }
 
+export const AUTOMATION_HUB_API = 'http://localhost:4120/api';
+
+/** Select the isolated Go hub for this page only; the other suites keep the Node mock. */
+export async function signInAutomationHub(page: Page, path: string): Promise<void> {
+  await page.route(`${HUB_API}/**`, async (route) => {
+    const response = await route.fetch({ url: route.request().url().replace(HUB_API, AUTOMATION_HUB_API) });
+    await route.fulfill({ response });
+  });
+  await page.addInitScript(() => {
+    const NativeWebSocket = window.WebSocket;
+    window.WebSocket = class extends NativeWebSocket {
+      constructor(url: string | URL, protocols?: string | string[]) {
+        const target = new URL(url);
+        if (target.hostname === 'localhost' && target.port === '4110' && target.pathname === '/ws') target.port = '4120';
+        super(target, protocols);
+      }
+    };
+  });
+  const login = await page.request.post(`${AUTOMATION_HUB_API}/auth/login`);
+  expect(login.ok()).toBeTruthy();
+  const { url } = await login.json();
+  await page.goto(url);
+  await expect(page).not.toHaveURL(/auth=success/);
+  const reset = await page.request.post(`${AUTOMATION_HUB_API}/__test/reset`);
+  expect(reset.status()).toBe(204);
+  await page.goto(path);
+}
+
 type Fixtures = { ws: WsRecorder };
 
 export const test = base.extend<Fixtures>({

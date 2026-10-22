@@ -1,6 +1,7 @@
 import { describe, expect, test } from '@jest/globals';
 import {
   binaryStateOf,
+  binaryValueOptions,
   capabilityOf,
   colourTemperatureName,
   controlOf,
@@ -9,10 +10,44 @@ import {
   exposePresets,
   exposeRange,
   formatExposeValue,
+  formatExposeCommandValue,
   isBinaryOn,
   stateExposeOf,
 } from '@/domain/exposes';
 import { device, expose, hubDevices } from '../helpers/devices';
+
+describe('binary automation values', () => {
+  const state = expose('state', {
+    type: 'binary' as never, values: { on: 'ON', off: 'OFF', toggle: 'TOGGLE' },
+  });
+
+  test('commands opt in to the native toggle without treating it as a reported state', () => {
+    expect(binaryValueOptions(state)).toEqual([{ value: 'ON', label: 'On' }, { value: 'OFF', label: 'Off' }]);
+    expect(binaryValueOptions(state, true)).toEqual([
+      { value: 'ON', label: 'On' }, { value: 'OFF', label: 'Off' }, { value: 'TOGGLE', label: 'Toggle' },
+    ]);
+    expect(formatExposeCommandValue(state, 'TOGGLE')).toBe('Toggle');
+    expect(formatExposeValue(state, 'TOGGLE')).toBe('Unknown');
+    expect(binaryStateOf(state, 'TOGGLE')).toBeNull();
+    expect(formatExposeCommandValue(state, 'ON')).toBe('On');
+  });
+
+  test.each([undefined, null, '', '   ', false, 0, {}, [], 'ON', 'OFF'])('ignores invalid/duplicate toggle %p', (toggle) => {
+    const e = { ...state, values: { on: 'ON', off: 'OFF', toggle } };
+    expect(binaryValueOptions(e, true)).toEqual(binaryValueOptions(e));
+    expect(formatExposeCommandValue(e, 'TOGGLE')).toBe('Unknown');
+  });
+
+  test('does not invent toggle; preserves booleans, zero and device-specific strings', () => {
+    expect(binaryValueOptions({ ...state, values: {} }, true)).toEqual([
+      { value: true, label: 'On' }, { value: false, label: 'Off' },
+    ]);
+    expect(binaryValueOptions({ ...state, values: { on: false, off: 0, toggle: 'invert' } }, true)).toEqual([
+      { value: false, label: 'On' }, { value: 0, label: 'Off' }, { value: 'invert', label: 'Toggle' },
+    ]);
+    expect(formatExposeCommandValue({ ...state, type: 'enum' as never }, 'TOGGLE')).toBe('TOGGLE');
+  });
+});
 
 describe('expose capabilities', () => {
   test('writable binary is a switch, read-only binary a sensor', () => {
