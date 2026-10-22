@@ -29,6 +29,8 @@ function fixture(t) {
   fs.writeFileSync(path.join(root, 'bin/docker'), `#!/bin/bash
 printf '%s\\t' "$@" >> "$MOCK_LOG"
 printf '\\n' >> "$MOCK_LOG"
+if [[ " $* " == *" config "* && " $* " != *" --quiet "* && -n "\${MOCK_PROJECT:-}" ]]; then printf 'name: %s\\n' "$MOCK_PROJECT"; fi
+if [[ " $* " == *" network ls "* && -n "\${MOCK_NETWORK:-}" ]]; then printf '%s\\n' "$MOCK_NETWORK"; fi
 if [[ " $* " == *" network inspect "* && -n "\${MOCK_GATEWAY:-}" ]]; then printf '%s\\n' "$MOCK_GATEWAY"; fi
 if [[ " $* " == *" ps -aq frontend "* && -n "\${MOCK_FRONTEND_IP:-}" ]]; then printf 'frontend-id\\n'; fi
 if [[ " $* " == *" inspect frontend-id "* && -n "\${MOCK_FRONTEND_IP:-}" ]]; then printf '%s\\n' "$MOCK_FRONTEND_IP"; fi
@@ -42,7 +44,11 @@ if [[ -n "\${MOCK_FAIL:-}" && " $* " == *" $MOCK_FAIL "* ]]; then exit 17; fi
       const result = spawnSync('/bin/bash', [path.join(root, 'scripts/manage-stack.sh'), ...args], {
         cwd: path.join(root, 'elsewhere'), encoding: 'utf8',
         env: { ...process.env, APP_VERSION: '1.2.3', NO_COLOR: '1',
-          PATH: `${root}/bin`, MOCK_LOG: log, ...extra },
+          PATH: `${root}/bin`, MOCK_LOG: log,
+          // Compose reports a normalized project name and the networks it owns.
+          MOCK_PROJECT: extra.MOCK_GATEWAY ? 'fixture' : '',
+          MOCK_NETWORK: extra.MOCK_GATEWAY ? 'fixture_nodeherder' : '',
+          ...extra },
       });
       const calls = fs.readFileSync(log, 'utf8').trim().split('\n').filter(Boolean)
         .map(line => line.split('\t').filter(Boolean));
@@ -375,4 +381,27 @@ test('malformed inspector output is never trusted', t => {
   const ipv6 = f.run(['start', 'backend'], { MOCK_GATEWAY: 'fd00::1' });
   assert.equal(ipv6.status, 0, ipv6.output);
   assert.match(fs.readFileSync(override, 'utf8'), /TRUSTED_PROXY_CIDRS: "fd00::1\/128"/);
+});
+
+test('project name comes from Compose, not the checkout directory', t => {
+  const f = fixture(t);
+  // A directory Compose normalizes differently must still resolve its own network.
+  const r = f.run(['start', 'backend'], {
+    MOCK_PROJECT: 'nodeherder', MOCK_NETWORK: 'nodeherder_nodeherder', MOCK_GATEWAY: '172.19.0.1',
+  });
+  assert.equal(r.status, 0, r.output);
+  const override = path.join(f.root, '.generated', 'compose.proxy-allowlist.yml');
+  assert.match(fs.readFileSync(override, 'utf8'), /TRUSTED_PROXY_CIDRS: "172\.19\.0\.1\/32"/);
+  assert.ok(
+    r.calls.some((args) => args.includes('label=com.docker.compose.project=nodeherder')),
+    'network lookup must use the Compose project label',
+  );
+});
+
+test('a project without a resolvable gateway warns instead of trusting a guess', t => {
+  const f = fixture(t);
+  const r = f.run(['start', 'backend'], { MOCK_PROJECT: 'nodeherder' });
+  assert.equal(r.status, 0, r.output);
+  assert.match(r.output, /TRUSTED_PROXY_CIDRS manually/);
+  assert.equal(fs.existsSync(path.join(f.root, '.generated')), false);
 });
