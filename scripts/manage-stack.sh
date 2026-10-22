@@ -194,28 +194,39 @@ prepare_proxy_allowlist() {
     printf 'Using configured TRUSTED_PROXY_CIDRS.\n'
     return 0
   fi
-  local project network gateway frontend frontend_id gateway_cidr frontend_cidr peers
+  local project networks network gateway frontend frontend_id cidr peers
   STEP="creating the Compose network to resolve proxy peers"
   "${COMPOSE[@]}" create "${SERVICES[@]}" >/dev/null
-  project=$(printf '%s' "${COMPOSE_PROJECT_NAME:-${ROOT_DIR##*/}}" | tr '[:upper:]' '[:lower:]')
-  network="${project}_nodeherder"
-  gateway=$(docker network inspect "$network" \
-    --format '{{(index .IPAM.Config 0).Gateway}}' 2>/dev/null | sed -n '1p' || true)
-  if [[ "$gateway" == '<no value>' ]]; then gateway=''; fi
-  frontend=''
+  # Ask Compose for its normalized project name: it lowercases and strips characters
+  # from directory names, so deriving the network name by hand silently misses.
+  project=$("${COMPOSE[@]}" config 2>/dev/null | sed -n 's/^name:[[:space:]]*//p' | sed -n '1p' || true)
+  peers=''
+  if [[ -n "$project" ]]; then
+    STEP="reading the Compose network gateway"
+    networks=$(docker network ls --filter "label=com.docker.compose.project=$project" \
+      --format '{{.Name}}' 2>/dev/null || true)
+    for network in $networks; do
+      gateway=$(docker network inspect "$network" \
+        --format '{{(index .IPAM.Config 0).Gateway}}' 2>/dev/null | sed -n '1p' || true)
+      if [[ "$gateway" == '<no value>' ]]; then gateway=''; fi
+      cidr=$(addressed_cidr "$gateway")
+      if [[ -n "$cidr" && ",$peers," != *",$cidr,"* ]]; then
+        peers="${peers:+$peers,}$cidr"
+      fi
+    done
+  fi
   if [[ " $* " == *" frontend "* ]]; then
+    STEP="reading the frontend container address"
     frontend_id=$("${COMPOSE[@]}" ps -aq frontend 2>/dev/null | sed -n '1p' || true)
     if [[ -n "$frontend_id" ]]; then
       frontend=$(docker inspect "$frontend_id" \
         --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{"\n"}}{{end}}' 2>/dev/null | sed -n '1p' || true)
       frontend=${frontend//[[:space:]]/}
+      cidr=$(addressed_cidr "$frontend")
+      if [[ -n "$cidr" && ",$peers," != *",$cidr,"* ]]; then
+        peers="${peers:+$peers,}$cidr"
+      fi
     fi
-  fi
-  gateway_cidr=$(addressed_cidr "$gateway")
-  frontend_cidr=$(addressed_cidr "$frontend")
-  peers="$gateway_cidr"
-  if [[ -n "$frontend_cidr" && "$frontend_cidr" != "$gateway_cidr" ]]; then
-    peers="${peers:+$peers,}$frontend_cidr"
   fi
   if [[ -z "$peers" ]]; then
     printf 'Warning: could not resolve the Compose proxy peer; set TRUSTED_PROXY_CIDRS manually (docs/setup.md).\n' >&2
@@ -225,7 +236,7 @@ prepare_proxy_allowlist() {
   printf 'services:\n  backend:\n    environment:\n      TRUSTED_PROXY_CIDRS: "%s"\n' "$peers" \
     >"$PROXY_OVERRIDE"
   COMPOSE+=(-f "$PROXY_OVERRIDE")
-  printf 'Trusted proxy peers: %s\n' "$peers"
+  printf 'Trusted proxy peers: %s (written to %s)\n' "$peers" "$PROXY_OVERRIDE"
 }
 STEP="$ACTION services"
 case "$ACTION" in

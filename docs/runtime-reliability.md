@@ -86,9 +86,11 @@ Before upgrading a deployment that uses local sign-in behind Nginx:
    never all private networks, all Docker peers or 0.0.0.0/0. Keep direct backend access
    behind the deployment's firewall/access controls.
 2. `scripts/manage-stack.sh start|rebuild` does this automatically: it creates the
-   Compose network, reads the network gateway (and the frontend container address when
-   that service is in scope), and passes them to the backend through
-   `.generated/compose.proxy-allowlist.yml`. Keep `OFFLINE_STRICT_LOCAL=true` where
+   Compose network, asks Compose for the normalized project name, reads that project's
+   network gateway (and the frontend container address when that service is in scope),
+   and passes them to the backend through `.generated/compose.proxy-allowlist.yml`.
+   The resolved value lives in the backend container environment only; print it with
+   `docker inspect nodeherder-backend --format '{{range .Config.Env}}{{println .}}{{end}}'`. Keep `OFFLINE_STRICT_LOCAL=true` where
    local sign-in is intended; false disables it. If you started the stack by hand, or
    want to pin peers yourself, set `TRUSTED_PROXY_CIDRS` in backend/.env instead — an
    explicit value always wins over the computed one. Do not trust all private networks,
