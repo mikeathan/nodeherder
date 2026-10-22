@@ -43,6 +43,22 @@ export class DeviceAutomation implements Automation {
   }
 }
 
+/** The editor represents no wait as zero; the hub expects the optional delay absent. */
+export function automationPayload(automation: Automation): Automation {
+  return {
+    ...automation,
+    triggers: automation.triggers.map((trigger) => ({
+      ...trigger,
+      actions: trigger.actions.map((action) => {
+        if (!isTriggerAction(action) || action.delay?.value !== 0) return action;
+        const immediate = { ...action };
+        delete immediate.delay;
+        return immediate;
+      }),
+    })),
+  };
+}
+
 export class EditableAutomationTrigger implements AutomationTrigger {
   name: string;
   type: TriggerType;

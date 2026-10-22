@@ -6,17 +6,13 @@
   import { computed } from 'vue';
   import { Expose } from '@/types/device';
   import { ExposeTypes } from '@/types/device.type';
-  import { exposePresets, formatExposeValue } from '@/domain/exposes';
+  import { binaryValueOptions, exposePresets } from '@/domain/exposes';
   import UiSelect from '@/components/ui/UiSelect.vue';
 
-  const props = defineProps<{ expose: Expose | undefined; label: string; id?: string; invalid?: boolean; disabled?: boolean }>();
+  const props = defineProps<{ expose: Expose | undefined; label: string; id?: string; invalid?: boolean; disabled?: boolean; allowCommands?: boolean }>();
   const value = defineModel<unknown>({ required: true });
 
-  const binaryOptions = computed(() => {
-    const e = props.expose!;
-    const values = e.values && 'on' in e.values ? [e.values['on'], e.values['off']] : [true, false];
-    return values.map((v) => ({ value: v, label: formatExposeValue(e, v) }));
-  });
+  const binaryOptions = computed(() => (props.expose ? binaryValueOptions(props.expose, props.allowCommands) : []));
   const presets = computed(() => (props.expose ? exposePresets(props.expose) : []));
   const unit = computed(() => (props.expose?.unit && props.expose.unit !== 'lqi' ? props.expose.unit : ''));
 

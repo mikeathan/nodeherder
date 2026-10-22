@@ -21,6 +21,14 @@ import (
 )
 
 func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store store.AppStore, mcpServer *mcpserver.Server, ctx context.Context) (*api.ApiServer, error) {
+	router, err := newRouter(port, ws, hub, store, mcpServer, ctx)
+	if err != nil {
+		return nil, err
+	}
+	return api.NewHttpServer(port, api.WithContext(ctx), api.WithRouter(router)), nil
+}
+
+func newRouter(port int, ws ws.EventHub, hub *controllers.HubController, store store.AppStore, mcpServer *mcpserver.Server, ctx context.Context) (*api.Router, error) {
 
 	router := api.NewRouter()
 	fservice := fs.NewFileSystem()
@@ -69,13 +77,7 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store
 	// authentication routes
 	router.AddAuthentication(authProvider.OAuth())
 
-	apiServer := api.NewHttpServer(
-		port,
-		api.WithContext(ctx),
-		api.WithRouter(router),
-	)
-
-	return apiServer, nil
+	return router, nil
 }
 
 func Register(port int, store store.AppStore, ctx context.Context) (*api.ApiServer, error) {

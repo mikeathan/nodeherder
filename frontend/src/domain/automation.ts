@@ -14,7 +14,7 @@ import {
   isTimeCondition,
 } from '@/types/automation.type';
 import { DeviceAutomation, isPresetCyclingAction, isStepAction, isTriggerAction } from '@/contracts/automations';
-import { exposeLabel, formatExposeValue } from './exposes';
+import { exposeLabel, formatExposeCommandValue, formatExposeValue } from './exposes';
 
 export type DeviceLookup = (id: string) => Device | undefined;
 export type Issue = { path: string; message: string };
@@ -23,10 +23,10 @@ export type Validation = { errors: Issue[]; warnings: Issue[] };
 const HH_MM = /^([01]\d|2[0-3]):[0-5]\d$/;
 const blank = (v: unknown) => v === null || v === undefined || v === '';
 
-const valueText = (device: Device | undefined, exposeName: string, value: unknown): string => {
+const valueText = (device: Device | undefined, exposeName: string, value: unknown, command = false): string => {
   const e: Expose | undefined = device?.exposes[exposeName];
   if (blank(value)) return '…';
-  return e ? formatExposeValue(e, value) : String(value);
+  return e ? (command ? formatExposeCommandValue(e, value) : formatExposeValue(e, value)) : String(value);
 };
 const lower = (name: string) => (name ? exposeLabel(name).toLowerCase() : '…');
 
@@ -62,7 +62,7 @@ export function describeAction(a: AutomationAction, lookup: DeviceLookup): strin
   const device = a.id ? lookup(a.id) : undefined;
   const target = device?.friendly_name ?? (a.id ? a.id : '…');
   if (isTriggerAction(a)) {
-    const values = a.exposes.length ? a.exposes.map((x) => `${lower(x.name)} to ${valueText(device, x.name, x.data)}`).join(', ') : '…';
+    const values = a.exposes.length ? a.exposes.map((x) => `${lower(x.name)} to ${valueText(device, x.name, x.data, true)}`).join(', ') : '…';
     const wait = a.delay && a.delay.value > 0 ? ` after ${a.delay.value} ${a.delay.unit}` : '';
     return `set ${target} ${values}${wait}`;
   }
@@ -121,7 +121,7 @@ export function validateAutomation(a: Automation, lookup: DeviceLookup): Validat
           else if (blank(row.data)) err(`${ap}.exposes.${n}.data`, 'Enter a value.');
           if (x.id === a.id && row.name && row.name === t.name) warn(ap, 'This sets the property that starts the trigger. The hub prevents loops, but check it is intended.');
         });
-        if (x.delay && (!Number.isFinite(x.delay.value) || x.delay.value < 0)) err(`${ap}.delay.value`, 'Enter a wait of 0 or more.');
+        if (x.delay && (!Number.isFinite(x.delay.value) || x.delay.value < 0)) err(`${ap}.delay.value`, 'Enter a wait of 0 or more; 0 means no wait.');
       } else if (isStepAction(x)) {
         if (!x.property) err(`${ap}.property`, 'Choose a number property.');
         // the hub reads the amount as a JSON number (operations.go), never a string

@@ -17,6 +17,36 @@ import (
 	"time"
 )
 
+func TestTriggerListDecodingPreservesEmptyAndReplacesExistingList(t *testing.T) {
+	var list automations.TriggerList
+	for _, input := range []string{`[]`, `null`} {
+		if err := json.Unmarshal([]byte(input), &list); err != nil {
+			t.Fatal(err)
+		}
+		encoded, err := json.Marshal(list)
+		if err != nil || string(encoded) != "[]" {
+			t.Fatalf("empty %s decoded as %s: %v", input, encoded, err)
+		}
+	}
+	for _, name := range []string{"first", "replacement"} {
+		input := fmt.Sprintf(`[{"type":"deviceTrigger","name":%q,"conditions":[],"actions":[]}]`, name)
+		if err := json.Unmarshal([]byte(input), &list); err != nil {
+			t.Fatal(err)
+		}
+		if len(list) != 1 || list[0].GetName() != name {
+			t.Fatalf("list was appended instead of replaced: %v", list)
+		}
+	}
+	before, _ := json.Marshal(list)
+	if err := json.Unmarshal([]byte(`[{"type":"deviceTrigger","name":"partial"},{"type":"unknown"}]`), &list); err == nil {
+		t.Fatal("unknown trigger type accepted")
+	}
+	after, _ := json.Marshal(list)
+	if string(after) != string(before) {
+		t.Fatalf("invalid input changed the list: before %s, after %s", before, after)
+	}
+}
+
 type delayedLifecycleClient struct {
 	mocks.MockMqttClient
 	publish func(string, interface{})

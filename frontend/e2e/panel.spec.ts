@@ -77,13 +77,24 @@ test.describe('browser default view', () => {
     await page.goto('/');
     await expect(page).toHaveURL(/\/groupdashboard$/);
     await page.addInitScript(() => {
-      for (const method of ['getItem', 'setItem', 'removeItem'] as const) {
-        const original = Storage.prototype[method];
-        Storage.prototype[method] = function (key: string, value?: string) {
-          if (key === 'nodeherder_default_view') throw new Error('Preference storage blocked');
-          return original.call(this, key, value as string);
-        } as typeof original;
-      }
+      const guard = (key: string) => {
+        if (key === 'nodeherder_default_view') throw new Error('Preference storage blocked');
+      };
+      const getItem = Storage.prototype.getItem;
+      Storage.prototype.getItem = function (this: Storage, key: string) {
+        guard(key);
+        return getItem.call(this, key);
+      };
+      const setItem = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (this: Storage, key: string, value: string) {
+        guard(key);
+        setItem.call(this, key, value);
+      };
+      const removeItem = Storage.prototype.removeItem;
+      Storage.prototype.removeItem = function (this: Storage, key: string) {
+        guard(key);
+        removeItem.call(this, key);
+      };
     });
     await page.goto('/panel');
     await page.getByRole('button', { name: pinName }).click();

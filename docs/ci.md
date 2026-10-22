@@ -12,8 +12,8 @@ cancel the other component. Superseded PR runs are cancelled; main runs are not.
 | Stack Manager (Ubuntu) | Local launcher startup/shutdown/descendant cleanup; generated reporting-defaults drift and generator regressions; CLI scope/failure/dry-run/version regressions; real Compose merge, required variables, paths/ports/network using dummy fixtures |
 | Backend Tests and Build | Go module checksum changes, Linux compilation failures, uncached unit regressions, `go vet` findings |
 | Backend Race Detection | Concurrent accesses exercised by backend tests; not proof that all races are absent |
-| Frontend Tests and Build | Locked install failures, existing ESLint errors, Jest regressions, Vue/TypeScript compilation and production bundle failures |
-| Frontend E2E (mock hub) | Broken user flows in a real Chromium at desktop and phone sizes: OAuth sign-in/out, dashboards and device commands, automation save payloads, device pages (Playwright against `frontend/tools/server`; never real devices) |
+| Frontend Tests and Build | Locked install failures, existing ESLint errors, Jest regressions, Vue/browser-test TypeScript compilation and production bundle failures |
+| Frontend E2E (mock and Go hubs) | Broken user flows in a real Chromium at desktop and phone sizes: OAuth sign-in/out, dashboards and device commands, automation save payloads, device pages; UI-created dial toggles also execute through the real Go engine with in-memory MQTT (never real devices) |
 | Container (backend/frontend) | Real Dockerfile/context/build failures on Linux/amd64; backend executable help; nginx config and built index smoke checks |
 
 Images are built/loaded on disposable runners, never published. Smoke containers
@@ -28,11 +28,30 @@ main-push tagging job can write, after all checks succeed.
 ## E2E elapsed time and isolation
 
 E2E uses four jobs: desktop/mobile × file-level shards 1/2. Each runner starts a
-fresh mock hub and Vite server, with one Playwright worker. Keep `workers: 1` and
+fresh mock hub, isolated Go automation hub, and Vite server, with one Playwright worker. Keep `workers: 1` and
 `fullyParallel: false`: the hub has mutable shared state, and files retain their
 internal execution order. Matrix failures do not cancel other partitions. All four
 must pass through the existing `Run Tests` aggregate, on PRs, main and merge groups.
 The same tests, assertions, leak-cycle counts, retries and deadlines remain enabled.
+
+Playwright manages ports 4100 (UI), 4110 (Node mock), and 4120 (Go fixture).
+The Go toolchain comes from `backend/go.mod`; CI installs it alongside Node and
+compiles the fixture test binary before Playwright starts it. Fixture startup allows
+300s, so a slow cold build is not reported as a server failure.
+`backend/internal/hub_test.go` skips its long-running fixture unless
+`NODEHERDER_BROWSER_HUB=1`. It binds loopback, uses production auth/WS/routes and
+`testing/hubharness` with synthetic dial/light metadata and in-memory MQTT. Its
+control routes exist only in the test binary and require the normal session cookie.
+Only the relevant page's API/WS traffic is redirected to this fixture; all other
+browser tests retain the Node mock. Two identical dial events must publish native
+TOGGLE commands and receive separate MQTT On/Off confirmations in the UI. These
+fixtures are reset between cases; they never load household automation configs.
+
+For an externally managed run (`E2E_EXTERNAL_SERVERS=1`), start all three isolated
+servers; start the Go fixture from `backend/` with
+`NODEHERDER_BROWSER_HUB=1 go test -count=1 -timeout=20m -run '^TestAutomationBrowserHub$' ./internal`.
+The fixture uses localhost ports 4100/4120 for auth/origin checks, so keep those
+ports for its automation cases. Stop it with SIGINT/SIGTERM when finished.
 
 Each completed partition uploads `playwright-timings-<project>-<shard>` containing
 `timings.json` with per-test durations, including successful runs. Failed partitions

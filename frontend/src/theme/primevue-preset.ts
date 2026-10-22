@@ -4,7 +4,27 @@
  * theme, accent or mode change restyles PrimeVue widgets with no JavaScript.
  */
 import { definePreset } from '@primevue/themes';
-import Aura from '@primevue/themes/aura';
+import base, { type Preset } from '@primevue/themes/aura/base';
+import badge from '@primevue/themes/aura/badge';
+import button from '@primevue/themes/aura/button';
+import card from '@primevue/themes/aura/card';
+import dialog from '@primevue/themes/aura/dialog';
+import drawer from '@primevue/themes/aura/drawer';
+import floatlabel from '@primevue/themes/aura/floatlabel';
+import iconfield from '@primevue/themes/aura/iconfield';
+import inputnumber from '@primevue/themes/aura/inputnumber';
+import inputtext from '@primevue/themes/aura/inputtext';
+import menu from '@primevue/themes/aura/menu';
+import message from '@primevue/themes/aura/message';
+import ripple from '@primevue/themes/aura/ripple';
+import select from '@primevue/themes/aura/select';
+import slider from '@primevue/themes/aura/slider';
+import tag from '@primevue/themes/aura/tag';
+import textarea from '@primevue/themes/aura/textarea';
+import toast from '@primevue/themes/aura/toast';
+import toggleswitch from '@primevue/themes/aura/toggleswitch';
+import tooltip from '@primevue/themes/aura/tooltip';
+import virtualscroller from '@primevue/themes/aura/virtualscroller';
 
 const mix = (pct: number, other: string) => `color-mix(in srgb, var(--nh-accent) ${pct}%, ${other})`;
 
@@ -103,7 +123,41 @@ const semantic = {
   },
 };
 
-export const NodeHerderPreset = definePreset(Aura, {
+/**
+ * Aura tokens for the PrimeVue components this app renders. The stock
+ * `@primevue/themes/aura` entry imports every component's tokens, including unused ones,
+ * so importing only the used subset keeps the initial JavaScript smaller. Add the matching
+ * token module when adding a new PrimeVue component.
+ */
+const AuraSubset = {
+  ...base,
+  components: {
+    badge,
+    button,
+    card,
+    dialog,
+    drawer,
+    floatlabel,
+    iconfield,
+    inputnumber,
+    inputtext,
+    menu,
+    message,
+    ripple,
+    select,
+    slider,
+    tag,
+    textarea,
+    toast,
+    toggleswitch,
+    tooltip,
+    virtualscroller,
+  },
+  // `base` declares primitive/semantic as `unknown`, which Preset's index signature rejects;
+  // the runtime shape is the same base token object the stock Aura preset spreads.
+} as unknown as Preset;
+
+export const NodeHerderPreset = definePreset(AuraSubset, {
   semantic: {
     primary: primaryPalette,
     borderRadius: { none: '0', xs: 'var(--nh-radius-s)', sm: 'var(--nh-radius-s)', md: 'var(--nh-radius-m)', lg: 'var(--nh-radius-l)', xl: 'var(--nh-radius-l)' },

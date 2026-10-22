@@ -1,9 +1,9 @@
-import { cloneAutomation, describeTrigger, issuesUnder, newAutomation, sameAutomation, validateAutomation } from '@/domain/automation';
+import { cloneAutomation, describeCondition, describeTrigger, issuesUnder, newAutomation, sameAutomation, validateAutomation } from '@/domain/automation';
 import { Automation, AutomationTrigger } from '@/types/automation.type';
 import { device, expose } from '../helpers/devices';
 
 const lamp = device('lamp', { friendly_name: 'Desk lamp' }, [
-  expose('state', { type: 'binary' as never, access_mode: 'readwrite' as never, values: { on: 'ON', off: 'OFF' } }),
+  expose('state', { type: 'binary' as never, access_mode: 'readwrite' as never, values: { on: 'ON', off: 'OFF', toggle: 'TOGGLE' } }),
   expose('brightness', { access_mode: 'readwrite' as never, attributes: { min: 0, max: 254 } }),
 ]);
 const sensor = device('pir', { friendly_name: 'Hall sensor' }, [expose('occupancy', { type: 'binary' as never, values: { on: true, off: false } })]);
@@ -22,6 +22,15 @@ const automation = (triggers: AutomationTrigger[]): Automation => ({
 });
 
 describe('describeTrigger', () => {
+  it('summarises a native toggle as a command, while conditions remain state comparisons', () => {
+    const t = trigger({ actions: [{ id: 'lamp', type: 'trigger', exposes: [{ name: 'state', data: 'TOGGLE' }] } as never] });
+    const a = automation([t]);
+    expect(describeTrigger(a, t, lookup)).toContain('then set Desk lamp state to Toggle.');
+    expect(describeCondition({ ...a, id: 'lamp' }, { type: 'expose', name: 'state', equality: '=', value: 'TOGGLE' }, lookup)).toBe('state = Unknown');
+    expect(sameAutomation(a, cloneAutomation(a))).toBe(true);
+    expect(validateAutomation(a, lookup).errors).toEqual([]);
+  });
+
   it('summarises a device trigger as a sentence', () => {
     const a = automation([trigger()]);
     expect(describeTrigger(a, a.triggers[0], lookup)).toBe('When Hall sensor occupancy changes, if occupancy = Detected, then set Desk lamp state to On.');
@@ -45,6 +54,16 @@ describe('describeTrigger', () => {
 describe('validateAutomation', () => {
   it('accepts a complete automation', () => {
     expect(validateAutomation(automation([trigger()]), lookup)).toEqual({ errors: [], warnings: [] });
+  });
+
+  it('treats no wait as valid and explains zero in the delay error', () => {
+    const withDelay = (value: number): AutomationTrigger => trigger({
+      actions: [{ id: 'lamp', type: 'trigger', exposes: [{ name: 'state', data: 'ON' }], delay: { value, unit: 'seconds' } } as never],
+    });
+    expect(validateAutomation(automation([withDelay(0)]), lookup).errors).toEqual([]);
+    const errors = validateAutomation(automation([withDelay(-1)]), lookup).errors;
+    expect(errors.find((e) => e.path === 'triggers.0.actions.0.delay.value')?.message)
+      .toBe('Enter a wait of 0 or more; 0 means no wait.');
   });
 
   it('reports field errors with dot paths', () => {

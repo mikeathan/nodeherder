@@ -2,6 +2,7 @@
   "compilerOptions": {
     "strict": true,
     "outDir": "./dist",
+    "rootDir": "./src",
     "jsx": "preserve",
     "jsxFactory": "h",
     "experimentalDecorators": true,
@@ -11,15 +12,15 @@
     "forceConsistentCasingInFileNames": true,
     "useDefineForClassFields": true,
     "resolveJsonModule": true,
-    "baseUrl": ".",
-    "types": ["vite/client", "jest"],
+    "types": ["vite/client", "jest", "node"],
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["./src/*"],
+      "vuex": ["./node_modules/vuex/types/index.d.ts"]
     },
     "lib": ["dom", "esnext"],
     "target": "esnext",
     "module": "esnext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "sourceMap": true
   },
   "include": [
