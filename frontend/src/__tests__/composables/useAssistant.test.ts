@@ -2,7 +2,7 @@ import { effectScope, EffectScope, onMounted } from 'vue';
 import { store } from '@/store';
 import { createAppconfig } from '@/contracts/settings';
 import { useAssistant } from '@/composables/useAssistant';
-import { sendMessageToLLM, fetchConversationHistory, fetchConversations } from '@/services/assistant.service';
+import { sendMessageToLLM, fetchConversationHistory, fetchConversations, deleteConversation } from '@/services/assistant.service';
 import type { ConversationHistoryResponse } from '@/types/assistant.type';
 
 jest.mock('vue', () => ({ ...jest.requireActual('vue'), onMounted: jest.fn() }));
@@ -86,4 +86,28 @@ test('unmount aborts requests and a canceled hydration cannot launch another req
   scope.stop(); expect(jest.mocked(fetchConversationHistory).mock.calls[0][1]?.aborted).toBe(true);
   response.resolve(history('original')); await pending;
   expect(fetchConversations).not.toHaveBeenCalled();
+});
+
+test('deleting a pending selection cannot resurrect its history', async () => {
+  const response = deferred<ConversationHistoryResponse>();
+  jest.mocked(fetchConversationHistory).mockReturnValueOnce(response.promise);
+  jest.mocked(deleteConversation).mockResolvedValueOnce();
+  const pending = assistant.selectConversation('deleted');
+  const signal = jest.mocked(fetchConversationHistory).mock.calls[0][1];
+  await assistant.deleteConversation('deleted');
+  expect(signal?.aborted).toBe(true);
+  response.resolve(history('deleted')); await pending;
+  expect(assistant.activeConversation.value.id).toBe('original');
+});
+
+test('deleting the active chat preserves selection of another conversation', async () => {
+  const response = deferred<ConversationHistoryResponse>();
+  jest.mocked(fetchConversationHistory).mockReturnValueOnce(response.promise);
+  jest.mocked(deleteConversation).mockResolvedValueOnce();
+  const pending = assistant.selectConversation('next');
+  const signal = jest.mocked(fetchConversationHistory).mock.calls[0][1];
+  await assistant.deleteConversation('original');
+  expect(signal?.aborted).toBe(false);
+  response.resolve(history('next')); await pending;
+  expect(assistant.activeConversation.value.id).toBe('next');
 });

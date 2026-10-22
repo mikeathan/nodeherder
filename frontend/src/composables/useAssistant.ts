@@ -50,12 +50,16 @@ export function useAssistant() {
   let disposed = false;
   let generation = 0;
   let scrollTimer: ReturnType<typeof setTimeout> | undefined;
+  let historyConversationId: string | undefined;
 
   function cancel(kind: RequestKind) {
     requests.get(kind)?.abort();
     requests.delete(kind);
     if (kind === 'message') isLoading.value = false;
-    if (kind === 'history') isLoadingHistory.value = false;
+    if (kind === 'history') {
+      isLoadingHistory.value = false;
+      historyConversationId = undefined;
+    }
   }
   function begin(kind: RequestKind) {
     cancel(kind);
@@ -153,6 +157,7 @@ export function useAssistant() {
   const loadHistory = async (id: string, quiet = false) => {
     if (disposed) return;
     const controller = begin('history');
+    historyConversationId = id;
     isLoadingHistory.value = true;
     try {
       const history = await fetchConversationHistory(id, controller.signal);
@@ -185,8 +190,8 @@ export function useAssistant() {
       cancel('list');
       if (activeConversation.value.id === id) {
         cancel('message');
-        cancel('history');
       }
+      if (historyConversationId === id) cancel('history');
       await store.dispatch('assistant/removeConversationFromList', id);
     } catch {
       // A failed deletion leaves the conversation available for a manual retry.

@@ -3,7 +3,6 @@ package ws
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"net/url"
 	"node-herder/internal/auth"
@@ -76,8 +75,6 @@ func NewWebSocket() WebSocket {
 	server.Config.MaxMessageSize = maxMessageSize
 	server.Config.MessageBufferSize = messageQueueSize
 	server.Upgrader.CheckOrigin = allowedWebSocketOrigin(utils.GetFrontendAllowedOrigins())
-	//		ConcurrentMessageHandling bool
-
 	return &webSocketImpl{
 		conn: server,
 	}
@@ -132,8 +129,6 @@ func (h *webSocketImpl) Broadcast(eventName string, data interface{}) error {
 		return errors.New("failed to marshal server payload")
 	}
 
-	// fmt.Println("WebSocket.Broadcast: ", string(bytes))
-	// TODO : need to segment data if data is too large
 	return h.conn.BroadcastFilter(bytes, func(session *melody.Session) bool { return auth.SessionValid(session.Request) })
 }
 
@@ -152,17 +147,13 @@ func (h *webSocketImpl) Start(messageHandler func(message []byte)) {
 		id := clientId.Add(1)
 
 		s.Set("id", id)
-
-		//s.Write([]byte(fmt.Sprintf("client id %d connected", id)))
 	})
 
 	h.conn.HandleDisconnect(func(s *melody.Session) {
 		if id, ok := s.Get("id"); ok {
-			s.Write([]byte(fmt.Sprintf("WebSocket: client id %d disconnected", id)))
-
-			h.conn.BroadcastOthers([]byte(fmt.Sprintf("dis %d", id)), s)
+			utils.LogDebugf("WebSocket: client id %d disconnected", id)
 		} else {
-			utils.LogDebug("WebSocket: client diconnected")
+			utils.LogDebug("WebSocket: client disconnected")
 		}
 	})
 
@@ -201,13 +192,6 @@ func (h *webSocketImpl) Start(messageHandler func(message []byte)) {
 				utils.LogError("WebSocket: message handler failed; connection closed")
 			}
 		}()
-		if len(msg) > maxMessageSize {
-			// Handle message too large error
-			utils.LogError("WebSocket: message too large")
-			s.CloseWithMsg([]byte(fmt.Sprintf("%d message too large", websocket.CloseMessageTooBig)))
-			return
-		}
-
 		messageHandler(msg)
 	})
 }

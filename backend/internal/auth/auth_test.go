@@ -699,6 +699,16 @@ func TestCookiePolicySupportsTLSAndExplicitTermination(t *testing.T) {
 				}
 			}
 			offline := auth.NewOfflineOAuth(auth.NewJWTService(auth.WithDefaultJWTConfig()), auth.NewTokenBlacklist(), "").(auth.OfflineAuth)
+			request.Header.Set("X-Forwarded-Proto", "https")
+			response = httptest.NewRecorder()
+			offline.HandleLogin(response, request)
+			scheme := "http"
+			if tc.secure {
+				scheme = "https"
+			}
+			if body := assertJSONResponse(t, response, http.StatusOK); body["url"] != scheme+"://localhost/api/auth/offline/start" {
+				t.Fatalf("local sign-in URL ignores public HTTPS policy: %v", body["url"])
+			}
 			response = httptest.NewRecorder()
 			offline.HandleOfflineStart(response, request)
 			cookie := assertCookie(t, response.Result().Cookies(), auth.CookieNameSession, true)

@@ -41,6 +41,9 @@
     ],
     "globals": {
       "ts-jest": {
+        "tsconfig": {
+          "types": ["vite/client", "jest", "node"]
+        },
         "diagnostics": {
           "ignoreCodes": [
             1343

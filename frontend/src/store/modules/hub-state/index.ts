@@ -1,4 +1,4 @@
-import type { Module } from 'vuex';
+import type { Module, MutationTree } from 'vuex';
 import type { RootState } from '../../state';
 import type { HubStateModuleState } from './state';
 import type { HubLoadStatus, HubStateSnapshot } from '@/types/hub.type';
@@ -16,6 +16,55 @@ import type {
 } from '../../../types/settings.type';
 import type { KeyValuePair } from '@/types/types.type';
 import { createAppconfig } from '@/contracts/settings';
+
+// Shared by live Vuex commits and recovery replay; config changes have one implementation.
+export const appConfigMutations: MutationTree<Pick<HubStateModuleState, 'appConfig'>> = {
+  setMCPSettings(state, enabled: boolean) {
+    if (state.appConfig.hub.mcp) {
+      state.appConfig.hub.mcp.enabled = enabled;
+    }
+  },
+  setAppConfig(state, config: AppConfig) {
+    state.appConfig = config;
+  },
+  setDeviceDefaults(state, defaults: DeviceConfig) {
+    state.appConfig.hub.devices.defaults = defaults;
+  },
+  removeDeviceConfigOverride(state, id: string) {
+    delete state.appConfig.hub.devices.overrides[id];
+  },
+  setDeviceConfigOverride(state, setting: DeviceConfig) {
+    state.appConfig.hub.devices.overrides[setting.id] = setting;
+  },
+  setDashboardGroups(state, dashboardGroups: DashboardGroups) {
+    state.appConfig.hub.dashboardGroups = dashboardGroups;
+  },
+  setDashboardGroup(state, dashboardGroup: DashboardGroup) {
+    state.appConfig.hub.dashboardGroups[dashboardGroup.name] = dashboardGroup;
+  },
+  renameDashboardGroup(state, { oldName, newName }: { oldName: string; newName: string }) {
+    const groups = state.appConfig.hub.dashboardGroups;
+    const group = groups[oldName];
+    if (!group || oldName === newName) return;
+    delete groups[oldName];
+    groups[newName] = { ...group, name: newName };
+  },
+  removeDashboardGroup(state, name: string) {
+    delete state.appConfig.hub.dashboardGroups[name];
+  },
+  setHistorySettings(state, historySetting: HistorySettingsType) {
+    state.appConfig.hub.history = historySetting;
+  },
+  setAssistantSettings(state, assistantSettings: AssistantSettingsType) {
+    state.appConfig.hub.assistant.url = assistantSettings.url;
+  },
+  setLoggerSettings(state, loggerSettings: LoggerSettingsType) {
+    state.appConfig.hub.logger = loggerSettings;
+  },
+  setBridgeSettings(state, bridgeSettings: BridgeSettingsType) {
+    state.appConfig.bridge = bridgeSettings;
+  },
+};
 
 export const HubStateModule: Module<HubStateModuleState, RootState> = {
   namespaced: true,
@@ -56,7 +105,6 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
     },
 
     // AppConfig getters
-    appConfig: (state) => (): AppConfig => state.appConfig,
     history: (state) => (): HistorySettingsType => {
       return state.appConfig.hub.history;
     },
@@ -137,52 +185,7 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
         state.deviceMap[deviceUpdate.id] = updated;
       }
     },
-    // AppConfig mutations
-    setMCPSettings(state, enabled: boolean) {
-      if (state.appConfig.hub.mcp) {
-        state.appConfig.hub.mcp.enabled = enabled;
-      }
-    },
-    setAppConfig(state, config: AppConfig) {
-      state.appConfig = config;
-    },
-    setDeviceDefaults(state, defaults: DeviceConfig) {
-      state.appConfig.hub.devices.defaults = defaults;
-    },
-    removeDeviceConfigOverride(state, id: string) {
-      delete state.appConfig.hub.devices.overrides[id];
-    },
-    setDeviceConfigOverride(state, setting: DeviceConfig) {
-      state.appConfig.hub.devices.overrides[setting.id] = setting;
-    },
-    setDashboardGroups(state, dashboardGroups: DashboardGroups) {
-      state.appConfig.hub.dashboardGroups = dashboardGroups;
-    },
-    setDashboardGroup(state, dashboardGroup: DashboardGroup) {
-      state.appConfig.hub.dashboardGroups[dashboardGroup.name] = dashboardGroup;
-    },
-    renameDashboardGroup(state, { oldName, newName }: { oldName: string; newName: string }) {
-      const groups = state.appConfig.hub.dashboardGroups;
-      const group = groups[oldName];
-      if (!group || oldName === newName) return;
-      delete groups[oldName];
-      groups[newName] = { ...group, name: newName };
-    },
-    removeDashboardGroup(state, name: string) {
-      delete state.appConfig.hub.dashboardGroups[name];
-    },
-    setHistorySettings(state, historySetting: HistorySettingsType) {
-      state.appConfig.hub.history = historySetting;
-    },
-    setAssistantSettings(state, assistantSettings: AssistantSettingsType) {
-      state.appConfig.hub.assistant.url = assistantSettings.url;
-    },
-    setLoggerSettings(state, loggerSettings: LoggerSettingsType) {
-      state.appConfig.hub.logger = loggerSettings;
-    },
-    setBridgeSettings(state, bridgeSettings: BridgeSettingsType) {
-      state.appConfig.bridge = bridgeSettings;
-    },
+    ...appConfigMutations,
     setMCPStatus(state, mcpStatus: MCPStatusType) {
       state.mcpStatus = mcpStatus;
     },

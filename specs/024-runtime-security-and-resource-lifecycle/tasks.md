@@ -50,6 +50,20 @@ Spec: [spec.md](spec.md) | Plan: [plan.md](plan.md) | Status: implementation ver
   Preserve all active env assignments; unchanged assignments, local links/target headings
   and diff hygiene PASS. No application code changes or repeated runtime suites.
 
+- [x] T017 — Reproduce/fix snapshot logout, initialized-refresh retry and config-merge
+  races in useHubConnection and its companion; reuse Vuex config mutations; AC-03/14.
+- [x] T018 — Reproduce/fix deletion versus history-selection race in useAssistant and
+  its existing companion; remove dead/non-contract disconnect frames in websocket
+  with its companion regression; AC-03/13, NH-04, FE-01/05, BE-03.
+- [x] T019 — Fix the cold-cache Node typing failure in Jest configuration; review remaining full
+  diff, run affected/full checks and update local evidence. AC-01–15, NFR-01;
+  PASS: 308 unit tests, lint/build, 175 browser cases, full backend tests/race/vet/build.
+  PR synchronization and subsequent remote CI are tracked in PR 66; no deployment.
+- [x] T020 — Make the generated offline login URL honor the same explicit HTTPS
+  policy as cookies; extend auth_test.go's cookie-policy table and rerun auth checks.
+  AC-11, NH-03/04/05 and BE-05; no new forwarded-scheme trust. Regression failed
+  before fix and passes in the final full backend normal/race suites.
+
 Independent tasks are checked against the verification record in plan.md.
 Public MCP/context authentication migration is deferred at the user's request.
 Scoped implementation/docs checks are complete; actual container/deployment verification

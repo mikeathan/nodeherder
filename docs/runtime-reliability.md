@@ -12,7 +12,7 @@ metric units/UTC ordering and database formats. They introduce no automatic comm
 | HTTP connection | Header 5s, request read 15s, idle 60s; no fixed stream write timeout |
 | WebSocket | 1 MiB incoming message, 4 KiB socket buffers, 256 queued messages |
 | Slow WebSocket client | Close on outbound overflow; frontend reconnect refreshes the shared snapshot and retains newer live reports/config |
-| Snapshot recovery | One pending read, 8s timeout, superseded requests aborted; failed reads retain observable retry state |
+| Snapshot recovery | One pending read, 8s timeout, at most 256 captured config mutations; superseded/logout requests aborted; failed refreshes can be retried |
 | Assistant proxy | Caller cancellation, 60s upstream timeout, maximum 4 MiB upstream reply; failed persistence is an error |
 | Google OAuth | Caller cancellation, 15s overall exchange/userinfo deadline; access token in Authorization header |
 | Legacy metrics query | At most 64 requested devices/exposes, limit 0–10001, ordered range at most 366 days, 250000 scanned rows and 8s deadline |
@@ -22,6 +22,11 @@ Legacy metrics use one successful scan/device for all exposes; adapter errors re
 per-expose fallback compatibility. Repeated expose names produce one result. Query
 budgets fail explicitly rather than returning partial success. The existing history
 endpoint keeps its stricter request constraints and shared scan/time limits.
+
+Recovery replays captured config changes through the same Vuex mutations used for
+live updates, retaining unrelated server settings. Replay overflow fails the refresh
+without replacing the existing registry; retry reads state again without resending
+device commands. WebSocket disconnects emit no debug text into the event protocol.
 
 Storage reads return owned bytes. Callback-based reads borrow bytes only during their
 transaction. Pruning uses one atomic write transaction and propagates failures; it
@@ -35,7 +40,8 @@ must match the request host or FRONTEND_ALLOWED_ORIGINS; non-browser clients may
 Origin and continue using the existing authentication mechanism.
 
 Cookies use Secure for direct HTTPS. A TLS terminator can set AUTH_COOKIE_SECURE=true
-explicitly; client-supplied protocol headers do not control this flag. Leave it unset
+explicitly; the generated local sign-in URL uses this same HTTPS policy. Client-supplied
+protocol headers do not control it. Leave it unset
 for intentional local HTTP. Apply the setting with the deployment's actual HTTPS
 configuration, and roll it back together with that configuration.
 

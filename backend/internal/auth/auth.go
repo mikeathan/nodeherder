@@ -103,7 +103,7 @@ func (o *offlineOAuth) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	// Build URL using the request's host instead of RedirectURL
 	// This ensures we get the correct base URL for offline/start
 	scheme := "http"
-	if r.TLS != nil {
+	if secureCookies(r) {
 		scheme = "https"
 	}
 	url := fmt.Sprintf("%s://%s%s/offline/start", scheme, r.Host, o.basePath)

@@ -1,6 +1,7 @@
 package ws
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"node-herder/internal/auth"
@@ -90,6 +91,82 @@ func TestWebSocketClosesSlowClientOnQueueOverflow(t *testing.T) {
 	_ = conn.SetReadDeadline(time.Now().Add(5 * time.Second))
 	if _, _, err := conn.ReadMessage(); err == nil {
 		t.Fatal("overflowed client kept receiving an incomplete stream")
+	}
+}
+
+func TestWebSocketDisconnectPreservesEventContract(t *testing.T) {
+	socket := NewWebSocket().(*webSocketImpl)
+	socket.Start(func([]byte) {})
+	disconnected := make(chan struct{})
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = socket.HandleRequest(w, r)
+		if r.URL.Path == "/closing" {
+			close(disconnected)
+		}
+	}))
+	defer server.Close()
+	defer socket.Close()
+	url := "ws" + strings.TrimPrefix(server.URL, "http")
+	remaining, _, err := websocket.DefaultDialer.Dial(url, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer remaining.Close()
+	closing, _, err := websocket.DefaultDialer.Dial(url+"/closing", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = closing.Close()
+	select {
+	case <-disconnected:
+	case <-time.After(5 * time.Second):
+		t.Fatal("disconnect handler did not finish")
+	}
+	if err := socket.Broadcast("state", "ready"); err != nil {
+		t.Fatal(err)
+	}
+	_ = remaining.SetReadDeadline(time.Now().Add(5 * time.Second))
+	_, message, err := remaining.ReadMessage()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var event EventMessage
+	if err := json.Unmarshal(message, &event); err != nil || event.Type != "state" {
+		t.Fatalf("disconnect emitted a non-contract frame: %q", message)
+	}
+}
+
+func TestWebSocketIncomingMessageLimit(t *testing.T) {
+	socket := NewWebSocket().(*webSocketImpl)
+	received := make(chan int, 2)
+	socket.Start(func(message []byte) { received <- len(message) })
+	server := socketServer(t, socket)
+	conn, _, err := websocket.DefaultDialer.Dial("ws"+strings.TrimPrefix(server.URL, "http"), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+	if err := conn.WriteMessage(websocket.TextMessage, []byte(strings.Repeat("x", maxMessageSize))); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case size := <-received:
+		if size != maxMessageSize {
+			t.Fatalf("valid message truncated: %d", size)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("valid message was not dispatched")
+	}
+	// The read pump enforces the configured limit before domain dispatch.
+	_ = conn.WriteMessage(websocket.TextMessage, []byte(strings.Repeat("x", maxMessageSize+1)))
+	_ = conn.SetReadDeadline(time.Now().Add(5 * time.Second))
+	if _, _, err := conn.ReadMessage(); !websocket.IsCloseError(err, websocket.CloseMessageTooBig) {
+		t.Fatalf("oversized message was not rejected with 1009: %v", err)
+	}
+	select {
+	case <-received:
+		t.Fatal("oversized message reached the domain handler")
+	default:
 	}
 }
 

@@ -1,6 +1,6 @@
 # Spec: Runtime security and resource lifecycle
 
-ID: 024 | Status: Implemented; review and deployment validation pending | Owner: Codex | Updated: 2026-10-21
+ID: 024 | Status: Review fixes verified locally; deployment validation pending | Owner: Codex | Updated: 2026-10-22
 Constitution: proposed parent/backend/frontend v1.0.0 | Components: both
 
 ## Problem, scope, exclusions
@@ -29,6 +29,11 @@ and historical test-file reorganization (record existing ownership debt).
   buffers, retains the 1 MiB inbound message limit, and removes disconnected resources.
   Slow clients are disconnected on queue overflow rather than silently losing state.
   Reconnect refreshes the shared HTTP snapshot without overwriting newer live reports.
+  Logout immediately invalidates pending snapshots; failed refreshes can be retried
+  even when the registry was initialized. Live configuration edits preserve unrelated
+  fields received in the recovery snapshot. Disconnect emits no non-contract text frames.
+  Recovery retains at most 256 configuration mutations; overflow fails observably
+  without replacing the existing registry or retrying device commands.
 - AC-04: Oversized HTTP bodies return 413 before domain mutation; slow headers and
   idle connections are bounded. Normal requests and long-lived SSE remain functional.
 - AC-05: Assistant/OAuth calls honor caller cancellation and finite deadlines;
@@ -56,7 +61,9 @@ and historical test-file reorganization (record existing ownership debt).
   capabilities; no silent breaking migration. The user deferred this migration on
   2026-10-21: retain existing public access and revisit separately.
 - AC-11: Cookies are Secure on direct/trusted-proxy HTTPS; intentional local HTTP
-  remains usable. State, PKCE, session and expiry cookies share one policy.
+  remains usable. State, PKCE, session and expiry cookies share one policy, and the
+  generated local sign-in URL uses that same explicit HTTPS setting without trusting
+  client-supplied scheme headers.
 
 ### US-03 — Browser lifecycle and dependency hygiene (P2)
 
@@ -64,6 +71,7 @@ and historical test-file reorganization (record existing ownership debt).
   unmount/remount, logout and subsequent sessions; timers stop with their owner.
 - AC-13: Replies/history are applied only to their initiating conversation/session;
   cancellation, errors, switching chats and unmount cannot repopulate another chat.
+  Deleting a conversation invalidates an in-flight selection of that conversation.
 - AC-14: Logout clears assistant, console and activity data and invalidates late work;
   theme/activity preferences remain preferences, not household records.
 - AC-15: npm start resolves patched compression >=1.8.2 without serving-path/API

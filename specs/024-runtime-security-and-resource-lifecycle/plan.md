@@ -1,6 +1,6 @@
 # Plan: Runtime security and resource lifecycle
 
-Spec: [spec.md](spec.md) | Status: Implementation verified; container/deployment checks unrun; MCP auth deferred | Author: Codex | Updated: 2026-10-21
+Spec: [spec.md](spec.md) | Status: Review fixes verified locally; latest CI tracked in PR 66; MCP auth deferred | Author: Codex | Updated: 2026-10-22
 Constitutions: proposed parent/backend/frontend v1.0.0; no adoption/approval claimed.
 
 ## Context and design
@@ -218,6 +218,71 @@ both files include commented examples for TRUSTED_PROXY_CIDRS/AUTH_COOKIE_SECURE
 file links across six affected setup/README/spec documents and the new target headings
 resolve; `git diff --check` PASS. Application suites were not repeated for this
 comments/documentation-only follow-up. No values, secrets or deployment settings changed.
+
+### Full-diff review follow-up
+
+The user requested a fresh review of the whole PR, including regressions, broken
+flows and duplicate/dead code. Reuse this artifact set (T017–T019); no new spec/branch.
+Initial CI: backend test/race and both container jobs PASS. Frontend unit CI fails
+because the Node-only env mock uses a process global excluded from the browser tsconfig;
+the local ts-jest cache masked this. Configure the Jest TypeScript transform with
+Node types (test scope only) and verify a cold Jest run without cache.
+
+Review targets: reconnect snapshots must abort synchronously on logout, retry after a
+failed initialized refresh, and merge live config edits without discarding unrelated
+server fields. Keep reconciliation at existing Vuex ownership boundaries; use the
+existing mutations as the single source of truth for config replay. Snapshot config
+replay retains at most 256 mutations; overflow fails the refresh for manual retry
+without changing the current registry. Clone captured JSON values to preserve order.
+Assistant deletion
+must cancel a selection of the deleted conversation even before it becomes active.
+Remove disconnect writes to an already-closed socket and non-JSON debug broadcasts;
+they are not part of the event contract. Inspect the rest of the diff for storage,
+metrics, auth, SSE and ingress compatibility; fix only confirmed issues with companion
+regressions. No new trust-policy migration.
+
+Review findings and verification (2026-10-22):
+
+- Final flow trace found offline HandleLogin still generated http URLs behind HTTPS
+  termination despite AUTH_COOKIE_SECURE=true. Reuse secureCookies for the generated
+  URL scheme as well; add the URL assertion to the existing cookie-policy companion
+  table, including direct HTTP/HTTPS and an untrusted X-Forwarded-Proto header case.
+  This keeps one explicit HTTPS policy and avoids downgrading the local cookie flow.
+
+- Cold-cache Jest reproduced CI TS2591 in the Node-only environment adapter. Explicit
+  Node types for the Jest transform fix the failure without exposing Node globals to
+  the browser build. An initial explicit node:process import did not resolve excluded
+  Node declarations; it was removed in favor of the test-scope compiler configuration.
+- Companion regressions failed before the flow fixes: logout did not abort the pending
+  snapshot; initialized failed refreshes could not retry; whole-config replacement
+  discarded unrelated recovered settings; deleting a pending history target did not
+  cancel it. They now pass. Test teardown invokes owner cleanup even on assertion
+  failures, preventing leaked subscribers from masking other regression outcomes.
+- Shared appConfigMutations are used both by Vuex and snapshot replay, with cloned
+  JSON payloads and a 256-mutation cap. Replay overflow retains the live registry and
+  supports retry. Removed the now-unused appConfig getter. No duplicate config reducer
+  or competing device state was introduced.
+- WebSocket regression received raw `dis <id>` before the fix. Removed that broadcast,
+  the write to an already-disconnected session, stale commented code, and the duplicate
+  incoming-size guard. The read pump owns the 1 MiB limit; tests verify exactly 1 MiB
+  succeeds, 1 MiB + 1 closes with 1009 before dispatch, and disconnect keeps valid event
+  envelopes. Focused race suite PASS.
+- Remaining diff reviewed for storage transaction/byte ownership, metrics collector
+  types/guards/aggregation, HTTP bounds and cancellation, OAuth/cookie compatibility,
+  stream/session lifetime, assistant ingress, shared reset and permit-join ownership.
+  No further confirmed regressions found in that review; this is not a zero-bug guarantee.
+- Cold-cache full Jest PASS: 48 suites / 308 tests. Frontend lint and production build
+  PASS with the existing warnings. Final full backend tests/vet/build and full race
+  PASS under Go 1.24.8, including the HTTPS fix. Final browser suite PASS: 175 cases,
+  nine existing desktop skips, 4.1m. `git diff --check` PASS. No household services used.
+- The added HTTPS URL regression failed for TLS termination before the fix, then
+  passed with the existing cookie policy, direct HTTP/HTTPS and ignored forwarded
+  scheme headers. T017–T020 are locally verified; synchronization and the latest CI
+  outcome are reported in [PR 66](https://github.com/mikeathan/nodeherder/pull/66).
+  GitHub checks remain authoritative for subsequent remote runs.
+- Initial PR CI confirms both production image builds and offline Nginx syntax checks
+  PASS, superseding the local inability to run Docker. Live proxy/Google/household
+  checks remain unrun; deployment requirements and deferred public MCP auth remain.
 
 Final operational contracts: [runtime behavior](../../docs/runtime-reliability.md).
 Temporary evidence logs are in /private/tmp/nodeherder-024-*.log; the assertions and

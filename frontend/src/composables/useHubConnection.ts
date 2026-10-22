@@ -2,6 +2,8 @@
 import { store } from '@/store';
 import { fetchHubState } from '@/services/hubstate.service';
 import { onMounted, onBeforeUnmount } from 'vue';
+import type { MutationPayload } from 'vuex';
+import { appConfigMutations } from '@/store/modules/hub-state';
 import type { Device, DeviceUpdate } from '@/types/device';
 import type { HubStateSnapshot } from '@/types/hub.type';
 
@@ -9,6 +11,7 @@ let generation = 0;
 let pendingConnection: Promise<void> | null = null;
 let pendingSnapshot: Promise<void> | null = null;
 let snapshotController: AbortController | null = null;
+const maxSnapshotConfigMutations = 256;
 
 function preserveLiveReports(data: HubStateSnapshot, updates: Map<string, DeviceUpdate>, added: Map<string, Device>): HubStateSnapshot {
   const devices = new Map(data.devices.map((device) => [device.id, device]));
@@ -30,7 +33,8 @@ async function requestSnapshot(controller: AbortController, owner: number) {
   // Coalesce by known device/field, bounded by the live registry rather than message count.
   const updates = new Map<string, DeviceUpdate>();
   const added = new Map<string, Device>();
-  let configChanged = false;
+  const configEdits: MutationPayload[] = [];
+  let configOverflow = false;
   let listChanged = false;
   let timedOut = false;
   const timer = setTimeout(() => { timedOut = true; controller.abort(); }, 8000);
@@ -48,8 +52,17 @@ async function requestSnapshot(controller: AbortController, owner: number) {
       added.set(device.id, device);
     } else if (mutation.type === 'hub/setDevices') {
       listChanged = true;
-    } else if (mutation.type.startsWith('hub/') && !['hub/clear', 'hub/setLoadStatus', 'hub/setInitialized', 'hub/setMCPStatus'].includes(mutation.type)) {
-      configChanged = true;
+    } else if (mutation.type.startsWith('hub/') && Object.prototype.hasOwnProperty.call(appConfigMutations, mutation.type.slice(4))) {
+      if (configEdits.length >= maxSnapshotConfigMutations) {
+        configOverflow = true;
+        controller.abort();
+        if (owner === generation) store.commit('hub/setLoadStatus', 'failed');
+        return;
+      }
+      configEdits.push({
+        type: mutation.type.slice(4),
+        payload: mutation.payload === undefined ? undefined : JSON.parse(JSON.stringify(mutation.payload)),
+      });
     }
   });
   const dispose = () => {
@@ -63,12 +76,16 @@ async function requestSnapshot(controller: AbortController, owner: number) {
     if (signal.aborted || owner !== generation) return;
     if (listChanged) data = { ...data, devices: store.getters['hub/listAllDevices']() as Device[] };
     else data = preserveLiveReports(data, updates, added);
-    if (configChanged) data = { ...data, config: store.getters['hub/appConfig']() as HubStateSnapshot['config'] };
+    if (configEdits.length > 0) {
+      const next = { appConfig: JSON.parse(JSON.stringify(data.config)) as HubStateSnapshot['config'] };
+      for (const edit of configEdits) appConfigMutations[edit.type](next, edit.payload);
+      data = { ...data, config: next.appConfig };
+    }
     unsubscribe();
     store.dispatch(store.getters['hub/isInitialized']() ? 'hub/refresh' : 'hub/init', data);
     store.commit('hub/setLoadStatus', 'ready');
   } catch {
-    if ((signal.aborted && !timedOut) || owner !== generation) return;
+    if ((signal.aborted && !timedOut && !configOverflow) || owner !== generation) return;
     store.commit('hub/setLoadStatus', 'failed');
   } finally {
     dispose();
@@ -76,7 +93,7 @@ async function requestSnapshot(controller: AbortController, owner: number) {
 }
 
 function loadHubState(force = false) {
-  if (!force && (store.getters['hub/isInitialized']() || pendingSnapshot)) return;
+  if (!force && (pendingSnapshot || (store.getters['hub/isInitialized']() && store.getters['hub/loadStatus'] !== 'failed'))) return;
   if (force) snapshotController?.abort();
   snapshotController = new AbortController();
   store.commit('hub/setLoadStatus', 'loading');
@@ -124,6 +141,11 @@ export function stopHubConnection() {
 export function useHubConnection() {
   let connected = false;
   const unsubscribe = store.subscribe((mutation) => {
+    if (mutation.type === 'auth/logout') {
+      connected = false;
+      stopHubConnection();
+      return;
+    }
     if (mutation.type !== 'ws/setConnectionStatus' || mutation.payload !== 'connected') return;
     if (connected) loadHubState(true);
     connected = true;
