@@ -515,3 +515,18 @@ details.samples summary { cursor: pointer; color: var(--nh-text-muted); padding:
 .overlay-bar strong { font-size: 1rem; }
 .overlay-bar .spacer { flex: 1 1 auto; }
 .chart-overlay .overlay-chart { flex: 1; min-height: 0; width: 100%; }
+
+/* touch ergonomics: 44px targets and a visible focus ring on the chart itself */
+.chart-actions .btn { min-width: 2.5rem; justify-content: center; }
+.chart-wrap svg:focus-visible,
+.overlay-chart svg:focus-visible {
+  outline: 2px solid var(--nh-accent);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+@media (max-width: 720px) {
+  .chart-actions .btn { min-height: 2.75rem; min-width: 2.75rem; }
+  .history-toolbar { gap: 0.5rem; }
+  .readout .value { font-size: 1.35rem; }
+  .chart-card { padding: 0.75rem 0.8rem 0.6rem; }
+}

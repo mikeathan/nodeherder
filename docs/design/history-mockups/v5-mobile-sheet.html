@@ -21,6 +21,7 @@
         <li><b>Sheet</b> keeps the confirmed value, one control and a 170&nbsp;px chart; actions sit above the safe area.</li>
         <li><b>View full history</b> is a primary action, not a hidden tab.</li>
         <li><b>Full screen</b> repeats the same chart model at 220&nbsp;px with range chips and a 2×2 stats grid.</li>
+        <li>Zoom is reachable without a mouse: pinch on the chart, or the <code>− + Reset</code> buttons, all 44&nbsp;px tall.</li>
         <li>Drag-to-dismiss and the bottom safe area are the missing platform pieces today (<code>viewport-fit=cover</code> is absent, so <code>env(safe-area-inset-*)</code> is 0).</li>
       </ul>
     </div>
@@ -67,6 +68,10 @@
         <div class="phone-body">
           <div class="chips is-scroll" id="phone-ranges" style="margin:0.6rem 0 0.4rem"></div>
           <div class="chips is-scroll" id="phone-entities" style="margin-bottom:0.6rem"></div>
+          <div class="row between" style="margin-bottom:0.35rem">
+            <span class="tiny muted">Pinch or use the buttons to zoom</span>
+            <div class="chart-actions" id="phone-zoom"></div>
+          </div>
           <div class="card chart-card" style="padding:0.7rem 0.8rem">
             <div id="phone-readout"></div>
             <div id="phone-chart" class="chart-wrap"></div>
@@ -114,6 +119,26 @@
           if (range === '6h') return 6 * HOUR;
           if (range === '7d') return 7 * 24 * HOUR;
           return 24 * HOUR;
+        }
+
+        function zoomButton(action, label, ariaLabel) {
+          var button = NH.el('button', { class: 'btn is-sm', type: 'button' }, label);
+          /* keep the visible text as the accessible name unless a shorter label is needed */
+          if (ariaLabel) button.setAttribute('aria-label', ariaLabel);
+          button.addEventListener('click', function () {
+            if (!chartApi) return;
+            var range = chartApi.range();
+            var full = spanFor(state.range);
+            if (action === 'reset') {
+              chartApi.setRange(now - full, now);
+              return;
+            }
+            var center = (range.from + range.to) / 2;
+            var span = action === 'in' ? (range.to - range.from) * 0.6 : (range.to - range.from) * 1.6;
+            span = Math.max(5 * 60000, Math.min(full, span));
+            chartApi.setRange(center - span / 2, center + span / 2);
+          });
+          return button;
         }
 
         function paint() {
@@ -167,6 +192,11 @@
             statsHost.appendChild(block);
           });
         }
+
+        var zoomHost = document.getElementById('phone-zoom');
+        zoomHost.appendChild(zoomButton('out', '−', 'Zoom out'));
+        zoomHost.appendChild(zoomButton('in', '+', 'Zoom in'));
+        zoomHost.appendChild(zoomButton('reset', 'Reset'));
 
         NH.chips(document.getElementById('phone-ranges'), {
           active: state.range,

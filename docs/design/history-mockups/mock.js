@@ -260,6 +260,9 @@
       }
 
       container.innerHTML = '';
+      /* exposed for the prototype checks: the window currently drawn */
+      container.dataset.from = String(Math.round(state.from));
+      container.dataset.to = String(Math.round(state.to));
       var svg = svgEl('svg', {
         viewBox: '0 0 ' + width + ' ' + height,
         width: width,
@@ -516,8 +519,94 @@
         if (model.readout && model.hint) model.readout.innerHTML = '<span class="when">' + model.hint + '</span>';
       }
 
+      /*
+       * Interaction model: mouse drag selects a range, two fingers pinch to zoom,
+       * one finger scrubs, and the chart itself is focusable so + / - / 0 / arrows work
+       * from a keyboard. Every gesture has an equivalent button in the host page.
+       */
+      svg.setAttribute('tabindex', '0');
       var dragStart = null;
+      var pointers = new Map();
+      var pinch = null;
+      var MIN_SPAN = 5 * 60000;
+      var MAX_SPAN = 31 * 86400000;
+
+      function limit(span) {
+        return Math.min(MAX_SPAN, Math.max(MIN_SPAN, span));
+      }
+      function zoomAround(center, span) {
+        span = limit(span);
+        var ratio = (center - state.from) / Math.max(1, state.to - state.from);
+        if (model.onZoom) model.onZoom(center - span * ratio, center + span * (1 - ratio));
+      }
+      function panBy(fraction) {
+        var span = state.to - state.from;
+        var shift = span * fraction;
+        var from = state.from + shift;
+        var to = state.to + shift;
+        var min = model.from == null ? from : model.from;
+        var max = model.to == null ? to : model.to;
+        if (from < min) {
+          to += min - from;
+          from = min;
+        }
+        if (to > max) {
+          from -= to - max;
+          to = max;
+        }
+        if (model.onZoom) model.onZoom(from, to);
+      }
+      function localPoint(event) {
+        var box = svg.getBoundingClientRect();
+        var scale = width / box.width;
+        return { x: (event.clientX - box.left) * scale, y: (event.clientY - box.top) * scale };
+      }
+      function distance(a, b) {
+        return Math.hypot(a.x - b.x, a.y - b.y);
+      }
+
+      svg.addEventListener('keydown', function (event) {
+        if (!model.zoom || !model.onZoom) return;
+        var span = state.to - state.from;
+        var center = (state.from + state.to) / 2;
+        if (event.key === '+' || event.key === '=') zoomAround(center, span * 0.6);
+        else if (event.key === '-' || event.key === '_') zoomAround(center, span * 1.6);
+        else if (event.key === '0') {
+          if (model.onReset) model.onReset();
+        } else if (event.key === 'ArrowLeft') panBy(-0.2);
+        else if (event.key === 'ArrowRight') panBy(0.2);
+        else return;
+        event.preventDefault();
+      });
+
+      overlay.addEventListener('pointerdown', function (event) {
+        if (!model.zoom) return;
+        pointers.set(event.pointerId, localPoint(event));
+        if (pointers.size === 2) {
+          var pair = Array.from(pointers.values());
+          pinch = {
+            distance: Math.max(12, distance(pair[0], pair[1])),
+            from: state.from,
+            to: state.to,
+            center: pointerT(event)
+          };
+          dragStart = null;
+          zoomBand.setAttribute('width', 0);
+          return;
+        }
+        if (event.pointerType === 'mouse') dragStart = pointerT(event);
+      });
+
       overlay.addEventListener('pointermove', function (event) {
+        if (pinch && pointers.size >= 2) {
+          pointers.set(event.pointerId, localPoint(event));
+          var points = Array.from(pointers.values()).slice(0, 2);
+          var scale = pinch.distance / Math.max(12, distance(points[0], points[1]));
+          var span = limit((pinch.to - pinch.from) * scale);
+          var ratio = (pinch.center - pinch.from) / Math.max(1, pinch.to - pinch.from);
+          if (model.onZoom) model.onZoom(pinch.center - span * ratio, pinch.center + span * (1 - ratio));
+          return;
+        }
         if (dragStart != null) {
           var now = pointerT(event);
           var left = Math.min(x(dragStart), x(now));
@@ -527,12 +616,11 @@
         }
         showCrosshair(pointerT(event));
       });
-      overlay.addEventListener('pointerdown', function (event) {
-        if (!model.zoom) return;
-        dragStart = pointerT(event);
-      });
-      overlay.addEventListener('pointerup', function (event) {
-        if (dragStart == null) return;
+
+      function endPointer(event) {
+        pointers.delete(event.pointerId);
+        if (pointers.size < 2) pinch = null;
+        if (event.pointerType !== 'mouse' || dragStart == null) return;
         var end = pointerT(event);
         var changed = Math.abs(x(end) - x(dragStart)) > 18;
         zoomBand.setAttribute('width', 0);
@@ -540,9 +628,16 @@
         dragStart = null;
         if (changed && model.onZoom) model.onZoom(Math.min(start, end), Math.max(start, end));
         else showCrosshair(end);
+      }
+      overlay.addEventListener('pointerup', endPointer);
+      overlay.addEventListener('pointercancel', function (event) {
+        pointers.delete(event.pointerId);
+        if (pointers.size < 2) pinch = null;
+        dragStart = null;
+        zoomBand.setAttribute('width', 0);
       });
       overlay.addEventListener('pointerleave', function () {
-        if (dragStart == null) hideCrosshair();
+        if (dragStart == null && !pinch) hideCrosshair();
       });
       overlay.addEventListener('dblclick', function () {
         if (model.onReset) model.onReset();
@@ -552,12 +647,7 @@
         function (event) {
           if (!model.zoom || !model.onZoom) return;
           event.preventDefault();
-          var center = pointerT(event);
-          var span = state.to - state.from;
-          var factor = event.deltaY > 0 ? 1.25 : 0.8;
-          var next = Math.min(span * 31, Math.max(5 * 60000, span * factor));
-          var ratio = (center - state.from) / span;
-          model.onZoom(center - next * ratio, center + next * (1 - ratio));
+          zoomAround(pointerT(event), (state.to - state.from) * (event.deltaY > 0 ? 1.25 : 0.8));
         },
         { passive: false }
       );

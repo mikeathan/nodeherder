@@ -26,6 +26,7 @@
         <li><b>Entity chips</b> show every chartable expose with its sensor colour, so nobody has to guess what is selectable.</li>
         <li><b>Full-width, 360&nbsp;px tall</b> chart instead of 235&nbsp;px inside a 64&nbsp;rem column.</li>
         <li><b>Readout above the chart</b> (hover or drag) so touch users are not dependent on a transient tooltip.</li>
+        <li><b>Zoom works everywhere</b>: <code>− + Reset</code> buttons sized for thumbs, two-finger <b>pinch</b> on phones, drag-to-select on desktop, and <code>+ − 0 ← →</code> from a keyboard.</li>
         <li><b>Stats strip</b> (min / average / max / last) instead of a two-row definition list.</li>
       </ul>
       <p>Decision to make: chips vs select on desktop, and whether history gets its own nav entry or stays inside a device.</p>
@@ -90,7 +91,14 @@
         var toolbar = NH.el('div', { class: 'history-toolbar' });
         var rangeRow = NH.el('div', { class: 'chips' });
         var entityRow = NH.el('div', { class: 'chips' });
-        toolbar.appendChild(rangeRow);
+        var rangeLine = NH.el('div', { class: 'row between' });
+        rangeLine.appendChild(rangeRow);
+        var zoomActions = NH.el('div', { class: 'chart-actions' });
+        zoomActions.appendChild(zoomButton('out', '−', 'Zoom out'));
+        zoomActions.appendChild(zoomButton('in', '+', 'Zoom in'));
+        zoomActions.appendChild(zoomButton('reset', 'Reset'));
+        rangeLine.appendChild(zoomActions);
+        toolbar.appendChild(rangeLine);
         toolbar.appendChild(entityRow);
         shell.content.appendChild(toolbar);
 
@@ -177,7 +185,7 @@
             unit: active.unit,
             height: 360,
             label: active.label + ' history',
-            hint: 'Drag to zoom · double-click to reset',
+            hint: 'Pinch or − + to zoom · drag to select a range · ← → pan',
             series: [series],
             readout: readout,
             zoom: true,
@@ -193,6 +201,25 @@
           });
           paintStats(series, win.from, win.to);
           paintThresholds(active);
+        }
+
+        function zoomButton(action, label, ariaLabel) {
+          var button = NH.el('button', { class: 'btn is-sm', type: 'button' }, label);
+          /* keep the visible text as the accessible name unless a shorter label is needed */
+          if (ariaLabel) button.setAttribute('aria-label', ariaLabel);
+          button.addEventListener('click', function () {
+            if (!chartApi) return;
+            var range = chartApi.range();
+            if (action === 'reset') {
+              chartApi.setRange(windowFor(current.range).from, windowFor(current.range).to);
+              return;
+            }
+            var center = (range.from + range.to) / 2;
+            var span = action === 'in' ? (range.to - range.from) * 0.6 : (range.to - range.from) * 1.6;
+            span = Math.max(5 * 60000, Math.min(31 * DAY, span));
+            chartApi.setRange(center - span / 2, center + span / 2);
+          });
+          return button;
         }
 
         NH.chips(rangeRow, {
