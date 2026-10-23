@@ -1,4 +1,8 @@
-import { historyRange, validHistoryRange, clampHistoryRange, panHistoryRange, zoomHistoryRange } from '@/domain/history/range';
+import { HISTORY_PRESETS, historyRange, validHistoryRange, clampHistoryRange, panHistoryRange, zoomHistoryRange } from '@/domain/history/range';
+test('preset 3d selects a rolling 72 hour window', () => {
+  expect(HISTORY_PRESETS.find((p) => p.value === '72')?.label).toBe('3d');
+  expect(historyRange('72', 100000000)).toEqual({ from: 100000000 - 72 * 3600000, to: 100000000 });
+});
 test('rolling windows retain elapsed time and invalid/custom windows are explicit', () => {
   expect(historyRange('24', 100000000)).toEqual({ from: 13600000, to: 100000000 });
   expect(validHistoryRange(historyRange('custom', 0, '', ''))).toBe(false);

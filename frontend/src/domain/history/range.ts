@@ -3,7 +3,7 @@ export const MAX_HISTORY_DURATION = 31 * 86400000;
 export const MIN_HISTORY_DURATION = 5 * 60000;
 export const HISTORY_PRESETS = [
   { value: '1', label: '1h' }, { value: '6', label: '6h' }, { value: '24', label: '24h' },
-  { value: '168', label: '7d' }, { value: '720', label: '30d' },
+  { value: '72', label: '3d' }, { value: '168', label: '7d' }, { value: '720', label: '30d' },
   { value: 'today', label: 'Today' }, { value: 'yesterday', label: 'Yesterday' }, { value: 'custom', label: 'Custom' },
 ] as const;
 

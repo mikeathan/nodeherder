@@ -1,4 +1,7 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import {
+  ACCENTS,
   contrastOn,
   DEFAULT_THEME_SETTINGS,
   documentTheme,
@@ -34,6 +37,38 @@ describe('parseThemeSettings', () => {
     const ids = THEMES.map((t) => t.id);
     expect(new Set(ids).size).toBe(ids.length);
     ids.forEach((id) => expect(parseThemeSettings({ theme: id }).theme).toBe(id));
+  });
+
+  it('offers ten distinct accent swatches without the duplicate blue, brown or mustard', () => {
+    expect(ACCENTS).toHaveLength(10);
+    expect(new Set(ACCENTS).size).toBe(10);
+    ['#0f8bd6', '#8a5a2b', '#c08a1e'].forEach((hex) => expect(ACCENTS).not.toContain(hex));
+    expect(ACCENTS).toEqual(expect.arrayContaining(['#c92a2a', '#2b4fd8', '#495057']));
+    ACCENTS.forEach((hex) => expect(parseThemeSettings({ accent: hex }).accent).toBe(hex));
+  });
+
+  it('keeps the surviving retro theme, adds the review picks and drops the rejected palettes', () => {
+    expect(THEMES.find((t) => t.id === 'amber')?.name).toBe('Terminal Amber');
+    expect(THEMES.filter((t) => ['crimson', 'emerald', 'blueprint'].includes(t.id)).map((t) => t.name))
+      .toEqual(['Crimson', 'Emerald', 'Blueprint']);
+    ['teak', 'avocado', 'plum', 'sunset', 'diner'].forEach((id) =>
+      expect(THEMES.some((t) => t.id === id)).toBe(false));
+    THEMES.forEach((t) => expect(t.swatch).toHaveLength(2));
+    expect(new Set(THEMES.map((t) => t.swatch.join()))).toHaveProperty('size', THEMES.length);
+  });
+
+  it('defines every token for every theme in both modes', () => {
+    const css = readFileSync(resolve(__dirname, '../../assets/styles/themes.css'), 'utf8');
+    const tokens = ['--nh-bg', '--nh-surface', '--nh-surface-2', '--nh-border', '--nh-border-strong',
+      '--nh-text', '--nh-text-muted', '--nh-accent', '--nh-accent-contrast', '--nh-nav-bg',
+      '--nh-header-bg', '--dk-lamp', '--dk-climate', '--dk-glass'];
+    for (const theme of THEMES) {
+      for (const mode of ['light', 'dark']) {
+        const block = css.match(new RegExp(`\\[data-theme='${theme.id}'\\]\\[data-mode='${mode}'\\] \\{([^}]*)\\}`))?.[1];
+        expect(block).toBeDefined();
+        tokens.forEach((token) => expect(block).toMatch(new RegExp(`${token}:\\s*[^;]+;`)));
+      }
+    }
   });
 });
 

@@ -40,9 +40,10 @@ test('mobile hamburger keeps all destinations without a bottom bar or reserved s
     await menu.focus();
     await menu.press('Enter');
     await expect(menu).toHaveAttribute('aria-expanded', 'true');
-    for (const label of ['Overview', 'Home', 'Devices', 'Device list', 'Automations', 'Assistant', 'Console', 'Settings', 'Panel mode']) {
+    for (const label of ['Overview', 'Home', 'Devices', 'Automations', 'Assistant', 'Console', 'Settings', 'Panel mode']) {
       await expect(nav.getByRole('link', { name: label, exact: true })).toBeVisible();
     }
+    await expect(nav.getByRole('link', { name: 'Device list', exact: true })).toHaveCount(0);
     await expect(nav.getByRole('button', { name: 'Permit join', exact: true })).toBeVisible();
     await expect(nav.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
     await menu.press('Escape');
