@@ -37,6 +37,7 @@
   }, { immediate: true });
   const range = computed(() => historyRange(hours.value, end.value, customFrom.value, customTo.value));
   const valid = computed(() => validHistoryRange(range.value));
+  const selectedRangeLabel = computed(() => valid.value ? `${new Date(range.value.from).toLocaleString()} – ${new Date(range.value.to).toLocaleString()}` : '');
   watch([selected, hours, customFrom, customTo], () => {
     if (!selected.value || !valid.value) return;
     try { writeHistoryPreference(localStorage, props.id, { version: 1, preset: hours.value, expose: selected.value,
@@ -73,6 +74,7 @@
 <template>
   <section class="device-history" aria-label="Device history">
     <HistoryToolbar :names="names" :selected="selected" :preset="hours" :mode="mode" :statistics="statistics"
+      :zone="Intl.DateTimeFormat().resolvedOptions().timeZone" :range-label="selectedRangeLabel"
       :loading="entry?.status === 'loading'" :export-reason="exportReason" @select="selected = $event" @preset="preset"
       @mode="mode = $event" @refresh="reload" @export="download" />
     <div v-if="hours === 'custom'" class="custom-history-range">
@@ -80,7 +82,7 @@
       <label>To<input v-model="customTo" class="nh-input" type="datetime-local" step="0.001" /></label>
     </div>
     <p class="history-zone">{{ Intl.DateTimeFormat().resolvedOptions().timeZone }}<template v-if="valid"> ·
-      {{ new Date(range.from).toLocaleString() }} – {{ new Date(range.to).toLocaleString() }}</template></p>
+      {{ selectedRangeLabel }}</template></p>
     <p v-if="!valid" role="status">Choose a valid period of at most 31 days.</p>
     <p v-else-if="entry?.status === 'loading'" role="status">Loading history…</p>
     <p v-else-if="entry?.status === 'error'" role="alert">{{ entry.error }}</p>
@@ -98,4 +100,7 @@
   label { display: flex; flex-direction: column; gap: 0.4rem; flex: 1 1 10rem; font-size: 0.8rem; }
   input { width: 100%; min-height: 44px; }
   .history-zone, .history-hint { font-size: 0.75rem; color: var(--nh-text-muted); overflow-wrap: anywhere; margin: 1rem 0; }
+  @media (max-width: 719px) {
+    .history-zone, .history-hint { display: none; }
+  }
 </style>

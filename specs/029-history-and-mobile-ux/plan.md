@@ -359,3 +359,25 @@ verify both complete shard-3 project runs, e2e types and lint before pushing the
 Follow-up validation: exact desktop shard 3/4 passed 10/10; exact mobile shard 3/4 passed 10/10,
 with controlled loading on both theme reloads and no retries. Lint (seven existing warnings), e2e
 type checks and `git diff --check` passed. Production code is unchanged from the 201-pass full run.
+
+## CI follow-up — Vite optimizer reload cancelled a navigation
+
+The desktop shard 3/4 failure on `8b57c29f` was not a product defect. `layout.spec.ts` opened
+`/assistant`, which imports `primevue/textarea`, `primevue/tooltip` and `primevue/sidebar` for the
+first time in that worker. Vite's dependency optimizer then logged `new dependencies optimized` and
+`optimized dependencies changed. reloading`; the reload keeps the current URL, so the router
+navigation never committed and `toHaveURL(/\/assistant$/)` polled `/viewer` until timeout. The
+trace confirmed it: the Assistant modules loaded, mount-time `/api/assistant/*` calls were aborted
+by the reload, and the last screencast frame shows the reloaded Automations page.
+
+Fix, test infrastructure only: `vite.config.js` warms `./src/components/**/*.vue` in `e2e` mode so
+optimization completes at startup (verified: `primevue/textarea` and `primevue/sidebar` are in the
+startup metadata and a cold run logs zero reloads), and the shared Playwright fixture visits every
+route once per worker so any remaining cold-start reload cannot land inside an assertion.
+
+Evidence: cold-cache `vite` log before the fix showed two optimizer reloads during the run; after
+the fix, zero. `--project=desktop --shard=3/4 --repeat-each=2` passed 61 with nine existing skips,
+the affected `layout.spec.ts` passed 3/3 on a cold server, and the full both-project browser run
+passed 205 with nine skips. Lint (seven existing warnings), `npm run type-check:e2e` and
+`git diff --check` passed. No application code, dependency, request contract or device behaviour
+changed; development and production builds do not use the e2e warm-up.

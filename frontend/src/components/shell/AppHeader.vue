@@ -84,6 +84,7 @@
     text-decoration: none;
   }
   @media (max-width: 960px) {
+    .nh-menu-btn { min-width: 44px; min-height: 44px; }
     .nh-menu-btn,
     .nh-header-logo {
       display: inline-flex;

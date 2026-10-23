@@ -42,6 +42,12 @@ must equal the `@playwright/test` version in `frontend/package.json`; a dedicate
 fails with the fix if they drift. Container jobs use `--ipc=host`, as Playwright
 recommends for Chromium.
 
+`vite --mode e2e` warms the component graph at startup so Vite's dependency optimizer finishes
+before tests navigate; a first visit to a route whose dependencies were not optimized yet would
+otherwise trigger a full page reload that keeps the previous URL and cancels the route change. The
+shared Playwright fixture also visits every route once per worker, so a reload during a cold start
+cannot land inside an assertion.
+
 Playwright manages ports 4100 (UI), 4110 (Node mock), and 4120 (Go fixture).
 The Go toolchain comes from `backend/go.mod`; CI installs it alongside Node and
 compiles the fixture test binary before Playwright starts it. Fixture startup allows

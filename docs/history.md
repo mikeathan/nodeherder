@@ -1,16 +1,17 @@
 # Device history
 
 Open a device's History tab or choose **View full history** from an entity dialog. The dialog
-link keeps the selected entity, ahead of a saved preference. History stays device-scoped; mobile
-navigation offers Home, Devices, Automations, Assistant and More (the remaining destinations).
+link keeps the selected entity, ahead of a saved preference. History stays device-scoped. On phones,
+use the header hamburger drawer for Home, Devices, Automations, Assistant and all other destinations;
+there is no bottom navigation strip.
 
-Choose an entity chip and a period, including Today, Yesterday or a Custom window of at most
+Choose an entity and a period using the selectors, including Today, Yesterday or a Custom window of at most
 31 elapsed days. Each device remembers its period and entity in browser storage; Custom also
 remembers its validated bounds. Invalid saved bounds fall back to 24h. Calendar boundaries and
 labels follow the browser's named time zone, including daylight-saving changes.
 
 Numeric charts support mouse drag to select a range, wheel/pinch zoom, and a one-finger readout.
-The buttons provide zoom, pan and reset. Focus the chart and use `+`, `-`, arrows and `0` for the
+Zoom, pan and reset buttons are under **Chart tools** below the plot on phones, and inline on wider screens. Focus the chart and use `+`, `-`, arrows and `0` for the
 same operations. Zoom only changes the visible portion of the loaded window; it sends no new
 history query or device command. Missing values remain gaps; the end marker is an actual sample.
 
@@ -23,7 +24,7 @@ sample remains in its own day, labelled “end-boundary sample”. Binary entiti
 events retain repeated reports; energy keeps its observed-consumption summary.
 
 **Export CSV** uses the selected period, including data outside a zoomed view. History exports
-raw `timestamp,value,unit` in native sensor units (also stated beside the button); Statistics exports
+raw `timestamp,value,unit` in native sensor units (stated with the export action); Statistics exports
 `bucket_start,bucket_end,min,average,max,last,samples,unit` in the displayed unit. ISO timestamps
 use UTC (`Z`); missing values have empty cells. Spreadsheet formula-like text is escaped.
 
@@ -36,3 +37,10 @@ dismisses it when content is at the top and reduced motion is off. Its controls 
 navigation respect safe-area insets. The web manifest is optional; no offline service worker is
 installed by this change. Its launch colour is a fallback; browser theme-colour metadata follows
 the current appearance. The deferred signed-in shell shows a viewport-sized themed skeleton.
+
+On phones, metric, period and **History options** (⋮) share one compact row directly above a larger
+plot. Options contains the History/Statistics view picker, refresh, export, unit help and full
+selected bounds/timezone. Pan/zoom/reset remain under **Chart tools** below the plot; touch and
+keyboard shortcuts also work directly on it. Statistics shows its plot before the detailed summary
+and table. Wider screens use labelled Entity/Period selectors in one toolbar, followed by a subtle
+History/Statistics switch and refresh/export actions.
