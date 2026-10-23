@@ -75,74 +75,6 @@
   --dk-glass: rgb(255 255 255 / 0.04);
 }
 
-/* Teak (Hearth's original) */
-[data-theme='teak'][data-mode='light'] {
-  --nh-bg: #f3ece1;
-  --nh-surface: #fffaf2;
-  --nh-surface-2: #f1e6d6;
-  --nh-border: #e6d8c3;
-  --nh-border-strong: #d2bea0;
-  --nh-text: #2b2118;
-  --nh-text-muted: #6f604f;
-  --nh-accent: #b8611f;
-  --nh-accent-contrast: #ffffff;
-  --nh-nav-bg: #efe4d3;
-  --nh-header-bg: #f3ece1;
-  --dk-lamp: #c9780f;
-  --dk-climate: #2f7d8c;
-  --dk-glass: rgb(255 255 255 / 0.6);
-}
-[data-theme='teak'][data-mode='dark'] {
-  --nh-bg: #19130e;
-  --nh-surface: #241b14;
-  --nh-surface-2: #31251b;
-  --nh-border: #3a2c20;
-  --nh-border-strong: #57412f;
-  --nh-text: #f3e8da;
-  --nh-text-muted: #b9a58d;
-  --nh-accent: #e98a3c;
-  --nh-accent-contrast: #1a0f05;
-  --nh-nav-bg: #1d1610;
-  --nh-header-bg: #19130e;
-  --dk-lamp: #ffb547;
-  --dk-climate: #7cc7d4;
-  --dk-glass: rgb(255 255 255 / 0.04);
-}
-
-/* Avocado (Hearth's original) */
-[data-theme='avocado'][data-mode='light'] {
-  --nh-bg: #eef0e2;
-  --nh-surface: #fbfcf4;
-  --nh-surface-2: #e8ebd6;
-  --nh-border: #dadfc2;
-  --nh-border-strong: #bfc79c;
-  --nh-text: #20251a;
-  --nh-text-muted: #5f6650;
-  --nh-accent: #5e7d1e;
-  --nh-accent-contrast: #ffffff;
-  --nh-nav-bg: #e6e9d2;
-  --nh-header-bg: #eef0e2;
-  --dk-lamp: #c99a06;
-  --dk-climate: #3e7f74;
-  --dk-glass: rgb(255 255 255 / 0.6);
-}
-[data-theme='avocado'][data-mode='dark'] {
-  --nh-bg: #12140c;
-  --nh-surface: #1c1f13;
-  --nh-surface-2: #272b1b;
-  --nh-border: #30351f;
-  --nh-border-strong: #4a5230;
-  --nh-text: #edf0e0;
-  --nh-text-muted: #a9b08f;
-  --nh-accent: #a5c640;
-  --nh-accent-contrast: #12160a;
-  --nh-nav-bg: #161910;
-  --nh-header-bg: #12140c;
-  --dk-lamp: #e8c547;
-  --dk-climate: #7fc4b4;
-  --dk-glass: rgb(255 255 255 / 0.04);
-}
-
 /* Lagoon (Deck's original) */
 [data-theme='lagoon'][data-mode='light'] {
   --nh-bg: #e6eef0;
@@ -279,40 +211,6 @@
   --dk-glass: rgb(255 255 255 / 0.04);
 }
 
-/* Plum (new) — dusk violet with rose */
-[data-theme='plum'][data-mode='light'] {
-  --nh-bg: #f6f1f5;
-  --nh-surface: #ffffff;
-  --nh-surface-2: #efe6ee;
-  --nh-border: #e2d4e0;
-  --nh-border-strong: #c9b2c5;
-  --nh-text: #2a1d29;
-  --nh-text-muted: #6d5a6b;
-  --nh-accent: #8e3b7f;
-  --nh-accent-contrast: #ffffff;
-  --nh-nav-bg: #faf6f9;
-  --nh-header-bg: #f6f1f5;
-  --dk-lamp: #d98a1f;
-  --dk-climate: #5a62b8;
-  --dk-glass: rgb(255 255 255 / 0.7);
-}
-[data-theme='plum'][data-mode='dark'] {
-  --nh-bg: #1b1220;
-  --nh-surface: #251a2b;
-  --nh-surface-2: #302236;
-  --nh-border: #3b2b42;
-  --nh-border-strong: #57405f;
-  --nh-text: #f3e9f2;
-  --nh-text-muted: #bfa9bd;
-  --nh-accent: #e889cf;
-  --nh-accent-contrast: #1b1220;
-  --nh-nav-bg: #20162a;
-  --nh-header-bg: #1b1220;
-  --dk-lamp: #ffb35c;
-  --dk-climate: #a9b4ff;
-  --dk-glass: rgb(255 255 255 / 0.04);
-}
-
 /* Graphite (new) — neutral, for people who want no colour cast */
 [data-theme='graphite'][data-mode='light'] {
   --nh-bg: #f2f2f2;
@@ -344,5 +242,141 @@
   --nh-header-bg: #1c1c1e;
   --dk-lamp: #ffbf47;
   --dk-climate: #8fb8e8;
+  --dk-glass: rgb(255 255 255 / 0.04);
+}
+
+/* Terminal Amber (new, spec 031) — phosphor CRT: parchment by day, amber on black-brown by night */
+[data-theme='amber'][data-mode='light'] {
+  --nh-bg: #f3ece0;
+  --nh-surface: #fbf6ec;
+  --nh-surface-2: #e9dfcd;
+  --nh-border: #d9cbb0;
+  --nh-border-strong: #b09a76;
+  --nh-text: #2b2115;
+  --nh-text-muted: #6d5a3f;
+  --nh-accent: #96681a;
+  --nh-accent-contrast: #ffffff;
+  --nh-nav-bg: #f7f0e3;
+  --nh-header-bg: #f3ece0;
+  --dk-lamp: #c98a06;
+  --dk-climate: #96681a;
+  --dk-glass: rgb(255 255 255 / 0.7);
+}
+[data-theme='amber'][data-mode='dark'] {
+  --nh-bg: #0d0b06;
+  --nh-surface: #151208;
+  --nh-surface-2: #1f1a0d;
+  --nh-border: #332b14;
+  --nh-border-strong: #4d411e;
+  --nh-text: #ffce6b;
+  --nh-text-muted: #b3903f;
+  --nh-accent: #ffb000;
+  --nh-accent-contrast: #100d05;
+  --nh-nav-bg: #100d07;
+  --nh-header-bg: #0d0b06;
+  --dk-lamp: #ffb000;
+  --dk-climate: #d98a00;
+  --dk-glass: rgb(255 255 255 / 0.04);
+}
+
+/* Crimson (new, spec 031) — cool grey ground with a brick red accent */
+[data-theme='crimson'][data-mode='light'] {
+  --nh-bg: #f6f5f7;
+  --nh-surface: #ffffff;
+  --nh-surface-2: #efeef2;
+  --nh-border: #dedce3;
+  --nh-border-strong: #b8b3c0;
+  --nh-text: #1d1a24;
+  --nh-text-muted: #5d5767;
+  --nh-accent: #b3261e;
+  --nh-accent-contrast: #ffffff;
+  --nh-nav-bg: #faf9fb;
+  --nh-header-bg: #f6f5f7;
+  --dk-lamp: #d98a1f;
+  --dk-climate: #b3261e;
+  --dk-glass: rgb(255 255 255 / 0.7);
+}
+[data-theme='crimson'][data-mode='dark'] {
+  --nh-bg: #150f11;
+  --nh-surface: #1e1518;
+  --nh-surface-2: #281b1f;
+  --nh-border: #3a282d;
+  --nh-border-strong: #553c43;
+  --nh-text: #f6e9ec;
+  --nh-text-muted: #c4a3aa;
+  --nh-accent: #ff6b6b;
+  --nh-accent-contrast: #170f10;
+  --nh-nav-bg: #1a1214;
+  --nh-header-bg: #150f11;
+  --dk-lamp: #ffb35c;
+  --dk-climate: #ff8585;
+  --dk-glass: rgb(255 255 255 / 0.04);
+}
+
+/* Emerald (new, spec 031) — cool white with a deep emerald accent */
+[data-theme='emerald'][data-mode='light'] {
+  --nh-bg: #f2f7f4;
+  --nh-surface: #ffffff;
+  --nh-surface-2: #e6efe9;
+  --nh-border: #d2dfd7;
+  --nh-border-strong: #a7bdb0;
+  --nh-text: #12211a;
+  --nh-text-muted: #4d6357;
+  --nh-accent: #1e7a4a;
+  --nh-accent-contrast: #ffffff;
+  --nh-nav-bg: #f8fbf9;
+  --nh-header-bg: #f2f7f4;
+  --dk-lamp: #d18b1c;
+  --dk-climate: #1e7a4a;
+  --dk-glass: rgb(255 255 255 / 0.7);
+}
+[data-theme='emerald'][data-mode='dark'] {
+  --nh-bg: #0b1512;
+  --nh-surface: #111f1a;
+  --nh-surface-2: #172a23;
+  --nh-border: #233a31;
+  --nh-border-strong: #35604f;
+  --nh-text: #e3f2ea;
+  --nh-text-muted: #9dbbae;
+  --nh-accent: #3ddc97;
+  --nh-accent-contrast: #081a12;
+  --nh-nav-bg: #0e1a16;
+  --nh-header-bg: #0b1512;
+  --dk-lamp: #ffcf7a;
+  --dk-climate: #3ddc97;
+  --dk-glass: rgb(255 255 255 / 0.04);
+}
+
+/* Blueprint (new, spec 031) — drafting blue with a cobalt accent and tighter corners */
+[data-theme='blueprint'][data-mode='light'] {
+  --nh-bg: #f2f6fb;
+  --nh-surface: #ffffff;
+  --nh-surface-2: #e5edf7;
+  --nh-border: #d0dcec;
+  --nh-border-strong: #a3b6cf;
+  --nh-text: #0e1c2e;
+  --nh-text-muted: #4a5a70;
+  --nh-accent: #1d4ed8;
+  --nh-accent-contrast: #ffffff;
+  --nh-nav-bg: #f8fafd;
+  --nh-header-bg: #f2f6fb;
+  --dk-lamp: #d4900f;
+  --dk-climate: #1d4ed8;
+  --dk-glass: rgb(255 255 255 / 0.7);
+}
+[data-theme='blueprint'][data-mode='dark'] {
+  --nh-bg: #0a1524;
+  --nh-surface: #101f33;
+  --nh-surface-2: #16283f;
+  --nh-border: #22374f;
+  --nh-border-strong: #34506e;
+  --nh-text: #e2edfa;
+  --nh-text-muted: #9bb1c9;
+  --nh-accent: #74a9ff;
+  --nh-accent-contrast: #08111c;
+  --nh-nav-bg: #0d1a2b;
+  --nh-header-bg: #0a1524;
+  --dk-lamp: #ffc46b;
+  --dk-climate: #74a9ff;
   --dk-glass: rgb(255 255 255 / 0.04);
 }

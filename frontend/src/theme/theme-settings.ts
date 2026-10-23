@@ -11,17 +11,20 @@ export type ThemeDescriptor = { id: string; name: string; swatch: [string, strin
 export const THEMES: readonly ThemeDescriptor[] = [
   { id: 'fleece', name: 'Fleece', swatch: ['#eef6fa', '#1b7fb0'], origin: 'new' },
   { id: 'daylight', name: 'Daylight', swatch: ['#f4f2ee', '#0f8bd6'], origin: 'hearth' },
-  { id: 'teak', name: 'Teak', swatch: ['#f3ece1', '#b8611f'], origin: 'hearth' },
-  { id: 'avocado', name: 'Avocado', swatch: ['#eef0e2', '#5e7d1e'], origin: 'hearth' },
   { id: 'lagoon', name: 'Lagoon', swatch: ['#13252c', '#6fd3e8'], origin: 'panel' },
   { id: 'ember', name: 'Ember', swatch: ['#24170f', '#ff8a3d'], origin: 'panel' },
   { id: 'frost', name: 'Frost', swatch: ['#182433', '#9cc9ff'], origin: 'panel' },
   { id: 'fjord', name: 'Fjord', swatch: ['#0f1a20', '#4fc3cf'], origin: 'new' },
-  { id: 'plum', name: 'Plum', swatch: ['#f6f1f5', '#8e3b7f'], origin: 'new' },
   { id: 'graphite', name: 'Graphite', swatch: ['#1c1c1e', '#e8e8e8'], origin: 'new' },
+  { id: 'amber', name: 'Terminal Amber', swatch: ['#f3ece0', '#96681a'], origin: 'new' },
+  { id: 'crimson', name: 'Crimson', swatch: ['#f6f5f7', '#b3261e'], origin: 'new' },
+  { id: 'emerald', name: 'Emerald', swatch: ['#f2f7f4', '#1e7a4a'], origin: 'new' },
+  { id: 'blueprint', name: 'Blueprint', swatch: ['#f2f6fb', '#1d4ed8'], origin: 'new' },
 ];
 
-export const ACCENTS: readonly string[] = ['#1b7fb0', '#0f8bd6', '#d9480f', '#2b8a3e', '#8e3b7f', '#0e7c86', '#c2255c', '#7048e8'];
+/* Ten distinguishable swatches: no duplicate blues, cool crimson/cobalt/slate added (spec 031). */
+export const ACCENTS: readonly string[] = ['#1b7fb0', '#0e7c86', '#2b8a3e', '#8e3b7f', '#7048e8', '#c2255c', '#d9480f',
+  '#c92a2a', '#2b4fd8', '#495057'];
 
 export type ThemeSettings = {
   v: 1;

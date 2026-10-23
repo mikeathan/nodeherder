@@ -13,8 +13,7 @@ export type NavItem = {
 export const NAV_ITEMS: readonly NavItem[] = [
   { route: RouteName.Overview, label: 'Overview', icon: 'overview' },
   { route: RouteName.GroupDashboard, label: 'Home', icon: 'home' },
-  { route: RouteName.Devices, label: 'Devices', icon: 'devices', includes: [RouteName.DeviceView] },
-  { route: RouteName.DeviceList, label: 'Device list', icon: 'list', includes: [RouteName.DevicePage] },
+  { route: RouteName.Devices, label: 'Devices', icon: 'devices', includes: [RouteName.DeviceView, RouteName.DeviceList, RouteName.DevicePage] },
   { route: RouteName.Viewer, label: 'Automations', icon: 'automation', includes: [RouteName.Editor, RouteName.Creator] },
   { route: RouteName.Assistant, label: 'Assistant', icon: 'assistant' },
   { route: RouteName.ConsoleViewer, label: 'Console', icon: 'console' },
