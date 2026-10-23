@@ -28,8 +28,7 @@ test('full history keeps the sheet expose ahead of saved preferences', async ({ 
   await page.evaluate((id) => localStorage.setItem(`nh-history-pref:${id}`, JSON.stringify({ version: 1, preset: '24', expose: 'state' })), MOCK.livingRoomLight.id);
   await ui.home.tile(page, 'living room group', 'Brightness').locator('.nh-tile-body').click();
   await page.getByRole('dialog').getByRole('link', { name: 'View full history' }).click();
-  const history = page.getByRole('region', { name: 'Device history' });
-  await expect(history.getByRole('button', { name: 'Brightness', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect.poll(() => ui.history.selected(page, 'Entity')).toBe('Brightness');
   await expect(page.getByRole('dialog')).toHaveCount(0);
 });
 

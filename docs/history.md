@@ -4,7 +4,8 @@ Open a device's History tab or choose **View full history** from an entity dialo
 link keeps the selected entity, ahead of a saved preference. History stays device-scoped; mobile
 navigation offers Home, Devices, Automations, Assistant and More (the remaining destinations).
 
-Choose an entity chip and a period, including Today, Yesterday or a Custom window of at most
+Choose an entity and a period using the compact phone pickers or the labelled buttons on wider
+screens, including Today, Yesterday or a Custom window of at most
 31 elapsed days. Each device remembers its period and entity in browser storage; Custom also
 remembers its validated bounds. Invalid saved bounds fall back to 24h. Calendar boundaries and
 labels follow the browser's named time zone, including daylight-saving changes.
@@ -36,3 +37,7 @@ dismisses it when content is at the top and reduced motion is off. Its controls 
 navigation respect safe-area insets. The web manifest is optional; no offline service worker is
 installed by this change. Its launch colour is a fallback; browser theme-colour metadata follows
 the current appearance. The deferred signed-in shell shows a viewport-sized themed skeleton.
+
+On phones, entity and period share one row; History/Statistics, refresh and the CSV icon share the
+next. The CSV control retains its accessible name and unit disclosure. All targets remain at least
+44px; widening the screen restores the labelled buttons with the same selection.

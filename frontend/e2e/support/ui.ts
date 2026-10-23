@@ -17,6 +17,22 @@ async function openNav(page: Page) {
 }
 
 export const ui = {
+  history: {
+    choose: async (page: Page, name: 'Entity' | 'Period', label: string) => {
+      const group = page.getByRole('region', { name: 'Device history' }).getByRole('group', { name, exact: true });
+      await group.waitFor({ state: 'visible' });
+      const picker = group.getByRole('combobox');
+      if (await picker.isVisible()) await picker.selectOption({ label });
+      else await group.getByRole('button', { name: label, exact: true }).click();
+    },
+    selected: async (page: Page, name: 'Entity' | 'Period') => {
+      const group = page.getByRole('region', { name: 'Device history' }).getByRole('group', { name, exact: true });
+      await group.waitFor({ state: 'visible' });
+      const picker = group.getByRole('combobox');
+      return await picker.isVisible() ? picker.locator('option:checked').textContent()
+        : group.getByRole('button', { pressed: true }).textContent();
+    },
+  },
   login: {
     signInButton: (page: Page): Locator => page.getByRole('button', { name: /sign in with google/i }),
   },

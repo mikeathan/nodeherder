@@ -1,9 +1,14 @@
 import { test, expect, signIn } from './support/fixtures';
 import { readFile } from 'node:fs/promises';
+import { ui } from './support/ui';
 
 const fixtureId = 'design-sensor';
 const readings = [11.2, 10.8, 10.7, 10.5, 10.2, 10.1, 9.8, 9.7];
 const exposes = {
+  color_temp: {
+    name: 'color_temp', type: 'numeric', category: 'measurement', access_mode: 'read',
+    unit: 'mired', data: 300, attributes: null, values: null,
+  },
   temperature: {
     name: 'temperature',
     type: 'numeric',
@@ -90,7 +95,7 @@ test.beforeEach(async ({ page }) => {
       const expose = exposes[name];
       const data = readings.map((value, i) => ({
         timestamp: from + Math.round(((to - from) * i) / (readings.length - 1)),
-        value: expose.type === 'binary' ? i % 3 !== 1 : expose.type === 'enum' ? 'single_press' : value,
+        value: expose.type === 'binary' ? i % 3 !== 1 : expose.type === 'enum' ? 'single_press' : name === 'color_temp' ? 350 - i * 10 : value,
       }));
       return {
         expose: name,
@@ -131,15 +136,15 @@ test('read-only environmental view has approved chart treatment and no adjustmen
 test('full history shares typed numeric, state and repeated-event views', async ({ page }) => {
   await signIn(page, `/devicepage/${fixtureId}?tab=history`);
   const history = page.getByRole('region', { name: 'Device history' });
-  await history.getByRole('group', { name: 'Entity', exact: true }).getByRole('button', { name: 'Temperature', exact: true }).click();
+  await ui.history.choose(page, 'Entity', 'Temperature');
   await expect(history.locator('.nh-history-canvas[data-ready="true"]')).toBeVisible();
-  await history.getByRole('group', { name: 'Entity', exact: true }).getByRole('button', { name: 'Contact', exact: true }).click();
+  await ui.history.choose(page, 'Entity', 'Contact');
   await expect(history.getByText('Transitions', { exact: true })).toBeVisible();
   await expect(history.getByRole('group', { name: 'State history intervals' })).toBeVisible();
-  await history.getByRole('group', { name: 'Entity', exact: true }).getByRole('button', { name: 'Action', exact: true }).click();
+  await ui.history.choose(page, 'Entity', 'Action');
   await expect(history.getByRole('heading', { name: 'Recent events' })).toBeVisible();
   await expect(history.locator('.history-recent').getByText('Single press', { exact: true })).toHaveCount(6);
-  await history.getByRole('group', { name: 'Period', exact: true }).getByRole('button', { name: 'Custom', exact: true }).click();
+  await ui.history.choose(page, 'Period', 'Custom');
   await expect(history.getByText('Choose a valid period of at most 31 days.')).toBeVisible();
   await history.getByLabel('From', { exact: true }).fill('2026-10-17T10:00');
   await history.getByLabel('To', { exact: true }).fill('2026-10-17T14:00');
@@ -248,7 +253,7 @@ test('Yesterday statistics omit an empty midnight day and preserve an actual end
   });
   await signIn(page, `/devicepage/${fixtureId}?tab=history&expose=temperature`);
   const history = page.getByRole('region', { name: 'Device history' });
-  await history.getByRole('button', { name: 'Yesterday', exact: true }).click();
+  await ui.history.choose(page, 'Period', 'Yesterday');
   await history.getByRole('button', { name: 'Statistics', exact: true }).click();
   await expect(history.locator('.statistics-table tbody tr')).toHaveCount(1);
   await expect(history.getByText('Based on 2 numeric samples', { exact: true })).toBeVisible();
@@ -263,21 +268,21 @@ test('Yesterday statistics omit an empty midnight day and preserve an actual end
 test('Yesterday, expose and custom bounds survive reload; invalid saved bounds fall back', async ({ page }) => {
   await signIn(page, `/devicepage/${fixtureId}?tab=history`);
   const history = page.getByRole('region', { name: 'Device history' });
-  await history.getByRole('group', { name: 'Entity', exact: true }).getByRole('button', { name: 'Temperature', exact: true }).click();
-  await history.getByRole('button', { name: 'Yesterday', exact: true }).click();
+  await ui.history.choose(page, 'Entity', 'Temperature');
+  await ui.history.choose(page, 'Period', 'Yesterday');
   await expect(history.locator('canvas[data-ready="true"]')).toBeVisible();
   await page.reload();
-  await expect(history.getByRole('button', { name: 'Yesterday', exact: true })).toHaveAttribute('aria-pressed', 'true');
-  await history.getByRole('button', { name: 'Custom', exact: true }).click();
+  await expect.poll(() => ui.history.selected(page, 'Period')).toBe('Yesterday');
+  await ui.history.choose(page, 'Period', 'Custom');
   await history.getByLabel('From', { exact: true }).fill('2026-10-17T10:00');
   await history.getByLabel('To', { exact: true }).fill('2026-10-17T14:00');
   await expect(history.locator('canvas[data-ready="true"]')).toBeVisible();
   await page.reload();
   await expect(history.getByLabel('From', { exact: true })).toHaveValue('2026-10-17T10:00');
-  await expect(history.getByRole('button', { name: 'Temperature', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect.poll(() => ui.history.selected(page, 'Entity')).toBe('Temperature');
   await page.evaluate((id) => localStorage.setItem(`nh-history-pref:${id}`, JSON.stringify({ version: 1, preset: 'custom', expose: 'temperature', custom: { from: 2, to: 1 } })), fixtureId);
   await page.reload();
-  await expect(history.getByRole('button', { name: '24h', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect.poll(() => ui.history.selected(page, 'Period')).toBe('24h');
 });
 
 test('partial history names its coverage, disables export and narrows only on request', async ({ page }) => {
@@ -296,9 +301,9 @@ test('partial history names its coverage, disables export and narrows only on re
   await expect(history.getByText(/Page 1 of 100/)).toBeVisible();
   await history.getByRole('button', { name: 'Older samples', exact: true }).click();
   await expect(history.getByText(/Page 2 of 100/)).toBeVisible();
-  await expect(history.getByRole('button', { name: '24h', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect.poll(() => ui.history.selected(page, 'Period')).toBe('24h');
   await history.getByRole('button', { name: 'Narrow this range' }).click();
-  await expect(history.getByRole('button', { name: 'Custom', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect.poll(() => ui.history.selected(page, 'Period')).toBe('Custom');
 });
 
 test('full history stays readable at desktop, tablet and phone widths in both themes', async ({ page }, info) => {
@@ -311,6 +316,8 @@ test('full history stays readable at desktop, tablet and phone widths in both th
       await page.setViewportSize({ width, height: width === 768 ? 1024 : 844 });
       const canvas = chart.locator('canvas[data-ready="true"]');
       await expect(canvas).toBeVisible();
+      await expect.poll(() => ui.history.selected(page, 'Entity')).toBe('Temperature');
+      await expect.poll(() => ui.history.selected(page, 'Period')).toBe('24h');
       await expect.poll(async () => (await canvas.boundingBox())!.height).toBeGreaterThanOrEqual(width >= 1024 ? 360 : width >= 720 ? 300 : 220);
       await expect.poll(() => page.locator('.nh-app-main').evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
       await chart.focus();
@@ -320,4 +327,55 @@ test('full history stays readable at desktop, tablet and phone widths in both th
       await page.screenshot({ path: info.outputPath(`history-${theme}-${width}.png`) });
     }
   }
+});
+
+test('mobile history toolbar stays compact with long labels and usable controls', async ({ page }, info) => {
+  await page.setViewportSize({ width: 384, height: 854 });
+  await signIn(page, `/devicepage/${fixtureId}?tab=history&expose=color_temp`);
+  const history = page.getByRole('region', { name: 'Device history' });
+  const toolbar = history.locator('.history-toolbar');
+  await expect(history.locator('canvas[data-ready="true"]')).toBeVisible();
+  for (const mode of ['light', 'dark']) {
+    const toggle = page.getByRole('button', { name: `Switch to ${mode} mode` });
+    if (await toggle.isVisible()) await toggle.click();
+    for (const width of [320, 384, 390]) {
+      await page.setViewportSize({ width, height: 854 });
+      expect((await toolbar.boundingBox())!.height).toBeLessThanOrEqual(144);
+      for (const control of await toolbar.locator('button:visible, select:visible').all()) {
+        const box = (await control.boundingBox())!;
+        expect(box.height).toBeGreaterThanOrEqual(44);
+        expect(box.width).toBeGreaterThanOrEqual(44);
+      }
+      const entity = await toolbar.getByRole('combobox', { name: 'Entity', exact: true }).boundingBox();
+      const period = await toolbar.getByRole('combobox', { name: 'Period', exact: true }).boundingBox();
+      expect(entity!.y).toBe(period!.y);
+      const actions = await Promise.all(['History', 'Statistics', 'Refresh history', 'Export CSV'].map(async (name) => {
+        const box = (await toolbar.getByRole('button', { name, exact: true }).boundingBox())!;
+        return box.y + box.height / 2;
+      }));
+      expect(Math.max(...actions) - Math.min(...actions)).toBeLessThanOrEqual(2);
+      expect(await history.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
+      await page.screenshot({ path: info.outputPath(`compact-history-${mode}-${width}.png`) });
+    }
+  }
+  const period = toolbar.getByRole('combobox', { name: 'Period', exact: true });
+  await period.selectOption({ label: 'Yesterday' });
+  await expect(history.locator('canvas[data-ready="true"]')).toBeVisible();
+  await page.reload();
+  await expect(period).toHaveValue('yesterday');
+  await expect(toolbar.getByRole('button', { name: 'History', exact: true })).toBeVisible();
+  const entity = toolbar.getByRole('combobox', { name: 'Entity', exact: true });
+  await expect(entity).toHaveValue('color_temp');
+  await entity.focus();
+  expect(await entity.evaluate((el) => getComputedStyle(el).outlineStyle)).not.toBe('none');
+  await entity.press('Tab');
+  await expect(period).toBeFocused();
+  await period.press('Tab');
+  await expect(toolbar.getByRole('button', { name: 'History', exact: true })).toBeFocused();
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Space');
+  await expect(toolbar.getByRole('button', { name: 'Statistics', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await period.selectOption({ label: 'Custom' });
+  await expect(history.getByLabel('From', { exact: true })).toBeVisible();
+  await expect(history.getByRole('button', { name: 'Export CSV', exact: true })).toBeDisabled();
 });

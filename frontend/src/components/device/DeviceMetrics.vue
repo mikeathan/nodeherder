@@ -98,4 +98,7 @@
   label { display: flex; flex-direction: column; gap: 0.4rem; flex: 1 1 10rem; font-size: 0.8rem; }
   input { width: 100%; min-height: 44px; }
   .history-zone, .history-hint { font-size: 0.75rem; color: var(--nh-text-muted); overflow-wrap: anywhere; margin: 1rem 0; }
+  @media (max-width: 719px) {
+    .history-zone { margin: 0.5rem 0; }
+  }
 </style>
