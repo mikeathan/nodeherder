@@ -21,12 +21,15 @@ No transport, device command, storage, query, aggregation or dependency change.
 - AC-01: Below 720px, entity and period use two labelled native pickers on one row. All entities
   and eight presets remain available; selecting them updates history, including Custom bounds,
   and restores the selection after reload using existing preferences.
-- AC-02: History/Statistics, refresh and CSV export fit on one subsequent row at 320/384/390px.
-  Each control is at least 44×44px, named, keyboard operable and visibly focused. Export's native
-  versus displayed-unit disclosure and disabled/error explanations remain available.
-- AC-03: For a loaded numeric 24h history with export available, the toolbar is at most 144px
-  tall at those phone widths, including the unit disclosure; no horizontal page overflow or clipped
-  action. Date/zone remains readable. Verify both light and dark appearance with screenshots.
+- AC-02: On phones, metric, period and a named History options button share a single 44px row.
+  Options opens the existing dialog/sheet with a labelled History/Statistics picker (numeric,
+  non-energy only), refresh, export, native/display unit disclosure and full selected bounds/zone.
+  Closing or changing mode returns focus to the opener; Escape closes the sheet. Actions retain
+  44px targets and disabled/error explanations; current mode remains described on the opener.
+- AC-03: With loaded numeric 24h history/export available, the phone toolbar is at most 48px tall,
+  and the canvas begins within 12px below it. No dedicated date/help/button rows precede the plot.
+  Full numeric and statistics canvases are at least 280px and use roughly 48% viewport height
+  (capped at 420px); verify 320/384/390 widths, 568/854 heights, both themes and no overflow.
 - AC-04: At 768/1280px labelled entity/period buttons remain visible and selected state is accurate.
   Resizing preserves the current choice; statistics, export and empty/partial/error behavior remain.
 
@@ -41,10 +44,20 @@ No transport, device command, storage, query, aggregation or dependency change.
   32px; a synthetic 32px safe inset protects content and the drawer’s last action. No page overflow;
   manifest/viewport metadata and manifest-failure boot still work. Panel mode keeps its own dock.
 
+### US-03 — Give metrics the main phone surface (P1)
+
+- AC-07: Pan/zoom/reset remain available via a keyboard-operable Chart tools disclosure below the
+  numeric plot. It starts collapsed, closes with Escape, and does not cover or precede the canvas.
+  Gestures, keyboard shortcuts, range clamping and zero extra requests/commands remain unchanged.
+- AC-08: Phone Statistics places its legend/chart ahead of the detailed summary/sample count/table;
+  missing/partial data and every numeric statistic stay available. The compact entity-dialog chart
+  and detailed desktop controls/layout retain their behavior.
+
 ## Requirements and success
 
 FR-01: Compact phone controls; AC-01…03. FR-02: Preserve desktop and history behavior; AC-04.
 FR-03: Remove redundant bottom navigation and restore drawer destinations; AC-05/06.
+FR-04: Chart-first phone presentation with secondary controls on demand; AC-07/08.
 NFR-01: Use existing tokens, scoped styles and dependencies. SC-01: Existing history browser flows
 pass on both projects and the phone geometry/keyboard regression passes against isolated fixtures.
 

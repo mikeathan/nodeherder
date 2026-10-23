@@ -16,8 +16,47 @@ async function openNav(page: Page) {
   await nav.waitFor({ state: 'visible' });
 }
 
+async function historyOptions(page: Page): Promise<Locator> {
+  const history = page.getByRole('region', { name: 'Device history' });
+  await history.waitFor({ state: 'visible' });
+  const trigger = history.getByRole('button', { name: 'History options', exact: true });
+  if (!await trigger.isVisible()) return history;
+  const sheet = page.getByRole('dialog', { name: 'History options', exact: true });
+  if (!await sheet.isVisible()) await trigger.click();
+  await sheet.waitFor({ state: 'visible' });
+  return sheet;
+}
+
 export const ui = {
   history: {
+    openOptions: historyOptions,
+    closeOptions: async (page: Page) => {
+      const sheet = page.getByRole('dialog', { name: 'History options', exact: true });
+      if (await sheet.isVisible()) await sheet.getByRole('button', { name: 'Close', exact: true }).click();
+    },
+    setMode: async (page: Page, label: 'History' | 'Statistics') => {
+      const options = await historyOptions(page);
+      if (await options.getAttribute('role') === 'dialog') await options.getByRole('combobox', { name: 'View', exact: true }).selectOption({ label });
+      else await options.getByRole('button', { name: label, exact: true }).click();
+    },
+    currentMode: async (page: Page) => {
+      const history = page.getByRole('region', { name: 'Device history' });
+      const trigger = history.getByRole('button', { name: 'History options', exact: true });
+      if (await trigger.isVisible()) return (await trigger.getAttribute('aria-description'))?.replace('Current view: ', '');
+      return history.getByRole('group', { name: 'History mode' }).getByRole('button', { pressed: true }).textContent();
+    },
+    action: async (page: Page, name: 'Refresh history' | 'Export CSV') => {
+      await (await historyOptions(page)).getByRole('button', { name, exact: true }).click();
+    },
+    chartAction: async (page: Page, name: string) => {
+      const chart = page.locator('[data-history-chart]');
+      const tools = chart.locator('.mobile-chart-tools');
+      const summary = tools.locator('summary');
+      const mobile = await summary.isVisible();
+      if (mobile && await tools.getAttribute('open') === null) await summary.click();
+      await chart.getByRole('button', { name, exact: true }).click();
+      if (mobile) await summary.click();
+    },
     choose: async (page: Page, name: 'Entity' | 'Period', label: string) => {
       const group = page.getByRole('region', { name: 'Device history' }).getByRole('group', { name, exact: true });
       await group.waitFor({ state: 'visible' });

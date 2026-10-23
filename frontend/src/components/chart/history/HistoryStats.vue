@@ -41,7 +41,7 @@
   });
 </script>
 <template>
-  <section aria-label="Sample statistics" class="history-statistics">
+  <section aria-label="Sample statistics" class="history-statistics" :class="{ 'is-daily': daily }">
     <dl v-if="summary" class="history-summary">
       <div><dt>Range</dt><dd>{{ format(summary.min) }} – {{ format(summary.max) }}</dd></div>
       <div><dt>Sample average</dt><dd>{{ format(summary.avg) }}</dd></div>
@@ -49,13 +49,13 @@
     </dl>
     <p class="sample-basis">Based on {{ basis }} numeric samples{{ series.partial ? ' · partial history' : '' }}</p>
     <template v-if="daily">
-      <p class="sample-basis">Daily sample range and readings · axis fits the measured values</p>
+      <p class="sample-basis statistics-chart-caption">Daily sample range and readings · axis fits the measured values</p>
       <ul class="statistics-legend" aria-label="Statistics legend">
         <li><span class="range-key" aria-hidden="true">▮</span> Minimum–Maximum range</li>
         <li><span class="average-key" aria-hidden="true">●</span> Average</li>
         <li><span class="last-key" aria-hidden="true">◆</span> Last</li>
       </ul>
-      <HistoryCanvas :type="'bar'" :height="300" :options="options" :series="plotted" />
+      <HistoryCanvas class="statistics-canvas" :type="'bar'" :height="300" :options="options" :series="plotted" />
       <div class="statistics-table">
         <table>
           <caption>Daily sample statistics · {{ Intl.DateTimeFormat().resolvedOptions().timeZone }}</caption>
@@ -79,4 +79,13 @@
   .last-key { color: var(--nh-kind-contact); }
   table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
   td, th { padding: 0.75rem 0.5rem; border-bottom: 1px solid var(--nh-border); text-align: left; white-space: nowrap; }
+  @media (max-width: 719px) {
+    .is-daily { display: flex; flex-direction: column; --nh-chart-height: clamp(280px, 48dvh, 420px); }
+    .is-daily .statistics-chart-caption { display: none; }
+    .is-daily .statistics-legend { order: 0; margin: 0.5rem 0; gap: 0.5rem 0.75rem; }
+    .is-daily .statistics-canvas { order: 1; }
+    .is-daily .history-summary { order: 2; }
+    .is-daily > .sample-basis { order: 3; }
+    .is-daily .statistics-table { order: 4; }
+  }
 </style>

@@ -113,3 +113,53 @@ passed. Entry is 116.18kB gzip; Chart.js unchanged. Updated phone screenshot ins
 strip and chart range/readout visible. All final NH/FE checks rechecked; no backend, API, persistence,
 unit or dependency change. `git diff --check` and the unused-reference scan passed. No physical
 Safari/cutout/frame-timing verification is claimed; prior manual acceptance remains separate.
+
+## Chart-first redesign — 2026-10-23
+
+User rejects the remaining control-heavy phone layout. Reopen NH-01/04/05/06 and FE-01/03/04;
+prior runs remain historical. Replace the two-row toolbar with entity/period/History options on one
+44px row. HistoryToolbar owns sheet visibility only; DeviceMetrics still owns selections/query/export
+and supplies the selected zone/range text. Reuse UiDialog for focus restoration, Escape and scroll
+locking; its phone Close button also gets a 44px minimum. The sheet contains a native View picker,
+refresh/export and their help. Mobile default hides the redundant zone/unit/keyboard-help rows;
+required failure/partial messages remain. Current mode is described on the options opener.
+
+HistoryChart keeps range ownership. Desktop buttons remain; phone buttons move into native details
+below the canvas, with Escape-to-close and full visible bounds. No new shared state, global event
+listener or dependency. Full mobile canvas height is clamp(280px,48dvh,420px); compact dialog charts
+keep 105px. Daily Statistics reorders only on phones to show legend/plot before summary/table and
+uses the same height policy. Avoid floating controls covering measurements. No fullscreen or new
+network requests are needed to give the plot a substantially bigger surface.
+
+Update the existing DeviceMetrics browser regression first: single-row budget, canvas gap/height,
+options keyboard/focus/mode/disabled state, Statistics ordering and tools. Update responsive page
+objects and existing mode/export/gesture assertions without dropping coverage. Verify desktop and
+phone, long labels, short viewport, both themes, keyboard/gestures and exports; inspect screenshots.
+Run full frontend checks and isolated browser suite; update docs and PR #75 with actual evidence.
+
+Local verification uses mock/Vite ports 4810/4800 because the user's dev hub owns 4110/4100.
+Temporary loader/config overrides stay uncommitted. Existing EntityViewDialog socket intercepts
+must derive their URL from the already-configurable HUB_API instead of assuming port 4110;
+confirmation assertions remain unchanged. Local affected-spec coverage uses these separate mocks;
+the standard complete browser suite runs in CI, where fixture ports are dedicated.
+
+Chart-first verification: baseline failed at 124.17px against the new 48px toolbar budget. Final
+phone header is 44px; canvas starts directly below it and is ~410px at 854px viewport height
+(previously 240px). Both themes and 320/384/390 widths, 568px short height, Statistics-first ordering,
+44px controls, native details keyboard/Escape and options focus restoration are browser-asserted.
+Default, Statistics, options sheet and expanded tools screenshots were inspected.
+
+Final alternate-port affected suite (`DeviceMetrics.spec.ts EntityViewDialog.spec.ts layout.spec.ts`)
+passed **93 tests, nine existing desktop phone-only skips, zero failures (102 cases)**, 2.7 minutes.
+The final visual/keyboard/touch-target follow-up passed 2/2. Initial runs exposed old phone export
+selectors and two hardcoded socket intercepts; intermediate runs were interrupted while migrating
+those test assumptions. The final run retains both CSV schemas, gesture/no-extra-request assertions,
+confirmation semantics, deep links, layout, and dialog cleanup. The initial standard-port attempt
+ran no tests because the user's dev hub occupied 4110; no live hub/device was used or stopped.
+The temporary local config was removed; standard full-suite verification is performed by CI.
+
+Jest passed 53 suites/341 tests with a UTC launch. Lint passed (seven existing JS warnings), build
+and e2e types passed. Entry is 116.25kB gzip, Chart.js unchanged at 71.35kB; no dependency/lockfile,
+backend or API contract diff. `git diff --check` passed. Final NH/FE review confirms original data,
+range and command ownership, honest failure/partial feedback, accessible deferred controls and
+listener/focus cleanup. Physical Safari/cutout/frame timing remain unrun as already documented.

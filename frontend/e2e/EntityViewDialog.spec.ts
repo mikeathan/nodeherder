@@ -1,6 +1,7 @@
-import { test, expect, signIn, dragBetween } from './support/fixtures';
+import { test, expect, signIn, dragBetween, HUB_API } from './support/fixtures';
 import { MOCK } from './support/mock';
 import { ui } from './support/ui';
+const mockSocketURL = HUB_API.replace(/^http/, 'ws').replace(/\/api$/, '/ws');
 
 // EntityViewDialog.vue acceptance flows against the isolated mock hub only.
 test.beforeEach(async ({ page }) => {
@@ -522,7 +523,7 @@ test('entity mode choices show direct metadata options and wait for confirmation
   });
   const commands: { name: string; value: unknown }[] = [];
   let confirm: (() => void) | undefined;
-  await page.routeWebSocket('ws://localhost:4110/ws', (socket) => {
+  await page.routeWebSocket(mockSocketURL, (socket) => {
     socket.onMessage((raw) => {
       const frame = JSON.parse(String(raw));
       if (frame.type !== 'deviceSetValue') return;
@@ -557,7 +558,7 @@ for (const control of [
   test(`${control.name} ignores live reports during native drag and pending confirmation`, async ({ page }) => {
     const commands: { id: string; name: string; value: unknown }[] = [];
     let report!: (value: unknown, name?: string) => void;
-    await page.routeWebSocket('ws://localhost:4110/ws', (socket) => {
+    await page.routeWebSocket(mockSocketURL, (socket) => {
       report = (value, name = control.name) => socket.send(JSON.stringify({
         type: 'deviceUpdated', payload: { id: MOCK.livingRoomLight.id, data: { [name]: value } },
       }));

@@ -12,7 +12,7 @@ remembers its validated bounds. Invalid saved bounds fall back to 24h. Calendar 
 labels follow the browser's named time zone, including daylight-saving changes.
 
 Numeric charts support mouse drag to select a range, wheel/pinch zoom, and a one-finger readout.
-The buttons provide zoom, pan and reset. Focus the chart and use `+`, `-`, arrows and `0` for the
+Zoom, pan and reset buttons are under **Chart tools** below the plot on phones, and inline on wider screens. Focus the chart and use `+`, `-`, arrows and `0` for the
 same operations. Zoom only changes the visible portion of the loaded window; it sends no new
 history query or device command. Missing values remain gaps; the end marker is an actual sample.
 
@@ -25,7 +25,7 @@ sample remains in its own day, labelled “end-boundary sample”. Binary entiti
 events retain repeated reports; energy keeps its observed-consumption summary.
 
 **Export CSV** uses the selected period, including data outside a zoomed view. History exports
-raw `timestamp,value,unit` in native sensor units (also stated beside the button); Statistics exports
+raw `timestamp,value,unit` in native sensor units (stated with the export action); Statistics exports
 `bucket_start,bucket_end,min,average,max,last,samples,unit` in the displayed unit. ISO timestamps
 use UTC (`Z`); missing values have empty cells. Spreadsheet formula-like text is escaped.
 
@@ -39,6 +39,8 @@ navigation respect safe-area insets. The web manifest is optional; no offline se
 installed by this change. Its launch colour is a fallback; browser theme-colour metadata follows
 the current appearance. The deferred signed-in shell shows a viewport-sized themed skeleton.
 
-On phones, entity and period share one row; History/Statistics, refresh and the CSV icon share the
-next. The CSV control retains its accessible name and unit disclosure. All targets remain at least
-44px; widening the screen restores the labelled buttons with the same selection.
+On phones, metric, period and **History options** (⋮) share one compact row directly above a larger
+plot. Options contains the History/Statistics view picker, refresh, export, unit help and full
+selected bounds/timezone. Pan/zoom/reset remain under **Chart tools** below the plot; touch and
+keyboard shortcuts also work directly on it. Statistics shows its plot before the detailed summary
+and table. Wider screens retain the labelled controls.

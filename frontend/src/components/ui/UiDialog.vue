@@ -198,6 +198,9 @@
       flex: 1 1 auto;
     }
   }
+  @media (max-width: 719px) {
+    .nh-dialog-head :deep(.nh-btn) { min-width: 44px; min-height: 44px; }
+  }
   /* Match the entity layout breakpoint, including phone landscape and tablets. */
   @media (max-width: 899px) {
     .nh-dialog.is-wide.is-fullscreen-mobile,

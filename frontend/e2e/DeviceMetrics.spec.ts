@@ -161,8 +161,8 @@ test('history zoom uses mouse, wheel, keyboard and touch without additional requ
   const from = Number(await chart.getAttribute('data-from')), to = Number(await chart.getAttribute('data-to'));
   const initialRequests = requests, commands = ws.sentOf('deviceSetValue').length;
   const span = async () => Number(await chart.getAttribute('data-to')) - Number(await chart.getAttribute('data-from'));
-  const reset = chart.getByRole('button', { name: 'Reset', exact: true });
-  await chart.getByRole('button', { name: 'Zoom in', exact: true }).click();
+  const reset = () => ui.history.chartAction(page, 'Reset');
+  await ui.history.chartAction(page, 'Zoom in');
   await expect.poll(span).toBe((to - from) / 2);
   await chart.focus();
   await chart.press('ArrowRight');
@@ -173,17 +173,17 @@ test('history zoom uses mouse, wheel, keyboard and touch without additional requ
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await expect(chart.locator('.chart-readout')).toContainText('°C');
   await page.mouse.move(box.x + box.width / 2, box.y - 2);
-  await expect(chart.locator('.chart-readout')).toContainText('Drag to inspect samples');
+  await expect(chart.locator('.chart-readout')).toContainText('inspect');
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.wheel(0, -120);
   await expect.poll(span).toBeLessThan(to - from);
-  await reset.click();
+  await reset();
   await page.mouse.move(box.x + box.width * 0.25, box.y + box.height / 2);
   await page.mouse.down();
   await page.mouse.move(box.x + box.width * 0.75, box.y + box.height / 2, { steps: 8 });
   await page.mouse.up();
   await expect.poll(span).toBeLessThan(to - from);
-  await reset.click();
+  await reset();
   if (info.project.name === 'mobile') {
     const cdp = await page.context().newCDPSession(page);
     const y = box.y + box.height / 2, x = box.x + box.width / 2;
@@ -201,7 +201,7 @@ test('history zoom uses mouse, wheel, keyboard and touch without additional requ
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
     await expect.poll(span).toBeLessThan(to - from);
     expect(await page.locator('.nh-app-main').evaluate((el) => el.scrollTop)).toBe(scroll);
-    await reset.click();
+    await reset();
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ id: 1, x, y: y - 20 }, { id: 2, x, y: y + 20 }] });
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ id: 1, x, y: y - 60 }, { id: 2, x, y: y + 60 }] });
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
@@ -218,24 +218,25 @@ test('daily statistics and both CSV schemas use raw samples and the selected per
   await signIn(page, `/devicepage/${fixtureId}?tab=history&expose=temperature`);
   const history = page.getByRole('region', { name: 'Device history' });
   await expect(history.locator('canvas[data-ready="true"]')).toBeVisible();
-  await history.getByRole('button', { name: 'Statistics', exact: true }).click();
+  await ui.history.setMode(page, 'Statistics');
   await expect(history.getByRole('table').getByText('Samples', { exact: true })).toBeVisible();
   await expect(history.getByText('Based on 8 numeric samples', { exact: true })).toBeVisible();
   const legend = history.getByRole('list', { name: 'Statistics legend', exact: true });
   await expect(legend.getByRole('listitem')).toHaveCount(3);
   await expect(legend).toContainText('Minimum–Maximum range');
-  await expect(history.getByText('Statistics CSV uses the displayed values and units.')).toBeVisible();
+  await expect((await ui.history.openOptions(page)).getByText('Statistics CSV uses the displayed values and units.')).toBeVisible();
+  await ui.history.closeOptions(page);
   await expect(history.locator('canvas[data-ready="true"]')).toBeVisible();
   await history.locator('.history-statistics').screenshot({ path: info.outputPath('daily-statistics.png') });
   const download = page.waitForEvent('download');
-  await history.getByRole('button', { name: 'Export CSV' }).click();
+  await ui.history.action(page, 'Export CSV');
   const csv = await readFile((await (await download).path())!, 'utf8');
   expect(csv.split('\r\n')[0]).toBe('bucket_start,bucket_end,min,average,max,last,samples,unit');
   expect(csv).toContain('°C');
-  await history.getByRole('button', { name: 'History', exact: true }).click();
-  await expect(history.getByText('History CSV uses native sensor values and units.')).toBeVisible();
+  await ui.history.setMode(page, 'History');
+  await expect((await ui.history.openOptions(page)).getByText('History CSV uses native sensor values and units.')).toBeVisible();
   const rawDownload = page.waitForEvent('download');
-  await history.getByRole('button', { name: 'Export CSV' }).click();
+  await ui.history.action(page, 'Export CSV');
   const rawCSV = await readFile((await (await rawDownload).path())!, 'utf8');
   expect(rawCSV.trim().split('\r\n')).toHaveLength(9);
   expect(rawCSV.split('\r\n')[0]).toBe('timestamp,value,unit');
@@ -254,12 +255,12 @@ test('Yesterday statistics omit an empty midnight day and preserve an actual end
   await signIn(page, `/devicepage/${fixtureId}?tab=history&expose=temperature`);
   const history = page.getByRole('region', { name: 'Device history' });
   await ui.history.choose(page, 'Period', 'Yesterday');
-  await history.getByRole('button', { name: 'Statistics', exact: true }).click();
+  await ui.history.setMode(page, 'Statistics');
   await expect(history.locator('.statistics-table tbody tr')).toHaveCount(1);
   await expect(history.getByText('Based on 2 numeric samples', { exact: true })).toBeVisible();
   endpoint = true;
-  await history.getByRole('button', { name: 'Refresh history', exact: true }).click();
-  await expect(history.getByRole('button', { name: 'Statistics', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await ui.history.action(page, 'Refresh history');
+  await expect.poll(() => ui.history.currentMode(page)).toBe('Statistics');
   await expect(history.locator('.statistics-table tbody tr')).toHaveCount(2);
   await expect(history.getByText(/end-boundary sample/)).toBeVisible();
   await expect(history.getByText('Based on 3 numeric samples', { exact: true })).toBeVisible();
@@ -295,7 +296,8 @@ test('partial history names its coverage, disables export and narrows only on re
   await signIn(page, `/devicepage/${fixtureId}?tab=history&expose=temperature`);
   const history = page.getByRole('region', { name: 'Device history' });
   await expect(history.getByText(/Covered samples:/)).toBeVisible();
-  await expect(history.getByRole('button', { name: 'Export CSV' })).toBeDisabled();
+  await expect((await ui.history.openOptions(page)).getByRole('button', { name: 'Export CSV' })).toBeDisabled();
+  await ui.history.closeOptions(page);
   expect(Number(await history.locator('canvas[data-ready="true"]').getAttribute('data-points'))).toBeLessThanOrEqual(1000);
   await history.getByText('Inspect recorded samples', { exact: true }).click();
   await expect(history.getByText(/Page 1 of 100/)).toBeVisible();
@@ -329,53 +331,87 @@ test('full history stays readable at desktop, tablet and phone widths in both th
   }
 });
 
-test('mobile history toolbar stays compact with long labels and usable controls', async ({ page }, info) => {
+test('phone metrics prioritise a large plot with options and chart tools on demand', async ({ page }, info) => {
   await page.setViewportSize({ width: 384, height: 854 });
   await signIn(page, `/devicepage/${fixtureId}?tab=history&expose=color_temp`);
   const history = page.getByRole('region', { name: 'Device history' });
   const toolbar = history.locator('.history-toolbar');
-  await expect(history.locator('canvas[data-ready="true"]')).toBeVisible();
+  const chart = history.locator('[data-history-chart]');
+  const canvas = chart.locator('canvas[data-ready="true"]');
+  await expect(canvas).toBeVisible();
   for (const mode of ['light', 'dark']) {
     const toggle = page.getByRole('button', { name: `Switch to ${mode} mode` });
     if (await toggle.isVisible()) await toggle.click();
     for (const width of [320, 384, 390]) {
       await page.setViewportSize({ width, height: 854 });
-      expect((await toolbar.boundingBox())!.height).toBeLessThanOrEqual(144);
+      const controls = (await toolbar.boundingBox())!;
+      expect(controls.height).toBeLessThanOrEqual(48);
+      await expect.poll(async () => (await canvas.boundingBox())!.height).toBeGreaterThanOrEqual(400);
+      const plot = (await canvas.boundingBox())!;
+      expect(plot.y - controls.y - controls.height).toBeLessThanOrEqual(12);
       for (const control of await toolbar.locator('button:visible, select:visible').all()) {
         const box = (await control.boundingBox())!;
         expect(box.height).toBeGreaterThanOrEqual(44);
         expect(box.width).toBeGreaterThanOrEqual(44);
       }
-      const entity = await toolbar.getByRole('combobox', { name: 'Entity', exact: true }).boundingBox();
-      const period = await toolbar.getByRole('combobox', { name: 'Period', exact: true }).boundingBox();
-      expect(entity!.y).toBe(period!.y);
-      const actions = await Promise.all(['History', 'Statistics', 'Refresh history', 'Export CSV'].map(async (name) => {
-        const box = (await toolbar.getByRole('button', { name, exact: true }).boundingBox())!;
-        return box.y + box.height / 2;
-      }));
-      expect(Math.max(...actions) - Math.min(...actions)).toBeLessThanOrEqual(2);
+      await expect(chart.getByRole('button', { name: 'Zoom in', exact: true })).not.toBeVisible();
+      const tools = chart.getByText('Chart tools', { exact: true });
+      expect((await tools.boundingBox())!.y).toBeGreaterThanOrEqual(plot.y + plot.height);
       expect(await history.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
-      await page.screenshot({ path: info.outputPath(`compact-history-${mode}-${width}.png`) });
+      await page.screenshot({ path: info.outputPath(`chart-first-${mode}-${width}.png`) });
     }
   }
+  await page.setViewportSize({ width: 390, height: 568 });
+  await expect.poll(async () => (await canvas.boundingBox())!.height).toBeGreaterThanOrEqual(280);
+  await page.screenshot({ path: info.outputPath('chart-first-short.png') });
+  await page.setViewportSize({ width: 384, height: 854 });
   const period = toolbar.getByRole('combobox', { name: 'Period', exact: true });
   await period.selectOption({ label: 'Yesterday' });
-  await expect(history.locator('canvas[data-ready="true"]')).toBeVisible();
+  await expect(canvas).toBeVisible();
   await page.reload();
   await expect(period).toHaveValue('yesterday');
-  await expect(toolbar.getByRole('button', { name: 'History', exact: true })).toBeVisible();
   const entity = toolbar.getByRole('combobox', { name: 'Entity', exact: true });
   await expect(entity).toHaveValue('color_temp');
+  await expect(canvas).toBeVisible();
   await entity.focus();
   expect(await entity.evaluate((el) => getComputedStyle(el).outlineStyle)).not.toBe('none');
   await entity.press('Tab');
   await expect(period).toBeFocused();
   await period.press('Tab');
-  await expect(toolbar.getByRole('button', { name: 'History', exact: true })).toBeFocused();
-  await page.keyboard.press('Tab');
+  const options = toolbar.getByRole('button', { name: 'History options', exact: true });
+  await expect(options).toBeFocused();
   await page.keyboard.press('Space');
-  await expect(toolbar.getByRole('button', { name: 'Statistics', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  const sheet = page.getByRole('dialog', { name: 'History options', exact: true });
+  await expect(sheet).toBeVisible();
+  for (const control of await sheet.locator('button:visible, select:visible').all()) {
+    const box = (await control.boundingBox())!;
+    expect(box.width).toBeGreaterThanOrEqual(44);
+    expect(box.height).toBeGreaterThanOrEqual(44);
+  }
+  await sheet.screenshot({ path: info.outputPath('history-options.png') });
+  await expect(sheet.getByText('History CSV uses native sensor values and units.')).toBeVisible();
+  await expect(sheet.getByText(/Europe\/London/)).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(options).toBeFocused();
+  const tools = chart.locator('.mobile-chart-tools');
+  await tools.locator('summary').focus();
+  await tools.locator('summary').press('Enter');
+  await expect(chart.getByRole('button', { name: 'Zoom in', exact: true })).toBeVisible();
+  await tools.screenshot({ path: info.outputPath('chart-tools.png') });
+  await tools.locator('summary').press('Escape');
+  await expect(chart.getByRole('button', { name: 'Zoom in', exact: true })).not.toBeVisible();
+  await options.click();
+  await sheet.getByRole('combobox', { name: 'View', exact: true }).selectOption('statistics');
+  await expect(sheet).not.toBeVisible();
+  await expect(options).toBeFocused();
+  await expect(options).toHaveAttribute('aria-description', 'Current view: Statistics');
+  const stats = history.getByRole('region', { name: 'Sample statistics' });
+  const statsCanvas = stats.locator('canvas[data-ready="true"]');
+  await expect(statsCanvas).toBeVisible();
+  expect((await statsCanvas.boundingBox())!.y).toBeLessThan((await stats.locator('.history-summary').boundingBox())!.y);
+  await page.screenshot({ path: info.outputPath('chart-first-statistics.png') });
   await period.selectOption({ label: 'Custom' });
   await expect(history.getByLabel('From', { exact: true })).toBeVisible();
-  await expect(history.getByRole('button', { name: 'Export CSV', exact: true })).toBeDisabled();
+  await options.click();
+  await expect(sheet.getByRole('button', { name: 'Export CSV', exact: true })).toBeDisabled();
 });

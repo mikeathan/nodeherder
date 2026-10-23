@@ -24,3 +24,14 @@ nine existing skips; Jest 341 passed, lint/build/e2e types and diff checks passe
 
 Navigation follow-up: full browser 203 passed / nine existing skips; Jest 341 passed; lint/build/types
 and diff checks passed. BottomNav and its reservations/metadata removed; drawer retains all routes.
+
+- [x] T009 — Replace phone geometry/keyboard regression in existing DeviceMetrics spec for AC-02/03/07/08;
+  record baseline failure before production edits. Retain all existing history/CSV/gesture coverage.
+- [x] T010 — Redesign HistoryToolbar/Chart/Stats, DeviceMetrics and phone UiDialog Close target;
+  depends T009; done: chart-first 44px header, accessible options/tools, large plot, desktop preserved.
+- [x] T011 — Migrate responsive helpers, run full frontend/browser checks, inspect both-theme/short
+  phone screenshots and update docs/PR; depends T010; done: actual evidence and rule review recorded.
+
+Chart-first result: header 44px and plot ~410px at 854px; final affected browser suite 93 passed /
+nine existing skips plus 2/2 final visual checks. Jest 341, lint/build/e2e types and diff checks passed.
+Temporary local port config removed; full standard-port suite is checked in CI. See plan.md.
