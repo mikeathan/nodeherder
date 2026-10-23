@@ -25,7 +25,9 @@ export function dailyHistoryStats(series: HistorySeries): DailyHistoryBucket[] {
   const result: DailyHistoryBucket[] = [];
   const covered = coveredHistoryWindow(series);
   let index = 0;
-  while (day.getTime() <= series.to) {
+  // Inclusive query endpoints still own their calendar day, even for a null report.
+  const hasEndReport = series.data.at(-1)?.timestamp === series.to;
+  while (day.getTime() < series.to || (day.getTime() === series.to && hasEndReport)) {
     const start = day.getTime();
     day.setDate(day.getDate() + 1);
     day.setHours(0, 0, 0, 0);

@@ -1,22 +1,21 @@
 <script setup lang="ts">
   import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
   import type { Chart } from 'chart.js';
-  import type { HistoryChartOptions } from './options';
+  import type { HistoryChartOptions, HistoryChartPoint, HistoryChartSeries } from './options';
   import { historyInteractionPlugin, type HistoryInteraction } from './interactions';
-  type ChartPoint = { x: number; y: number | null };
   const props = defineProps<{
     type: 'line' | 'bar';
     height: number;
     endMarker?: boolean;
     options: HistoryChartOptions;
     interaction?: HistoryInteraction;
-    series: { name: string; data: ChartPoint[] }[];
+    series: HistoryChartSeries[];
   }>();
   const canvas = ref<HTMLCanvasElement | null>(null);
   const ready = ref(false);
   const error = ref('');
   // A chart owns native listeners and observers, so keep its instance unproxied.
-  let chart: Chart<'line' | 'bar', ChartPoint[]> | null = null;
+  let chart: Chart<'line' | 'bar', HistoryChartPoint[]> | null = null;
   let disposed = false;
   const datasets = () =>
     props.series.map((series) => {
@@ -24,12 +23,17 @@
       return {
         label: series.name,
         data: series.data,
+        ...(series.type ? { type: series.type } : {}),
+        ...(series.color ? { backgroundColor: series.color, borderColor: series.color, pointBackgroundColor: series.color } : {}),
+        ...(series.outline ? { borderColor: series.outline, borderWidth: 1, pointBorderColor: series.outline } : {}),
+        ...(series.pointStyle ? { pointStyle: series.pointStyle, showLine: false, fill: false, pointBorderWidth: 2, pointHoverRadius: 6 } : {}),
+        order: series.pointStyle ? 0 : 1,
         // Mark the last actual sample, never the right edge of an unknown gap.
         pointRadius: (context: { dataIndex: number }) =>
-          series.data.length === 1 || (props.endMarker && context.dataIndex === last) ? 3 : 0,
+          series.pointStyle ? 5 : series.data.length === 1 || (props.endMarker && context.dataIndex === last) ? 3 : 0,
       };
     });
-  function lastKnownIndex(data: ChartPoint[]) {
+  function lastKnownIndex(data: HistoryChartPoint[]) {
     for (let i = data.length - 1; i >= 0; i--) if (data[i].y !== null) return i;
     return -1;
   }
@@ -57,7 +61,7 @@
         Tooltip,
         Filler
       );
-      chart = new Chart<'line' | 'bar', ChartPoint[]>(canvas.value, {
+      chart = new Chart<'line' | 'bar', HistoryChartPoint[]>(canvas.value, {
         type: props.type,
         data: { datasets: datasets() },
         options: props.options,
@@ -86,21 +90,12 @@
     <canvas ref="canvas" class="nh-history-canvas" :data-ready="ready" :data-points="series.reduce((total, item) => total + item.data.length, 0)" aria-hidden="true" />
   </div>
 </template>
-<style>
+<style scoped>
   .history-canvas-wrap {
     position: relative;
     width: 100%;
     min-width: 0;
-    height: var(--history-height);
-  }
-  [data-history-chart]:not(.is-compact) .history-canvas-wrap {
-    height: 380px;
-  }
-  @media (max-width: 1023px) {
-    [data-history-chart]:not(.is-compact) .history-canvas-wrap { height: 300px; }
-  }
-  @media (max-width: 719px) {
-    [data-history-chart]:not(.is-compact) .history-canvas-wrap { height: 240px; }
+    height: var(--nh-chart-height, var(--history-height));
   }
   .history-canvas-wrap canvas { touch-action: none; max-width: 100%; }
 </style>

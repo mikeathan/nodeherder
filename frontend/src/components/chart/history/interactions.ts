@@ -5,7 +5,7 @@ export type HistoryInteraction = {
   range: () => HistoryRange;
   bounds: () => HistoryRange;
   change: (range: HistoryRange) => void;
-  readout: (timestamp: number) => void;
+  readout: (timestamp: number | null) => void;
 };
 export function keyboardHistoryRange(key: string, range: HistoryRange, bounds: HistoryRange): HistoryRange | null {
   if (key === '+' || key === '=') return zoomHistoryRange(range, bounds, 0.5);
@@ -27,6 +27,7 @@ export function historyInteractionPlugin(control: HistoryInteraction): Plugin<'l
     afterInit(chart) {
       cleanup = bindInteractions(chart, { ...control, readout(at) { marker = at; control.readout(at); chart.draw(); } });
     },
+    beforeUpdate() { marker = null; },
     afterDraw(chart) {
       if (marker === null) return;
       const x = chart.scales.x.getPixelForValue(marker), area = chart.chartArea;
@@ -61,7 +62,7 @@ function bindInteractions(chart: Chart<'line' | 'bar'>, control: HistoryInteract
   const timestamp = (clientX: number, range = control.range()) => range.from + fraction(clientX) * (range.to - range.from);
   function flush() {
     frame = 0;
-    if (pendingRange) control.change(clampHistoryRange(pendingRange, control.bounds()));
+    if (pendingRange) { pendingTime = null; control.change(clampHistoryRange(pendingRange, control.bounds())); }
     if (pendingTime !== null) control.readout(pendingTime);
     pendingRange = null;
     pendingTime = null;
@@ -120,6 +121,7 @@ function bindInteractions(chart: Chart<'line' | 'bar'>, control: HistoryInteract
   function wheel(event: WheelEvent) {
     if (!event.deltaY) return;
     event.preventDefault();
+    // Preserve every wheel delta even while one RAF/Vue update is still queued.
     schedule(zoomHistoryRange(pendingRange ?? control.range(), control.bounds(), event.deltaY < 0 ? 0.8 : 1.25, fraction(event.clientX)));
   }
   function key(event: KeyboardEvent) {
@@ -128,10 +130,14 @@ function bindInteractions(chart: Chart<'line' | 'bar'>, control: HistoryInteract
     if (range) { event.preventDefault(); schedule(range); }
   }
   function reset() { schedule(control.bounds()); }
+  function leave(event: PointerEvent) {
+    if (event.pointerType !== 'touch' && !drag) { pendingTime = null; control.readout(null); }
+  }
   canvas.addEventListener('pointerdown', down);
   canvas.addEventListener('pointermove', move);
   canvas.addEventListener('pointerup', up);
   canvas.addEventListener('pointercancel', cancel);
+  canvas.addEventListener('pointerleave', leave);
   canvas.addEventListener('wheel', wheel, { passive: false });
   canvas.addEventListener('dblclick', reset);
   host?.addEventListener('keydown', key);
@@ -143,6 +149,7 @@ function bindInteractions(chart: Chart<'line' | 'bar'>, control: HistoryInteract
     canvas.removeEventListener('pointermove', move);
     canvas.removeEventListener('pointerup', up);
     canvas.removeEventListener('pointercancel', cancel);
+    canvas.removeEventListener('pointerleave', leave);
     canvas.removeEventListener('wheel', wheel);
     canvas.removeEventListener('dblclick', reset);
     host?.removeEventListener('keydown', key);

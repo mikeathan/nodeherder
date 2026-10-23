@@ -24,14 +24,11 @@ test('raw sample basis differs from extrema decimation and truncated tails stay 
   expect(buckets[1]).toMatchObject({ avg: null, count: 0, partial: true });
 });
 test('enumerates every local date over spring DST without a fixed cap', () => {
-  // Run this companion test with TZ=Europe/London for the pinned 33-date case.
   const from = Date.parse('2026-03-01T23:30:00Z'), to = from + 31 * 86400000;
   const buckets = dailyHistoryStats({ ...base, from, to });
-  const london = Intl.DateTimeFormat().resolvedOptions().timeZone === 'Europe/London';
-  if (london) {
-    expect(buckets).toHaveLength(33);
-    expect(buckets.some((b) => b.end - b.start === 23 * 3600000)).toBe(true);
-  }
+  expect(Intl.DateTimeFormat().resolvedOptions().timeZone).toBe('Europe/London');
+  expect(buckets).toHaveLength(33);
+  expect(buckets.some((b) => b.end - b.start === 23 * 3600000)).toBe(true);
   expect(buckets.at(-1)?.end).toBeGreaterThan(to);
   expect(buckets[0].partial).toBe(true);
 });
@@ -41,4 +38,24 @@ test('nonlinear unit conversion precedes statistics and does not mutate stored s
   expect(displayed.unit).toBe('K');
   expect(dailyHistoryStats(displayed)[0]).toMatchObject({ min: 2000, avg: 3000, max: 4000, count: 2 });
   expect(series.data[0].value).toBe(500);
+});
+test('autumn DST keeps the full 25-hour local day', () => {
+  const from = new Date(2026, 9, 25).getTime(), to = new Date(2026, 9, 26).getTime();
+  const buckets = dailyHistoryStats({ ...base, from, to });
+  expect(buckets).toHaveLength(1);
+  expect(buckets[0].end - buckets[0].start).toBe(25 * 3600000);
+  expect(buckets[0].partial).toBe(false);
+});
+test('midnight end creates no phantom day but retains real inclusive-end reports', () => {
+  const from = new Date(2026, 0, 1).getTime(), to = new Date(2026, 0, 2).getTime();
+  const sample = { timestamp: from + 3600000, value: 5 };
+  const series = { ...base, from, to, data: [sample] };
+  expect(dailyHistoryStats(series)).toHaveLength(1);
+  expect(dailyHistoryStats({ ...series, data: [] })).toHaveLength(1);
+  for (const value of [0, 7, null]) {
+    const buckets = dailyHistoryStats({ ...series, data: [sample, { timestamp: to, value }] });
+    expect(buckets).toHaveLength(2);
+    expect(buckets[1]).toMatchObject({ start: to, last: value, count: value === null ? 0 : 1, partial: true });
+    expect(buckets.reduce((sum, b) => sum + b.count, 0)).toBe(value === null ? 1 : 2);
+  }
 });

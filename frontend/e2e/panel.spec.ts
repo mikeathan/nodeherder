@@ -76,13 +76,23 @@ test.describe('browser default view', () => {
     await expect(page.getByRole('navigation', { name: 'Main', includeHidden: true })).toBeAttached();
     let release!: () => void;
     const gate = new Promise<void>((resolve) => { release = resolve; });
-    await page.route('**/src/components/shell/AppShell.vue', async (route) => {
+    let gated = false;
+    // Vite can append an HMR timestamp; hold the module regardless of its query string.
+    await page.route((url) => url.pathname === '/src/components/shell/AppShell.vue', async (route) => {
+      gated = true;
       await gate;
       await route.continue();
     });
     try {
       await page.goto('/overview', { waitUntil: 'domcontentloaded' });
+      await expect.poll(() => gated).toBe(true);
       await expect(page.getByRole('status').filter({ hasText: 'Loading NodeHerder…' })).toBeVisible();
+      const skeleton = page.locator('.shell-loading');
+      const box = (await skeleton.boundingBox())!;
+      expect(box.width).toBe(page.viewportSize()!.width);
+      expect(box.height).toBe(page.viewportSize()!.height);
+      expect(await skeleton.evaluate((el) => getComputedStyle(el).backgroundColor)).not.toBe('rgba(0, 0, 0, 0)');
+      await expect(skeleton.getByRole('button')).toHaveCount(0);
       const signingOut = ui.shell.signOut(page);
       // Complete an ordered browser read while the module gate is still closed. The old
       // helper's one-shot visibility check skips the phone drawer in this state.

@@ -67,6 +67,12 @@ Consequences: no backend change and no new failure modes; long ranges stay limit
 sample cap and must say so. Server-side bucketing is recorded as follow-up work so a future spec can
 replace the client computation without changing the view contract.
 
+Review refinement (2026-10-23): each day uses a floating minimum–maximum bar, average circle and
+last-value diamond, with distinct theme colours, a labelled HTML legend, named tooltips and the
+existing accessible table. A measured-value axis avoids visually flattening temperature ranges
+against zero; energy/event bar baselines remain unchanged. Empty terminal-midnight days are omitted,
+while actual inclusive-end reports keep their day and explicit boundary label.
+
 ## Decision 3 — bottom navigation below 720px, drawer above it
 
 `NAV_ITEMS` stays the single navigation source. The bottom bar contains Home, Devices, Automations,

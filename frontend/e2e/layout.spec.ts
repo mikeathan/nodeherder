@@ -45,3 +45,18 @@ test('mobile tabs and More drawer preserve navigation and platform metadata', as
   await page.reload();
   await expect(nav).toBeVisible();
 });
+
+test('browser theme colour follows the active appearance on toggle and reload', async ({ page }) => {
+  await signIn(page, '/groupdashboard');
+  await expect(page.getByRole('button', { name: /Switch to (light|dark) mode/ })).toBeVisible();
+  const meta = page.locator('meta[name="theme-color"]');
+  for (const mode of ['light', 'dark']) {
+    const toggle = page.getByRole('button', { name: `Switch to ${mode} mode` });
+    if (await toggle.count()) await toggle.click();
+    await expect(page.locator('html')).toHaveAttribute('data-mode', mode);
+    const background = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--nh-bg').trim());
+    await expect(meta).toHaveAttribute('content', background);
+    await page.reload();
+    await expect(meta).toHaveAttribute('content', background);
+  }
+});

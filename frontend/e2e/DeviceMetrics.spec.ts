@@ -166,6 +166,10 @@ test('history zoom uses mouse, wheel, keyboard and touch without additional requ
   await expect.poll(span).toBe(to - from);
   const box = (await canvas.boundingBox())!;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await expect(chart.locator('.chart-readout')).toContainText('°C');
+  await page.mouse.move(box.x + box.width / 2, box.y - 2);
+  await expect(chart.locator('.chart-readout')).toContainText('Drag to inspect samples');
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.wheel(0, -120);
   await expect.poll(span).toBeLessThan(to - from);
   await reset.click();
@@ -212,6 +216,10 @@ test('daily statistics and both CSV schemas use raw samples and the selected per
   await history.getByRole('button', { name: 'Statistics', exact: true }).click();
   await expect(history.getByRole('table').getByText('Samples', { exact: true })).toBeVisible();
   await expect(history.getByText('Based on 8 numeric samples', { exact: true })).toBeVisible();
+  const legend = history.getByRole('list', { name: 'Statistics legend', exact: true });
+  await expect(legend.getByRole('listitem')).toHaveCount(3);
+  await expect(legend).toContainText('Minimum–Maximum range');
+  await expect(history.getByText('Statistics CSV uses the displayed values and units.')).toBeVisible();
   await expect(history.locator('canvas[data-ready="true"]')).toBeVisible();
   await history.locator('.history-statistics').screenshot({ path: info.outputPath('daily-statistics.png') });
   const download = page.waitForEvent('download');
@@ -220,11 +228,36 @@ test('daily statistics and both CSV schemas use raw samples and the selected per
   expect(csv.split('\r\n')[0]).toBe('bucket_start,bucket_end,min,average,max,last,samples,unit');
   expect(csv).toContain('°C');
   await history.getByRole('button', { name: 'History', exact: true }).click();
+  await expect(history.getByText('History CSV uses native sensor values and units.')).toBeVisible();
   const rawDownload = page.waitForEvent('download');
   await history.getByRole('button', { name: 'Export CSV' }).click();
   const rawCSV = await readFile((await (await rawDownload).path())!, 'utf8');
   expect(rawCSV.trim().split('\r\n')).toHaveLength(9);
   expect(rawCSV.split('\r\n')[0]).toBe('timestamp,value,unit');
+});
+
+test('Yesterday statistics omit an empty midnight day and preserve an actual end sample on refresh', async ({ page }) => {
+  let endpoint = false;
+  await page.route('**/api/metrics/query', async (route) => {
+    const request = route.request().postDataJSON();
+    const from = Date.parse(request.time.from), to = Date.parse(request.time.to);
+    const data = [{ timestamp: from + 3600000, value: 18 }, { timestamp: to - 3600000, value: 24 }];
+    if (endpoint) data.push({ timestamp: to, value: 20 });
+    await route.fulfill({ json: [{ expose: 'temperature', values: [{ device_id: fixtureId, unit: '°C',
+      value: { name: 'temperature', type: 'numeric', from, to, data, partial: false } }] }] });
+  });
+  await signIn(page, `/devicepage/${fixtureId}?tab=history&expose=temperature`);
+  const history = page.getByRole('region', { name: 'Device history' });
+  await history.getByRole('button', { name: 'Yesterday', exact: true }).click();
+  await history.getByRole('button', { name: 'Statistics', exact: true }).click();
+  await expect(history.locator('.statistics-table tbody tr')).toHaveCount(1);
+  await expect(history.getByText('Based on 2 numeric samples', { exact: true })).toBeVisible();
+  endpoint = true;
+  await history.getByRole('button', { name: 'Refresh history', exact: true }).click();
+  await expect(history.getByRole('button', { name: 'Statistics', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(history.locator('.statistics-table tbody tr')).toHaveCount(2);
+  await expect(history.getByText(/end-boundary sample/)).toBeVisible();
+  await expect(history.getByText('Based on 3 numeric samples', { exact: true })).toBeVisible();
 });
 
 test('Yesterday, expose and custom bounds survive reload; invalid saved bounds fall back', async ({ page }) => {

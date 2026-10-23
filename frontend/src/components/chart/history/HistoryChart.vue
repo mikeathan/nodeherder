@@ -12,8 +12,9 @@
   const readout = ref('');
   watch(() => props.series, () => { range.value = { ...bounds.value }; readout.value = ''; });
   const rangeLabel = computed(() => `${new Date(range.value.from).toLocaleString()} – ${new Date(range.value.to).toLocaleString()}`);
-  function change(next: HistoryRange) { range.value = clampHistoryRange(next, bounds.value); }
-  function scrub(at: number) {
+  function change(next: HistoryRange) { range.value = clampHistoryRange(next, bounds.value); readout.value = ''; }
+  function scrub(at: number | null) {
+    if (at === null) { readout.value = ''; return; }
     const points = props.series.data;
     let low = 0, high = points.length;
     while (low < high) { const mid = (low + high) >>> 1; if (points[mid].timestamp < at) low = mid + 1; else high = mid; }
@@ -41,6 +42,9 @@
 </template>
 <style scoped>
   .history-chart { min-width: 0; border-radius: var(--nh-radius-m); }
+  .history-chart:not(.is-compact) { --nh-chart-height: 380px; }
+  @media (max-width: 1023px) { .history-chart:not(.is-compact) { --nh-chart-height: 300px; } }
+  @media (max-width: 719px) { .history-chart:not(.is-compact) { --nh-chart-height: 240px; } }
   .history-chart:focus-visible { outline: 3px solid var(--nh-focus); outline-offset: 3px; }
   .chart-actions { display: flex; justify-content: flex-end; gap: 0.35rem; flex-wrap: wrap; }
   .chart-actions button { min-width: 44px; min-height: 44px; }

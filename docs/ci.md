@@ -154,6 +154,10 @@ npm test -- --ci --runInBand
 npm run build -- --mode production
 ```
 
+Jest's global setup sets `TZ=Europe/London` before workers start, including on UTC CI runners.
+History's spring/autumn DST and 33-date assertions run unconditionally; launch with `TZ=UTC`
+to verify the setup is effective.
+
 From the root: `go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12`,
 `shellcheck scripts/manage-stack.sh`, and the [stack-manager checks](setup.md#stack-manager).
 Actionlint requires Go 1.25+; CI installs it separately from the application toolchain.

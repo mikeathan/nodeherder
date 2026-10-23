@@ -138,3 +138,14 @@ constitutional review is recorded; it stays open until those manual results are 
 CI follow-up: T031/T033 also cover deferred AppShell readiness in the shared `openNav` helper.
 Add a controlled delayed-shell regression to existing `e2e/panel.spec.ts`, demonstrate the failure,
 then verify both projects and the reported mobile shard before updating PR #74.
+
+Review follow-up (2026-10-23): the reopened tasks also cover midnight-end ownership, unconditional
+DST verification under a UTC launch environment, range-bar/marker readability, explicit export units,
+scoped height variables, viewport shell skeleton, live theme metadata and crosshair reset/leave.
+See plan.md for design; retain energy/event baselines and touch readout after pointer release.
+
+Review correction results: UTC-launched Jest 53 suites/341 tests passed; lint/build/e2e types
+passed. Focused checks 12/12 and corrected deferred-shell/default-view checks 6/6 passed. Final
+full browser rerun: 201 passed, nine existing desktop phone-only skips, zero failures (210 cases).
+The first full run exposed Vite query strings bypassing the old exact gate; the pathname gate
+fix and rerun are recorded in plan.md. T031/T033 retain their physical/manual checks.

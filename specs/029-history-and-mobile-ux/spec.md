@@ -80,12 +80,17 @@ Independent verification: Jest for domain/state, Playwright for the flows at 128
   (never the decimated render set), drawn as bars, and states how many samples it used. Binary and
   enum/event series keep their state timeline and recent-event list with no Statistics switch, and
   energy counters keep their existing observed-consumption summary instead of daily statistics.
+  Daily min/max uses a floating range bar, with distinct labelled average/last markers and a text
+  legend/table; tooltips name the statistic. Its axis fits the measured range; energy/event bars
+  retain their zero baseline.
 - AC-08: Statistics buckets follow the browser's named zone and are DST-correct. There is exactly one
   bucket per intersecting local day, enumerated with no fixed cap: a valid 31-day range can touch
   **33** local dates across a DST transition (`Europe/London`, 1 Mar 2026 23:30 GMT → 2 Apr 2026
   00:30 BST, 744 h). Ownership is `[midnight, next midnight)`, a sample at exactly midnight belongs to
   the day starting there, and the first/last buckets are marked partial when the range does not start
   or end at midnight, so no sample is dropped or counted twice. An empty bucket is a gap (not a zero).
+  An empty bucket starting exactly at the selected end is omitted. A real sample at that inclusive
+  end is retained once in its own local day and labelled as an end-boundary sample.
   A partial series states the window it actually covers and that newer samples may be missing, keeps
   uncovered buckets empty, disables export, and offers a one-tap narrower range instead of changing
   the user's selection by itself.
@@ -111,7 +116,8 @@ Independent verification: Jest for domain/state, Playwright for the flows at 128
   hidden behind the safe area.
 - AC-12: `viewport-fit=cover` is set, safe-area insets are either applied or explicitly zero, and
   the app declares a manifest (name, short name, theme colour, icon) while remaining fully usable
-  when the manifest cannot be fetched.
+  when the manifest cannot be fetched. Browser theme colour follows the active background token.
+  Deferred shell loading reserves viewport space with a themed skeleton and a named loading status.
 
 ### US-05 — Change nothing that is currently correct (P1)
 

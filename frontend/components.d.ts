@@ -21,6 +21,7 @@ declare module 'vue' {
     AppHeader: typeof import('./src/components/shell/AppHeader.vue')['default']
     AppLogo: typeof import('./src/components/ui/AppLogo.vue')['default']
     AppShell: typeof import('./src/components/shell/AppShell.vue')['default']
+    AppShellLoading: typeof import('./src/components/shell/AppShellLoading.vue')['default']
     AreaCard: typeof import('./src/components/dashboards/AreaCard.vue')['default']
     AreaNameDialog: typeof import('./src/components/dashboards/AreaNameDialog.vue')['default']
     AssistantSettings: typeof import('./src/components/hub/settings/AssistantSettings.vue')['default']

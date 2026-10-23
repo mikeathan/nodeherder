@@ -18,6 +18,7 @@
     "test:e2e": "playwright test"
   },
   "jest": {
+    "globalSetup": "<rootDir>/jest.global-setup.cjs",
     "moduleFileExtensions": [
       "js",
       "ts",

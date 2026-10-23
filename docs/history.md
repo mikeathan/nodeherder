@@ -14,14 +14,16 @@ The buttons provide zoom, pan and reset. Focus the chart and use `+`, `-`, arrow
 same operations. Zoom only changes the visible portion of the loaded window; it sends no new
 history query or device command. Missing values remain gaps; the end marker is an actual sample.
 
-**Statistics** is available for numeric readings except energy counters. Daily bars and their
-accessible table report sample minimum, average, maximum, last and count. Statistics use every
-loaded raw sample, converted to the displayed unit before aggregation. Edge days are labelled
-partial days. Binary entities keep state durations; events retain repeated reports; energy keeps
-its observed-consumption summary.
+**Statistics** is available for numeric readings except energy counters. A floating range bar shows
+each day’s minimum–maximum, with an average circle and last-value diamond identified by a legend.
+The measured-value axis fits the readings; the accessible table also reports the sample count.
+Statistics use every loaded raw sample, converted to the displayed unit before aggregation. Edge days are labelled
+partial days. An empty day starting exactly at the selected end is omitted; a real inclusive-end
+sample remains in its own day, labelled “end-boundary sample”. Binary entities keep state durations;
+events retain repeated reports; energy keeps its observed-consumption summary.
 
 **Export CSV** uses the selected period, including data outside a zoomed view. History exports
-raw `timestamp,value,unit`; Statistics exports
+raw `timestamp,value,unit` in native sensor units (also stated beside the button); Statistics exports
 `bucket_start,bucket_end,min,average,max,last,samples,unit` in the displayed unit. ISO timestamps
 use UTC (`Z`); missing values have empty cells. Spreadsheet formula-like text is escaped.
 
@@ -32,4 +34,5 @@ Loading, empty and failure messages remain explicit; refreshing retries a read, 
 The phone sheet has Close and Escape fallbacks. A downward drag greater than 120px on its header
 dismisses it when content is at the top and reduced motion is off. Its controls and mobile
 navigation respect safe-area insets. The web manifest is optional; no offline service worker is
-installed by this change.
+installed by this change. Its launch colour is a fallback; browser theme-colour metadata follows
+the current appearance. The deferred signed-in shell shows a viewport-sized themed skeleton.

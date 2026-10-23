@@ -47,7 +47,7 @@
   const series = computed(() => entry.value?.series.find((s) => s.name === selected.value));
   const expose = computed(() => device.value?.exposes[selected.value]);
   const statistics = computed(() => !!series.value && series.value.type === 'numeric' && !isEnergyCounter(series.value));
-  watch(statistics, (allowed) => { if (!allowed) mode.value = 'history'; });
+  watch(series, (value) => { if (value && (value.type !== 'numeric' || isEnergyCounter(value))) mode.value = 'history'; });
   const exportReason = computed(() => entry.value?.status === 'loading' ? 'Loading history…' : historyExportUnavailable(series.value));
   const covered = computed(() => series.value ? coveredHistoryWindow(series.value) : null);
   function reload() { end.value = Date.now(); refresh(); }

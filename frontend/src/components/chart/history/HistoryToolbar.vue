@@ -27,6 +27,7 @@
       </span>
     </div>
     <p v-if="exportReason" class="export-reason">{{ exportReason }}</p>
+    <p class="export-reason">{{ mode === 'history' ? 'History CSV uses native sensor values and units.' : 'Statistics CSV uses the displayed values and units.' }}</p>
   </div>
 </template>
 <style scoped>

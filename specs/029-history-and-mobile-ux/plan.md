@@ -1,10 +1,25 @@
 # Plan: History, charts and mobile shell
 
 Spec: [spec.md](spec.md) | ADR: [adr-006](adr-006-chart-interactions.md) | Status: Implemented; manual verification pending
-Author: NodeHerder contributors | Updated: 2026-10-22
+Author: NodeHerder contributors | Updated: 2026-10-23
 Constitutions: parent proposed 1.0.0; frontend 1.0.0; backend 1.0.0 (no backend change in scope)
 
 ## Context and design
+
+Review correction (2026-10-23): omit an empty midnight-end bucket but retain actual inclusive-end
+samples (including null reports). Daily statistics use a floating min/max bar and average/last
+markers with an HTML legend and named tooltips; energy/event bars keep their baseline. Jest global
+setup pins Europe/London before workers start so DST assertions are unconditional, including when
+launched from UTC. Native-unit history export gets visible help; statistics export keeps displayed
+units. Geometry moves to scoped CSS and an inherited height variable. The shell loader becomes a
+viewport-sized themed skeleton, theme-colour metadata follows `--nh-bg`, and mouse leave/reset clear
+the crosshair without clearing the touch readout on finger release. No dependency, transport,
+backend, retention or device-command change. Reopen T011/T014–T017/T019/T022/T030/T031/T033; verify
+midnight endpoints, UTC-launched DST tests, range/marker encoding, units/help, scoped geometry,
+delayed loading and theme updates in existing companion Jest/browser files. Full frontend checks
+and isolated browser regression remain gates.
+The midnight browser regression also verifies refresh keeps Statistics selected while a request is
+loading; only an actually decoded incompatible series switches the mode back to History.
 
 Implementation refinement (2026-10-22): the signed-in `AppShell` will be loaded asynchronously
 from `App.vue`, with a named loading status, so the new mobile navigation does not increase the
@@ -39,8 +54,9 @@ Data volume is already handled at four layers; 029 must not add a fifth:
 
 Consequences for this change: statistics bucket the raw samples (0–10 000) into one bucket per
 **intersecting local calendar day**, enumerated rather than capped. The view must not hard-code a
-bucket count: iterate local midnights from the start day while the bucket start is ≤ the range end,
-stepping with `setDate(+1)` then `setHours(0,0,0,0)` so each step is DST-correct.
+bucket count: iterate local midnights from the start day while the bucket start is before the range
+end, also retaining a bucket starting at the end when it owns a real inclusive-end report. Step with
+`setDate(+1)` then `setHours(0,0,0,0)` so each step is DST-correct.
 
 The count is larger than "31 days ⇒ 31 or 32 dates" suggests. Both endpoints can be mid-day (+2) and a
 DST transition moves a local midnight, so a 31-day (744 h) range can intersect **33** local dates —
@@ -63,7 +79,7 @@ services + store         unchanged transport and query identity
 components/chart/history/
   HistoryChart.vue       owns view range, gestures, buttons and a11y; HistoryCanvas owns Chart.js
   HistoryToolbar.vue     presets, expose chips, mode switch, actions
-  HistoryStats.vue       sample summary, daily bars and accessible statistics table
+  HistoryStats.vue       sample summary, daily range/markers and accessible statistics table
   HistorySamples.vue     existing table, extracted
   HistoryView.vue        composes them; keeps `compact` prop for the sheet
 components/device/DeviceMetrics.vue   full page: wide layout, desktop density
@@ -214,7 +230,8 @@ isolated Go fixture.
   assertions in existing layout tests.
 - **No new dependency**: the interaction plugin is our code in the lazily loaded chart chunk. The
   budget is ≤ 4 kB gzip for the lazy adapter/interaction chunk, with no initial-entry growth.
-  Build output and the unchanged package/lockfile verify the dependency and loading boundaries.
+  Build output and the unchanged dependency lists/lockfile verify the dependency and loading
+  boundaries; package.json only adds a Jest timezone setup hook.
 - **Existing debt untouched**: cross-device comparison (contract limits one device per series) and
   automation markers (no run history stored) remain out of scope.
 - Deferred ideas from the retired chart backlog: alternate chart types, JSON/image export,
@@ -282,3 +299,52 @@ passed all 25 tests with zero unexpected/skipped results. `npm run lint`, `npm r
 and `git diff --check` passed. No timeout increase or retry was added; the 10-second override was
 used only to capture the pre-fix failure quickly. Other application suites were not rerun for this
 test-only correction. GitHub CI remains a separate check after push.
+
+## Review corrections — 2026-10-23
+
+All seven numbered review findings are addressed:
+
+- Midnight-end buckets omit the phantom day but preserve actual inclusive-end reports, including
+  zero/null reports. The new companion regression failed before the fix (two buckets instead of
+  one), then passed; the browser case also checks sample totals and refresh preserving Statistics.
+- Daily statistics use floating minimum–maximum bars with average circles and last diamonds,
+  distinct kind colours, a text legend/table and named tooltips. The axis fits measured values;
+  energy/event baselines remain unchanged. The resulting desktop screenshot was inspected.
+- Jest global setup selects London before workers; spring (23 hours), autumn (25 hours) and the
+  33-date assertions are unconditional. A full test run launched with `TZ=UTC` passed all 53 suites
+  and 341 tests, proving CI does not silently skip that coverage.
+- History CSV retains its specified native values/units with visible help; Statistics help names
+  displayed units. Both schemas/downloads remain covered by the existing browser flow.
+- Canvas rules are scoped; the interactive wrapper owns a responsive inherited height variable,
+  and other canvases honour their height prop. Both-theme viewport/overflow assertions pass.
+- Deferred shell loading uses a themed viewport-sized skeleton and accessible loading status;
+  the gated shell regression checks its geometry on desktop/mobile.
+- Browser theme colour follows the active background and survives light/dark toggles and reload;
+  the manifest colour remains a launch fallback.
+
+Mouse leave/reset also clear stale crosshairs/readouts while touch release retains the reading.
+Queued wheel deltas now have an intent comment. Optional config-expose ordering, the minor bucket
+count allocation, and the unreachable empty samples-page label remain outside this correction.
+
+Checks: lint passed (seven existing JS warnings), production build passed, e2e TypeScript passed,
+and the focused desktop/mobile run passed 12/12. Corrected deferred-shell/default-view checks
+passed 6/6. The final full browser rerun passed **201 tests, nine existing desktop phone-only skips,
+zero failures (210 cases)** in 4.8 minutes. The initial build caught a Chart.js scale-options typing error; it was corrected before
+these passing checks. No backend, request-contract, dependency-list or lockfile diff; backend tests
+were not rerun for this frontend correction (the prior isolated backend run passed).
+
+The first full browser run passed 199 with nine existing skips and two deferred-shell test failures:
+Vite's `AppShell.vue?t=…` module URL bypassed the exact-string gate. Match its pathname (including
+query variants) and assert the gated request arrived before checking the skeleton/sign-out flow.
+This retains controlled loading rather than relying on an arbitrary delay. Rerun both projects and
+the full browser suite for that shared regression.
+
+Updated bundle (gzip): initial entry 116.20 kB (baseline 141.46); Chart.js unchanged at 71.35 kB;
+lazy canvas/interaction adapter 2.40 kB (baseline 0.93, +1.47 kB within the +4 kB budget).
+NH-01…NH-06 and FE-01…FE-05 were checked against the final changes: domain ownership, missing/zero
+semantics, inclusive endpoints, unit disclosure, accessible legend/status, scoped styling, cleanup,
+and unchanged transport/device-command boundaries are preserved. Physical Safari, cutout safe areas,
+phone frame timing and human acceptance remain unrun; T031/T033 stay open.
+
+Final verification: `git diff --check` passed. All reopened implementation/component-check tasks
+are complete; T031/T033 remain open only for the physical/manual acceptance evidence above.

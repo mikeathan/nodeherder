@@ -1,12 +1,13 @@
 <script setup lang="ts">
   /* Keep sign-in standalone until its protected destination has finished loading. */
-  import { computed, defineAsyncComponent, h } from 'vue';
+  import { computed, defineAsyncComponent } from 'vue';
   import { useRoute } from 'vue-router';
   import { useSession } from '@/composables/useSession';
   import LoginPage from '@/components/auth/LoginPage.vue';
+  import AppShellLoading from '@/components/shell/AppShellLoading.vue';
   const AppShell = defineAsyncComponent({
     loader: () => import('@/components/shell/AppShell.vue'),
-    loadingComponent: { render: () => h('p', { role: 'status' }, 'Loading NodeHerder…') },
+    loadingComponent: AppShellLoading,
     delay: 0,
   });
 
