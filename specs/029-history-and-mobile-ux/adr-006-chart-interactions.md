@@ -10,29 +10,42 @@ a statistics reading, while the metrics API aggregates a **whole window** into o
 (`min/avg/max/count/last` in `backend/internal/metrics/query/aggregates.go`) and exposes no
 interval/bucket parameter.
 
-## Decision 1 — use `chartjs-plugin-zoom`, own the parts it does not cover
+## Decision 1 — implement the interaction locally (no new dependency)
 
-Adopt `chartjs-plugin-zoom` (v2, Chart.js 4 compatible) for wheel, drag-select, pinch and pan, and
-keep in our code only what the plugin does not do: the range policy (clamp to 5 min…31 days and to
-the loaded window via `limits`), the `−  +  Reset` buttons, the focusable container with keyboard
-handling (`+ - 0`, arrows), the time/value readout, and `prefers-reduced-motion` behaviour.
+Add one small Chart.js plugin of our own (`components/chart/history/interactions.ts`, roughly
+150–200 lines) registering `afterInit`/`beforeDestroy` on the existing chart, handling:
 
-Rationale, revised after checking the build: Chart.js is **lazily imported**, so the plugin lands in
-the existing chart chunk (`chart-*.js`, 208 kB in the current build) and does not touch the 438.8 kB
-initial entry. The pinned candidate is `chartjs-plugin-zoom` 2.2.0 (peer `chart.js >=3.2.0`, no
-runtime dependencies of its own; ~94 kB unpacked, mostly source and maps). The
-"no new dependency" argument therefore buys very little, while hand-written pinch/pointer code is
-exactly where cross-browser bugs live (pointer capture, cancellation, two-finger tracking, iOS Safari
-intercepting gestures, drag-vs-double-click conflicts, `touch-action` interplay with page scroll).
+- wheel zoom around the pointer (mouse/trackpad),
+- mouse drag-select to zoom a chosen range,
+- single-finger drag that **only moves the readout** — never zooms, per AC-05,
+- two-pointer pinch (tracked from pointer events, not a gesture library),
+- keyboard `+ - 0` and arrows on a focusable container,
+- `touch-action` rules so the plot never scrolls the page.
 
-Rejected: a local interaction plugin (about 150 lines of gesture code we would own and have to harden
-for every input device); a DOM overlay with its own canvas (duplicates rendering and hit-testing);
-server-side resampling per gesture (network chatter, and the API has no bucket parameter).
+Pointer type decides the gesture, so one finger and one mouse button never mean two different things
+on the same device. Touch range selection is covered by pinch and the buttons.
 
-Consequences: one small, actively maintained dependency in a lazy chunk; we adapt its config rather
-than its internals; version coupling to Chart.js is checked when either moves. Acceptance is
-unchanged: every gesture still has a button and keyboard equivalent, and range policy stays in our
-pure domain layer so truthfulness rules do not live inside a plugin.
+Range policy stays in `domain/history/range.ts`. The plugin does **not** write `scales.x.min/max`
+directly: `options.ts` derives tick instants in `afterBuildTicks` and chooses label formatting from
+the range duration, so the plugin reports the new range to `HistoryChart.vue`, which recomputes
+`historyOptions(from, to, …)` and lets `HistoryCanvas` apply it. That keeps ticks, labels and bounds
+consistent after every zoom, pan and reset.
+
+**Rejected: `chartjs-plugin-zoom` 2.2.0.** Its peer is `chart.js >=3.2.0`, but its own
+`dependencies` are `hammerjs ^2.0.8` and `@types/hammerjs ^2.0.45`, so adopting it adds an
+unmaintained gesture library (last release 2017) to the tree, plus a runtime-declared types package.
+Hammer duplicates gesture recognition we need in only one narrow form, and we would still write the
+keyboard, readout, clamp policy and `touch-action` handling ourselves.
+
+Rejected as well: a DOM overlay with its own canvas (duplicates rendering and hit-testing), and
+server-side resampling per gesture (network chatter; the API has no bucket parameter).
+
+Consequences: about 150–200 lines of gesture code we own and must harden for real input devices,
+covered by Playwright with CDP-driven multi-touch; no supply-chain addition; the chart chunk grows
+by roughly 2–4 kB gzip. The range is recomputed through the existing options factory rather than
+patched on the scale, so zoom/pan/reset have a single rendering path and are tested for tick
+positions and labels, not just axis bounds. If pinch turns out to be unreliable on a target browser, drag-select and the
+buttons remain, and that deviation is recorded rather than hidden.
 
 ## Decision 2 — statistics are computed in the browser for this change
 
@@ -54,11 +67,18 @@ Consequences: no backend change and no new failure modes; long ranges stay limit
 sample cap and must say so. Server-side bucketing is recorded as follow-up work so a future spec can
 replace the client computation without changing the view contract.
 
+Review refinement (2026-10-23): each day uses a floating minimum–maximum bar, average circle and
+last-value diamond, with distinct theme colours, a labelled HTML legend, named tooltips and the
+existing accessible table. A measured-value axis avoids visually flattening temperature ranges
+against zero; energy/event bar baselines remain unchanged. Empty terminal-midnight days are omitted,
+while actual inclusive-end reports keep their day and explicit boundary label.
+
 ## Decision 3 — bottom navigation below 720px, drawer above it
 
-`NAV_ITEMS` stays the single navigation source. The shell renders a bottom bar containing the five
-primary routes and keeps the drawer for the remainder, driven by CSS breakpoints so only one DOM
-tree exists. Safe areas are applied through a new `--nh-safe-bottom` token fed by
+`NAV_ITEMS` stays the single navigation source. The bottom bar contains Home, Devices, Automations,
+Assistant and a More action opening the drawer. Below 720px, CSS hides primary links in the drawer;
+at wider widths, the full sidebar/drawer remains available and the bottom bar is hidden. The same
+route metadata drives both presentations. Safe areas use `--nh-safe-bottom` fed by
 `env(safe-area-inset-bottom)` after adding `viewport-fit=cover`.
 
 Rejected: a second navigation list (two sources of truth), and always-on bottom tabs on desktop

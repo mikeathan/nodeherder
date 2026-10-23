@@ -1,4 +1,4 @@
-import { historyRange, validHistoryRange } from '@/domain/history/range';
+import { historyRange, validHistoryRange, clampHistoryRange, panHistoryRange, zoomHistoryRange } from '@/domain/history/range';
 test('rolling windows retain elapsed time and invalid/custom windows are explicit', () => {
   expect(historyRange('24', 100000000)).toEqual({ from: 13600000, to: 100000000 });
   expect(validHistoryRange(historyRange('custom', 0, '', ''))).toBe(false);
@@ -11,4 +11,16 @@ test('calendar Today starts at local midnight rather than subtracting 24 hours',
   const start = new Date(historyRange('today', now).from);
   expect(start.getHours()).toBe(0);
   expect(start.getDate()).toBe(18);
+});
+test('Yesterday uses consecutive local midnights', () => {
+  const now = new Date(2026, 2, 30, 12).getTime();
+  expect(historyRange('yesterday', now)).toEqual({ from: new Date(2026, 2, 29).getTime(), to: new Date(2026, 2, 30).getTime() });
+});
+test('zoom and pan clamp identically and narrow Today never escapes its query', () => {
+  const bounds = { from: 0, to: 3600000 };
+  expect(clampHistoryRange({ from: -100, to: 100 }, bounds)).toEqual({ from: 0, to: 300000 });
+  expect(zoomHistoryRange(bounds, bounds, 0.5)).toEqual({ from: 900000, to: 2700000 });
+  expect(panHistoryRange({ from: 0, to: 1000000 }, bounds, -1)).toEqual({ from: 0, to: 1000000 });
+  const short = { from: 0, to: 60000 };
+  expect(zoomHistoryRange(short, short, 0.5)).toEqual(short);
 });

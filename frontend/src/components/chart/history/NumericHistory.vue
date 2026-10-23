@@ -8,8 +8,10 @@
   import { exposeKind, exposeLabel } from '@/domain/exposes';
   import { useThemeSettings } from '@/composables/useThemeSettings';
   import { historyOptions } from './options';
+  import type { HistoryRange } from '@/domain/history/range';
+  import type { HistoryInteraction } from './interactions';
   const HistoryCanvas = defineAsyncComponent(() => import('./HistoryCanvas.vue'));
-  const props = defineProps<{ series: HistorySeries; expose: Expose; compact?: boolean }>();
+  const props = defineProps<{ series: HistorySeries; expose: Expose; compact?: boolean; viewRange?: HistoryRange; interaction?: HistoryInteraction }>();
   const { settings, mode } = useThemeSettings();
   const energy = computed(() => isEnergyCounter(props.series));
   const buckets = computed(() => energyBuckets(props.series.data, props.series.from, props.series.to));
@@ -50,8 +52,8 @@
         reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
         fontFamily: getComputedStyle(document.body).fontFamily,
       },
-      props.series.from,
-      props.series.to,
+      props.viewRange?.from ?? props.series.from,
+      props.viewRange?.to ?? props.series.to,
       unit.value,
       ['brightness', 'color_temp', 'battery', 'battpercentage'].includes(props.expose.name),
       energy.value || props.series.name === 'event_count',
@@ -76,6 +78,7 @@
       :height="compact ? 105 : 235"
       :end-marker="!compact && !energy && series.name !== 'event_count'"
       :options="options"
+      :interaction="interaction"
       :series="[{ name: expose.name, data }]" />
     <small v-if="energy">Observed consumption · incomplete intervals are partial</small>
   </div>

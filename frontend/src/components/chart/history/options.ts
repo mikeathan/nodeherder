@@ -13,6 +13,15 @@ export type ChartAppearance = {
   fontFamily?: string;
 };
 export type HistoryChartOptions = ChartOptions<'line' | 'bar'>;
+export type HistoryChartPoint = { x: number; y: number | [number, number] | null };
+export type HistoryChartSeries = {
+  name: string;
+  data: HistoryChartPoint[];
+  type?: 'line' | 'bar';
+  color?: string;
+  outline?: string;
+  pointStyle?: 'circle' | 'rectRot';
+};
 type Datasets = NonNullable<HistoryChartOptions['datasets']>;
 type Scales = NonNullable<HistoryChartOptions['scales']>;
 type Tooltip = NonNullable<NonNullable<HistoryChartOptions['plugins']>['tooltip']>;
@@ -43,6 +52,26 @@ export function historyOptions(
 }
 function chartAnimation(style: ChartAppearance): HistoryChartOptions['animation'] {
   return style.reducedMotion || style.compact ? false : { duration: 180 };
+}
+
+/** Floating ranges encode spread; mean/last markers use the same measured-value axis. */
+export function statisticsHistoryOptions(style: ChartAppearance, from: number, to: number, unit: string): HistoryChartOptions {
+  const options = historyOptions(style, from, to, unit, false, true);
+  options.parsing = { xAxisKey: 'x', yAxisKey: 'y' };
+  if (options.scales) options.scales.y = yScale(style, unit, false);
+  if (options.scales?.x?.ticks) {
+    options.scales.x.ticks.callback = (value) => new Date(Number(value)).toLocaleDateString([], { month: 'short', day: 'numeric' });
+  }
+  if (options.plugins?.tooltip?.callbacks) {
+    options.plugins.tooltip.callbacks.label = (item) => {
+      const raw = item.raw as HistoryChartPoint;
+      const label = item.dataset.label ?? '';
+      const value = Array.isArray(raw.y) ? raw.y.map((n) => Number(n.toFixed(2))).join(' – ')
+        : raw.y === null ? 'Unknown' : Number(raw.y.toFixed(2));
+      return `${label}: ${value}${raw.y === null ? '' : ` ${unit}`}`;
+    };
+  }
+  return options;
 }
 function lineDataset(style: ChartAppearance, step: boolean, linear: boolean): NonNullable<Datasets['line']> {
   return {
@@ -112,6 +141,7 @@ function xScale(style: ChartAppearance, from: number, to: number): NonNullable<S
 }
 function yScale(style: ChartAppearance, unit: string, bars: boolean): NonNullable<Scales['y']> {
   return {
+    type: 'linear',
     display: !style.compact,
     beginAtZero: bars,
     grace: '10%',

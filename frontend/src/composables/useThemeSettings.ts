@@ -32,6 +32,10 @@ function applyToDocument() {
     if (value === null) root.style.removeProperty(name);
     else root.style.setProperty(name, value);
   }
+  if (typeof getComputedStyle === 'function' && typeof document.querySelector === 'function') {
+    const background = getComputedStyle(root).getPropertyValue('--nh-bg').trim();
+    if (background) document.querySelector('meta[name="theme-color"]')?.setAttribute('content', background);
+  }
 }
 
 /** Applies stored settings and starts following them; safe to call more than once. */

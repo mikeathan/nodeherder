@@ -117,6 +117,7 @@
 </script>
 <template>
   <UiDialog
+    drag-dismiss
     :open="show"
     :title="title"
     :wide="wideDialog"
@@ -206,6 +207,7 @@
           <p>No recorded history for this entity in the last 4 hours.</p>
           <small>History appears here when the device reports and metrics are recorded.</small>
         </div>
+        <UiButton :to="{ name: RouteName.DevicePage, params: { id }, query: { tab: 'history', expose: selected } }" @click="close">View full history</UiButton>
       </section>
       <section v-if="otherReadings.length" class="entity-other" aria-label="Other readings">
         <h3>Other readings</h3>

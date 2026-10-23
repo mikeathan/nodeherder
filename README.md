@@ -26,7 +26,7 @@ to compatible clients.
 
 - View device state, availability, exposes, and controls in grouped dashboards.
 - Create device-triggered and scheduled automations with conditions and actions.
-- Chart sensor history, configure retention, and quiet noisy readings with category defaults.
+- [Explore sensor history](docs/history.md) with zoom, daily sample statistics and CSV export; configure retention and quiet noisy readings with category defaults.
 - Inspect hub logs and manage bridge joining and device settings.
 - Query metrics through HTTP or MCP; connect an external assistant service with conversation history.
 

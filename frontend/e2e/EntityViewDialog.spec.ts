@@ -23,6 +23,30 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
+test('full history keeps the sheet expose ahead of saved preferences', async ({ page }) => {
+  await signIn(page, ui.home.path);
+  await page.evaluate((id) => localStorage.setItem(`nh-history-pref:${id}`, JSON.stringify({ version: 1, preset: '24', expose: 'state' })), MOCK.livingRoomLight.id);
+  await ui.home.tile(page, 'living room group', 'Brightness').locator('.nh-tile-body').click();
+  await page.getByRole('dialog').getByRole('link', { name: 'View full history' }).click();
+  const history = page.getByRole('region', { name: 'Device history' });
+  await expect(history.getByRole('button', { name: 'Brightness', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+});
+
+test('phone sheet drag dismisses only from the header with motion enabled', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await signIn(page, ui.home.path);
+  await ui.home.tile(page, 'living room group', 'Brightness').locator('.nh-tile-body').click();
+  const dialog = page.getByRole('dialog');
+  const header = (await dialog.locator('.nh-dialog-head').boundingBox())!;
+  await page.mouse.move(header.x + 30, header.y + 25);
+  await page.mouse.down();
+  await page.mouse.move(header.x + 30, header.y + 180, { steps: 8 });
+  await page.mouse.up();
+  await expect(dialog).toHaveCount(0);
+});
+
 test('brightness uses native values, fullscreen mobile, shared confirmation and minimal history', async ({
   page,
   ws,

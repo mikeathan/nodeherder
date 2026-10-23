@@ -228,22 +228,22 @@ Do not defer refactoring to the final task or omit store/composable/Vue/mock/Go 
   consolidate formatter/unit/binary/icon semantics; IDs: FR-14, AC-28…30; depends:
   T201,T205,T206; done: all surfaces agree, unknown/missing/zero/disabled/offline fixtures,
   exact expose commands and keyboard/focus evidence.
-- [ ] T209 — History query correctness and service/store lifecycle: actual HTTP decoder,
+- [x] T209 — **Superseded by [029](../029-history-and-mobile-ux/plan.md)** (existing baseline plus its implementation and verification tasks); History query correctness and service/store lifecycle: actual HTTP decoder,
   generation/keyed status, abort/timeout/429/empty/error handling, budgets/cache cleanup;
   update mock HTTP route and required backend error handling; paths: history service/
   contract, metrics store, `useHistoryQuery`, Go query service/API; IDs: FR-16, AC-33…35,
   NFR-08; depends: T201,T202; done: actual producer fixtures pass, obsolete replies cannot
   overwrite views, storage failures are observable; compatible backend checks pass.
-- [ ] T210 — Pure history domain: timezone/range boundaries, numeric and state/event
+- [x] T210 — **Superseded by [029](../029-history-and-mobile-ux/plan.md)** (existing baseline plus its implementation and verification tasks); Pure history domain: timezone/range boundaries, numeric and state/event
   normalization, gap/unknown policies, labelled stats and extrema-preserving decimation;
   paths: `src/domain/history/`, entity metadata; IDs: AC-31…33, NFR-08; depends: T201,T202;
   done: DST/zero/sparse/duplicate/out-of-order/partial/extrema/known-duration fixtures pass.
-- [ ] T211 — Completely rebuild full history and shared compact variants: toolbar,
+- [x] T211 — **Superseded by [029](../029-history-and-mobile-ux/plan.md)** (existing baseline plus its implementation and verification tasks); Completely rebuild full history and shared compact variants: toolbar,
   inspection/zoom/reset, state timeline/event list, theme-reactive renderer, accessible
   sample table, all query states; migrate entity dialog and `DeviceMetrics.vue`; IDs:
   FR-15, AC-30…36; depends: T205,T208,T209,T210; done: full/mini semantic equality and
   keyboard/touch/viewport evidence, no old chart implementation quietly retained in dialogs.
-- [ ] T212 — Remaining Assistant/dialog layout work and measured palette/contrast fixes;
+- [ ] T212 — History-dependent work moves to [029](../029-history-and-mobile-ux/plan.md); remaining Assistant/dialog layout work and measured palette/contrast fixes;
   remove unused legacy entity/chart/formatter paths only after all imports/consumers migrate;
   IDs: AC-36/39, FR-17, T109; depends: T208,T211; done: visual/focus checks, palette/accents
   AA assertions, import scan and build; no replacement semantics hidden by compatibility aliases.

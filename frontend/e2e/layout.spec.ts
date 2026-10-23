@@ -18,3 +18,58 @@ test.describe('responsive layout', () => {
     }
   });
 });
+
+test('mobile tabs and More drawer preserve navigation and platform metadata', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await signIn(page, '/groupdashboard');
+  const nav = page.getByRole('navigation', { name: 'Primary', exact: true });
+  await expect(nav.getByRole('link', { name: 'Home', exact: true })).toHaveAttribute('aria-current', 'page');
+  for (const control of await nav.locator('a, button').all()) {
+    const box = (await control.boundingBox())!;
+    expect(box.width).toBeGreaterThanOrEqual(44);
+    expect(box.height).toBeGreaterThanOrEqual(44);
+  }
+  const more = nav.getByRole('button', { name: 'More', exact: true });
+  await more.click();
+  await expect(more).toHaveAttribute('aria-expanded', 'true');
+  await page.getByRole('navigation', { name: 'Main', exact: true }).getByRole('link', { name: 'Settings', exact: true }).click();
+  await expect(more).toHaveAttribute('aria-current', 'page');
+  await expect(more).toHaveAttribute('aria-expanded', 'false');
+  await page.goto('/creator');
+  await expect(nav.getByRole('link', { name: 'Automations', exact: true })).toHaveAttribute('aria-current', 'page');
+  await page.evaluate(() => document.documentElement.style.setProperty('--nh-safe-bottom', '20px'));
+  expect(await nav.evaluate((el) => getComputedStyle(el).paddingBottom)).toBe('20px');
+  expect(await page.locator('meta[name="viewport"]').getAttribute('content')).toContain('viewport-fit=cover');
+  expect(await (await page.request.get('/manifest.webmanifest')).json()).toMatchObject({ name: 'NodeHerder', icons: [{ type: 'image/svg+xml' }] });
+  await page.route('**/manifest.webmanifest', (route) => route.fulfill({ status: 404 }));
+  await page.reload();
+  await expect(nav).toBeVisible();
+});
+
+test('browser theme colour follows the active appearance on toggle and reload', async ({ page }) => {
+  await signIn(page, '/groupdashboard');
+  await expect(page.getByRole('button', { name: /Switch to (light|dark) mode/ })).toBeVisible();
+  const meta = page.locator('meta[name="theme-color"]');
+  for (const mode of ['light', 'dark']) {
+    await expect(page.getByRole('button', { name: /Switch to (light|dark) mode/ })).toBeVisible();
+    const toggle = page.getByRole('button', { name: `Switch to ${mode} mode` });
+    if (await toggle.count()) await toggle.click();
+    await expect(page.locator('html')).toHaveAttribute('data-mode', mode);
+    const background = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--nh-bg').trim());
+    await expect(meta).toHaveAttribute('content', background);
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    await page.route((url) => url.pathname === '/src/components/shell/AppShell.vue', async (route) => {
+      await gate;
+      await route.continue();
+    });
+    try {
+      // Appearance is ready before the lazy shell; exercise that ordering on every reload.
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await expect(page.getByRole('status').filter({ hasText: 'Loading NodeHerder…' })).toBeVisible();
+      await expect(meta).toHaveAttribute('content', background);
+    } finally {
+      release();
+    }
+  }
+});
