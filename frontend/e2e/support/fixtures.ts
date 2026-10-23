@@ -84,7 +84,34 @@ export async function signInAutomationHub(page: Page, path: string): Promise<voi
 
 type Fixtures = { ws: WsRecorder };
 
-export const test = base.extend<Fixtures>({
+/**
+ * Routes exercised by the suites. Vite optimizes dependencies per module graph, so a route
+ * that no earlier test visited can still trigger an optimizer reload after navigation starts;
+ * a reload keeps the old URL and silently cancels the route change. Visit every route once per
+ * worker (it runs once per shard) so optimization finishes before assertions depend on it.
+ */
+const WARM_ROUTES = [
+  '/overview', '/groupdashboard', '/devicedashboard', '/devicelist', '/viewer', '/creator',
+  '/settings', '/consoleviewer', '/panel', '/assistant',
+];
+
+export const test = base.extend<Fixtures, { warmRoutes: void }>({
+  // A cold dev server may reload mid-visit while it re-optimizes; the warm-up is best effort.
+  warmRoutes: [
+    async ({ browser }, use) => {
+      // Worker fixtures do not receive test options, so mirror the configured base URL here.
+      const context = await browser.newContext({ baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:4100' });
+      const page = await context.newPage();
+      try {
+        await signIn(page, '/groupdashboard');
+        for (const route of WARM_ROUTES) await page.goto(route, { waitUntil: 'networkidle' }).catch(() => undefined);
+      } finally {
+        await context.close();
+      }
+      await use();
+    },
+    { scope: 'worker', auto: true },
+  ],
   ws: async ({ page }, use) => {
     await use(new WsRecorder(page));
   },

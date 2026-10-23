@@ -115,6 +115,7 @@ declare module 'vue' {
     Settings: typeof import('./src/components/hub/settings/Settings.vue')['default']
     SetValuesAction: typeof import('./src/components/automations/editor/actions/SetValuesAction.vue')['default']
     Sidebar: typeof import('primevue/sidebar')['default']
+    Slider: typeof import('primevue/slider')['default']
     StateHistory: typeof import('./src/components/chart/history/StateHistory.vue')['default']
     StatTile: typeof import('./src/components/overview/StatTile.vue')['default']
     Status: typeof import('./src/components/controls/Status.vue')['default']
