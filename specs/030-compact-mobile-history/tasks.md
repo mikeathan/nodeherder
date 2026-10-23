@@ -35,3 +35,6 @@ and diff checks passed. BottomNav and its reservations/metadata removed; drawer 
 Chart-first result: header 44px and plot ~410px at 854px; final affected browser suite 93 passed /
 nine existing skips plus 2/2 final visual checks. Jest 341, lint/build/e2e types and diff checks passed.
 Temporary local port config removed; full standard-port suite is checked in CI. See plan.md.
+
+Timezone follow-up: new options assertion uses the browser zone; New York browser checks passed
+2/2. CI previously exposed the London-only test assumption; application code is unchanged.

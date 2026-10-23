@@ -157,9 +157,17 @@ those test assumptions. The final run retains both CSV schemas, gesture/no-extra
 confirmation semantics, deep links, layout, and dialog cleanup. The initial standard-port attempt
 ran no tests because the user's dev hub occupied 4110; no live hub/device was used or stopped.
 The temporary local config was removed; standard full-suite verification is performed by CI.
+The options-sheet assertion must use the browser's actual named zone rather than assuming London;
+verify the final assertion with a New York browser context as well as the runner's zone.
 
 Jest passed 53 suites/341 tests with a UTC launch. Lint passed (seven existing JS warnings), build
 and e2e types passed. Entry is 116.25kB gzip, Chart.js unchanged at 71.35kB; no dependency/lockfile,
 backend or API contract diff. `git diff --check` passed. Final NH/FE review confirms original data,
 range and command ownership, honest failure/partial feedback, accessible deferred controls and
 listener/focus cleanup. Physical Safari/cutout/frame timing remain unrun as already documented.
+
+CI on `4feeb4f4` passed every check except the new phone test on both shard-1 projects: it expected
+Europe/London while the runner's browser uses UTC. This was a test assumption, not an app timezone
+conversion error. The assertion now compares with the browser's resolved zone. A separate
+America/New_York browser follow-up passed 2/2 with the same options, selected-day and gesture UI;
+production code is unchanged. Temporary config removed; e2e types/lint/diff checks rerun before push.

@@ -390,7 +390,8 @@ test('phone metrics prioritise a large plot with options and chart tools on dema
   }
   await sheet.screenshot({ path: info.outputPath('history-options.png') });
   await expect(sheet.getByText('History CSV uses native sensor values and units.')).toBeVisible();
-  await expect(sheet.getByText(/Europe\/London/)).toBeVisible();
+  const browserZone = await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone);
+  await expect(sheet.getByText(browserZone, { exact: false })).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(options).toBeFocused();
   const tools = chart.locator('.mobile-chart-tools');
