@@ -1,4 +1,4 @@
-# Tasks: Compact mobile history and navigation
+# Tasks: Compact history controls and mobile navigation
 
 Spec: [spec.md](spec.md) | Plan: [plan.md](plan.md) | Status: Complete (automated scope)
 
@@ -38,3 +38,13 @@ Temporary local port config removed; full standard-port suite is checked in CI. 
 
 Timezone follow-up: new options assertion uses the browser zone; New York browser checks passed
 2/2. CI previously exposed the London-only test assumption; application code is unchanged.
+
+- [x] T012 — Add desktop regression with ten exposes, four wide viewports, single-row fields/actions,
+  selected state and screenshots in DeviceMetrics.spec.ts; AC-04; demonstrate baseline failure.
+- [x] T013 — Replace desktop chip lists with labelled native fields and calm inline mode/actions in
+  HistoryToolbar; simplify responsive helpers; depends T012; done: phone layout stays unchanged.
+- [x] T014 — Run frontend/affected browser checks, inspect desktop/phone screenshots, update docs
+  and PR with final evidence; depends T013; gates NH-01/04/05 and FE-01/03/04.
+
+Desktop refinement: final affected run 95 passed / nine existing skips (104 cases); Jest 341 and
+lint/build/types/diff checks passed. Desktop/tablet screenshots inspected; phone remains 44px.

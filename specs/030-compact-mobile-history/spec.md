@@ -1,4 +1,4 @@
-# Spec: Compact mobile history and navigation
+# Spec: Compact history controls and mobile navigation
 
 ID: 030 | Status: Implemented; automated checks passed | Owner: NodeHerder contributors | Updated: 2026-10-23
 Constitution: proposed 1.0.0 | Components: frontend
@@ -6,9 +6,11 @@ Constitution: proposed 1.0.0 | Components: frontend
 ## Problem, scope, exclusions
 
 The supplied 384×854 phone screenshot shows oversized entity/period pills and a wrapping export
-row pushing the chart below most of the screen. `HistoryToolbar.vue` currently renders two
-horizontal chip strips plus wrapping mode/actions. Improve phone density while preserving the
-history/statistics and data semantics delivered by merged spec 029. Desktop keeps labelled chips.
+row pushing the chart below most of the screen. At the original baseline, `HistoryToolbar.vue`
+rendered two horizontal chip strips plus wrapping mode/actions. Improve phone density while preserving the
+history/statistics and data semantics delivered by merged spec 029. The user also finds the desktop
+entity/period pill rows noisy; replace them with labelled selectors in a unified toolbar while
+preserving the approved phone layout.
 The user also requests removing the redundant phone bottom bar in favour of the existing hamburger
 drawer. Restore every destination in that drawer and release the bar’s reserved content space.
 This supersedes spec 029 AC-10’s bottom-bar presentation; route semantics remain unchanged.
@@ -30,8 +32,12 @@ No transport, device command, storage, query, aggregation or dependency change.
   and the canvas begins within 12px below it. No dedicated date/help/button rows precede the plot.
   Full numeric and statistics canvases are at least 280px and use roughly 48% viewport height
   (capped at 420px); verify 320/384/390 widths, 568/854 heights, both themes and no overflow.
-- AC-04: At 768/1280px labelled entity/period buttons remain visible and selected state is accurate.
-  Resizing preserves the current choice; statistics, export and empty/partial/error behavior remain.
+- AC-04: At 768/1024/1280/1920px, labelled Entity and Period selectors replace the pill lists.
+  History/Statistics use a light inline switch, with refresh/export aligned in the same toolbar.
+  Ten or more exposes and all eight presets remain available without page overflow or more rows.
+  At 1280px the ready numeric toolbar is ≤112px including export help; primary controls align in
+  one row. Resizing and reloading preserve the selection; Custom, statistics/export and feedback
+  remain. The 44px phone header, options sheet and large plot are visually/functionally unchanged.
 
 ### US-02 — Use the hamburger drawer without a bottom strip (P1)
 
@@ -69,5 +75,5 @@ restores the old layout without migration. No household-device testing.
 
 ## Questions and assumptions
 
-No blocking questions. Native pickers trade a tap for substantially less phone height; desktop
-retains direct buttons. This follows the user's complaint about the supplied phone layout.
+No blocking questions. Native selectors trade one tap for a calmer list of available readings and
+ranges. Phones retain their approved compact layout; wider screens add visible field labels.

@@ -20,20 +20,18 @@
   <div class="history-toolbar">
     <div class="history-filters">
       <div class="history-chips" role="group" aria-label="Entity">
+        <span class="history-field-label" aria-hidden="true">Entity</span>
         <select class="nh-select history-picker" aria-label="Entity" :value="selected"
           @change="$emit('select', ($event.target as HTMLSelectElement).value)">
           <option v-for="name in names" :key="name" :value="name">{{ exposeLabel(name) }}</option>
         </select>
-        <button v-for="name in names" :key="name" class="nh-btn history-chip" type="button" :aria-pressed="selected === name"
-          @click="$emit('select', name)">{{ exposeLabel(name) }}</button>
       </div>
       <div class="history-chips" role="group" aria-label="Period">
+        <span class="history-field-label" aria-hidden="true">Period</span>
         <select class="nh-select history-picker" aria-label="Period" :value="preset"
           @change="$emit('preset', ($event.target as HTMLSelectElement).value)">
           <option v-for="item in HISTORY_PRESETS" :key="item.value" :value="item.value">{{ item.label }}</option>
         </select>
-        <button v-for="item in HISTORY_PRESETS" :key="item.value" class="nh-btn history-chip" type="button" :aria-pressed="preset === item.value"
-          @click="$emit('preset', item.value)">{{ item.label }}</button>
       </div>
     </div>
     <UiButton class="mobile-history-options" variant="ghost" icon="more" label="History options"
@@ -72,7 +70,7 @@
 <style scoped>
   .history-toolbar { display: grid; gap: 0.75rem; min-width: 0; }
   .history-filters { display: contents; }
-  .history-picker, .mobile-history-options { display: none; }
+  .history-picker, .history-field-label, .mobile-history-options { display: none; }
   .history-chips, .history-actions, .history-modes { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
   button { min-height: 44px; min-width: 44px; }
   button[aria-pressed='true'] { background: var(--nh-accent-soft); border-color: var(--nh-accent); }
@@ -84,11 +82,24 @@
   .history-settings select { width: 100%; height: 44px; font-size: 1rem; }
   .settings-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
   .settings-actions :deep(button) { min-height: 44px; }
+  @media (min-width: 720px) {
+    .history-toolbar { grid-template-columns: minmax(11rem, 20rem) 8.5rem minmax(max-content, 1fr);
+      column-gap: 0.75rem; row-gap: 0.4rem; align-items: end; }
+    .history-chips { display: grid; gap: 0.35rem; min-width: 0; }
+    .history-field-label { display: block; color: var(--nh-text-muted); font-size: 0.75rem; }
+    .history-picker { display: block; width: 100%; height: 44px; }
+    .history-actions { flex-wrap: nowrap; min-width: 0; }
+    .history-modes { flex-wrap: nowrap; gap: 0; }
+    .history-modes button { border: 0; border-bottom: 2px solid transparent; border-radius: 0;
+      padding: 0 0.75rem; background: transparent; }
+    .history-modes button[aria-pressed='true'] { background: transparent; color: var(--nh-accent); border-bottom-color: var(--nh-accent); }
+    .history-export { background: transparent; border-color: transparent; padding-inline: 0.5rem; }
+    .history-toolbar > .export-reason, .history-toolbar > .history-unit-help { grid-column: 1 / -1; }
+  }
   @media (max-width: 719px) {
     .history-toolbar { grid-template-columns: minmax(0, 1fr) 6.75rem 44px; gap: 0.375rem; align-items: center; }
     .history-filters { display: contents; }
     .history-chips { min-width: 0; }
-    .history-chip { display: none; }
     .history-picker { display: block; width: 100%; height: 44px; font-size: 1rem; text-overflow: ellipsis; }
     .history-chips:last-child .history-picker { padding-inline: 0.3rem; }
     .history-actions, .history-toolbar > .history-unit-help { display: none; }

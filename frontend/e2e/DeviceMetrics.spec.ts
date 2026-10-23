@@ -5,6 +5,10 @@ import { ui } from './support/ui';
 const fixtureId = 'design-sensor';
 const readings = [11.2, 10.8, 10.7, 10.5, 10.2, 10.1, 9.8, 9.7];
 const exposes = {
+  current: { name: 'current', type: 'numeric', category: 'measurement', access_mode: 'read', unit: 'A', data: 0.8, attributes: null, values: null },
+  voltage: { name: 'voltage', type: 'numeric', category: 'measurement', access_mode: 'read', unit: 'V', data: 230, attributes: null, values: null },
+  power: { name: 'power', type: 'numeric', category: 'measurement', access_mode: 'read', unit: 'W', data: 80, attributes: null, values: null },
+  countdown: { name: 'countdown', type: 'numeric', category: 'config', access_mode: 'read', unit: 's', data: 0, attributes: null, values: null },
   color_temp: {
     name: 'color_temp', type: 'numeric', category: 'measurement', access_mode: 'read',
     unit: 'mired', data: 300, attributes: null, values: null,
@@ -329,6 +333,51 @@ test('full history stays readable at desktop, tablet and phone widths in both th
       await page.screenshot({ path: info.outputPath(`history-${theme}-${width}.png`) });
     }
   }
+});
+
+test('desktop history uses a quiet labelled toolbar for many entities and ranges', async ({ page }, info) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await signIn(page, `/devicepage/${fixtureId}?tab=history`);
+  await ui.history.choose(page, 'Entity', 'Current');
+  const history = page.getByRole('region', { name: 'Device history' });
+  const toolbar = history.locator('.history-toolbar');
+  await expect(history.locator('canvas[data-ready="true"]')).toBeVisible();
+  expect((await toolbar.boundingBox())!.height).toBeLessThanOrEqual(112);
+  const entity = toolbar.getByRole('combobox', { name: 'Entity', exact: true });
+  const period = toolbar.getByRole('combobox', { name: 'Period', exact: true });
+  await expect(entity.getByRole('option')).toHaveCount(10);
+  await expect(period.getByRole('option')).toHaveCount(8);
+  await entity.selectOption('voltage');
+  await period.selectOption('168');
+  await expect(history.locator('canvas[data-ready="true"]')).toBeVisible();
+  for (const theme of ['light', 'dark']) {
+    const toggle = page.getByRole('button', { name: `Switch to ${theme} mode` });
+    if (await toggle.isVisible()) await toggle.click();
+    for (const width of [768, 1024, 1280, 1920]) {
+      await page.setViewportSize({ width, height: 900 });
+      await expect(entity).toHaveValue('voltage');
+      await expect(period).toHaveValue('168');
+      await expect(toolbar.getByRole('group', { name: 'Entity', exact: true }).getByRole('button')).toHaveCount(0);
+      await expect(toolbar.getByRole('group', { name: 'Period', exact: true }).getByRole('button')).toHaveCount(0);
+      const boxes = await Promise.all([entity, period, toolbar.getByRole('button', { name: 'History', exact: true }), toolbar.getByRole('button', { name: 'Export CSV', exact: true })].map(async (control) => (await control.boundingBox())!));
+      const centres = boxes.map((box) => box.y + box.height / 2);
+      expect(Math.max(...centres) - Math.min(...centres)).toBeLessThanOrEqual(2);
+      for (let i = 1; i < boxes.length; i++) {
+        expect(boxes[i - 1].x + boxes[i - 1].width).toBeLessThanOrEqual(boxes[i].x + 1);
+      }
+      expect(await page.locator('.nh-app-main').evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
+      await toolbar.screenshot({ path: info.outputPath(`desktop-toolbar-${theme}-${width}.png`) });
+    }
+  }
+  await page.reload();
+  await expect(entity).toHaveValue('voltage');
+  await expect(period).toHaveValue('168');
+  await expect(history.locator('canvas[data-ready="true"]')).toBeVisible();
+  await page.setViewportSize({ width: 384, height: 854 });
+  await expect(entity).toHaveValue('voltage');
+  await expect(period).toHaveValue('168');
+  expect((await toolbar.boundingBox())!.height).toBe(44);
+  await expect(toolbar.getByRole('button', { name: 'History options', exact: true })).toBeVisible();
 });
 
 test('phone metrics prioritise a large plot with options and chart tools on demand', async ({ page }, info) => {

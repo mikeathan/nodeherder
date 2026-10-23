@@ -60,16 +60,12 @@ export const ui = {
     choose: async (page: Page, name: 'Entity' | 'Period', label: string) => {
       const group = page.getByRole('region', { name: 'Device history' }).getByRole('group', { name, exact: true });
       await group.waitFor({ state: 'visible' });
-      const picker = group.getByRole('combobox');
-      if (await picker.isVisible()) await picker.selectOption({ label });
-      else await group.getByRole('button', { name: label, exact: true }).click();
+      await group.getByRole('combobox').selectOption({ label });
     },
     selected: async (page: Page, name: 'Entity' | 'Period') => {
       const group = page.getByRole('region', { name: 'Device history' }).getByRole('group', { name, exact: true });
       await group.waitFor({ state: 'visible' });
-      const picker = group.getByRole('combobox');
-      return await picker.isVisible() ? picker.locator('option:checked').textContent()
-        : group.getByRole('button', { pressed: true }).textContent();
+      return group.getByRole('combobox').locator('option:checked').textContent();
     },
   },
   login: {

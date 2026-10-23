@@ -1,17 +1,22 @@
-# Plan: Compact mobile history and navigation
+# Plan: Compact history controls and mobile navigation
 
 Spec: [spec.md](spec.md) | Status: Implemented; automated checks passed | Updated: 2026-10-23
 Constitutions: parent/frontend proposed 1.0.0. Branch: `fix/mobile-history-toolbar`.
 
 ## Context and design
 
-Merged PR #74 is the baseline; leave spec 029 as history. `HistoryToolbar.vue` will retain one set
-of selection props/events and render responsive native selectors below 720px, chips above it. Two
-pickers share a grid row; mode buttons form a compact segmented control alongside refresh/export
-icons, with an accessible Export CSV name and existing unit help. Use scoped local dimensions and
-44px targets. Tighten phone date/zone margins in `DeviceMetrics.vue` without removing information.
-No breakpoint JS, new dependency or duplicate selection state. The alternative of merely shrinking
-pills retains horizontal scrolling and several rows, which does not address the supplied screenshot.
+Merged PR #74 is the baseline; completed spec 029 stays historical. HistoryToolbar uses the same
+selection props/events and native Entity/Period selectors at every width. Phones retain the approved
+44px header (two selectors and options), the options sheet, and the large chart with tools below.
+At ≥720px, visible field labels, selectors, an underlined mode switch and refresh/export form one
+quiet toolbar. Its action column reserves max-content width to prevent tablet overlap. Export help
+spans the row beneath it; current ranges and disabled feedback remain available.
+
+The redundant bottom navigation is removed; the hamburger drawer contains every destination and
+uses safe-area padding. HistoryChart retains range ownership and existing gestures; modal focus
+handling reuses UiDialog. Styling is scoped, uses existing tokens, and adds no transport, dependency
+or duplicate selection state. Desktop selector visibility supersedes 029's pill presentation; phone
+geometry and interaction remain unchanged by the desktop refinement.
 
 ## Constitution Check
 
@@ -38,7 +43,7 @@ rollback. No backend checks needed for this layout-only change; inspect the diff
 
 AC-01/04: migrate existing `e2e/DeviceMetrics.spec.ts` selection/restore and `EntityViewDialog.spec.ts`
 deep-link checks through responsive
-page-object helpers in `e2e/support/ui.ts`; keep desktop chip assertions and mobile picker assertions.
+page-object helpers in `e2e/support/ui.ts`; verify native selection and restored values at every width.
 AC-02/03: add a phone geometry, keyboard, export and screenshot case in the same source-owned file;
 measure 320/384/390 widths, long colour-temperature label and dark/light appearance. Demonstrate
 baseline failure, then inspect the resulting screenshots. Run all DeviceMetrics and EntityViewDialog
@@ -171,3 +176,38 @@ Europe/London while the runner's browser uses UTC. This was a test assumption, n
 conversion error. The assertion now compares with the browser's resolved zone. A separate
 America/New_York browser follow-up passed 2/2 with the same options, selected-day and gesture UI;
 production code is unchanged. Temporary config removed; e2e types/lint/diff checks rerun before push.
+
+## Desktop toolbar refinement — 2026-10-23
+
+User approves the phone layout and rejects the wide-screen wall of expose/range pills. Keep the
+mobile media rules and control flow intact. Reuse the existing Entity/Period selects at every width;
+remove the redundant chip DOM and show field labels only at ≥720px. At that breakpoint only, use a
+three-column toolbar: entity field, period field, inline mode/action group. Underline the selected
+mode instead of drawing two more pill faces; retain aria-pressed and visible focus. Export help
+spans the toolbar beneath it. No JavaScript viewport logic or second selection state.
+
+This supersedes 029's desktop-chip presentation. Update AC-04 and reopen NH-01/04/05, FE-01/03/04
+checks before production changes. Add a ten-expose desktop geometry/selection/screenshot regression
+in existing DeviceMetrics.spec.ts, demonstrate the old layout failure, and preserve all phone
+geometry/options/gesture/export assertions. Use isolated alternate ports again; run DeviceMetrics,
+EntityViewDialog and layout on both projects plus Jest/lint/build/e2e types, then full CI. Existing
+responsive helpers should use the now-common native selectors. No backend or data contract change.
+The tablet screenshot exposed action/period overlap; reserve the action group's max-content width
+instead of allowing it to overrun a zero-minimum grid track. Assert horizontal separation as well
+as row alignment. Ready-state geometry waits for the decoded canvas after reload; URL precedence
+remains covered by the existing deep-link tests.
+
+Desktop refinement verification: baseline toolbar was 235.78px with ten exposes, failing the 112px
+budget. Final native fields/actions align without overlap at 768/1024/1280/1920px in both themes;
+all ten exposes/eight ranges remain. Phone header stays exactly 44px after resize, and the existing
+large-plot/options/gesture regressions pass unchanged. Screenshots inspected at desktop and tablet
+widths. An intermediate screenshot caught the tablet overlap and a test initially expected a saved
+selection to override a URL expose; the layout and test setup were corrected without changing URL
+precedence. Ready geometry now waits for metrics after reload.
+
+Final alternate-port DeviceMetrics/EntityViewDialog/layout run: **95 passed, nine existing desktop
+phone-only skips, zero failures (104 cases)**, 2.8 minutes. Jest: 53 suites/341 passed; lint passed
+(seven existing warnings), build/e2e types/diff checks passed. Entry is 116.23kB gzip; Chart.js
+unchanged. User docs updated. No backend, transport, data, dependency or phone layout change in
+this refinement. Final applicable NH/FE rules rechecked; temporary config removed. Full standard
+suite is verified in CI. Physical Safari/cutout/frame timing remain unrun as already documented.

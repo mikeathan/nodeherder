@@ -5,8 +5,7 @@ link keeps the selected entity, ahead of a saved preference. History stays devic
 use the header hamburger drawer for Home, Devices, Automations, Assistant and all other destinations;
 there is no bottom navigation strip.
 
-Choose an entity and a period using the compact phone pickers or the labelled buttons on wider
-screens, including Today, Yesterday or a Custom window of at most
+Choose an entity and a period using the selectors, including Today, Yesterday or a Custom window of at most
 31 elapsed days. Each device remembers its period and entity in browser storage; Custom also
 remembers its validated bounds. Invalid saved bounds fall back to 24h. Calendar boundaries and
 labels follow the browser's named time zone, including daylight-saving changes.
@@ -43,4 +42,5 @@ On phones, metric, period and **History options** (⋮) share one compact row di
 plot. Options contains the History/Statistics view picker, refresh, export, unit help and full
 selected bounds/timezone. Pan/zoom/reset remain under **Chart tools** below the plot; touch and
 keyboard shortcuts also work directly on it. Statistics shows its plot before the detailed summary
-and table. Wider screens retain the labelled controls.
+and table. Wider screens use labelled Entity/Period selectors in one toolbar, followed by a subtle
+History/Statistics switch and refresh/export actions.
