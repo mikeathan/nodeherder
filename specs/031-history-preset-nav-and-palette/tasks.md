@@ -18,7 +18,10 @@ Spec: [spec.md](spec.md) | Plan: [plan.md](plan.md) | Status: Complete (automate
 - [x] T005 — Remove the `Device list` entry from `NAV_ITEMS` and fold `DeviceList`/`DevicePage` into
   the `Devices` `includes` list; IDs: FR-02/AC-05; done: `src/components/shell/navigation.ts`.
 - [x] T006 — Update `e2e/layout.spec.ts` (drop the link, add a `toHaveCount(0)` guard, keep 44px
-  and focus checks); IDs: AC-04/AC-06; done: spec edited, run pending in T012.
+  and focus checks); IDs: AC-04/AC-06; done: 6 passed.
+- [x] T006a — Update the Period option count in `e2e/DeviceMetrics.spec.ts` (8 → 9) and assert the
+  `3d` option after CI caught the stale count; IDs: AC-01; done: that spec passes on desktop and
+  mobile projects (10 passed).
 - [x] T007 — Replace `#0f8bd6` with `#c08a1e` and `#8a5a2b` in `ACCENTS`; IDs: FR-03/AC-07;
   done: `src/theme/theme-settings.ts`.
 - [x] T008 — Add the `amber` descriptor (plus the now-rejected sunset/diner, later removed);

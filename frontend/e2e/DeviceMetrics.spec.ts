@@ -346,7 +346,8 @@ test('desktop history uses a quiet labelled toolbar for many entities and ranges
   const entity = toolbar.getByRole('combobox', { name: 'Entity', exact: true });
   const period = toolbar.getByRole('combobox', { name: 'Period', exact: true });
   await expect(entity.getByRole('option')).toHaveCount(10);
-  await expect(period.getByRole('option')).toHaveCount(8);
+  await expect(period.getByRole('option')).toHaveCount(9);
+  await expect(period.getByRole('option', { name: '3d', exact: true })).toHaveCount(1);
   await entity.selectOption('voltage');
   await period.selectOption('168');
   await expect(history.locator('canvas[data-ready="true"]')).toBeVisible();

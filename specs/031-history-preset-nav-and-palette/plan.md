@@ -81,6 +81,7 @@ No HTTP/WS/MQTT/MCP schema, persistence or deployment change. Compatibility note
 | Requirement/acceptance IDs | Paths | Test/manual procedure | Actual result |
 | --- | --- | --- | --- |
 | FR-01 / AC-01…03 | `src/domain/history/range.ts`, `src/__tests__/domain/history/range.test.ts` | `npx jest src/__tests__/domain/history` | PASS — 8 suites / 31 tests, incl. `preset 3d selects a rolling 72 hour window` |
+| FR-01 / AC-01 | `e2e/DeviceMetrics.spec.ts` (desktop + mobile) | Period option count updated 8 → 9 plus a `3d`-option assertion | PASS — 10 passed |
 | FR-01 / AC-02 | `src/domain/history/preferences.ts` (unchanged validation) | preset round-trip case in `preferences`/`range` tests | PASS — `preferences` suite unchanged and green; `72` is a plain hour value |
 | FR-02 / AC-04…06 | `src/components/shell/navigation.ts`, `e2e/layout.spec.ts` | `npx playwright test e2e/layout.spec.ts` (desktop + phone projects) | PASS — 6 passed (3 desktop, 3 mobile) |
 | FR-02 / AC-05 | `src/router/index.ts`, `AppHeader.vue` | navigate `/devicelist` directly, confirm title + active nav | PASS — no route change; `DeviceList` in `Devices.includes`; covered by `devices.spec.ts` run in full suite (not re-run here) |
