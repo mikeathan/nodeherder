@@ -149,3 +149,6 @@ passed. Focused checks 12/12 and corrected deferred-shell/default-view checks 6/
 full browser rerun: 201 passed, nine existing desktop phone-only skips, zero failures (210 cases).
 The first full run exposed Vite query strings bypassing the old exact gate; the pathname gate
 fix and rerun are recorded in plan.md. T031/T033 retain their physical/manual checks.
+
+CI theme-reload follow-up: T031/T033 include waiting for the deferred theme control on every
+reload. Both exact shard-3 project runs passed 10/10 with a controlled loading gate; see plan.md.

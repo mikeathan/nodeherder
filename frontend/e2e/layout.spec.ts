@@ -51,12 +51,25 @@ test('browser theme colour follows the active appearance on toggle and reload', 
   await expect(page.getByRole('button', { name: /Switch to (light|dark) mode/ })).toBeVisible();
   const meta = page.locator('meta[name="theme-color"]');
   for (const mode of ['light', 'dark']) {
+    await expect(page.getByRole('button', { name: /Switch to (light|dark) mode/ })).toBeVisible();
     const toggle = page.getByRole('button', { name: `Switch to ${mode} mode` });
     if (await toggle.count()) await toggle.click();
     await expect(page.locator('html')).toHaveAttribute('data-mode', mode);
     const background = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--nh-bg').trim());
     await expect(meta).toHaveAttribute('content', background);
-    await page.reload();
-    await expect(meta).toHaveAttribute('content', background);
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    await page.route((url) => url.pathname === '/src/components/shell/AppShell.vue', async (route) => {
+      await gate;
+      await route.continue();
+    });
+    try {
+      // Appearance is ready before the lazy shell; exercise that ordering on every reload.
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await expect(page.getByRole('status').filter({ hasText: 'Loading NodeHerder…' })).toBeVisible();
+      await expect(meta).toHaveAttribute('content', background);
+    } finally {
+      release();
+    }
   }
 });

@@ -348,3 +348,14 @@ phone frame timing and human acceptance remain unrun; T031/T033 stay open.
 
 Final verification: `git diff --check` passed. All reopened implementation/component-check tasks
 are complete; T031/T033 remain open only for the physical/manual acceptance evidence above.
+
+CI follow-up on `59376841`: frontend unit/lint/build, backend ordinary/race and the originally
+reported browser shard 4 passed. Both shard-3 jobs exposed a readiness error in the new theme test:
+after reload the HTML/meta were ready before the deferred shell's toggle mounted, so `count()`
+skipped the dark-mode click. Wait for the toggle on each iteration and deliberately gate shell
+loading on reload to keep the slow-loading case covered. This is a browser-test correction only;
+verify both complete shard-3 project runs, e2e types and lint before pushing the follow-up.
+
+Follow-up validation: exact desktop shard 3/4 passed 10/10; exact mobile shard 3/4 passed 10/10,
+with controlled loading on both theme reloads and no retries. Lint (seven existing warnings), e2e
+type checks and `git diff --check` passed. Production code is unchanged from the 201-pass full run.
