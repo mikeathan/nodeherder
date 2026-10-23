@@ -1,4 +1,4 @@
-# Plan: Compact mobile history toolbar
+# Plan: Compact mobile history and navigation
 
 Spec: [spec.md](spec.md) | Status: Implemented; automated checks passed | Updated: 2026-10-23
 Constitutions: parent/frontend proposed 1.0.0. Branch: `fix/mobile-history-toolbar`.
@@ -82,3 +82,34 @@ mode activation rather than OS-specific End-key popup behavior. Rerun the affect
 All NH/FE checks were rechecked against the final diff with no exception. User docs updated in
 `docs/history.md`. No physical Safari popup, real cutout or phone frame timing result is claimed;
 029's remaining manual acceptance is unaffected.
+
+## Navigation follow-up — 2026-10-23
+
+User requests removing the bottom strip; retain the hamburger drawer as the phone navigation.
+Before production edits: remove BottomNav and its import/render/declaration, primary-only metadata
+and phone link hiding, and the unused height token. AppShell phone content keeps only ordinary
+spacing and `--nh-safe-bottom`, with safe padding on NavSidebar too. Keep the inset token for
+UiDialog and the manifest/viewport contract. No route, panel dock, session or device action change.
+The focused test exposed the drawer's existing 40px link height; set a 44px minimum on drawer
+layouts (≤960px), retaining larger density tokens and the desktop geometry.
+Give the now-primary header hamburger the same 44px minimum within its existing header height.
+This overrides the bottom-bar presentation in completed spec 029 rather than rewriting that history.
+
+Reopen NH-01/04/05 and FE-01/03/04 final checks; other design evidence still applies. Replace the
+existing bottom-tab test in `e2e/layout.spec.ts` with drawer/geometry/navigation assertions before
+editing production. Verify all destinations/current state, keyboard/route dismissal, safe padding,
+metadata/failure boot and wider sidebar. Run the full isolated desktop/mobile suite plus frontend
+Jest/lint/build/e2e types because the shell is shared. Update docs and PR #75 around the final scope.
+
+Navigation verification: baseline failed with 84px reserved phone padding (expected ≤32px).
+The first focused run also exposed existing 40px drawer targets; scoped minimums now protect the
+hamburger and drawer at 44px. The corrected focused layout run passed 6/6. Final full isolated
+browser run passed **203 tests, nine existing desktop phone-only skips, zero failures (212 cases)**
+in 5.0 minutes. Includes restored core links, secondary/actions presence, route/current state,
+Escape dismissal, safe inset, manifest failure, desktop sidebar and panel dock regression checks.
+
+Jest passed 53 suites/341 tests; lint passed with seven existing JS warnings; build and e2e types
+passed. Entry is 116.18kB gzip; Chart.js unchanged. Updated phone screenshot inspected: no bottom
+strip and chart range/readout visible. All final NH/FE checks rechecked; no backend, API, persistence,
+unit or dependency change. `git diff --check` and the unused-reference scan passed. No physical
+Safari/cutout/frame-timing verification is claimed; prior manual acceptance remains separate.

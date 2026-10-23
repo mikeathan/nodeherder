@@ -1,4 +1,4 @@
-# Tasks: Compact mobile history toolbar
+# Tasks: Compact mobile history and navigation
 
 Spec: [spec.md](spec.md) | Plan: [plan.md](plan.md) | Status: Complete (automated scope)
 
@@ -15,3 +15,12 @@ Spec: [spec.md](spec.md) | Plan: [plan.md](plan.md) | Status: Complete (automate
 
 Evidence: baseline toolbar 243.78px failed the 144px budget. Final affected browser run 87 passed /
 nine existing skips; Jest 341 passed, lint/build/e2e types and diff checks passed. See plan.md.
+
+- [x] T007 — Update existing `e2e/layout.spec.ts` for AC-05/06 before production edits; demonstrate
+  bottom-space regression, then remove BottomNav/metadata/height reservation and restore drawer links
+  in AppShell/NavSidebar/navigation/tokens; preserve safe inset and panel dock.
+- [x] T008 — Run full isolated browser suite and frontend component checks; AC-01…06/NH-05;
+  depends T007; done: actual checks, docs and rule review recorded, PR #75 updated.
+
+Navigation follow-up: full browser 203 passed / nine existing skips; Jest 341 passed; lint/build/types
+and diff checks passed. BottomNav and its reservations/metadata removed; drawer retains all routes.

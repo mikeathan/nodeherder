@@ -4,7 +4,7 @@
    * (confirm dialog, legacy dialogs, toasts, appearance). Routes with meta.layout = 'panel'
    * get the full screen (panel mode, FR-10) with the same hosts.
    */
-  import { computed, defineAsyncComponent, ref, watch } from 'vue';
+  import { computed, ref, watch } from 'vue';
   import { useRoute } from 'vue-router';
   import { useHubConnection } from '@/composables/useHubConnection';
   import { useActivityFeed } from '@/composables/useActivityFeed';
@@ -16,7 +16,6 @@
   import AppHeader from './AppHeader.vue';
   import StatusBanners from './StatusBanners.vue';
   import AppearanceDrawer from './AppearanceDrawer.vue';
-  const BottomNav = defineAsyncComponent(() => import('./BottomNav.vue'));
 
   const route = useRoute();
   const isPanel = computed(() => route.meta.layout === 'panel');
@@ -60,7 +59,6 @@
         <RouterView />
       </main>
     </div>
-    <BottomNav :open="navOpen" @more="navOpen = !navOpen" />
   </div>
 
   <AppearanceDrawer :open="appearanceOpen" @close="appearanceOpen = false" />
@@ -142,7 +140,7 @@
     }
   }
   @media (max-width: 719px) {
-    .nh-content { padding-bottom: calc(var(--nh-bottom-nav-h) + var(--nh-safe-bottom) + 1.5rem); }
-    .nh-app-main { scroll-padding-bottom: calc(var(--nh-bottom-nav-h) + var(--nh-safe-bottom)); }
+    .nh-content { padding-bottom: max(1.5rem, var(--nh-safe-bottom)); }
+    .nh-app-main { scroll-padding-bottom: var(--nh-safe-bottom); }
   }
 </style>

@@ -1,8 +1,9 @@
 # Device history
 
 Open a device's History tab or choose **View full history** from an entity dialog. The dialog
-link keeps the selected entity, ahead of a saved preference. History stays device-scoped; mobile
-navigation offers Home, Devices, Automations, Assistant and More (the remaining destinations).
+link keeps the selected entity, ahead of a saved preference. History stays device-scoped. On phones,
+use the header hamburger drawer for Home, Devices, Automations, Assistant and all other destinations;
+there is no bottom navigation strip.
 
 Choose an entity and a period using the compact phone pickers or the labelled buttons on wider
 screens, including Today, Yesterday or a Custom window of at most

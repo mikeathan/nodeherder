@@ -36,7 +36,7 @@
       <AppLogo :size="42" :version="version" />
     </RouterLink>
     <ul class="nh-nav-list">
-      <li v-for="item in NAV_ITEMS" :key="item.route" :class="{ 'is-primary': item.primary }">
+      <li v-for="item in NAV_ITEMS" :key="item.route">
         <RouterLink
           :to="{ name: item.route }"
           class="nh-nav-item"
@@ -73,6 +73,7 @@
     background: var(--nh-nav-bg, var(--nh-surface));
     border-right: var(--nh-border-w) solid var(--nh-border);
     padding: 0.75rem 0.6rem;
+    padding-bottom: max(0.75rem, var(--nh-safe-bottom));
     overflow-y: auto;
   }
   .nh-brand {
@@ -126,6 +127,7 @@
   .nh-nav-item.is-on {
     color: var(--nh-accent);
   }
-  /* The full sidebar/drawer remains available whenever the bottom bar is absent. */
-  @media (max-width: 719px) { .is-primary { display: none; } }
+  @media (max-width: 960px) {
+    .nh-nav-item { min-height: max(44px, var(--nh-ctl-h)); }
+  }
 </style>

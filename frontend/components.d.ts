@@ -30,7 +30,6 @@ declare module 'vue' {
     AutomationEditor: typeof import('./src/components/automations/editor/AutomationEditor.vue')['default']
     AutomationList: typeof import('./src/components/automations/AutomationList.vue')['default']
     BaseBubble: typeof import('./src/components/assistant/chat/BaseBubble.vue')['default']
-    BottomNav: typeof import('./src/components/shell/BottomNav.vue')['default']
     Button: typeof import('primevue/button')['default']
     ChatInput: typeof import('./src/components/assistant/chat/ChatInput.vue')['default']
     ChatMessage: typeof import('./src/components/assistant/chat/ChatMessage.vue')['default']
