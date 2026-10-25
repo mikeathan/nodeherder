@@ -5,8 +5,8 @@
 
   const props = defineProps({
     items: {
-      type: Object as PropType<SelectionItems>,
-      default: [],
+      type: [Array, Object] as PropType<SelectionItems>,
+      default: () => [],
       required: true,
     },
     value: null,

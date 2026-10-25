@@ -8,7 +8,7 @@
   const props = defineProps({
     icon: {
       type: Object as PropType<IconProps>,
-      default: [],
+      default: () => ({}),
       required: true,
     },
     text: {
@@ -33,8 +33,8 @@
       default: false,
     },
     children: {
-      type: Object as PropType<MenuBarItem[]>,
-      default: [],
+      type: Array as PropType<MenuBarItem[]>,
+      default: () => [],
       required: true,
     },
   });

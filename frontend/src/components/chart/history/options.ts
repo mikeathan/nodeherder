@@ -1,4 +1,5 @@
 import type { ChartOptions, ScriptableContext } from 'chart.js';
+import { formatHistoryAxisLabel } from '@/domain/history/format';
 export type ChartAppearance = {
   color: string;
   muted: string;
@@ -135,7 +136,7 @@ function xScale(style: ChartAppearance, from: number, to: number): NonNullable<S
       maxTicksLimit: 3,
       autoSkip: false,
       maxRotation: 0,
-      callback: (value) => historyTime(Number(value), to - from),
+      callback: (value) => formatHistoryAxisLabel(Number(value), to - from, false),
     },
   };
 }
@@ -154,12 +155,6 @@ function yScale(style: ChartAppearance, unit: string, bars: boolean): NonNullabl
       callback: (value) => `${Number(Number(value).toFixed(1))} ${unit}`,
     },
   };
-}
-function historyTime(value: number, duration: number): string {
-  const date = new Date(value);
-  return duration > 2 * 86400000
-    ? date.toLocaleDateString([], { month: 'short', day: 'numeric' })
-    : date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 function historyGradient({ chart }: ScriptableContext<'line'>, color: string) {
   const area = chart.chartArea;

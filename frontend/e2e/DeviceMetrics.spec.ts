@@ -1,9 +1,81 @@
+import type { Page } from '@playwright/test';
 import { test, expect, signIn } from './support/fixtures';
 import { readFile } from 'node:fs/promises';
 import { ui } from './support/ui';
 
 const fixtureId = 'design-sensor';
 const readings = [11.2, 10.8, 10.7, 10.5, 10.2, 10.1, 9.8, 9.7];
+const stressSampleCount = 10_000;
+const sparseContactOffsetsSeconds = [0, 60, 75, 135, 150, 210, 225, 285, 290];
+type ContactSample = { timestamp: number; value: boolean | null };
+/** Per-test history override: no shared module state, so parallel sharding stays safe. */
+async function serveContactHistory(page: Page, samples: (from: number, to: number) => ContactSample[]) {
+  await page.route('**/api/metrics/query', async (route) => {
+    const request = route.request().postDataJSON();
+    if (request.deviceIds[0] !== fixtureId || request.exposes.length !== 1 || request.exposes[0] !== 'contact') {
+      await route.fallback();
+      return;
+    }
+    const from = Date.parse(request.time.from);
+    const to = Date.parse(request.time.to);
+    await route.fulfill({
+      json: [{
+        expose: 'contact',
+        values: [{
+          device_id: fixtureId,
+          unit: '',
+          value: { name: 'contact', type: 'binary', from, to, partial: false, data: samples(from, to) },
+        }],
+      }],
+    });
+  });
+}
+function denseContactSamples(from: number, to: number): ContactSample[] {
+  return Array.from({ length: stressSampleCount }, (_, i) => ({
+    timestamp: from + Math.round(((to - from) * i) / (stressSampleCount - 1)),
+    value: denseContactValue(i),
+  }));
+}
+function sparseContactSamples(from: number, to: number): ContactSample[] {
+  const start = to - 5 * 60000;
+  return sparseContactOffsetsSeconds.map((offset, i) => ({
+    timestamp: start + offset * 1000,
+    value: i % 2 === 0 ? false : true,
+  }));
+}
+/** Mirrors the summary's humanised duration so tests assert rendered text, not internals. */
+function summaryDuration(ms: number): string {
+  const total = Math.max(1, Math.round(ms / 60000));
+  const hours = Math.floor(total / 60);
+  const minutes = total % 60;
+  return minutes ? `${hours} h ${minutes} min` : `${hours} h`;
+}
+function denseContactValue(index: number): boolean | null {
+  if (index >= 5490 && index < 5510) return null;
+  return index % 2 === 0 ? false : true;
+}
+function expectedDenseContactTotals(from: number, to: number) {
+  const span = to - from;
+  let active = 0;
+  let known = 0;
+  let transitions = 0;
+  let previous: boolean | null = null;
+  for (let i = 0; i < stressSampleCount - 1; i++) {
+    const start = from + Math.round((span * i) / (stressSampleCount - 1));
+    const end = from + Math.round((span * (i + 1)) / (stressSampleCount - 1));
+    const value = denseContactValue(i);
+    if (value === null) {
+      previous = null;
+      continue;
+    }
+    known += end - start;
+    if (value === false) active += end - start;
+    const state = value === false;
+    if (previous !== null && previous !== state) transitions++;
+    previous = state;
+  }
+  return { active, known, transitions };
+}
 const exposes = {
   current: { name: 'current', type: 'numeric', category: 'measurement', access_mode: 'read', unit: 'A', data: 0.8, attributes: null, values: null },
   voltage: { name: 'voltage', type: 'numeric', category: 'measurement', access_mode: 'read', unit: 'V', data: 230, attributes: null, values: null },
@@ -144,7 +216,8 @@ test('full history shares typed numeric, state and repeated-event views', async 
   await expect(history.locator('.nh-history-canvas[data-ready="true"]')).toBeVisible();
   await ui.history.choose(page, 'Entity', 'Contact');
   await expect(history.getByText('Transitions', { exact: true })).toBeVisible();
-  await expect(history.getByRole('group', { name: 'State history intervals' })).toBeVisible();
+  await expect(history.locator('.state-chart')).toHaveAttribute('data-state-mode', 'steps');
+  await expect(history.getByRole('group', { name: /Inspect Contact history/ })).toBeVisible();
   await ui.history.choose(page, 'Entity', 'Action');
   await expect(history.getByRole('heading', { name: 'Recent events' })).toBeVisible();
   await expect(history.locator('.history-recent').getByText('Single press', { exact: true })).toHaveCount(6);
@@ -153,6 +226,196 @@ test('full history shares typed numeric, state and repeated-event views', async 
   await history.getByLabel('From', { exact: true }).fill('2026-10-17T10:00');
   await history.getByLabel('To', { exact: true }).fill('2026-10-17T14:00');
   await expect(history.getByRole('heading', { name: 'Recent events' })).toBeVisible();
+});
+
+test('binary history renders labelled lanes at phone, tablet and desktop widths', async ({ page }, info) => {
+  await signIn(page, `/devicepage/${fixtureId}?tab=history&expose=contact`);
+  const history = page.getByRole('region', { name: 'Device history' });
+  const chart = history.locator('.state-chart');
+  await expect(chart).toBeVisible();
+  await expect(chart).toHaveAttribute('data-state-mode', 'steps');
+  await expect(chart.getByRole('group', { name: /Inspect Contact history/ })).toBeVisible();
+  for (const theme of ['dark', 'light']) {
+    const toggle = page.getByRole('button', { name: `Switch to ${theme} mode` });
+    if (await toggle.count()) await toggle.click();
+    for (const width of [320, 390, 768, 1280]) {
+      await page.setViewportSize({ width, height: width === 768 ? 1024 : width === 1280 ? 800 : 844 });
+      await expect(chart).toBeVisible();
+      await expect.poll(async () => {
+        const measured = Number(await chart.getAttribute('data-layout-width'));
+        return Math.abs(measured - (await chart.evaluate((node) => node.clientWidth))) <= 1;
+      }).toBe(true);
+      await expect(chart.locator('.state-lane-labels text')).toHaveText(['Open', 'Closed']);
+      const geometry = await chart.evaluate((node) => {
+        const plotTop = Number(node.getAttribute('data-plot-top'));
+        const plotBottom = Number(node.getAttribute('data-plot-bottom'));
+        const range = plotBottom - plotTop;
+        const guide = (name: string) => Number(node.querySelector(`[data-state-lane="${name}"]`)?.getAttribute('y1'));
+        const labels = Array.from(node.querySelectorAll('.state-grid text')).map((text) => {
+          const box = text.getBoundingClientRect();
+          return { left: box.left, right: box.right };
+        }).sort((a, b) => a.left - b.left);
+        return {
+          width: Number(node.getAttribute('data-layout-width')),
+          active: (guide('active') - plotTop) / range,
+          inactive: (guide('inactive') - plotTop) / range,
+          overlap: labels.some((label, index) => index > 0 && label.left < labels[index - 1].right),
+        };
+      });
+      expect(geometry.active).toBeCloseTo(geometry.width < 560 ? 0.34 : 0.3, 2);
+      expect(geometry.inactive).toBeCloseTo(geometry.width < 560 ? 0.72 : 0.7, 2);
+      expect(geometry.overlap).toBe(false);
+      const colors = await chart.locator('.state-lane-labels circle').evaluateAll((nodes) => nodes.map((node) => getComputedStyle(node).fill));
+      expect(colors).toEqual(['rgb(217, 138, 0)', 'rgb(38, 166, 154)']);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+      await chart.screenshot({ path: info.outputPath(`binary-${theme}-${width}.png`) });
+    }
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect.poll(async () => {
+    const measured = Number(await chart.getAttribute('data-layout-width'));
+    return Math.abs(measured - (await chart.evaluate((node) => node.clientWidth))) <= 1;
+  }).toBe(true);
+  const target = chart.getByRole('group', { name: /Inspect Contact history/ });
+  await target.focus();
+  await expect(target).toBeFocused();
+  expect(await target.evaluate((node) => getComputedStyle(node).outlineStyle)).not.toBe('none');
+  await expect(chart.locator('.state-tooltip')).toContainText('Closed');
+  await target.press('ArrowRight');
+  await expect(chart.locator('.state-tooltip')).toContainText('Open');
+  if (info.project.name === 'mobile') {
+    const box = (await target.boundingBox())!;
+    await target.tap({ position: { x: box.width / 2, y: box.height / 2 } });
+    await expect(chart.locator('.state-tooltip')).toBeVisible();
+  } else {
+    await target.hover({ position: { x: 20, y: 20 } });
+    await expect(chart.locator('.state-tooltip')).toBeVisible();
+  }
+});
+
+test('binary history aggregates 10,000 samples within the responsive pixel budget', async ({ page, ws }, info) => {
+  let served: { from: number; to: number } | null = null;
+  await serveContactHistory(page, (from, to) => {
+    served = { from, to };
+    return denseContactSamples(from, to);
+  });
+  let queryCount = 0;
+  page.on('request', (request) => { if (request.url().endsWith('/api/metrics/query')) queryCount++; });
+  await signIn(page, `/devicepage/${fixtureId}?tab=history&expose=contact`);
+  const history = page.getByRole('region', { name: 'Device history' });
+  const chart = history.locator('.state-chart');
+  await expect(chart).toHaveAttribute('data-state-mode', 'aggregated');
+  await expect.poll(() => served).not.toBeNull();
+  const expected = expectedDenseContactTotals(served!.from, served!.to);
+  const summary = history.locator('.history-summary');
+  for (const width of [320, 390, 768, 1280]) {
+    await page.setViewportSize({ width, height: width === 768 ? 1024 : width === 1280 ? 800 : 844 });
+    await expect.poll(async () => {
+      const measured = Number(await chart.getAttribute('data-layout-width'));
+      return Math.abs(measured - (await chart.evaluate((node) => node.clientWidth))) <= 1;
+    }).toBe(true);
+    await expect(chart).toHaveAttribute('data-state-mode', 'aggregated');
+    const budget = await chart.evaluate((node) => ({
+      width: Number(node.getAttribute('data-plot-width')),
+      bins: Number(node.getAttribute('data-bin-count')),
+      rendered: node.querySelectorAll('[data-state-bin="true"]').length,
+      unknown: node.querySelectorAll('[data-unknown-band="true"]').length,
+    }));
+    expect(budget.bins).toBeLessThanOrEqual(Math.min(Math.floor(budget.width), 1000));
+    expect(budget.rendered).toBeLessThanOrEqual(budget.bins);
+    expect(budget.unknown).toBeGreaterThan(0);
+    // Summaries stay exact and are read from the rendered text, not from chart internals.
+    await expect(summary.locator('dd').nth(0)).toHaveText(summaryDuration(expected.active));
+    await expect(summary.locator('dd').nth(1)).toHaveText(String(expected.transitions));
+    await expect(summary.locator('dd').nth(2)).toHaveText(`${Math.round((expected.known / (served!.to - served!.from)) * 100)}%`);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    if (width === 390 || width === 1280) await chart.screenshot({ path: info.outputPath(`binary-dense-${width}.png`) });
+  }
+  const target = chart.locator('.state-inspect-target');
+  await target.focus();
+  await expect(chart.locator('.state-tooltip')).toContainText('Open');
+  await target.press('ArrowRight');
+  await expect(chart.locator('.state-tooltip')).toContainText('transition');
+  await expect(chart.locator('.state-tooltip')).toContainText('known');
+  if (info.project.name === 'mobile') {
+    expect(await target.evaluate((node) => getComputedStyle(node).touchAction)).toBe('auto');
+    const box = (await target.boundingBox())!;
+    await target.tap({ position: { x: box.width / 2, y: box.height / 2 } });
+    await expect(chart.locator('.state-tooltip')).toBeVisible();
+  } else {
+    await target.hover({ position: { x: 20, y: 20 } });
+    await expect(chart.locator('.state-tooltip')).toBeVisible();
+  }
+  expect(queryCount).toBe(1);
+  expect(ws.sentOf('deviceSetValue')).toHaveLength(0);
+});
+
+
+test('binary history focuses recent sparse activity in the same chart without changing the selected range', async ({ page, ws }, info) => {
+  await serveContactHistory(page, sparseContactSamples);
+  let queries = 0;
+  page.on('request', (request) => { if (request.url().endsWith('/api/metrics/query')) queries++; });
+  await signIn(page, `/devicepage/${fixtureId}?tab=history&expose=contact`);
+  const history = page.getByRole('region', { name: 'Device history' });
+  const chart = history.locator('.state-chart');
+  const summary = history.locator('.history-summary');
+  const zoom = history.getByRole('button', { name: /Zoom to activity/ });
+  // A five-minute burst inside 24h is unreadable without a focus action.
+  await expect(zoom).toContainText('8 transitions');
+  await expect(zoom).toContainText('4 min');
+  expect((await zoom.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  await expect(history.locator('.state-coverage')).toContainText('recorded');
+  await expect(history.locator('.state-coverage')).toContainText('23 h 55 min no data');
+  await expect(summary.locator('dd').nth(0)).toHaveText('4 min');
+  await expect(summary.locator('dd').nth(1)).toHaveText('8');
+  await expect(summary.locator('dd').nth(2)).toHaveText('<1%');
+  await expect(chart.locator('[data-unknown-band="true"]').first()).toBeVisible();
+  const fullFrom = Number(await chart.getAttribute('data-view-from'));
+  const fullTo = Number(await chart.getAttribute('data-view-to'));
+  await history.locator('.state-toolbar').screenshot({ path: info.outputPath('binary-activity-overview-toolbar.png') });
+  await history.locator('.state-coverage').screenshot({ path: info.outputPath('binary-activity-coverage.png') });
+
+  await zoom.click();
+  await expect(history.locator('.state-range strong')).toHaveText('Activity detail');
+  await expect(history.getByRole('status').filter({ hasText: 'Activity detail shown' })).toHaveText(/Activity detail shown/);
+  await expect(summary.locator('dd').nth(0)).toHaveText('4 min');
+  await expect(summary.locator('dd').nth(1)).toHaveText('8');
+  await expect(history.locator('.state-coverage')).toContainText('23 h 55 min no data');
+  expect(Number(await chart.getAttribute('data-view-from'))).toBeGreaterThan(fullFrom);
+  expect(Number(await chart.getAttribute('data-view-to'))).toBe(fullTo);
+  const reset = history.getByRole('button', { name: 'Back to full range' });
+  expect((await reset.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  await expect(history.getByText(/Selected range:/)).toBeVisible();
+  expect(await ui.history.selected(page, 'Period')).toBe('24h');
+  await history.locator('.state-toolbar').screenshot({ path: info.outputPath('binary-activity-toolbar.png') });
+  await chart.screenshot({ path: info.outputPath('binary-activity-focused.png') });
+
+  await reset.click();
+  await expect(history.locator('.state-range strong')).toHaveText('Full range');
+  expect(Number(await chart.getAttribute('data-view-from'))).toBe(fullFrom);
+  expect(Number(await chart.getAttribute('data-view-to'))).toBe(fullTo);
+
+  await ui.history.choose(page, 'Period', '6h');
+  await expect(zoom).toBeVisible();
+  await expect(summary.locator('dd').nth(1)).toHaveText('8');
+  await zoom.click();
+  await expect(history.locator('.state-range strong')).toHaveText('Activity detail');
+  await expect(summary.locator('dd').nth(0)).toHaveText('4 min');
+  await expect(history.getByText(/Selected range:/)).toBeVisible();
+  await history.getByRole('button', { name: 'Back to full range' }).click();
+  await expect(history.locator('.state-range strong')).toHaveText('Full range');
+  expect(await ui.history.selected(page, 'Period')).toBe('6h');
+
+  await ui.history.choose(page, 'Period', '1h');
+  // A wide one-hour overview keeps the burst in context; the phone may still offer focus.
+  if (info.project.name === 'desktop') {
+    await expect(zoom).toHaveCount(0);
+  } else {
+    await expect(zoom).toBeVisible();
+  }
+  await chart.screenshot({ path: info.outputPath('binary-activity-1h.png') });
+  expect(queries).toBe(3);
+  expect(ws.sentOf('deviceSetValue')).toHaveLength(0);
 });
 
 test('history zoom uses mouse, wheel, keyboard and touch without additional requests or commands', async ({ page, ws }, info) => {

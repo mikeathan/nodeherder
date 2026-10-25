@@ -39,7 +39,9 @@
   });
   const { entry, refresh } = useHistoryQuery(request);
   const series = computed(() => entry.value?.series.find((s) => s.name === selected.value));
-  const title = computed(() => exposeLabel(selected.value));
+  // The heading follows the selected expose; the legacy `title` prop stays declared for
+  // caller compatibility but must not shadow this binding (vue/no-dupe-keys).
+  const heading = computed(() => exposeLabel(selected.value));
   const writable = computed(() => !!adjustment.value && controlOf(adjustment.value) !== 'none');
   const kind = computed(() => exposeKind(selected.value));
   const unknownCurrent = computed(
@@ -119,7 +121,7 @@
   <UiDialog
     drag-dismiss
     :open="show"
-    :title="title"
+    :title="heading"
     :wide="wideDialog"
     fullscreen-mobile
     @close="close">
