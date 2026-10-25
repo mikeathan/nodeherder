@@ -1,6 +1,6 @@
 # Reusable operations, schemas and in-app help
 
-Status: Planning contract; no application page or runtime implemented.
+Status: M1 implementation contract; later-milestone provisions remain deferred. See [implementation review](../implementation-review.md).
 Spec: [../spec.md](../spec.md) | Plan: [../plan.md](../plan.md)
 
 ## Generic operation types and named requests
@@ -79,7 +79,7 @@ for ordinary configuration. Generated schemas can be reconsidered later if actua
 ## Help page in the operations/configuration screen
 
 Proposed navigation: Connections → Waste collection → provider → Configure operations → Help.
-Use an inline Help tab plus `/connections/:type/providers/:provider/help`; the
+Use an inline Help tab plus `/connections/providers/:type/:provider/help`; the
 [navigation contract](connections-navigation.md) defines instance and provider routes. All signed-in
 users can read it. Desktop can retain the editor alongside contextual help; mobile opens a full-width
 Help tab/route with Back to configuration. Keep draft state in memory while navigating between them,

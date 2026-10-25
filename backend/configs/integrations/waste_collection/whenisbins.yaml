@@ -1,0 +1,80 @@
+# Reviewed seed. Edit through Connections or on the host; updates do not overwrite it.
+schema_version: nodeherder.integration/v1
+integration_type: waste_collection
+id: whenisbins
+name: WhenIsBins
+capability: waste_schedule/v1
+base_url: https://whenisbins.com
+auth: {mode: optional_bearer, secret_slot: api_token}
+policy: {poll_min_seconds: 5, renewal_min_seconds: 86400, idempotency_window_seconds: 2592000}
+errors:
+  code: /problem
+  rules:
+    - {status: 404, code: no_schedule, action: renewal}
+    - {status: 404, code: lookup_not_found, action: restart_setup}
+inputs:
+  postcode: {type: postcode, label: Postcode, required: true}
+  property_id: {type: select, label: Choose your address, required: true}
+requests:
+  discover:
+    method: GET
+    path: [v1, addresses]
+    query: {postcode: {ref: input.postcode}}
+  submit:
+    method: POST
+    path: [v1, lookups]
+    idempotency: true
+    body:
+      postcode: {ref: input.postcode}
+      property_id: {ref: input.property_id}
+    response_root: /result
+    captures:
+      lookup_id: {pointer: /id, type: string}
+      property_token: {pointer: /result/property_id, type: string, when: complete, strip_prefix: 'p:'}
+  poll:
+    method: GET
+    path: [v1, lookups, {ref: state.lookup_id}]
+    response_root: /result
+    captures:
+      property_token: {pointer: /result/property_id, type: string, when: complete, strip_prefix: 'p:'}
+  schedule:
+    method: GET
+    path: [v1, schedules, {ref: state.property_token}]
+    conditional: true
+setup:
+  type: search_select
+  search:
+    input: postcode
+    request: discover
+    expect: {pointer: /required_input, value: property_id}
+    options: {items: /candidates, value: /id, label: /label}
+  select: {input: property_id, request: submit}
+  status:
+    request: poll
+    pointer: /status
+    pending: [queued, running, partial]
+    done: [done]
+    failed: [failed]
+refresh: {request: schedule, renewal_request: submit}
+mapping:
+  metadata:
+    property_id: /property_id
+    source_retrieved_at: /retrieved_at
+    refresh_due_at: /refresh_due_at
+    date_confidence: /date_confidence
+    date_completeness: /date_completeness
+    address_match: /address_match
+    evidence_granularity: /evidence_granularity
+    provisional: /provisional
+    notes: /notes
+    source_url: /source_url
+  collections:
+    items: /collections
+    fields:
+      name: /name
+      dates: /dates
+      colour: /bin_colour
+      waste_type: /waste_type
+      container: /container
+      dates_complete: /dates_complete
+      subscription_required: /subscription_required

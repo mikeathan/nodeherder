@@ -1,5 +1,7 @@
 # Connections plan audit
 
+Historical planning audit. Current implementation evidence is in [implementation-review.md](implementation-review.md).
+
 Reviewed 2026-10-24 against `986b923c` on main. Planning/design only; no application implementation,
 provider lookup job or household command was run. Planning checks do not establish backend correctness. This audit corrects design defects rather than claiming bug-free code.
 

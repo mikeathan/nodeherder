@@ -6,6 +6,7 @@ ACTION=help
 STACK=all
 DRY_RUN=false
 NO_CACHE=false
+CONNECTIONS=false
 FOLLOW=false
 TAIL=100
 TAIL_SET=false
@@ -31,6 +32,7 @@ usage() {
     '' \
     '  --dry-run    Print commands only; no Docker/config/daemon checks' \
     '  --no-cache   Disable build cache (build/rebuild only)' \
+    '  --connections Include the optional external keyring mount (backend/all)' \
     '  --follow     Follow logs until interrupted (logs only)' \
     '  --tail N     Log lines per service, or all (logs only)' \
     '  --no-color   Disable color (also honors NO_COLOR)' \
@@ -66,6 +68,7 @@ while (($#)); do
   case "$1" in
     --dry-run) DRY_RUN=true ;;
     --no-cache) NO_CACHE=true ;;
+    --connections) CONNECTIONS=true ;;
     --follow) FOLLOW=true ;;
     --no-color) COLOR=false ;;
     --tail)
@@ -83,6 +86,7 @@ case "$ACTION" in
   *) die "Unknown action: $ACTION. Use --help." ;;
 esac
 case "$STACK" in all|backend|frontend) ;; *) die "Unknown stack: $STACK." ;; esac
+if $CONNECTIONS && [[ "$STACK" == frontend ]]; then die "--connections needs backend or all."; fi
 if $NO_CACHE && [[ "$ACTION" != build && "$ACTION" != rebuild ]]; then
   die "--no-cache applies only to build/rebuild."
 fi
@@ -114,6 +118,7 @@ SERVICES=()
 if [[ "$STACK" == backend || "$STACK" == all ]]; then
   COMPOSE+=(-f "$ROOT_DIR/docker-compose.backend.yml")
   SERVICES+=(backend mqtt zigbee2mqtt)
+  if $CONNECTIONS; then COMPOSE+=(-f "$ROOT_DIR/docker-compose.connections.yml"); fi
 fi
 if [[ "$STACK" == frontend || "$STACK" == all ]]; then
   COMPOSE+=(-f "$ROOT_DIR/docker-compose.frontend.yml")

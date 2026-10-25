@@ -56,7 +56,9 @@
       <AppHeader :nav-open="navOpen" @toggle-nav="navOpen = !navOpen" @open-appearance="appearanceOpen = true" />
       <StatusBanners />
       <main id="nh-content" ref="main" class="nh-content" tabindex="-1">
-        <RouterView />
+        <RouterView v-slot="{ Component, route: viewRoute }">
+          <component :is="Component" :key="viewRoute.path.startsWith('/connections') ? viewRoute.path : undefined" />
+        </RouterView>
       </main>
     </div>
   </div>

@@ -1,6 +1,6 @@
 # Runtime ownership, recovery and publication
 
-Status: Proposed implementation contract, reviewed against repository source 2026-10-24.
+Status: M1 implementation contract; later-milestone provisions remain deferred. See [implementation review](../implementation-review.md).
 [Plan](../plan.md) · [Security](execution-and-security.md) · [API/recovery](api-and-recovery.md)
 
 ## Composition and shutdown
@@ -124,3 +124,9 @@ Capture state is binding/attempt scoped. A different-property candidate starts w
 state; optional capture preservation applies only within the same binding/continuation. On definition
 activation, missing newly required saved inputs block that instance as reconfigure_needed rather
 than guessing, borrowing another binding's state or discarding its last-good snapshot.
+
+## M1 continuation clarification
+
+Disable pauses a durable pending attempt and fences its running response. Enable alone performs
+no provider I/O; an explicit Check status may resume that same attempt/key before expiry. Delete,
+credential replacement and incompatible configuration invalidate obsolete publication.

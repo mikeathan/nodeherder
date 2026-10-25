@@ -1,6 +1,6 @@
 # Connections navigation and page boundaries
 
-Status: Proposed implementation contract; user scope decision recorded | Updated: 2026-10-24
+Status: M1 implementation contract; later-milestone provisions remain deferred. See [implementation review](../implementation-review.md).
 Spec: [../spec.md](../spec.md) | [Plan](../plan.md)
 
 ## Contained first release
@@ -45,13 +45,12 @@ remain named integrations; the visible product label is Connections.
 ## Authenticated browser routes
 
 ```text
-/connections                                       configured connections and supported types
-/connections/:type                                 provider choices and configured instances
-/connections/:type/providers/:provider/setup        new setup; session kept private/in memory
-/connections/:type/instances/:instanceId            results; default tab
-/connections/:type/instances/:instanceId/setup      edit selected property/settings
-/connections/:type/providers/:provider/operations   shared Form/YAML editor
-/connections/:type/providers/:provider/help         bundled guide and contextual anchors
+/connections                                      catalog and configured connections
+/connections/setup/:id                            new/edit shared setup session
+/connections/:id                                  results and connection settings
+/connections/providers/:type/:provider             shared Form/YAML editor
+/connections/providers/:type/:provider/help        bundled guide and contextual anchors
+/connections/:pathMatch(.*)*                       feature-owned not-found view
 ```
 
 The existing authentication guard applies to every route. Unknown/mismatched type or instance

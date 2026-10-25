@@ -1,6 +1,6 @@
 # Integration execution and security contract
 
-Status: Proposed planning contract; no implementation or approval recorded.
+Status: M1 implementation contract; later-milestone provisions remain deferred. See [implementation review](../implementation-review.md).
 Spec: [../spec.md](../spec.md) | Plan: [../plan.md](../plan.md)
 
 ## Delivery and repair boundary

@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { randomUUID } from 'node:crypto';
 
 // Browser tests use the Node mock hub plus an isolated Go hub with in-memory MQTT.
 // Never point these tests at a real hub: they toggle devices and save automations.
@@ -7,8 +8,11 @@ const CI = !!process.env.CI;
 // started isolated servers (including the Go fixture on 4120).
 const baseURL = process.env.E2E_BASE_URL ?? 'http://localhost:4100';
 const externalServers = process.env.E2E_EXTERNAL_SERVERS === '1';
+if (externalServers && !process.env.NODEHERDER_E2E_RUN_ID) throw new Error('External servers require a matching NODEHERDER_E2E_RUN_ID fixture handshake.');
+process.env.NODEHERDER_E2E_RUN_ID ??= randomUUID();
 
 export default defineConfig({
+  globalSetup: './e2e/support/global-setup.ts',
   testDir: './e2e',
   fullyParallel: false,
   workers: 1, // the hubs keep in-memory state shared by all tests
@@ -29,17 +33,17 @@ export default defineConfig({
   webServer: externalServers
     ? undefined
     : [
-        { command: 'node tools/server/index.mjs', port: 4110, reuseExistingServer: !CI, stdout: 'ignore' },
+        { command: 'node tools/server/index.mjs', env: {NODEHERDER_E2E_RUN_ID:process.env.NODEHERDER_E2E_RUN_ID}, url: 'http://localhost:4110/api/__test/health', reuseExistingServer: false, stdout: 'ignore' },
         {
           command: 'go test -count=1 -timeout=20m -run "^TestAutomationBrowserHub$" ./internal',
           cwd: '../backend',
-          env: { NODEHERDER_BROWSER_HUB: '1' },
+          env: { NODEHERDER_BROWSER_HUB: '1',NODEHERDER_E2E_RUN_ID:process.env.NODEHERDER_E2E_RUN_ID },
           url: 'http://localhost:4120/api/__test/health',
           reuseExistingServer: false,
           // CI warms the Go build cache first; local cold runs may need this window.
           timeout: 300_000,
           stdout: 'pipe',
         },
-        { command: 'npx vite --mode e2e --port 4100 --strictPort', url: 'http://localhost:4100', reuseExistingServer: !CI, timeout: 120_000 },
+        { command: 'npx vite --mode e2e --port 4100 --strictPort', url: 'http://localhost:4100', reuseExistingServer: false, timeout: 120_000 },
       ],
 });

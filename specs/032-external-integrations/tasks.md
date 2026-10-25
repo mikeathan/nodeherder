@@ -1,12 +1,12 @@
 # Tasks: Configurable external integrations
 
 Spec: [spec.md](spec.md) | Plan: [plan.md](plan.md)
-Status: Release decisions recorded; all implementation and application verification unstarted
+Status: M1 implemented and verified locally, 2026-10-25; M2–M4 deferred
 
-This is a dependency-ordered backlog (stable IDs are not execution order), not authorization to code. Stable task IDs refer to the existing
+M1 is authorized by the user. This is a dependency-ordered backlog (stable IDs are not execution order);
+M2 and later roadmap phases remain outside the first release. Stable task IDs refer to the existing
 spec's acceptance IDs. Each test file must have a real production owner and use its name;
-frontend unit files mirror source paths under src/__tests__/. Paths below are proposed unless
-already present. All checked evidence must be recorded before a task is marked done.
+frontend unit files mirror source paths under src/__tests__/. M1 source owners and actual verification are recorded in [implementation-review.md](implementation-review.md). Later milestone paths remain proposals. Checkmarks apply only to the M1 scope of cross-milestone tasks.
 
 ## M0 — Decisions and evidence
 
@@ -15,10 +15,10 @@ already present. All checked evidence must be recorded before a task is marked d
   Depends: none. Evidence: user confirmed on 2026-10-25 manual refresh for the first release and
   personal Docker use; prior UI/YAML and equal-access decisions retained. M1 excludes recurring
   provider work; Docker key mount/backup design is concrete. This completes planning only.
-- [ ] T002 — Verify the confirmed personal-Docker/equal-access contract, D-04 host keyring/mount and
+- [x] T002 — Verify the confirmed personal-Docker/equal-access contract, D-04 host keyring/mount and
   proposed ADR/contracts; IDs: AC-13–15/18–19, NH-03/04/06. Depends: T001.
   Done: deployment/secret/backup feasibility and actual review recorded; tenant scope explicit.
-- [ ] T003 — Verify intended provider access/volume, current schemas, required inputs, idempotency
+- [x] T003 — Verify intended provider access/volume, current schemas, required inputs, idempotency
   retention/window and exact-only initial personal-use journey; paths: provider fixtures and this planning set;
   IDs: AC-01/03–04/10/17–18. Depends: none for read-only research, T001–02 for contract freeze.
   Done: parsed OpenAPI 1.1.0 evidence/hash is recorded in review.md; complete personal-use quota/token/error fixtures,
@@ -27,47 +27,47 @@ already present. All checked evidence must be recorded before a task is marked d
 
 ## M1a — Secure manual backend
 
-- [ ] T004 — Implement typed models and waste normalizer/projections from the contract;
+- [x] T004 — Implement typed models and waste normalizer/projections from the contract;
   paths: backend/models/integrations/, internal/integrations/capabilities/waste.go and waste_test.go;
   IDs: AC-03/08–09/18. Depends: T002–03. Done: real dates/DST, unknown enum labels, null/empty,
   coverage, notes/subscription, unreturned services, descriptor keys/rename limitations, provisional/
   partial rejection/qualification and duplicate-key fixtures pass against updated wire examples.
-- [ ] T005 — Implement repository migrations, atomic identity/binding/compiled-revision/snapshot operations;
+- [x] T005 — Implement repository migrations, atomic identity/binding/compiled-revision/snapshot operations;
   paths: backend/repository/integrations.go and integrations_test.go; IDs: AC-07/09/11–12/19.
   Depends: T004. Done: strict data path/no temp fallback, old/newer/corrupt schema migration fixtures, setup completion
   receipts/uniqueness, stable provider_binding_id across audit revisions, temp-DB restart,
   collision/rollback/write-failure/mapping fixtures; failed
   writes do not publish new revision/ETag/checkpoint. M4 replacement-specific paths remain gated.
-- [ ] T006 — Implement keyring/private-record encryption, rotation and backup/restore contract;
-  paths: internal/integrations/secrets.go and secrets_test.go; IDs: AC-14/19.
+- [x] T006 — Implement keyring/private-record encryption, rotation and backup/restore contract;
+  paths: backend/repository/integrations.go and integrations_test.go; IDs: AC-14/19.
   Depends: T002/05. Done: mixed old/new key ciphertext, interrupted rotation, missing key,
   encrypted snapshots/provider notices, protected record context and isolated restore evidence; unrelated device paths remain available.
-- [ ] T007 — Implement feature authorization and cookie mutation checks using verified claims;
+- [x] T007 — Implement feature authorization and cookie mutation checks using verified claims;
   paths: internal/api/integrations.go and integrations_test.go, relevant existing middleware
   companions if changed; IDs: AC-09/13/15. Depends: T002.
   Done: two authenticated users share full controls/setup, anonymous denied, no role/allowlist
   config required, stale-revision conflicts, missing/invalid Origin/header and cookie-plus-bearer; direct handler rejection plus integration-only If-Match/If-None-Match/custom-header preflight and
   exposed headers. Write-only setup/instance credential routes, required revisions, expired setups,
   origin/credential destination acknowledgements and definition_in_use deletion return the exact envelope/HTTP codes.
-- [ ] T008 — Implement outbound policy/client and admission primitives;
+- [x] T008 — Implement outbound policy/client and admission primitives;
   paths: internal/integrations/http.go and http_test.go; IDs: AC-06/13/17.
   Depends: T002–03. Done: httptest/dial fakes cover IPv4/IPv6/private/link-local/metadata, DNS
   rebinding, redirects/proxy, public-host credential exfiltration, timeout/decoded-size/quota bounds.
-- [ ] T009 — Implement bounded YAML definition grammar/compilation using the exact contracts;
+- [x] T009 — Implement bounded YAML definition grammar/compilation using the exact contracts;
   paths: internal/integrations/configuration.go and configuration_test.go; IDs: AC-11/13/17/20.
   Depends: T001–03/05/08/27. Done: strict YAML/unknown-field/duplicate-key/tag/alias/size checks,
   Form/YAML parity, JSON Pointer/typed references, status/header/304 parsing,
   allowed endpoint/mapping repair, rejected scripts/new transforms/secret refs, origin reassociation,
   phase-availability/cyclic ref checks, generic renewal/problem classification, profile pinning,
   optimistic activation, validator invalidation, live-test isolation, validation failure and rollback fixtures.
-- [ ] T010 — Implement shared revision-scoped setup, exact attempt body/key and manual pending continuation;
-  paths: internal/integrations/setup.go and setup_test.go, operations/search_select.go and
-  search_select_test.go; IDs: AC-01–04/06–07/17–19/22. Depends: T004–09/27.
+- [x] T010 — Implement shared revision-scoped setup, exact attempt body/key and manual pending continuation;
+  paths: internal/integrations/setup.go (tested in service_test.go/coordinator_test.go),
+  operations/request.go and request_test.go; IDs: AC-01–04/06–07/17–19/22. Depends: T004–09/27.
   Done: candidate tampering/postcode change, response-loss recovery inside verified window,
   expiry/reconciliation, p:-token transform, exact-only required-input discriminator, candidate edit
   isolation, typed partial data and provisional rejection. Repeat local Save returns its claimed
   instance/operation; no new POST key, stale selection or cross-property publication.
-- [ ] T011 — Implement lifecycle/manual execution, local cleanup and generation fencing;
+- [x] T011 — Implement lifecycle/manual execution, local cleanup and generation fencing;
   paths: internal/integrations/service.go/service_test.go, janitor.go/janitor_test.go,
   coordinator.go/coordinator_test.go, bootstrap.go/bootstrap_test.go and main.go/main_test.go; IDs: AC-04/06–08/13/19. Depends: T005–10.
   Done: optional degraded bootstrap, run/close ownership after startup/listener/signal errors,
@@ -76,14 +76,14 @@ already present. All checked evidence must be recorded before a task is marked d
   restart continuation, no recurring M1 provider calls, coalescing, cancel/expiry/orphan cleanup,
   disable/delete/config/credential fencing, disconnect-after-admission and deadline-exceeded close
   behavior. Feature context owns workers, not r.Context. Publish nothing on failed persistence.
-- [ ] T012 — Wire protected catalog/setup/definition/instance/resource APIs;
+- [x] T012 — Wire protected catalog/setup/definition/instance/resource APIs;
   paths: internal/hub.go and existing hub_test.go, internal/api/integrations.go and
   integrations_test.go, optional feature bootstrap/main composition; preserve AppStore mocks and fatal/nonfatal boundaries;
   IDs: AC-01–04/06–09/13/15/17–19. Depends: T007/09–11/25.
   Done: real router producer/consumer DTO tests, PUT support, no upstream call on GET, key failures
   isolated, public /api/mcp and /api/context/devices negative assertions, no integration data or resource references in settings WS payloads.
 
-- [ ] T025 — Implement host YAML repository/save/journal/reload and deployment persistence;
+- [x] T025 — Implement host YAML repository/save/journal/reload and deployment persistence;
   paths: backend/repository/integration_definitions.go and integration_definitions_test.go,
   integration configuration/service companions, deployment/ignore docs when implemented;
   IDs: FR-10, AC-15–17/20. Depends: T005/09. Done: fixed-directory IDs/symlink rejection,
@@ -94,12 +94,12 @@ already present. All checked evidence must be recorded before a task is marked d
 
 ## M1b — Manual UI and repairs
 
-- [ ] T013 — Implement frontend types/runtime parsers/service/Vuex state and mutation header;
+- [x] T013 — Implement frontend types/runtime parsers/service/Vuex state and mutation header;
   paths: src/types/integrations.type.ts, contracts/integrations.ts, services/integrations.service.ts,
   store/modules/integrations/index.ts and mirrored companion tests; IDs: AC-01–04/08–09/15–20.
   Depends: T004/07/12. Done: exact DTO/mock parity, malformed/unknown schemas rejected, no browser
   PII persistence, local 60-second/on-focus projection refresh without upstream calls, no timer leaks.
-- [ ] T014 — Implement catalog/wizard/detail/health and Form/YAML definition editor;
+- [x] T014 — Implement catalog/wizard/detail/health and Form/YAML definition editor;
   paths: src/components/integrations/, existing router/navigation owners and their appropriate tests;
   IDs: AC-01–04/06/08/15–18/20. Depends: T013.
   Done: equal controls for all signed-in users, editable Form/YAML parity, request/extractor edits,
@@ -107,7 +107,7 @@ already present. All checked evidence must be recorded before a task is marked d
   conflict feedback, pending Check status, exact-only unsupported input, 410 expiry/logout cleanup, credential create/
   replace/remove and shared-origin review, setup receipt recovery, same/different-property edit
   feedback, no hidden token downgrade, isolated live/offline test feedback and mobile repair.
-- [ ] T015 — Complete M1 acceptance with isolated browser fixtures and backend checks;
+- [x] T015 — Complete M1 acceptance with isolated browser fixtures and backend checks;
   paths: frontend/e2e/ using established suite convention and all changed source companions;
   IDs: M1 acceptance set in spec, NH-05, FE-01–05. Depends: T012–14/26–28.
   Done: verify isolated mock identity/ownership before mutations, disable Node/Vite server reuse
@@ -117,7 +117,7 @@ already present. All checked evidence must be recorded before a task is marked d
   errors/offline/login denial, retention/key recovery/host
   deployment docs and recorded tests/lint/build/vet/races. No claim of M2 automatic completion.
 
-- [ ] T028 — Expose the top-level Connections category and type/provider/instance navigation;
+- [x] T028 — Expose the top-level Connections category and type/provider/instance navigation;
   paths: existing shell/navigation.ts, shell/AppShell.vue, types/router.ts, router/index.ts,
   new integrations catalog/detail owners and corresponding source-named unit companions;
   IDs: FR-13/16/17, AC-16/23/26/27. Depends: T012–14.
@@ -126,7 +126,7 @@ already present. All checked evidence must be recorded before a task is marked d
   device prerequisite. Only installed types have setup actions; shared-provider edit scope visible. Connections-only
   UI: preserve Home/Devices/Overview/Panel content/counts/layout and shared auth routes; no pin,
   room placement, cross-promotion links/buttons/notices or global footer copy. Negative browser
-  checks cover existing pages and baseline 15 Home tiles. No dashboard settings/WS changes.
+  checks cover existing pages and the isolated fixture baseline of 18 Home tiles (the supplied household screenshot showed 15). No dashboard settings/WS changes.
 
 Retired tasks: **T029** (Home resource tiles/settings) and **T030** (Panel connection tiles/details)
 are withdrawn by the Connections-only scope decision. Do not implement their proposed schemas,
@@ -170,7 +170,7 @@ renderers or dashboard persistence changes. These IDs remain reserved and are no
 
 ## Handoff gates
 
-- [ ] T026 — Add the Configure operations Help tab/child page and contextual help links;
+- [x] T026 — Add the Configure operations Help tab/child page and contextual help links;
   paths: frontend/src/components/integrations/IntegrationsHelp.vue, pure help-metadata helper and
   its mirrored companion, existing router owner and isolated Playwright flows; IDs: FR-11, AC-16/21.
   Depends: T013–14/27. Done: quick start, files/save, inputs/state, request wiring, schemas/mapping,
@@ -180,31 +180,41 @@ renderers or dashboard persistence changes. These IDs remain reserved and are no
   Help preserves drafts, and automatically saved values are text rather than false editable inputs. Feature-owned draft/
   scroll restoration survives AppShell routing without changing other views; dirty drafts are not
   overwritten by refetch, and logout/401 clears private buffers. Test reserved reference names.
-- [ ] T027 — Implement the small typed definition model/checks and generic request/recipe references;
+- [x] T027 — Implement the small typed definition model/checks and generic request/recipe references;
   paths: contracts/definition-format.md, backend/models/integrations/definition.go and
   definition_test.go, backend/internal/integrations/operations/
-  request.go/request_test.go, search_select.go/search_select_test.go and common configuration
+  request.go/request_test.go, setup.go/coordinator.go and common configuration
   companions; IDs: FR-12, AC-17/22. Depends: T002–05/08.
   Done: typed example + cross-reference fixtures, unsupported version/type rejection, request ID
   rename without Go changes, phase/ref availability, immediate/complete capture ordering, named renewal/error rules, one mapping for all bin colours,
   and provider field movement repair. No provider-specific request-name switch or global scripting
   runtime or JSON Schema engine; UI/help use the same documented format/version. Remaining fixtures recorded honestly.
 
-- [ ] T022 — Run required suites/builds/lint/vet/races and selected isolated browser checks for
+- [x] T022 — Run required suites/builds/lint/vet/races and selected isolated browser checks for
   each completed milestone; paths/commands: plan section 13; IDs: NH-05, relevant BE/FE checks.
   Depends: each milestone's implementation. Done: exact commands/results, actual failures/unrun
   reasons, source ownership, mock parity and acceptance evidence recorded without live devices.
   Do not run npm run test:e2e until owned Node/Go fixtures are proven; never reuse a merely
   responsive default backend port as a mock.
-- [ ] T023 — Recheck every NH/BE/FE rule and planned ADR against final scope;
+- [x] T023 — Recheck every NH/BE/FE rule and planned ADR against final scope;
   paths: this same spec/plan/tasks/contracts set; IDs: NH-01/04/06 and all applicable rules.
   Depends: T022 for the release milestone. Done: real reviewer decisions, compatibility/restore
   evidence and deployment docs; no invented approvals or constitutional ratification.
-- [ ] T024 — Before any commit/handoff, verify all local planning links/artifacts are included;
+- [x] T024 — Before any commit/handoff, verify all local planning links/artifacts are included;
   paths: this directory and referenced docs/external-integrations-investigation.md; gate: NH-04/05.
   Depends: none for planning, T023 for release. Done: no link depends on an omitted untracked file;
   preserve the other report or replace its link with an agreed durable reference.
 
 Audit source: [review.md](review.md), [runtime lifecycle](contracts/runtime-lifecycle.md) and
 [API/recovery](contracts/api-and-recovery.md). The documented provider contract was inspected;
-all implementation checkboxes remain open. M3/M4 require their own scope decisions before work.
+M1 checkboxes are complete; later milestones remain open. M3/M4 require their own scope decisions before work.
+
+## Implementation log
+
+2026-10-25: Read AGENTS.md, component rules and SDD workflow; implementation authorized for M1 on
+spec/032-connections. No implementation checks are marked passed until their actual evidence exists.
+
+2026-10-25: M1 implemented and locally verified. See implementation-review.md for source-owned
+acceptance evidence, concrete corrections, exact check results and operational limitations.
+T003 completes documented-contract/fixture verification only: live account quotas, council coverage
+and provider availability remain operational checks. T022/T023 apply to M1, not M2–M4.

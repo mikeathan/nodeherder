@@ -1,6 +1,6 @@
 # Small integration definition format
 
-Status: Proposed v1 contract; implementation not started.
+Status: M1 implementation contract; later-milestone provisions remain deferred. See [implementation review](../implementation-review.md).
 Spec: [../spec.md](../spec.md) | [Operations/help](operations-and-help.md)
 
 The first release uses ordinary Go configuration structs and a short validation pass, matching

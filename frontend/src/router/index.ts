@@ -96,6 +96,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/components/panel/PanelMode.vue'),
     meta: { title: 'Panel', requiresAuth: true, layout: 'panel' },
   },
+  { path: '/connections', name: RouteName.Connections, component: () => import('@/components/integrations/ConnectionsPage.vue'), meta: { title: 'Connections', requiresAuth: true } },
+  { path: '/connections/setup/:id', name: RouteName.ConnectionSetup, component: () => import('@/components/integrations/ConnectionSetup.vue'), meta: { title: 'Set up connection', requiresAuth: true } },
+  { path: '/connections/providers/:type/:provider', name: RouteName.ConnectionProvider, component: () => import('@/components/integrations/ProviderEditor.vue'), meta: { title: 'Configure operations', requiresAuth: true } },
+  { path: '/connections/providers/:type/:provider/help', name: RouteName.ConnectionHelp, component: () => import('@/components/integrations/IntegrationsHelp.vue'), meta: { title: 'Connections help', requiresAuth: true } },
+  { path: '/connections/:id', name: RouteName.Connection, component: () => import('@/components/integrations/ConnectionDetail.vue'), meta: { title: 'Connection', requiresAuth: true } },
+  { path: '/connections/:pathMatch(.*)*', name: RouteName.ConnectionNotFound, component: () => import('@/components/integrations/ConnectionNotFound.vue'), meta: { title: 'Connections', requiresAuth: true } },
   { path: '/:pathMatch(.*)*', redirect: { name: RouteName.GroupDashboard } },
 ];
 

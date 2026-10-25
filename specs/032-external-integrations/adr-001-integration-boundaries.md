@@ -91,3 +91,9 @@ declarative renewal. All snapshots are encrypted because provider notes may cont
 exact-choice only; representative branches need a later supported recipe. These refine the proposal,
 not approval or implementation evidence. User decisions recorded 2026-10-25: manual first release and personal Docker use. Runtime/key
 mount/restore verification remains implementation work; this is not approval to start production edits.
+
+## Implementation evidence, 2026-10-25
+
+Option 3 is implemented for M1; [implementation-review.md](implementation-review.md) records
+agent self-review and isolated checks. This does not claim maintainer adoption, ratification or
+approval of an exception. Later automatic scheduling/consumers/provider replacement are deferred.

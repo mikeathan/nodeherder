@@ -92,7 +92,7 @@ type Fixtures = { ws: WsRecorder };
  */
 const WARM_ROUTES = [
   '/overview', '/groupdashboard', '/devicedashboard', '/devicelist', '/viewer', '/creator',
-  '/settings', '/consoleviewer', '/panel', '/assistant',
+  '/settings', '/consoleviewer', '/panel', '/assistant', '/connections',
 ];
 
 export const test = base.extend<Fixtures, { warmRoutes: void }>({

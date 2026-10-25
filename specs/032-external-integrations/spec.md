@@ -1,13 +1,13 @@
 # Spec: Configurable external integrations
 
-ID: 032 | Status: Planning draft; implementation not authorized | Owner: NodeHerder contributors | Updated: 2026-10-25
+ID: 032 | Status: M1 implemented and verified locally; later milestones deferred | Owner: NodeHerder contributors | Updated: 2026-10-25
 Constitution: proposed 1.0.0 | Components: backend and frontend
 
 ## Problem, scope, exclusions
 
 Household users need to connect external services by answering ordinary questions, without
 understanding HTTP, response mappings or provider identifiers. Bin collections are the first
-example; weather and energy prices are realistic subsequent uses. NodeHerder currently has
+example; weather and energy prices are realistic subsequent uses. The pre-feature baseline had
 no general integration catalog, configuration flow, credential store or refresh lifecycle.
 
 This spec records the requested outcomes, independently of the execution architecture. The
@@ -23,8 +23,8 @@ The [Connections navigation and page-boundary contract](contracts/connections-na
 the new top-level category, future type structure and preservation of existing pages.
 The [audit](review.md), [runtime ownership](contracts/runtime-lifecycle.md) and
 [API/recovery contract](contracts/api-and-recovery.md) close the remaining execution paths.
-Neither this planning set nor the supplied reviews authorize implementation or record approval.
-The user authorized writing these planning documents; application code remains unchanged.
+The user authorized M1 implementation on 2026-10-25. This does not authorize later roadmap
+phases, deployment, pushing commits, or changes to other views. Actual execution and limitations are recorded in [implementation review](implementation-review.md) and tasks.md.
 
 Scope: integration discovery, dynamic setup, persistence, bounded external requests, credential
 isolation, automatic refresh, health, stable read contracts and a path to agents/automations.

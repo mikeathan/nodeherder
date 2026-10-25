@@ -1,0 +1,15 @@
+# Optional overlay: add this only after provisioning the external private keyring.
+# The base stack continues serving devices when Connections has no key.
+services:
+  backend:
+    environment:
+      INTEGRATION_KEYRING_FILE: /run/nodeherder-secrets/integration-keyring.json
+      INTEGRATIONS_CONFIG_DIR: /backend/configs/integrations
+      DATA_DIR: /backend/data
+    volumes:
+      - type: bind
+        source: ${NODEHERDER_SECRETS_DIR:?Set NODEHERDER_SECRETS_DIR to a private directory outside the checkout}
+        target: /run/nodeherder-secrets
+        read_only: true
+        bind:
+          create_host_path: false

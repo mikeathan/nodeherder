@@ -1,6 +1,6 @@
 # Host YAML definitions and a shared editing UI
 
-Status: Proposed design implementing the user's stated configuration/access preferences.
+Status: M1 implementation contract; later-milestone provisions remain deferred. See [implementation review](../implementation-review.md).
 Spec: [../spec.md](../spec.md) | Plan: [../plan.md](../plan.md)
 
 ## User decisions and scope
@@ -136,7 +136,7 @@ On restore compare referenced hashes, preserve last-good compiled revisions, and
 mismatch for Reload. Runtime caches/credentials/property bindings are not reconstructed from Git.
 Do not add broad ignore rules hiding the shareable definitions. Runtime DB/history/key files stay
 outside the committable definition tree. Update deployment/ignore examples in the implementation
-phase, not this planning-only change.
+phase; M1 deployment instructions are in [docs/connections.md](../../../docs/connections.md).
 
 ## YAML grammar and execution limits
 
@@ -180,7 +180,7 @@ Required evidence: two signed-in users can edit/continue shared state; anonymous
 ordinary host-edit conflicts; invalid YAML/unknown fields/aliases; read-only volume/no temp fallback;
 disk-full/rename/activation failure and crash recovery; definition removal/restore; pending-revision
 pinning; no automatic Git operation; no secret/private-state export; mobile Form repair and YAML
-buffer preservation. All implementation checks remain unrun.
+buffer preservation. Actual M1 checks are recorded in the implementation review.
 
 
 Runtime DB/key path selection must also reject temporary fallback, not only definition writes.

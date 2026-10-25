@@ -1,6 +1,6 @@
 # Protected API and generic recovery paths
 
-Status: Proposed contract; production handlers remain unimplemented.
+Status: M1 implementation contract; later-milestone provisions remain deferred. See [implementation review](../implementation-review.md).
 [Plan](../plan.md) · [Runtime](runtime-lifecycle.md) · [Definition](definition-format.md)
 
 ## Transport and revisions
@@ -63,7 +63,7 @@ In addition to catalog/setup/instance/resource/definition paths in the plan, pro
 | DELETE /api/integrations/instances/:id/credentials/:slot | Explicit credential removal with If-Match; required auth becomes reconnect_needed; optional auth changes only after this explicit action |
 | DELETE /api/integrations/definitions/:type/:provider | If-Match; 409 definition_in_use while instances or setup/pending refs exist; no cascade deletion |
 
-Slots must be declared in the compiled definition; callers cannot name another instance's secret.
+New/replaced slots must be declared in the compiled definition; callers cannot name another instance's secret. Instance DTO credential_slots lists names only, permitting removal of saved slots that a definition no longer declares.
 Optional bearer means “no configured token is allowed”, never “discard a token after its 401”.
 Provider 401 pauses authenticated work and offers replacement through these same controls. Setup
 credentials are scoped to that setup and transferred atomically on save; cancellation/expiry removes
@@ -72,7 +72,7 @@ orphaned secret records. No plaintext credential appears in GET/export/history/d
 Origin/credential review is part of normal shared Save, not a new role or review-ticket service.
 Validate reports old/new origin and affected instance/credential revisions. If destination changes,
 Save supplies a separate destination_review acknowledgement naming the exact new origin and
-explicit credential reassociation entries with their current revisions. Recompute and check them
+explicit credential reassociation entries with their current instance revision, credential revision and credential_slot. Only that active slot can transfer to the new origin; unrelated saved slots retain their original origin. Recompute and check them
 server-side alongside If-Match; stale reviews are conflicts. The acknowledgement is outside YAML,
 so pasted/imported config cannot grant itself secrets. Instances not reassociated remain
 reconnect_needed. No extra signed token, signing key, expiring review store or privileged account
@@ -130,7 +130,7 @@ cancels local work; no provider cancellation endpoint is assumed.
 
 Offline Test validates only a supplied redacted sample; it cannot prove a new URL works. Live Test
 is an explicit POST action, uses ordinary origin/secret/admission/idempotency rules and returns a
-private test-operation ID. It must not publish instance snapshots, alter active config, or trigger
+private test-operation ID. M1 Live Test is limited to the saved-schedule GET using an existing binding; it never creates a new provider lookup POST. It must not publish instance snapshots, alter active config, or trigger
 consumers. Cancel/expiry cleans its encrypted temporary state. A newer draft never mutates an
 already admitted test. Disable/delete/config/credential races have the same fencing as real work.
 
@@ -160,3 +160,11 @@ attempts, four executing external requests and one logical operation per instanc
 with a bounded busy outcome instead of spawning workers. Provider notices are at most 32 entries /
 2 KiB each. The 2 MiB decoded upstream limit dominates the theoretical product of list/date limits.
 These are proposed operational bounds to validate with fixtures, not measured production capacity.
+
+## Implemented definition recovery controls
+
+POST /api/integrations/definitions/reload discovers/reloads host files. POST
+/api/integrations/definitions/:type/:provider/shipped-reviewed acknowledges the supplied-example
+comparison without overwriting a custom file. Missing host files expose status missing with the
+last active YAML; recreate through conditional creation (If-None-Match: *) from the editor or
+Restore last active file. Existing data is preserved; unreadable files are a separate disk_error.

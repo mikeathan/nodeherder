@@ -1,6 +1,6 @@
 # External integrations: investigation, DeepSeek review and proposed plan
 
-Spec: [spec.md](spec.md) | Status: Planning draft; implementation not authorized | Updated: 2026-10-25
+Spec: [spec.md](spec.md) | Status: M1 implemented and verified locally; later milestones deferred | Updated: 2026-10-25
 Constitutions: parent/backend/frontend proposed v1.0.0; no ratification or approval claimed.
 Repository inspected: `986b923c` on `main`.
 
@@ -46,7 +46,7 @@ Artifacts: [spec](spec.md), [tasks](tasks.md), [waste contract](contracts/waste_
 [synthetic examples](contracts/waste_schedule.v1.examples.json),
 [execution/access contract](contracts/execution-and-security.md), and
 [proposed ADR](adr-001-integration-boundaries.md), [operations/help](contracts/operations-and-help.md)
-and [small typed format](contracts/definition-format.md). This remains planning-only work.
+and [small typed format](contracts/definition-format.md). M1 is now implemented; see the [implementation review](implementation-review.md) for current evidence. The investigation below retains its original baseline context.
 
 Evidence labels used throughout:
 
@@ -58,7 +58,7 @@ Evidence labels used throughout:
   contains summaries but no accompanying response artifacts to independently audit.
 - **Proposed:** architecture, limits, estimates, contracts and delivery phases below.
 
-No application tests or provider jobs were run. Earlier browser access could not parse OpenAPI
+During the original investigation no application tests or provider jobs were run. Current isolated application checks are recorded in the implementation review. Earlier browser access could not parse OpenAPI
 YAML; the latest audit downloaded/parsed it successfully through a documentation-only GET after
 sandbox DNS failure. Version 1.1.0, structural findings and SHA-256 are recorded in review.md.
 This verifies documented shapes, not live lookup success or every council branch. Never report
@@ -72,8 +72,7 @@ deployment project. This feature most closely matches integrations.
 ## 2. Review of DeepSeek's current report
 
 Reviewed: [external-integrations-investigation.md](../../docs/external-integrations-investigation.md),
-1,238 lines when initially reviewed. The existing untracked file remains unchanged. Include it
-with this planning set if committing, or replace the historical link with a durable reference.
+1,238 lines when initially reviewed. The original report is tracked and remains unchanged.
 
 | Priority / reference | Finding and consequence | Recommended correction |
 | --- | --- | --- |
@@ -206,24 +205,28 @@ JSON/query/path encoding. A literal `{{postcode}}` is not standard Go map-field 
 
 The linked contracts are normative within this draft; this plan summarizes rather than duplicates
 field/authorization/key rules. Runtime bootstrap, missing API paths and recovery are fixed by the
-linked audit contracts; implementations must not fill those gaps independently. All new paths below are proposals, not existing implementation:
+linked audit contracts; implementations must not fill those gaps independently. The M1 source owners now implemented are:
 
 ```text
 backend/models/integrations/                 domain/config/setup/capability types
-backend/repository/integrations.go           one runtime DB handle, atomic aggregates, migrations
+backend/repository/integrations.go           one encrypted runtime DB, keyring/rotation/backup, atomic aggregates
 backend/repository/integration_definitions.go host YAML, atomic writes/hash/journal recovery
 backend/internal/integrations/
   bootstrap.go                              optional feature ownership/degraded init/Close join
-  registry.go                               definition catalog, generic operation/capability registry
+  definitions.go                            definition catalog, validation, activation and repair
   service.go                                instance lifecycle, revision/generation fencing
   setup.go                                  shared revision-scoped setup and durable attempts
   configuration.go                          strict YAML compilation and fixed HTTP operations
   http.go                                   bounded transport, approved origins/IP policy
-  secrets.go                                external keyring, encryption and rotation
+  dto.go                                    private/public response boundary
+  controls.go                               credentials, enable/disable and deletion
+  test_definition.go                        isolated offline/live previews
+  publication.go                            persistence-failure checkpoint handling
   janitor.go                                expired private rows/orphan cleanup, no provider I/O
   coordinator.go                            manual admission in M1; due work/projections in M2
   capabilities/waste.go                      normalization and read-time projections
-  operations/search_select.go               generic recipe and named-request orchestration
+  identity.go                               stable resource/service identity registry
+  operations/pointer.go                     bounded JSON Pointer extraction
   operations/request.go                     shared HTTP request/capture operation
 backend/internal/api/integrations.go         protected DTOs and mutation-origin enforcement
 frontend/src/contracts/integrations.ts        runtime ingress validation
@@ -479,8 +482,7 @@ User decisions are recorded: manual refresh first (D-01), UI-editable host YAML/
 access (D-02/D-03), and personal Docker use (D-05). The keyring-file contract (D-04) now has concrete
 Docker paths/mount/backup behavior. No delivery/deployment clarification remains pending. Technical
 fixture/provider-behavior/deployment verification stays in T002/T003; it is not another permission
-gate. Later consumer scenarios are M3 gates, not blockers for Connections-only M1. ADR technical
-review and all implementation tests remain unrun; scope confirmation is not implementation approval.
+gate. Later consumer scenarios are M3 gates, not blockers for Connections-only M1. The user subsequently authorized M1 implementation. Local technical self-review and checks are complete; maintainer ADR adoption and real deployment are not claimed.
 
 The old 16–28/25–46 day ranges are withdrawn as a planning baseline. They did not separately budget
 the repair editor, wire contract and replacement workflow. The latest scope contains the UI entirely within Connections. It removes feature-role
@@ -506,81 +508,21 @@ rather than hide them in M1. No broad marketplace or workflow framework is inclu
 
 ## 13. Traceability and verification
 
-[Tasks](tasks.md) defines dependencies, affected source owners and completion evidence. T001
-records completed scope decisions; all implementation/execution tasks remain unchecked. No separate feature/regression-named Go/unit files. Place tests with their
-production owner; frontend unit tests mirror source paths under src/__tests__/. Use fake time,
-httptest, temp bbolt and isolated browser fixtures; never household devices or routine live provider jobs.
+Current acceptance mapping, every NH/BE/FE rule, actual commands/results, review corrections and
+unrun operational checks are in [implementation-review.md](implementation-review.md).
+[Tasks](tasks.md) records completed M1 work and unchecked later milestones. Tests belong to
+production source owners; frontend unit companions mirror source paths. Browser verification
+uses owned fixtures and a run nonce, with server reuse disabled. No household devices or live
+provider jobs were used. Review is an agent self-review, not maintainer approval or ratification.
 
-| Requirements / acceptance | Main owner and proposed verification | Result |
-| --- | --- | --- |
-| FR-01/02; AC-01–04 | setup.go/setup_test.go, operations/search_select.go and its companion; candidate membership, shared-user continuation, revision conflicts, immutable body/key, expiry, setup-claim receipts/duplicate Save, exact-only discriminator and restart manual continuation | Unrun |
-| FR-03; AC-05–08 | coordinator.go/coordinator_test.go, waste.go/waste_test.go; manual/automatic milestone distinction, quotas/304, DST/read-time projection, exhausted per-service coverage, cancellation/generation, strict bootstrap joins, request-scoped validators and missing-payload 304 recovery | Unrun |
-| FR-04; AC-03/09/10 | capability and API companion tests plus changed MCP/automation companions; typed schema/null/empty, public MCP/device negative assertions, consumer auth and occurrence dedupe | Unrun |
-| FR-05/06; AC-11/12 | registry/repository/service companions plus future replacement.go/replacement_test.go; second-provider proof, mapping ambiguity, atomic identity preservation, old/new coexistence, recipe review and rollback | Unrun |
-| FR-07; AC-13/15 | integrations API + http companions; two signed-in users share full controls/setup; anonymous denied, stale revisions, public boundaries, cookie Origin/custom-header rejection, conditional-save CORS/preconditions/credential/destination-review controls, bearer/cookie precedence, no WS leakage, redirect/DNS/proxy/exfiltration | Unrun |
-| FR-07/09; AC-14/18/19 | secrets.go/secrets_test.go, janitor.go/janitor_test.go, setup/repository companions; mixed-key rotation/restore, missing key, encrypted PII/snapshots/notices, body/receipt TTL, cancellation/orphan cleanup, transient provisional policy | Unrun |
-| FR-08/10; AC-17/20 | configuration.go/configuration_test.go, definition repository companions, generic operation/frontend configuration companions; allowed pointer/path changes, unsupported transforms, header/status/304 handling, declarative renewal/problem rules, stale destination review, strict YAML, UI/disk hash conflicts, atomic file/DB recovery, reload/restore, pinning and secret-free previews | Unrun |
-| FR-01/07; AC-16 | frontend source-owned service/store/contract tests and existing Playwright pattern; keyboard/focus, 390px/1280px, equal controls, login denial, pending/offline/expiry/reauth/delete, Form/YAML parity and mobile save/error states | Unrun |
-| FR-11/12; AC-21/22 | Typed model/configuration/operation and help-metadata companions plus isolated browser tests; example validation, unknown references, request rename, multiple colours, Help links/search and preserved drafts | Unrun |
-| FR-13; AC-23 | Existing navigation/router companions, new catalog owners and isolated browser flows; preserved existing sections, desktop/mobile active navigation, authenticated deep links, no device prerequisite and unsupported-type rejection | Unrun |
-| FR-16/17; AC-26/27 | shell/navigation/router and Connections browser/source companions; existing Home/Panel/Devices/Overview receive no content/layout/count changes, pins, room data, shortcuts/notices or footer prose; no dashboard/settings WS schema migration | Unrun |
+## 14. Historical planning handoff and review disposition
 
-Future application checks, not executed during planning:
-
-```text
-backend:  go test ./...
-          go build ./...
-          go vet ./...
-          go test -race ./internal/integrations/... ./repository/... ./internal/api/...
-          plus affected auth/MCP/automation packages when those production paths change
-frontend: npm test -- --runInBand
-          npm run lint
-          npm run build
-          npm run test:e2e -- <affected isolated specs>
-```
-
-Before any browser suite, T015 must disable unsafe mock-server reuse and prove fixture identity/
-ownership; default port 4110 can otherwise be a live backend. Validate external-server overrides.
-Do not run a broad suite against a merely responsive hub.
-
-Use backend/go.mod and .nvmrc. Verify actual mounting infrastructure before writing Vue mounting
-unit tests; Playwright handles rendered UI evidence. No dependency install is needed for planning.
-Definition format and waste-output examples are planning artifacts. Implement ordinary typed Go/
-TypeScript contracts and focused checks; no JSON Schema dependency, schema-generated UI or generic
-validation framework is planned. Existing project ingress-validation patterns are sufficient.
-
-| Rule | Design evidence / limitation | Before implementation | Before merge |
-| --- | --- | --- | --- |
-| NH-01 | Stable spec IDs, Connections-only scope, two requested user decisions tracked in audit | Scope/delivery/personal-Docker use confirmed; technical execution checks remain | Pending |
-| NH-02 | No device impersonation; M3 explicit event/action/occurrence semantics | Boundary supported; M3 details need review | Pending |
-| NH-03 | Equal existing-login access, shared revisions, CSRF/secret/egress contract, no public/private-data WS expansion | Proposed; auth/security review pending | Pending |
-| NH-04 | Typed wire/identity, YAML/runtime repository and operation boundary; proposed ADR | ADR review pending | Pending |
-| NH-05 | Source-owned tests, task/AC traceability and negative assertions | Mapped; application checks unrun | Pending |
-| NH-06 | Bounds, cleanup/key backups, restore/replacement and shutdown contracts | Proposed; execution evidence pending | Pending |
-| BE-01 | Domain/provider/repository/API separation with injected dependencies | Supported design; unimplemented | Pending |
-| BE-02 | No DeviceLifetimeService change planned | N/A M1; recheck M3 device path | Pending recheck |
-| BE-03 | Worker/janitor/coordinator ownership, clock, cancellation and quotas | Proposed; races/shutdown unrun | Pending |
-| BE-04 | Atomic versioned DB, key/mapping migration and inclusive date coverage | Contract proposed; fixtures unrun | Pending |
-| BE-05 | Protected DTOs/errors and separate future MCP authorization | Contract proposed; consumer details pending | Pending |
-| FE-01 | Vuex/service/PrimeVue ownership retained | Supported design; unimplemented | Pending |
-| FE-02 | JSON/wire contract plus runtime parsers and matching mocks | Contract proposed; parser/tests unrun | Pending |
-| FE-03 | Pending/manual/automatic/empty/stale/error/offline clearly distinct | Proposed; UI evidence pending | Pending |
-| FE-04 | Keyboard/focus, 390px/1280px and safe deletion/activation feedback | Planned; unrun | Pending |
-| FE-05 | Write-only credentials, no PII persistence/VITE secrets; mutation helper | Proposed; privacy checks unrun | Pending |
-
-No approval/exception/ratification is invented. Planned constitutional coverage is not a claim of
-implementation compliance. Document verification results are recorded at handoff; application suites,
-performance targets, live API tests and recovery exercises remain unrun.
-
-Actual document checks are recorded at handoff. The former large definition/output JSON Schema
-files were removed following the user's simplification request; the small typed format and examples
-are the current contracts. Earlier schema-subset checks are historical, not current application
-validation evidence. No application code, live provider or household-device checks were performed.
-
-## 14. Handoff and review disposition
+This section records the pre-implementation handoff. Statements below about unstarted/unrun work
+refer to that earlier planning stage; current status is in the implementation review. M1 was
+subsequently authorized, implemented and tested. M2–M4 remain roadmap work.
 
 The DeepSeek review's contract, authorization, identity/replacement scheduling, retention, date-owner,
-estimate and test-detail findings are incorporated. tasks.md is now provided for future implementation.
+estimate and test-detail findings are incorporated. tasks.md was provided for the subsequent implementation.
 Manual first release/personal Docker use are confirmed; UI repair, equal authenticated access and simple desktop/mobile use
 are now direct user requirements. Host YAML/Form editing is the recommended configuration design. Provisional
 no-cache/no-reminder policy remains provider-backed and now separately permits transient display with

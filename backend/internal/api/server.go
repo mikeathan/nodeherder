@@ -44,11 +44,14 @@ func NewHttpServer(port int, opts ...func(s *ApiServer)) *ApiServer {
 	return api
 }
 
-func (s *ApiServer) Listen() {
+// Listen serves until cancellation or failure and returns listener errors after removing its watcher.
+func (s *ApiServer) Listen() error {
 	stop := context.AfterFunc(s.ctx, func() { _ = s.httpServer.Close() })
 	defer stop()
 	utils.LogInfof("HTTP Server Listening %s", s.httpServer.Addr)
 	if err := s.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		utils.LogErrorf("HTTP server failed: %v", err)
+		return err
 	}
+	return nil
 }

@@ -1,0 +1,210 @@
+.connections {
+  max-width: 74rem;
+  min-width: 0;
+}
+.connections .connection-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));
+  gap: 1rem;
+}
+.connections .connection-stack {
+  display: grid;
+  gap: 1rem;
+}
+.connections .connection-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+}
+.connections .connection-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0 0 1.25rem;
+}
+.connections .connection-tabs a {
+  padding: 0.65rem 0.8rem;
+  border-radius: var(--nh-radius-m);
+  text-decoration: none;
+  color: var(--nh-text-muted);
+  min-height: 44px;
+}
+.connections .connection-tabs a[aria-current='page'] {
+  background: var(--nh-accent-soft);
+  color: var(--nh-accent);
+}
+.connections .connection-notice {
+  padding: 1rem;
+  border: 1px solid var(--nh-border);
+  border-radius: var(--nh-radius-m);
+  background: var(--nh-surface-2);
+  margin: 0 0 1rem;
+  overflow-wrap: anywhere;
+}
+.connections .connection-error {
+  border-color: var(--nh-danger, #e66a6a);
+}
+.connections .connection-form {
+  display: grid;
+  gap: 1rem;
+  max-width: 52rem;
+}
+.connections .connection-field {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+}
+.connections .connection-field > span,
+.connections label {
+  font-weight: 600;
+}
+.connections input:not([type='checkbox']),
+.connections select,
+.connections textarea {
+  font: inherit;
+  color: var(--nh-text);
+  background: var(--nh-surface);
+  border: 1px solid var(--nh-border);
+  border-radius: var(--nh-radius-s);
+  padding: 0.7rem;
+  min-height: 44px;
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+}
+.connections textarea {
+  resize: vertical;
+}
+.connections :is(input, select, textarea, a, button, summary):focus-visible {
+  outline: 2px solid var(--nh-accent);
+  outline-offset: 3px;
+}
+.connections .nh-btn {
+  min-height: 44px;
+}
+.connections .connection-muted {
+  color: var(--nh-text-muted);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+.connections h2,
+.connections h3 {
+  margin: 0.2rem 0 0.8rem;
+}
+.connections p {
+  line-height: 1.55;
+}
+.connections .connection-small {
+  font-size: 0.85rem;
+}
+.connections .connection-code {
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+  min-height: 32rem;
+  white-space: pre;
+  overflow: auto;
+}
+.connections .connection-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  align-items: start;
+}
+.connections details {
+  border: 1px solid var(--nh-border);
+  border-radius: var(--nh-radius-m);
+  padding: 0.8rem;
+  min-width: 0;
+}
+.connections summary {
+  cursor: pointer;
+  min-height: 44px;
+  align-content: center;
+  font-weight: 600;
+}
+.connections details[open] > summary {
+  margin-bottom: 0.8rem;
+}
+.connections .connection-date {
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+.connections .connection-list {
+  padding-left: 1.2rem;
+  line-height: 1.8;
+}
+.connections .connection-delete {
+  margin-top: 2rem;
+}
+.connections .connection-break {
+  overflow-wrap: anywhere;
+}
+.connections .connection-help-layout {
+  display: grid;
+  grid-template-columns: 15rem minmax(0, 1fr);
+  gap: 1rem;
+}
+.connections .connection-help-topic {
+  scroll-margin-top: 1rem;
+}
+.connections fieldset {
+  border: 1px solid var(--nh-border);
+  border-radius: var(--nh-radius-m);
+  padding: 1rem;
+  min-width: 0;
+}
+.connections legend {
+  font-weight: 600;
+  padding: 0 0.4rem;
+}
+@media (max-width: 640px) {
+  .connections .connection-row,
+  .connections .connection-help-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .connections .connection-actions > * {
+    flex-grow: 1;
+  }
+  .connections .connection-tabs {
+    gap: 0;
+  }
+  .connections .connection-tabs a {
+    padding: 0.65rem 0.55rem;
+  }
+  .connections .connection-code {
+    font-size: 0.8rem;
+  }
+  .connections .connection-date {
+    font-size: 1.15rem;
+  }
+}
+
+.connections label:has(input[type='checkbox']) {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+}
+.connections .connection-help-layout nav a {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.connections .connection-form-fields {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.connections .connection-form-fields > legend {
+  margin-bottom: 1rem;
+}
+
+.connections .connection-comparison {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 28rem;
+  overflow: auto;
+  font-size: 0.8rem;
+}

@@ -1,6 +1,6 @@
 # Waste schedule v1 wire and identity contract
 
-Status: Proposed typed API contract; [examples](waste_schedule.v1.examples.json) are developer
+Status: M1 implementation contract; later-milestone provisions remain deferred. See [implementation review](../implementation-review.md).
 reference data, not user configuration. No runtime JSON Schema library is required.
 Spec: [../spec.md](../spec.md) | Plan: [../plan.md](../plan.md)
 
@@ -86,7 +86,7 @@ example is a negative-ingress/future-contract fixture, not an M1 UI promise.
 Freshness is independent of coverage and last check: unknown if source_retrieved_at or fresh_until
 is null; otherwise fresh if evaluated_at < fresh_until, stale if >=. fresh_until must be >= source
 retrieved time. A validated provider refresh_due_at can supply expiry; absent such evidence, use
-source_retrieved_at + the explicit profile freshness budget (proposed default 24 hours). Never base
+fresh_until remains null and freshness is unknown. There is no invented default freshness budget. Never base
 expiry on a new HTTP check/304. A future expiry does not invent dates beyond service coverage.
 UI must also show check time and source age so a provider cache check is not represented as fresh
 council verification. Reject impossible timestamp ordering rather than silently converting it.
@@ -163,3 +163,9 @@ credentials; any bounded provider notices remain sensitive household context, re
 text with no-store, excluded from public routes/logs/exports/agent context unless explicitly needed.
 Do not derive bin contents from colour. Source/calendar URLs are validated external links, never
 automatic fetches or credential recipients. Unsafe schemes/URLs are omitted with a useful warning.
+
+## Implemented source version
+
+provider_version is the exact active source SHA-256 (`sha256:<hex>`), not a guessed remote API
+version. profile_revision is the local definition revision. Local read-time projection owns
+date rollover; browser minute/on-focus reads do not call the provider.

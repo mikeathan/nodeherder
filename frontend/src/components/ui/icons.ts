@@ -11,7 +11,7 @@ import {
   mdiClose, mdiCodeJson, mdiCogOutline, mdiConsoleLine, mdiContentCopy, mdiCreationOutline, mdiCubeOutline, mdiDevices,
   mdiDoorOpen, mdiDotsVertical, mdiDragVertical, mdiExportVariant, mdiFlashOutline, mdiFormatListBulleted, mdiGauge, mdiGestureTapButton,
   mdiGoogle, mdiHelpCircleOutline, mdiHomeOutline, mdiImport, mdiInformationOutline, mdiLanDisconnect, mdiLeaf,
-  mdiLightbulbOnOutline, mdiLightbulbOutline, mdiLightningBolt, mdiLockOutline, mdiLogout, mdiMagnify, mdiMenu, mdiMinus,
+  mdiLinkVariant, mdiLightbulbOnOutline, mdiLightbulbOutline, mdiLightningBolt, mdiLockOutline, mdiLogout, mdiMagnify, mdiMenu, mdiMinus,
   mdiMotionSensor, mdiPaletteOutline, mdiPencilOutline, mdiPlay, mdiPlus, mdiPowerPlugOutline, mdiRadar, mdiRefresh,
   mdiPin, mdiPinOutline, mdiPower, mdiRemote, mdiRobotOutline, mdiShieldCheckOutline, mdiSignal, mdiSmokeDetectorVariant, mdiSync, mdiTabletDashboard,
   mdiThermometer, mdiTimerOutline, mdiTrashCanOutline, mdiTune, mdiViewDashboardOutline, mdiVolumeHigh, mdiWater,
@@ -31,6 +31,7 @@ export const ICONS = {
   console: mdiConsoleLine,
   settings: mdiCogOutline,
   join: mdiAccessPointNetwork,
+  connections: mdiLinkVariant,
   panel: mdiTabletDashboard,
   // actions
   pin: mdiPin,

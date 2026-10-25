@@ -8,6 +8,7 @@ import (
 	"node-herder/internal/automations"
 	"node-herder/internal/controllers"
 	"node-herder/internal/fs"
+	"node-herder/internal/integrations"
 	mcpserver "node-herder/internal/mcp/server"
 	mcphttp "node-herder/internal/mcp/transport/http"
 
@@ -20,15 +21,15 @@ import (
 	"time"
 )
 
-func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store store.AppStore, mcpServer *mcpserver.Server, ctx context.Context) (*api.ApiServer, error) {
-	router, err := newRouter(port, ws, hub, store, mcpServer, ctx)
+func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store store.AppStore, mcpServer *mcpserver.Server, ctx context.Context, options ...Option) (*api.ApiServer, error) {
+	router, err := newRouter(port, ws, hub, store, mcpServer, ctx, options...)
 	if err != nil {
 		return nil, err
 	}
 	return api.NewHttpServer(port, api.WithContext(ctx), api.WithRouter(router)), nil
 }
 
-func newRouter(port int, ws ws.EventHub, hub *controllers.HubController, store store.AppStore, mcpServer *mcpserver.Server, ctx context.Context) (*api.Router, error) {
+func newRouter(port int, ws ws.EventHub, hub *controllers.HubController, store store.AppStore, mcpServer *mcpserver.Server, ctx context.Context, options ...Option) (*api.Router, error) {
 
 	router := api.NewRouter()
 	fservice := fs.NewFileSystem()
@@ -44,6 +45,13 @@ func newRouter(port int, ws ws.EventHub, hub *controllers.HubController, store s
 
 	router.UseGlobal(api.CORS)
 	router.UseProtected(authProvider.Middleware())
+	configuration := optionsConfig{}
+	for _, option := range options {
+		option(&configuration)
+	}
+	if configuration.connections != nil {
+		api.RegisterIntegrationRoutes(router, configuration.connections)
+	}
 
 	// websocket routing
 	router.GET("/ws", api.NewWsHandler(ws))
@@ -80,7 +88,7 @@ func newRouter(port int, ws ws.EventHub, hub *controllers.HubController, store s
 	return router, nil
 }
 
-func Register(port int, store store.AppStore, ctx context.Context) (*api.ApiServer, error) {
+func Register(port int, store store.AppStore, ctx context.Context, options ...Option) (*api.ApiServer, error) {
 
 	ws := ws.NewWsHub()
 	ws.Start()
@@ -109,5 +117,15 @@ func Register(port int, store store.AppStore, ctx context.Context) (*api.ApiServ
 		return nil, fmt.Errorf("failed to register hub controller")
 	}
 
-	return registerApi(port, ws, hub, store, mcpServer, ctx)
+	return registerApi(port, ws, hub, store, mcpServer, ctx, options...)
+}
+
+type optionsConfig struct{ connections *integrations.Service }
+
+// Option composes optional features without expanding AppStore or device test doubles.
+type Option func(*optionsConfig)
+
+// WithConnections adds protected connection routes without changing AppStore or device payloads.
+func WithConnections(service *integrations.Service) Option {
+	return func(c *optionsConfig) { c.connections = service }
 }
