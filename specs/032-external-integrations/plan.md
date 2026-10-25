@@ -625,3 +625,22 @@ missing-key existing DB, invalid/explicit keys, permissions, concurrent publicat
 errors. Run full Go tests/build/vet and affected-package races; deployment config regression checks.
 Update custody/ADR/setup docs. NH-01/03–06 and BE-01/03–05 apply; device semantics unchanged,
 no frontend contract change. Starting the running installation is distinct from isolated testing.
+
+## Collection card presentation correction (AC-32)
+
+The global .nh-card + .nh-card margin shifts later grid siblings, and independently sized headers
+misalign date content. Override the sibling margin only in the waste collection grid and use CSS
+row subgrid to share header/body tracks (scoped fallback for older browsers). Keep shared UiCard
+behavior unchanged. Add one presentational WasteBinIcon.vue with static SVG geometry and a finite
+pure colour palette; no provider-supplied style/markup, image dependency or external asset request.
+Use its existing tools slot for the illustration. Test palette/unknown fallbacks and an isolated
+three-card browser fixture with short/long titles at desktop/mobile widths. Run frontend unit,
+lint/build, E2E types and Connections browser checks. NH/FE boundaries and other views are unchanged.
+
+AC-33 refines AC-32 after the user's visual feedback: replace the tall status paragraph block with
+a compact native details/summary row, move recent checks below results, reduce header icon/spacing,
+and retain colour names in headers without repeated colour/coverage metadata below the date. Keep
+source descriptions/verification/refresh notes under Details instead of deleting information. Use
+small flat SVG geometry matching UI icon styling; no image network dependency or provider HTML.
+Extend the existing isolated browser layout test for compact mobile bounds/disclosure accessibility,
+light/dark rendering, and shared desktop tracks; keep the actual application on its own ports.

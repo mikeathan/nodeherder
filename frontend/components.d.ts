@@ -162,6 +162,7 @@ declare module 'vue' {
     UiSelect: typeof import('./src/components/ui/UiSelect.vue')['default']
     UiToggle: typeof import('./src/components/ui/UiToggle.vue')['default']
     UserBubble: typeof import('./src/components/assistant/chat/UserBubble.vue')['default']
+    WasteBinIcon: typeof import('./src/components/integrations/WasteBinIcon.vue')['default']
     WasteScheduleResults: typeof import('./src/components/integrations/WasteScheduleResults.vue')['default']
   }
   export interface GlobalDirectives {

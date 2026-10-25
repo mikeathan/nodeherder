@@ -247,3 +247,17 @@ AC-31 verified locally: native first run/restart, encrypted data round-trip, los
 malformed/public keys, private directory policy and 12 concurrent creators pass. Full Go suite,
 build/vet, repository/integration races and 13 isolated Compose config checks passed. Tests used
 temporary HOME/XDG/data/config paths; the user's running backend was not restarted.
+
+- [x] T037 — AC-32 align collection grid/header/date tracks; reusable colour-bin SVG and safe palette;
+  source owners WasteScheduleResults.vue, WasteBinIcon.vue, domain/waste-bin.ts and companion;
+  isolated ConnectionsPage browser checks cover three unequal names, colours and mobile overflow.
+  Run frontend checks and record visual review; no live devices/provider calls.
+- [x] T038 — AC-33 compact status disclosure, collection heading/icon/metadata hierarchy and recent
+  checks placement. Owners WasteScheduleResults.vue, ConnectionDetail.vue, domain/waste-schedule.ts,
+  WasteBinIcon.vue and existing companions/E2E. Record mobile/light/dark visual and frontend checks.
+
+AC-32/33: final medium 48×60 SVG icons, 70–88px header bounds, compact <=48px status row,
+colour-name headings without repeated metadata, hidden source/coverage details and later Recent checks verified.
+380 unit tests, frontend build/lint/E2E types and 16 isolated browser checks passed. Desktop/mobile
+light/dark screenshots reviewed. Tests used a temporary source snapshot on alternate ports because
+the user's local app owns the standard ports; no running app/device/provider mutations were made.

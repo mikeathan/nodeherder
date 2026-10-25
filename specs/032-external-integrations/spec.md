@@ -289,3 +289,18 @@ never auto-provisioned. Missing keys alongside any existing DB, invalid keys, fi
 and concurrent startup fail safely without replacing keys/data. Restart reuses the same key.
 Docker retains an explicit mounted-key path. This supersedes the earlier universal manual-key
 provisioning requirement for native default startup only; encrypted storage and backup obligations stay.
+
+## Follow-up: collection card presentation (AC-32)
+
+Collection cards in a desktop row share their top edge, header divider and date baseline even with
+unequal/wrapped service names. Each shows a wheelie-bin SVG in its provider-supplied known colour;
+unknown/missing colours use a neutral illustration and retain the source label. No bin-specific
+configuration or inferred service identity is introduced. Mobile remains a readable single column
+without clipping/overflow; labels and dates remain accessible independently of colour.
+
+## Compact results refinement (AC-33)
+
+The user requests a less space-intensive, professional results view, especially on mobile.
+Show one compact saved/stale/check-time summary with timestamps, refresh explanation and provider
+notes behind a native Details disclosure. Put recent checks after the results. Card headers retain Black bin/Blue bin/Brown bin names with medium-size colour-bin icons; dates remain primary. Coverage belongs in Details, with no repeated colour/coverage row. Keep full provider descriptions available inside Details. Preserve pending,
+error, stale and subscription feedback, keyboard access and no horizontal overflow.

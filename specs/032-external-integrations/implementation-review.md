@@ -250,3 +250,37 @@ uses source companions; BE-03 concurrency and BE-04 storage/startup behavior are
 public/API boundaries are unchanged. Device semantics and frontend contracts are unchanged.
 No exception/ratification is claimed. Separate backups are still required: an app-managed local
 key protects accidental data-file exposure, not a compromise of the same OS account.
+
+## Collection card presentation (AC-32/33)
+
+The card misalignment came from the shared adjacent-card margin and independently sized wrapped
+headers. WasteScheduleResults now scopes grid margin overrides and shared header/body tracks to
+collection cards. No generic UiCard/style behavior changes. After the user's visual feedback,
+headers use a medium 48×60 colour-bin SVG, 1rem Black bin/Blue bin/Brown bin titles. Repeated bin-colour/coverage rows below dates are removed; coverage remains under Details. This supersedes earlier large
+illustration/colour-title trials. Full service names remain in an accessible native Details section.
+
+The tall status paragraph block is replaced by a <=48px saved/stale/check-time row. Details reveals
+source timestamps, manual-refresh explanation, provider notes and original collection descriptions.
+Recent checks moves below results. Stale/error/subscription/date semantics and underlying provider
+names/identities are unchanged. Known colours use a fixed palette; unknown text cannot become SVG
+markup/style. Icons are decorative and labels remain readable without colour.
+
+Passed: 64 Jest suites / 380 tests; frontend build, lint (seven existing warnings, zero errors),
+E2E type checking; 16 isolated Connections browser checks at desktop1280/mobile390. Layout checks
+assert aligned tops/dividers/dates, 70–88px header heights, <=48px status row, keyboard-operable
+Details, retained full descriptions, per-bin SVG colours and no horizontal overflow. Final light/
+dark screenshots were visually reviewed outside the repo. The first run safely refused occupied
+standard ports. Subsequent runs used a temporary public source snapshot on 54100/54110/54120 with
+owned fixture handshakes, separate Vite cache and actual fonts; the user's app was not reused.
+
+NH-01 retains this spec/plan/tasks set; NH-02/03/06 device/data semantics and public boundaries are
+unchanged; NH-04/FE-01 keep presentation separate from pure view-model logic; NH-05 source-owned
+unit/E2E evidence; FE-02 DTO unchanged; FE-03 retains stale/pending/error meaning; FE-04 covers
+responsive/keyboard/colour-independent labels; FE-05 uses escaped text/static SVG only. No backend
+production change or new dependency; backend reruns are not required for these frontend-only edits.
+Unrelated runtime automation edits in the working tree are excluded from this change.
+
+Final user preference retained: Black bin/Blue bin/Brown bin are the headers. No General waste/
+Paper & card/Recycling replacement headings and no repeated colour/limited-dates text below dates.
+The last 16-case run verified this exact state, including medium header/icon bounds and the compact
+status disclosure; final desktop/mobile light/dark visuals were reviewed.

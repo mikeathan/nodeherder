@@ -26,7 +26,7 @@
   } = useConnectionDetail();
 </script>
 <template>
-  <div class="connections connection-stack">
+  <div class="connections connection-stack connection-detail">
     <UiPageHeader
       :title="item?.name ?? 'Connection'"
       :subtitle="item?.postcode"
@@ -69,14 +69,6 @@
         <p>A lookup is in progress. Check status continues that lookup without submitting a new one.</p>
         <UiButton :disabled="busy || !item.enabled" @click="check">Check status</UiButton>
       </div>
-      <details v-if="item.runs.length">
-        <summary>Recent checks</summary>
-        <ol class="connection-list">
-          <li v-for="run in [...item.runs].reverse()" :key="run.operation_id">
-            {{ new Date(run.at).toLocaleString() }} — {{ run.message }}
-          </li>
-        </ol>
-      </details>
       <WasteScheduleResults v-if="tab === 'results'" :resources="item.resources" />
       <ConnectionSettings
         v-else
@@ -89,7 +81,21 @@
         @edit-address="editAddress"
         @credential="credential"
         @remove="remove" />
+      <details v-if="item.runs.length">
+        <summary>Recent checks</summary>
+        <ol class="connection-list">
+          <li v-for="run in [...item.runs].reverse()" :key="run.operation_id">
+            {{ new Date(run.at).toLocaleString() }} — {{ run.message }}
+          </li>
+        </ol>
+      </details>
     </template>
     <UiButton v-if="error" @click="reloadPage">Reload connection</UiButton>
   </div>
 </template>
+
+<style scoped>
+  .connection-detail .connection-tabs {
+    margin-bottom: 0;
+  }
+</style>

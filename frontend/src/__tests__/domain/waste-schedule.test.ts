@@ -27,3 +27,25 @@ test('unknown or exhausted dates stay empty instead of repeating a prior calenda
   expect(presentWasteSchedule(schedule).cards[0].nextDate).toBeNull();
   expect(presentWasteSchedule(schedule).cards[0].laterDates).toEqual([]);
 });
+
+test('concise collection titles retain full provider descriptions and bin labels separately', () => {
+  const schedule = parseWasteSchedule(examples.exact);
+  schedule.services[0].name = 'Brown Bin - Glass bottles, jars, tins, cans, foil, plastic and cartons';
+  schedule.services[0].bin_colour = 'brown';
+  schedule.services[0].waste_type = 'glass';
+  const card = presentWasteSchedule(schedule).cards[0];
+  expect(card.title).toBe('Brown bin');
+  expect(card.binLabel).toBe('Brown bin');
+  expect(card.name).toContain('Glass bottles, jars');
+  expect(schedule.services[0].name).toContain('Brown Bin -');
+});
+
+test('unknown bin colours and categories preserve literal provider names', () => {
+  const schedule = parseWasteSchedule(examples.exact);
+  schedule.services[0].name = '[Mixed (subscription)';
+  schedule.services[0].bin_colour = 'unlisted';
+  schedule.services[0].waste_type = 'unknown';
+  const card = presentWasteSchedule(schedule).cards[0];
+  expect(card.title).toBe('[Mixed (subscription)');
+  expect(card.name).toBe('[Mixed (subscription)');
+});

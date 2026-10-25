@@ -1,6 +1,7 @@
 import { test, expect, HUB_API, AUTOMATION_HUB_API } from './support/fixtures';
 import { ui } from './support/ui';
 import type { Page } from '@playwright/test';
+import type { ConnectionInstance } from '../src/types/integrations.type';
 
 async function signInConnections(page: Page) {
   // Keep Node device fixtures unchanged; only Connections uses the real isolated Go API.
@@ -25,28 +26,30 @@ async function addConnection(page: Page) {
     .getByRole('combobox', { name: 'Choose your address' })
     .selectOption({ label: '1 Synthetic Street, Test Town' });
   await page.getByRole('button', { name: 'Save connection' }).click();
-  await expect(page.getByRole('heading', { name: 'Paper and card', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Blue bin', exact: true })).toBeVisible();
 }
 test('manual setup, results and settings stay inside Connections', async ({ page }, testInfo) => {
   await signInConnections(page);
   await addConnection(page);
   await page.screenshot({ path: `/private/tmp/nodeherder-032-results-${testInfo.project.name}.png`, fullPage: true });
+  await page.locator('.waste-schedule-status > summary').click();
   await expect(page.getByText(/Refresh is manual/)).toBeVisible();
+  await page.locator('.waste-schedule-status > summary').click();
   const persisted = await page.evaluate(() => JSON.stringify(localStorage));
   expect(persisted).not.toContain('XX1');
   expect(persisted).not.toContain('p:synthetic');
   await page.getByRole('button', { name: 'Refresh', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Paper and card', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Blue bin', exact: true })).toBeVisible();
   await page.goto('/groupdashboard');
   await expect(page.locator('.nh-tile')).toHaveCount(18);
-  await expect(page.getByRole('heading', { name: 'Paper and card' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Blue bin' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /manage addons|manage connections/i })).toHaveCount(0);
   await page.goto('/devicedashboard');
   await expect(page.locator('main').getByRole('link', { name: 'Connections', exact: true })).toHaveCount(0);
   await page.goto('/overview');
   await expect(page.getByRole('heading', { name: 'Bin collections', exact: true })).toHaveCount(0);
   await page.goto('/panel');
-  await expect(page.getByRole('heading', { name: 'Paper and card' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Blue bin' })).toHaveCount(0);
 });
 test('Form and YAML repair share a draft across Help and work without horizontal overflow', async ({
   page,
@@ -118,7 +121,7 @@ test('connection settings preserve saved results when renamed or disabled', asyn
   await expect(page.getByRole('button', { name: 'Enable connection', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Refresh', exact: true })).toBeDisabled();
   await page.getByRole('link', { name: 'Results', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Paper and card', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Blue bin', exact: true })).toBeVisible();
 });
 
 test('an expired login during catalog loading returns to sign in', async ({ page }) => {
@@ -152,4 +155,104 @@ test('an expired editor session discards private drafts without a leave confirma
   await page.getByRole('button', { name: 'Validate', exact: true }).click();
   await expect(page.getByRole('button', { name: /Sign in with Google/i })).toBeVisible();
   await expect(page.getByRole('dialog')).toHaveCount(0);
+});
+
+test('three collection headers and dates align with colour-matched bin illustrations', async ({ page }, testInfo) => {
+  await signInConnections(page);
+  await addConnection(page);
+  // Change only the isolated read DTO: no extra remote lookup or household data is involved.
+  await page.route('**/api/integrations/instances/*', async (route) => {
+    const response = await route.fetch({ url: route.request().url().replace(HUB_API, AUTOMATION_HUB_API) });
+    const payload = (await response.json()) as { data: ConnectionInstance; error: null };
+    const resource = payload.data.resources[0];
+    const original = resource.services[0];
+    resource.services = [
+      {
+        ...original,
+        service_id: '00000000-0000-4000-8000-000000000001',
+        name: 'Black Bin - Non-recyclable waste',
+        waste_type: 'refuse',
+        bin_colour: 'black',
+      },
+      {
+        ...original,
+        service_id: '00000000-0000-4000-8000-000000000002',
+        name: 'Blue Bin - Paper and card',
+        bin_colour: 'blue',
+      },
+      {
+        ...original,
+        service_id: '00000000-0000-4000-8000-000000000003',
+        name: 'Brown Bin - Glass bottles, jars, tins, cans, foil, plastic and cartons',
+        waste_type: 'glass',
+        bin_colour: 'brown',
+      },
+    ];
+    await route.fulfill({ response, json: payload });
+  });
+  await page.reload();
+  const cards = page.locator('.waste-collection-card');
+  await expect(cards).toHaveCount(3);
+  for (const [index, name] of ['Black bin', 'Blue bin', 'Brown bin'].entries())
+    await expect(cards.nth(index).getByRole('heading', { name, exact: true })).toBeVisible();
+  await expect(cards.getByText(/Limited dates/)).toHaveCount(0);
+  for (const [index, colour] of ['#343e48', '#307fbd', '#95633e'].entries()) {
+    await expect(cards.nth(index).locator('.waste-bin-icon')).toBeVisible();
+    await expect(cards.nth(index).locator('.waste-bin-body')).toHaveAttribute('fill', colour);
+    await expect(cards.nth(index).locator('.waste-bin-icon')).toHaveAttribute('aria-hidden', 'true');
+  }
+  const bounds = await cards.evaluateAll((elements) =>
+    elements.map((card) => {
+      const box = card.getBoundingClientRect();
+      const header = card.querySelector('header')!.getBoundingClientRect();
+      const date = card.querySelector('.connection-date')!.getBoundingClientRect();
+      return {
+        top: box.top,
+        left: box.left,
+        width: box.width,
+        headerHeight: header.height,
+        headerBottom: header.bottom,
+        dateTop: date.top,
+      };
+    })
+  );
+  const status = page.locator('.waste-schedule-status');
+  await expect(status).not.toHaveAttribute('open');
+  expect((await status.boundingBox())!.height).toBeLessThanOrEqual(48);
+  for (const box of bounds) {
+    expect(box.headerHeight).toBeGreaterThanOrEqual(70);
+    expect(box.headerHeight).toBeLessThanOrEqual(88);
+  }
+  await status.locator('summary').focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByText(/Refresh is manual/)).toBeVisible();
+  await expect(
+    status.getByText('Brown Bin - Glass bottles, jars, tins, cans, foil, plastic and cartons', { exact: true })
+  ).toBeVisible();
+  await page.keyboard.press('Enter');
+  await expect(status).not.toHaveAttribute('open');
+  if (testInfo.project.name === 'desktop') {
+    for (const box of bounds.slice(1)) {
+      expect(Math.abs(box.top - bounds[0].top)).toBeLessThan(1);
+      expect(Math.abs(box.headerBottom - bounds[0].headerBottom)).toBeLessThan(1);
+      expect(Math.abs(box.dateTop - bounds[0].dateTop)).toBeLessThan(1);
+    }
+  } else {
+    for (const [index, box] of bounds.entries()) {
+      expect(Math.abs(box.left - bounds[0].left)).toBeLessThan(1);
+      expect(Math.abs(box.width - bounds[0].width)).toBeLessThan(1);
+      if (index) expect(box.top).toBeGreaterThan(bounds[index - 1].top);
+    }
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({
+    path: `/private/tmp/nodeherder-032-colour-bins-${testInfo.project.name}.png`,
+    fullPage: true,
+  });
+  await page.getByRole('button', { name: 'Switch to dark mode', exact: true }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-mode', 'dark');
+  await page.screenshot({
+    path: `/private/tmp/nodeherder-032-colour-bins-dark-${testInfo.project.name}.png`,
+    fullPage: true,
+  });
 });
