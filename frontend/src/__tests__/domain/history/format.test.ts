@@ -48,11 +48,22 @@ test('share percentages round and keep an unknown bin distinct', () => {
   expect(formatHistorySharePercent(100)).toBe('100%');
 });
 
-test('moments, clock labels and axis labels follow the range', () => {
+test('moments and clock labels stay locale-driven while the axis picks clock or date', () => {
   const stamp = new Date(2026, 9, 24, 18, 20, 0).getTime();
-  expect(formatHistoryMoment(stamp)).toContain('18:20');
-  expect(formatHistoryClock(stamp)).toMatch(/18:20/);
-  expect(formatHistoryAxisLabel(stamp, 3_600_000, false)).toMatch(/18:20/);
-  expect(formatHistoryAxisLabel(stamp, 24 * 3_600_000, true)).not.toMatch(/18:20/);
-  expect(formatHistoryAxisLabel(stamp, 3 * 24 * 3_600_000, false)).not.toMatch(/18:20/);
+  const clock = formatHistoryClock(stamp);
+  // Locale-safe: CI runs en-US (06:20 PM) while dev machines often run en-GB (18:20).
+  expect(clock).toMatch(/^\d{1,2}:\d{2}(\s?[AP]M)?$/i);
+  const moment = formatHistoryMoment(stamp);
+  expect(moment).toContain('24');
+  expect(moment).toContain(clock);
+  expect(moment).not.toBe(clock);
+
+  const shortLabel = formatHistoryAxisLabel(stamp, 3_600_000, false);
+  expect(shortLabel).toBe(clock);
+  const dayEndpoint = formatHistoryAxisLabel(stamp, 24 * 3_600_000, true);
+  expect(dayEndpoint).toContain('24');
+  expect(dayEndpoint).not.toContain(clock);
+  const multiDay = formatHistoryAxisLabel(stamp, 3 * 24 * 3_600_000, false);
+  expect(multiDay).toContain('24');
+  expect(multiDay).not.toContain(clock);
 });

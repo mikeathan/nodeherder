@@ -111,6 +111,10 @@ all pre-existing rules on newly linted SFCs), build and e2e type-check pass, and
 desktop/mobile `DeviceMetrics` + `EntityViewDialog` suites pass 95 tests with 9 existing
 desktop-only skips. Physical Safari/iOS remains unrun.
 
+CI review correction: `format.test.ts` asserted a 24-hour clock, but CI's en-US browser
+locale renders `06:20 PM`. The assertions are now locale-safe (clock shape plus
+clock-vs-date selection) and the suite was rerun under both `en_US` and `en_GB` locales.
+
 ## Execution notes
 
 - The pre-implementation baseline browser pass was 2/2 projects with no overflow; its screenshots show the original thin strip.
