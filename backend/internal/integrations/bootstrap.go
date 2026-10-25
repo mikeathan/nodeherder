@@ -3,24 +3,21 @@ package integrations
 import (
 	"context"
 	"os"
+	"path/filepath"
 
 	"node-herder/repository"
 )
 
-// Bootstrap keeps unavailable optional Connections storage independent of device management.
-// Provision keys explicitly outside the checkout; runtime never generates replacement keys.
+// Bootstrap initializes native first-run private storage without provider I/O. An explicit
+// deployment key path must already exist; missing keys for an existing DB are never replaced.
 func Bootstrap(ctx context.Context) *Service {
-	keyPath := os.Getenv("INTEGRATION_KEYRING_FILE")
-	if keyPath == "" {
-		keyPath = "/run/nodeherder-secrets/integration-keyring.json"
-	}
-	keys, e := repository.ReadIntegrationKeyring(keyPath)
-	if e != nil {
-		return DegradedService("key_unavailable")
-	}
 	data := os.Getenv("DATA_DIR")
 	if data == "" {
 		data = "./data"
+	}
+	keys, e := bootstrapKeyring(data)
+	if e != nil {
+		return DegradedService("key_unavailable")
 	}
 	repo, e := repository.OpenIntegrationRepository(data, keys)
 	if e != nil {
@@ -41,4 +38,19 @@ func Bootstrap(ctx context.Context) *Service {
 		return DegradedService("storage_unavailable")
 	}
 	return service
+}
+
+// bootstrapKeyring separates explicit deployment custody from the native managed default.
+func bootstrapKeyring(data string) (repository.IntegrationKeyring, error) {
+	if path := os.Getenv("INTEGRATION_KEYRING_FILE"); path != "" {
+		return repository.ReadIntegrationKeyring(path)
+	}
+	directory, err := os.UserConfigDir()
+	if err != nil {
+		return repository.IntegrationKeyring{}, err
+	}
+	return repository.LoadOrCreateIntegrationKeyring(
+		filepath.Join(directory, "nodeherder", "integration-keyring.json"),
+		filepath.Join(data, "integrations.db"),
+	)
 }

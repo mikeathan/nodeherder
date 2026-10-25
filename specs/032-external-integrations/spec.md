@@ -29,7 +29,7 @@ phases, deployment, pushing commits, or changes to other views. Actual execution
 Scope: integration discovery, dynamic setup, persistence, bounded external requests, credential
 isolation, automatic refresh, health, stable read contracts and a path to agents/automations.
 Confirmed M1 is a manual read-only bin collection integration with shared YAML definition editing,
-for personal use on Docker. Automatic refresh remains a later M2 roadmap phase, outside the first release.
+for personal native or Docker use. Automatic refresh remains a later M2 roadmap phase, outside the first release.
 The user has now explicitly required equal signed-in access, simple desktop/mobile use, UI-editable
 configuration and favours host-saved versionable YAML. Those preferences are recorded directly.
 The overall roadmap includes automatic refresh; the user confirmed manual refresh for the first
@@ -279,3 +279,13 @@ persistence avoids synchronous full-document cloning on every nested mutation; p
 AC-30: New Go types/exported APIs and non-obvious algorithms document purpose, trust boundaries,
 state invariants and failure behavior. JSON Pointer documentation includes a concrete example and
 escaping/array semantics. Comments explain decisions rather than restating assignments.
+
+## Follow-up: local first-run storage key (AC-31)
+
+The user runs natively and needs Connections to work without Docker-specific manual setup.
+AC-31: With no explicit key path and no existing Connections DB, native startup creates/reuses a
+private key in the OS user-configuration directory outside the checkout. An explicit key path is
+never auto-provisioned. Missing keys alongside any existing DB, invalid keys, filesystem failures
+and concurrent startup fail safely without replacing keys/data. Restart reuses the same key.
+Docker retains an explicit mounted-key path. This supersedes the earlier universal manual-key
+provisioning requirement for native default startup only; encrypted storage and backup obligations stay.

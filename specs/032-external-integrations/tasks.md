@@ -237,3 +237,13 @@ are recorded in implementation-review.md. Local checks: full Go suite/build/vet,
 races, 371 frontend tests, build/lint/E2E types, 14 isolated browser checks and 13 Compose config
 checks passed. Original PR CI exposed a focus timing race and Compose false-serialization test
 assumption; both are corrected with local regression evidence. Updated remote CI is a separate result.
+
+- [x] T036 — AC-31 local key selection and repository-owned no-overwrite first creation; companions:
+  repository/integration_keyring_test.go and internal/integrations/bootstrap_test.go. Update Docker
+  explicit path and custody/setup docs; verify first-run/restart/lost key/invalid key/concurrency,
+  full Go/build/vet/races and isolated deployment configuration; record actual rollout status.
+
+AC-31 verified locally: native first run/restart, encrypted data round-trip, lost-key preservation,
+malformed/public keys, private directory policy and 12 concurrent creators pass. Full Go suite,
+build/vet, repository/integration races and 13 isolated Compose config checks passed. Tests used
+temporary HOME/XDG/data/config paths; the user's running backend was not restarted.

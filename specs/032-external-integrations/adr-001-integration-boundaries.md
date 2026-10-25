@@ -97,3 +97,10 @@ mount/restore verification remains implementation work; this is not approval to 
 Option 3 is implemented for M1; [implementation-review.md](implementation-review.md) records
 agent self-review and isolated checks. This does not claim maintainer adoption, ratification or
 approval of an exception. Later automatic scheduling/consumers/provider replacement are deferred.
+
+## Native first-run correction (AC-31)
+
+The user clarified the current run is native and requested removal of the manual key setup barrier.
+The default now creates a private OS-user-config key only before any Connections DB exists.
+Explicit paths (including Compose) still require provisioning. Key loss/corruption never triggers
+replacement. Encryption/schema/rotation remain unchanged; no new dependency or JWT reuse.

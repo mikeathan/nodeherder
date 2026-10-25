@@ -1,11 +1,30 @@
-# Connections: personal Docker setup
+# Connections: local and personal Docker setup
 
 Connections adds external information independently of Devices. The first release supports UK
 bin collections through a supplied WhenIsBins definition. Updates are manual: Refresh retrieves a
 schedule, and Check status continues a pending lookup. No provider work runs on a recurring timer.
 All signed-in users have the same controls. Nothing is added to Home, Overview, Devices or Panel.
 
-## Enable private persistence
+## Local run: automatic first-time setup
+
+A native backend run now creates a storage encryption key automatically on its first startup.
+No Docker mount, provider API token or manual key command is needed. The key is stored outside
+this checkout in the OS user-configuration directory:
+
+- macOS: `~/Library/Application Support/nodeherder/integration-keyring.json`
+- Linux: `$XDG_CONFIG_HOME/nodeherder/integration-keyring.json`, or `~/.config/nodeherder/integration-keyring.json`
+
+Restart the local backend after updating to load this behavior. Page reads do not restart or
+reinitialise private storage. The key directory is private (0700), and the key file is 0600.
+The same key is reused on later starts. Back it up separately from `backend/data/integrations.db`.
+If a DB already exists but its key is missing, startup reports unavailable and requires the
+matching backup; it never invents a replacement key. Existing invalid keys also stay untouched.
+
+Setting `INTEGRATION_KEYRING_FILE` selects an explicit key file instead: it must already exist.
+This permits external custody/rotation and keeps missing Docker mounts from silently provisioning
+an ephemeral container key. The default native key is not a WhenIsBins API credential.
+
+## Docker: enable private persistence
 
 Existing backend Compose mounts already persist `./backend/configs` and `./backend/data`. Provider
 YAML lives in `backend/configs/integrations/waste_collection/whenisbins.yaml`; private state lives
@@ -22,7 +41,7 @@ Back up that file separately. Set `NODEHERDER_SECRETS_DIR=/srv/nodeherder-secret
 `.env`. With the stack manager use `scripts/manage-stack.sh start all --connections`, and keep
 `--connections` on later backend/all build/rebuild commands. For direct Compose commands, add
 `-f docker-compose.connections.yml` alongside your usual backend/frontend files. The overlay mounts the external secrets directory read-only;
-it never generates a new key inside a container. Keep existing MQTT/Zigbee deployment arguments.
+the explicit Compose key path is never auto-generated. Keep existing MQTT/Zigbee deployment arguments.
 Do not run a second backend against the same data directory: one process owns the bbolt database.
 
 Without a readable keyring, Connections reports unavailable inside its own page. The base stack
@@ -32,7 +51,7 @@ mode 0600, directory permissions and the selected environment paths before retry
 Never fix lost encryption keys by generating an unrelated keyring: restore the matching backup.
 
 Non-Compose installs use `INTEGRATION_KEYRING_FILE`, `INTEGRATIONS_CONFIG_DIR` and `DATA_DIR` directly.
-Defaults are `/run/nodeherder-secrets/integration-keyring.json`, `./configs/integrations`, `./data`.
+With no explicit key path, native startup uses the managed OS path above. Config/data defaults are `./configs/integrations` and `./data`; Compose explicitly uses `/run/nodeherder-secrets/integration-keyring.json`.
 Use a persistent writable config/data path. Configure `FRONTEND_ALLOWED_ORIGINS` with the exact
 browser origin, including scheme/port; cookie mutations require that Origin and the feature header.
 

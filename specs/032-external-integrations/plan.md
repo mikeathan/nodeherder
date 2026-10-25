@@ -608,3 +608,20 @@ rule again; record actual results and remaining operational limits in implementa
 Follow-up completed: see implementation-review.md for source ownership, concrete defects corrected,
 63 frontend suites/371 tests, 14 browser checks, Go/race/static results and CI regression details.
 No persisted/wire schema or other-view behavior was changed.
+
+## Local first-run correction (AC-31)
+
+Bootstrap currently defaults every installation to a Docker-only /run path, leaving native runs
+unavailable. Select the native default with os.UserConfigDir()/nodeherder/integration-keyring.json.
+Keep explicit INTEGRATION_KEYRING_FILE read-only/required; Compose declares that explicit Docker path.
+Repository-owned first creation uses random 256-bit keys, 0700 directory, 0600 temporary file,
+file fsync, atomic no-overwrite hard-link publication and parent fsync. A missing key is created
+only when integrations.db is absent (Lstat, including zero-length/symlink files as existing).
+Existing invalid/unreadable keys and existing DBs never cause replacement. Startup losers read
+only the completely published winner. No JWT reuse, new dependency or provider/device I/O.
+
+Verify with source-owned repository/bootstrap tests: first run/restart, encrypted DB round-trip,
+missing-key existing DB, invalid/explicit keys, permissions, concurrent publication and fail-closed
+errors. Run full Go tests/build/vet and affected-package races; deployment config regression checks.
+Update custody/ADR/setup docs. NH-01/03–06 and BE-01/03–05 apply; device semantics unchanged,
+no frontend contract change. Starting the running installation is distinct from isolated testing.

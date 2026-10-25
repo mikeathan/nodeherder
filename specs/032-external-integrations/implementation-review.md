@@ -227,3 +227,26 @@ Connections. Both fixtures now represent actual expiry consistently. Original PR
 focus restoration while a loading fieldset was disabled: restoration now follows completion of
 that local read, and the browser test deliberately delays it. These failures were resolved locally;
 remote CI for the new commit is tracked separately from these local results.
+
+## Native first-run correction (AC-31)
+
+The screenshot investigation found the native backend had no key and defaulted to a Docker-only
+/run path. Bootstrap now chooses the OS user-config directory when no explicit key file is set.
+repository/integration_keyring.go owns first creation: random 256-bit key, private directory/file,
+fsynced staging and atomic no-overwrite publication. Concurrent startups reuse the fully published
+winner. Existing encrypted DB + missing key and malformed/unsafe existing files fail closed without
+changing data. Explicit key paths remain required, and base Compose explicitly declares its mounted
+key path. This supersedes earlier universal manual-provisioning statements for native defaults.
+
+Passed locally: full Go suite/build/vet; repository + integrations affected-package race checks;
+13 real Compose config-only tests. Source-owned tests cover first run/restart, encrypted round-trip,
+byte-preserving lost-key failure, invalid files/permissions and concurrent creators. User HOME/XDG
+were replaced with temp directories in tests. No live provider/device calls or running-backend
+restart was performed. Native application users must restart/rebuild once to apply this change.
+
+Rule review: NH-01 updates this same spec/plan/tasks; NH-03/06 retain encryption and lost-key
+recovery; NH-04/BE-01 put key persistence in the repository and path policy in bootstrap; NH-05
+uses source companions; BE-03 concurrency and BE-04 storage/startup behavior are tested; BE-05
+public/API boundaries are unchanged. Device semantics and frontend contracts are unchanged.
+No exception/ratification is claimed. Separate backups are still required: an app-managed local
+key protects accidental data-file exposure, not a compromise of the same OS account.

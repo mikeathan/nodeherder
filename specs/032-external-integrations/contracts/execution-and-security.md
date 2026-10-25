@@ -118,10 +118,16 @@ No other route's CORS/authentication behaviour is implicitly broadened.
 
 ## Credential and private-state custody
 
-Require `INTEGRATION_KEYRING_FILE` to point to a host-provided 0600 file outside the repo and
-DB. Its format is `{active_key_id: string, keys: {key_id: base64_32_byte_key}}`; key IDs are metadata,
-keys are secret. The host maintainer generates keys through deployment secret tooling. Do not generate a new
-key silently on startup or reuse JWT_SECRET_KEY. Do not send key contents through the browser.
+Native startup with no explicit INTEGRATION_KEYRING_FILE uses the OS user-config directory's
+nodeherder/integration-keyring.json. For a first installation only (no existing integrations.db),
+it creates a private directory/key atomically and reuses it on restart. Existing DB + missing key,
+invalid key, unsafe permissions or filesystem failures remain fail-closed. This local first-run
+correction supersedes the previous universal manual-provisioning requirement (AC-31).
+
+An explicitly configured INTEGRATION_KEYRING_FILE must already exist as a private regular file.
+Docker Compose declares that explicit mounted path; it never provisions an ephemeral container key.
+Format remains `{active_key_id: string, keys: {key_id: base64_32_byte_key}}`. Keys are never replaced
+as a recovery shortcut, reused from JWT_SECRET_KEY, exposed through the browser or added to YAML.
 
 Use AES-256-GCM with fresh random nonce per encryption. Store ciphertext version/key ID; authenticate
 installation ID, record type, record ID and schema version as associated data. Encrypt credentials,
