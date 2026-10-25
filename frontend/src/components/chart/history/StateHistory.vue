@@ -1,66 +1,127 @@
 <script setup lang="ts">
-  import { computed, ref } from 'vue';
+  import { computed, ref, watch } from 'vue';
   import type { Expose } from '@/types/device';
   import type { HistorySeries } from '@/domain/history/types';
-  import { stateSegments, stateStats, stateDensity, type StateSegment } from '@/domain/history/state';
+  import { recentActivityWindow, stateSegments, stateStats } from '@/domain/history/state';
   import { binaryOnValue, binaryOffValue, exposePalette, formatExposeValue } from '@/domain/exposes';
+  import { formatHistoryCoverage, formatHistoryMinutes, formatHistoryMoment, formatHistorySpan } from '@/domain/history/format';
+  import { stateFocusIsUseful } from './stateLayout';
+  import StateHistoryChart from './StateHistoryChart.vue';
+  import StateHistoryCompact from './StateHistoryCompact.vue';
+
   const props = defineProps<{ series: HistorySeries; expose: Expose; compact?: boolean }>();
+
   const segments = computed(() => stateSegments(props.series, props.expose));
-  const palette = computed(() => exposePalette(props.expose));
-  // Long timelines become a labelled density strip instead of hundreds of thin buttons.
-  const DENSE_SEGMENT_LIMIT = 96;
-  const dense = computed(() => segments.value.length > DENSE_SEGMENT_LIMIT);
-  const density = computed(() => stateDensity(segments.value, props.series.from, props.series.to));
   const stats = computed(() => stateStats(segments.value));
-  const selected = ref<StateSegment | null>(null);
-  const time = (value: number) => new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  const duration = (ms: number) => `${Math.round(ms / 60000)} min`;
+  const palette = computed(() => exposePalette(props.expose));
   const activeLabel = computed(() => formatExposeValue(props.expose, binaryOnValue(props.expose)));
   const inactiveLabel = computed(() => formatExposeValue(props.expose, binaryOffValue(props.expose)));
-  const ticks = computed(() => [props.series.from, (props.series.from + props.series.to) / 2, props.series.to]);
+
+  /** Local display window for "Zoom to activity"; never changes the loaded series. */
+  const focusRange = ref<{ from: number; to: number } | null>(null);
+  const plotWidth = ref(0);
+  const announcement = ref('');
+  const viewFrom = computed(() => focusRange.value?.from ?? props.series.from);
+  const viewTo = computed(() => focusRange.value?.to ?? props.series.to);
+  const activity = computed(() => recentActivityWindow(segments.value, props.series.from, props.series.to));
+  const canFocus = computed(
+    () =>
+      !focusRange.value &&
+      !!activity.value &&
+      stateFocusIsUseful(
+        activity.value.clusterFrom,
+        activity.value.clusterTo,
+        props.series.from,
+        props.series.to,
+        plotWidth.value
+      )
+  );
+  const isFocused = computed(() => !!focusRange.value);
+
+  const fullRangeLabel = computed(
+    () => `${formatHistoryMoment(props.series.from)} – ${formatHistoryMoment(props.series.to)}`
+  );
+  const focusRangeLabel = computed(
+    () => `${formatHistoryMoment(viewFrom.value)} – ${formatHistoryMoment(viewTo.value)}`
+  );
+  const activityDetail = computed(() =>
+    activity.value
+      ? `${activity.value.transitionCount} transitions · ` +
+        `${formatHistoryMinutes(activity.value.clusterTo - activity.value.clusterFrom)}`
+      : ''
+  );
+  const coverage = computed(() => {
+    const span = props.series.to - props.series.from;
+    return span > 0 ? (stats.value.duration / span) * 100 : 0;
+  });
+  const coverageNote = computed(() =>
+    coverage.value < 50
+      ? `${formatHistorySpan(stats.value.duration)} recorded · ` +
+        `${formatHistorySpan(props.series.to - props.series.from - stats.value.duration)} no data`
+      : ''
+  );
+  const summaryDuration = (ms: number) => (stats.value.duration ? formatHistoryMinutes(ms) : 'Unknown');
+
+  function focusActivity() {
+    if (!activity.value) return;
+    focusRange.value = { from: activity.value.from, to: activity.value.to };
+    announcement.value = `Activity detail shown: ${focusRangeLabel.value}. Selected range unchanged: ${fullRangeLabel.value}.`;
+  }
+  function resetFocus() {
+    if (!focusRange.value) return;
+    focusRange.value = null;
+    announcement.value = `Full range shown: ${fullRangeLabel.value}.`;
+  }
+  // A new query replaces the series; focus must never leak into another period.
+  watch(
+    () => [props.series.name, props.series.from, props.series.to],
+    () => { focusRange.value = null; announcement.value = ''; },
+    { flush: 'sync' }
+  );
 </script>
+
 <template>
-  <div class="state-history" :style="{ '--state-active': palette.active, '--state-inactive': palette.inactive }">
-    <template v-if="dense">
-      <p class="interval-detail">Activity density · {{ activeLabel }} portion of known time</p>
-      <div class="density-strip" role="img" :aria-label="`${activeLabel} duration by time interval`">
-        <span
-          v-for="(bucket, i) in density"
-          :key="i"
-          :title="`${time(bucket.from)}–${time(bucket.to)}: ${bucket.percent === null ? 'Unknown' : Math.round(bucket.percent) + '%'}`"
-          :style="{ opacity: bucket.percent === null ? 0.15 : 0.25 + (bucket.percent / 100) * 0.75 }" />
-      </div>
-    </template>
-    <div v-else class="state-strip" role="group" aria-label="State history intervals">
+  <div
+    class="state-history"
+    :style="{ '--state-active': palette.active, '--state-inactive': palette.inactive }">
+    <p class="sr-only" role="status" aria-live="polite">{{ announcement }}</p>
+    <div v-if="!compact" class="state-toolbar">
+      <p class="state-range">
+        <strong>{{ isFocused ? 'Activity detail' : 'Full range' }}</strong>
+        <span>{{ isFocused ? focusRangeLabel : fullRangeLabel }}</span>
+        <span v-if="isFocused" class="state-range-full">Selected range: {{ fullRangeLabel }}</span>
+      </p>
+      <button v-if="isFocused" type="button" class="nh-btn" @click="resetFocus">Back to full range</button>
       <button
-        v-for="(segment, i) in segments"
-        :key="i"
+        v-else-if="canFocus"
         type="button"
-        :class="{
-          'is-active': segment.active === true,
-          'is-inactive': segment.active === false,
-          'is-unknown': segment.active === null,
-        }"
-        :style="{ width: `${((segment.to - segment.from) / (series.to - series.from)) * 100}%` }"
-        :aria-label="`${segment.label}, ${time(segment.from)} to ${time(segment.to)}`"
-        @click="selected = segment" />
+        class="nh-btn"
+        :aria-label="`Zoom to activity: ${activityDetail}`"
+        @click="focusActivity">
+        <span>Zoom to activity</span>
+        <small>{{ activityDetail }}</small>
+      </button>
     </div>
-    <div class="state-times">
-      <span v-for="tick in ticks" :key="tick">{{ time(tick) }}</span>
-    </div>
+    <p v-if="!compact && coverageNote" class="state-coverage">{{ coverageNote }}</p>
+    <StateHistoryChart
+      v-if="!compact"
+      :segments="segments"
+      :expose="expose"
+      :from="series.from"
+      :to="series.to"
+      :view-from="viewFrom"
+      :view-to="viewTo"
+      @plot-width="plotWidth = $event" />
+    <StateHistoryCompact v-else :segments="segments" :expose="expose" :from="series.from" :to="series.to" />
     <div class="state-legend">
-      <span class="active">{{ activeLabel }}</span
-      ><span>{{ inactiveLabel }}</span
-      ><span class="unknown">Unknown</span>
+      <span class="active">{{ activeLabel }}</span>
+      <span>{{ inactiveLabel }}</span>
+      <span class="unknown">Unknown</span>
     </div>
-    <p v-if="selected" class="interval-detail" role="status">
-      {{ selected.label }} · {{ time(selected.from) }}–{{ time(selected.to) }} ·
-      {{ duration(selected.to - selected.from) }}
-    </p>
     <dl v-if="!compact" class="history-summary">
       <div>
         <dt>{{ activeLabel }} duration</dt>
-        <dd>{{ stats.duration ? duration(stats.active) : 'Unknown' }}</dd>
+        <dd>{{ summaryDuration(stats.active) }}</dd>
       </div>
       <div>
         <dt>Transitions</dt>
@@ -68,58 +129,53 @@
       </div>
       <div>
         <dt>Known coverage</dt>
-        <dd>{{ Math.round((stats.duration / (series.to - series.from)) * 100) }} %</dd>
+        <dd>{{ formatHistoryCoverage(stats.duration, series.to - series.from) }}</dd>
       </div>
     </dl>
   </div>
 </template>
+
 <style scoped>
-  .density-strip {
+  .state-toolbar {
     display: flex;
-    height: 2rem;
-    overflow: hidden;
-    border-radius: var(--nh-radius-s);
-  }
-  .density-strip span {
-    flex: 1;
-    background: var(--state-active);
-  }
-  .state-strip {
-    display: flex;
-    height: 2rem;
-    overflow: hidden;
-    border-radius: var(--nh-radius-s);
-  }
-  .state-strip button {
-    flex: none;
-    min-width: 0;
-    padding: 0;
-    border: 0;
-    cursor: pointer;
-    background: var(--state-inactive);
-  }
-  .state-strip button:focus-visible {
-    outline: 3px solid var(--nh-focus);
-    outline-offset: -3px;
-  }
-  .state-strip .is-active {
-    background: var(--state-active);
-  }
-  .state-strip .is-unknown {
-    background: repeating-linear-gradient(
-      45deg,
-      var(--nh-surface-2),
-      var(--nh-surface-2) 4px,
-      var(--nh-border) 4px,
-      var(--nh-border) 8px
-    );
-  }
-  .state-times {
-    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
     justify-content: space-between;
+    gap: 0.5rem 1rem;
+    margin-bottom: 0.35rem;
+  }
+  .state-range {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 0.6rem;
+    margin: 0;
+    color: var(--nh-text-muted);
+    font-size: 0.78rem;
+  }
+  .state-range strong {
+    color: var(--nh-text);
+  }
+  .state-range-full {
+    flex-basis: 100%;
+    font-size: 0.72rem;
+  }
+  .state-toolbar .nh-btn {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.1rem;
+    min-height: 44px;
+    text-align: left;
+  }
+  .state-toolbar .nh-btn small {
+    color: var(--nh-text-muted);
+    font-size: 0.7rem;
+  }
+  .state-coverage {
+    margin: 0 0 0.45rem;
     color: var(--nh-text-muted);
     font-size: 0.75rem;
-    margin-top: 0.5rem;
   }
   .state-legend {
     display: flex;
@@ -143,9 +199,5 @@
   .state-legend .unknown::before {
     background: var(--nh-surface-2);
     border: 1px solid var(--nh-border-strong);
-  }
-  .interval-detail {
-    font-size: 0.8rem;
-    color: var(--nh-text-muted);
   }
 </style>

@@ -10,6 +10,7 @@
   import type { HistoryMode } from '@/domain/history/export';
   import { coveredHistoryWindow } from '@/domain/history/stats';
   import { exposeKind, exposeValueColor, formatExposeValue } from '@/domain/exposes';
+  import { formatHistoryMoment } from '@/domain/history/format';
   import NumericHistory from './NumericHistory.vue';
   import StateHistory from './StateHistory.vue';
   import UiIcon from '@/components/ui/UiIcon.vue';
@@ -23,8 +24,7 @@
   const covered = computed(() => coveredHistoryWindow(props.series));
   const format = (value: unknown) =>
     formatExposeValue({ ...props.expose, unit: props.series.unit || props.expose.unit }, value);
-  const time = (value: number) =>
-    new Date(value).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const time = (value: number) => formatHistoryMoment(value);
   const counts = computed(() => eventCounts(props.series));
   const reportColor = (value: unknown) => exposeValueColor(props.expose, value);
 </script>

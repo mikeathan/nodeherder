@@ -21,20 +21,20 @@
     showInput: false,
   });
 
-  const value = ref<number>();
-  const max = ref<number>(0);
-  const min = ref<number>(254);
+  const localValue = ref<number>();
+  const localMax = ref<number>(0);
+  const localMin = ref<number>(254);
 
-  watchEffect(() => (min.value = props.min));
-  watchEffect(() => (max.value = props.max));
+  watchEffect(() => (localMin.value = props.min));
+  watchEffect(() => (localMax.value = props.max));
 
   watch(
     () => props.value,
     () => {
       if (props.value == null || typeof props.value != 'number') {
-        value.value = 0;
+        localValue.value = 0;
       } else {
-        value.value = props.value;
+        localValue.value = props.value;
       }
     },
     { immediate: true }
@@ -52,16 +52,16 @@
 <style scoped></style>
 <template>
   <InputNumber
-    v-model.number="value"
+    v-model.number="localValue"
     v-if="props.showInput"
     @input="inputChanged"
     :disabled="props.disabled"
     class="w-full mb-4" />
   <Slider
-    v-model="value"
+    v-model="localValue"
     @slideend="onSlideEnds"
-    :max="max"
-    :min="min"
+    :max="localMax"
+    :min="localMin"
     :disabled="props.disabled"
     class="w-full" />
 </template>
