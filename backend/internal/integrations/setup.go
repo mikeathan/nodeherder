@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"node-herder/internal/integrations/operations"
 	model "node-herder/models/integrations"
 	"node-herder/repository"
@@ -49,7 +50,22 @@ func (s *Service) CreateSetup(key, targetID, targetETag string) (SetupDTO, error
 		if e != nil {
 			return e
 		}
-		p := model.Setup{ID: setupID, DefinitionKey: key, DefinitionYAML: c.YAML, DefinitionRevision: r.Revision, Revision: 1, Generation: 1, Inputs: map[string]string{}, State: map[string]any{}, Choices: []model.Choice{}, Credentials: map[string]model.Credential{}, Status: "input", CreatedAt: now, ExpiresAt: now.Add(30 * time.Minute), AbsoluteExpiry: now.Add(24 * time.Hour)}
+		p := model.Setup{
+			ID:                 setupID,
+			DefinitionKey:      key,
+			DefinitionYAML:     c.YAML,
+			DefinitionRevision: r.Revision,
+			Revision:           1,
+			Generation:         1,
+			Inputs:             map[string]string{},
+			State:              map[string]any{},
+			Choices:            []model.Choice{},
+			Credentials:        map[string]model.Credential{},
+			Status:             "input",
+			CreatedAt:          now,
+			ExpiresAt:          now.Add(30 * time.Minute),
+			AbsoluteExpiry:     now.Add(24 * time.Hour),
+		}
 		if targetID != "" {
 			var i model.Instance
 			ok, e := tx.Get("instances", targetID, &i)
@@ -199,6 +215,10 @@ func (s *Service) invalidateSetup(tx *repository.IntegrationTx, p *model.Setup) 
 	p.OperationID = ""
 	return nil
 }
+
+// makeOperation pins all execution inputs and constructs exact POST bytes before admission.
+// The caller must commit the returned operation with its owner before enqueueing; a retry
+// must not rebuild a changed body under the same idempotency key.
 func (s *Service) makeOperation(tx *repository.IntegrationTx, c *CompiledDefinition, inputs map[string]string, state map[string]any, credentials map[string]model.Credential, origin, requestID, kind string, generation uint64) (model.Operation, error) {
 	now := s.clock.Now()
 	if kind != "renewal" {
@@ -223,7 +243,22 @@ func (s *Service) makeOperation(tx *repository.IntegrationTx, c *CompiledDefinit
 	if err != nil {
 		return model.Operation{}, err
 	}
-	o := model.Operation{ID: id, Generation: generation, ProfileRevision: c.Revision, DefinitionYAML: c.YAML, DefinitionHash: c.Hash, Inputs: inputs, Origin: origin, RequestID: requestID, Kind: kind, Status: "queued", State: state, CreatedAt: now, ExpiresAt: now.Add(24 * time.Hour), RetryAt: now}
+	o := model.Operation{
+		ID:              id,
+		Generation:      generation,
+		ProfileRevision: c.Revision,
+		DefinitionYAML:  c.YAML,
+		DefinitionHash:  c.Hash,
+		Inputs:          inputs,
+		Origin:          origin,
+		RequestID:       requestID,
+		Kind:            kind,
+		Status:          "queued",
+		State:           state,
+		CreatedAt:       now,
+		ExpiresAt:       now.Add(24 * time.Hour),
+		RetryAt:         now,
+	}
 	q := c.Definition.Requests[requestID]
 	if q.Idempotency {
 		o.IdempotencyKey = uuid.NewString()
@@ -232,13 +267,24 @@ func (s *Service) makeOperation(tx *repository.IntegrationTx, c *CompiledDefinit
 	if cred != nil {
 		o.CredentialRevision = cred.Revision
 	}
-	request, body, e := operations.Build(context.Background(), operations.Attempt{Definition: c.Definition, RequestID: requestID, Inputs: inputs, State: state, ApprovedOrigin: origin, Credential: cred, IdempotencyKey: o.IdempotencyKey})
+	request, body, e := operations.Build(context.Background(), operations.Attempt{
+		Definition:     c.Definition,
+		RequestID:      requestID,
+		Inputs:         inputs,
+		State:          state,
+		ApprovedOrigin: origin,
+		Credential:     cred,
+		IdempotencyKey: o.IdempotencyKey,
+	})
 	o.Body = body
 	if e == nil {
 		o.RequestFingerprint = ContentHash([]byte(request.Method + "\x00" + request.URL.String()))
 	}
 	return o, e
 }
+
+// credential selects only the slot declared by the active definition. Other saved slots
+// must never be borrowed as an implicit fallback or transferred to a new origin.
 func credential(d model.Definition, credentials map[string]model.Credential) *model.Credential {
 	if d.Auth.Mode == "none" {
 		return nil
@@ -341,7 +387,24 @@ func (s *Service) SaveSetup(id, property, name, expected string) (SetupDTO, erro
 			if e != nil {
 				return e
 			}
-			i = model.Instance{ID: instanceID, Name: name, DefinitionKey: p.DefinitionKey, Revision: 1, Generation: 1, BindingID: uuid.NewString(), BindingRevision: 1, Enabled: true, SearchInput: c.Definition.Setup.Search.Input, Inputs: inputs, State: p.State, Credentials: p.Credentials, Origin: c.Origin, ServiceIDs: map[string]string{}, CreatedAt: now, UpdatedAt: now}
+			i = model.Instance{
+				ID:              instanceID,
+				Name:            name,
+				DefinitionKey:   p.DefinitionKey,
+				Revision:        1,
+				Generation:      1,
+				BindingID:       uuid.NewString(),
+				BindingRevision: 1,
+				Enabled:         true,
+				SearchInput:     c.Definition.Setup.Search.Input,
+				Inputs:          inputs,
+				State:           p.State,
+				Credentials:     p.Credentials,
+				Origin:          c.Origin,
+				ServiceIDs:      map[string]string{},
+				CreatedAt:       now,
+				UpdatedAt:       now,
+			}
 			if e = tx.Put("instances", i.ID, i); e != nil {
 				return e
 			}

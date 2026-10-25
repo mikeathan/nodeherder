@@ -1,4 +1,3 @@
-// Package integrations owns the manual connection lifecycle and bounded provider execution.
 package integrations
 
 import (
@@ -16,10 +15,12 @@ import (
 	"unicode/utf8"
 
 	"gopkg.in/yaml.v3"
+
 	"node-herder/internal/integrations/operations"
 	model "node-herder/models/integrations"
 )
 
+// MaxDefinitionBytes bounds provider source parsing and host definition files to 64 KiB.
 const MaxDefinitionBytes = 64 << 10
 
 var identifier = regexp.MustCompile(`^[a-z][a-z0-9_]{0,63}$`)
@@ -31,9 +32,17 @@ type CompiledDefinition struct {
 	Revision           uint64
 }
 
-func ContentHash(b []byte) string             { h := sha256.Sum256(b); return hex.EncodeToString(h[:]) }
+// ContentHash fingerprints exact UTF-8 host bytes, so even formatting changes cause edit conflicts.
+func ContentHash(b []byte) string {
+	h := sha256.Sum256(b)
+	return hex.EncodeToString(h[:])
+}
+
+// DefinitionKey creates the stable type/provider host-file identifier from a validated definition.
 func DefinitionKey(d model.Definition) string { return d.IntegrationType + "/" + d.ID }
-func StrongETag(hash string) string           { return `"sha256:` + hash + `"` }
+
+// StrongETag quotes the exact source hash for HTTP conditional host-file mutations.
+func StrongETag(hash string) string { return `"sha256:` + hash + `"` }
 func configError(path, message string) error {
 	return &model.Failure{Code: "invalid_definition", Message: "Check the provider configuration.", Fields: []model.FieldError{{Path: path, Message: message}}}
 }
@@ -172,7 +181,33 @@ func requirePointer(path, p string) error {
 	}
 	return nil
 }
+
+// validateDefinition runs independent checks in dependency order. Earlier checks establish the
+// invariants later checks rely on; this is also the single Form/YAML validation boundary.
 func validateDefinition(d *model.Definition) error {
+	if err := validateProviderMetadata(d); err != nil {
+		return err
+	}
+	if err := validateSetupInputs(d); err != nil {
+		return err
+	}
+	if err := validateRecipeLinks(d); err != nil {
+		return err
+	}
+	if err := validateRequestDeclarations(d); err != nil {
+		return err
+	}
+	if err := validateRequestAvailability(d); err != nil {
+		return err
+	}
+	if err := validateResultAndErrorMapping(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// validateProviderMetadata validates shareable identity, destination, authentication and bounded policy defaults.
+func validateProviderMetadata(d *model.Definition) error {
 	if d.SchemaVersion != model.FormatVersion {
 		return configError("schema_version", "Unsupported definition version.")
 	}
@@ -207,6 +242,11 @@ func validateDefinition(d *model.Definition) error {
 	if d.Policy.PollMinSeconds < 5 || d.Policy.PollMinSeconds > 86400 || d.Policy.RenewalMinSeconds < 86400 || d.Policy.RenewalMinSeconds > 2592000 || d.Policy.IdempotencyWindowSeconds < 0 || d.Policy.IdempotencyWindowSeconds > 2592000 {
 		return configError("policy", "Polling must be at least 5 seconds; renewal at least 24 hours; windows at most 30 days.")
 	}
+	return nil
+}
+
+// validateSetupInputs checks the finite user-input vocabulary before any recipe references it.
+func validateSetupInputs(d *model.Definition) error {
 	if len(d.Inputs) < 2 || len(d.Inputs) > 16 || len(d.Requests) == 0 || len(d.Requests) > 8 {
 		return configError("requests", "Use 2–16 inputs and 1–8 requests.")
 	}
@@ -220,6 +260,11 @@ func validateDefinition(d *model.Definition) error {
 			return configError("inputs."+id, "Unsupported input type.")
 		}
 	}
+	return nil
+}
+
+// validateRecipeLinks checks recipe links, mandatory JSON locations and disjoint provider statuses.
+func validateRecipeLinks(d *model.Definition) error {
 	s := d.Setup
 	if s.Type != "search_select" || s.Search.Input == s.Select.Input {
 		return configError("setup", "Use a search_select recipe with two different inputs.")
@@ -240,7 +285,18 @@ func validateDefinition(d *model.Definition) error {
 			return configError("refresh.renewal_request", "Unknown request.")
 		}
 	}
-	for path, p := range map[string]string{"setup.search.options.items": s.Search.Options.Items, "setup.search.options.value": s.Search.Options.Value, "setup.search.options.label": s.Search.Options.Label, "setup.status.pointer": s.Status.Pointer, "mapping.collections.items": d.Mapping.Collections.Items, "mapping.collections.fields.name": d.Mapping.Collections.Fields.Name, "mapping.collections.fields.dates": d.Mapping.Collections.Fields.Dates, "mapping.metadata.property_id": d.Mapping.Metadata.PropertyID, "mapping.metadata.address_match": d.Mapping.Metadata.AddressMatch, "mapping.metadata.evidence_granularity": d.Mapping.Metadata.EvidenceGranularity} {
+	for path, p := range map[string]string{
+		"setup.search.options.items":            s.Search.Options.Items,
+		"setup.search.options.value":            s.Search.Options.Value,
+		"setup.search.options.label":            s.Search.Options.Label,
+		"setup.status.pointer":                  s.Status.Pointer,
+		"mapping.collections.items":             d.Mapping.Collections.Items,
+		"mapping.collections.fields.name":       d.Mapping.Collections.Fields.Name,
+		"mapping.collections.fields.dates":      d.Mapping.Collections.Fields.Dates,
+		"mapping.metadata.property_id":          d.Mapping.Metadata.PropertyID,
+		"mapping.metadata.address_match":        d.Mapping.Metadata.AddressMatch,
+		"mapping.metadata.evidence_granularity": d.Mapping.Metadata.EvidenceGranularity,
+	} {
 		if err := requirePointer(path, p); err != nil {
 			return err
 		}
@@ -265,6 +321,11 @@ func validateDefinition(d *model.Definition) error {
 			seenStatuses[v] = true
 		}
 	}
+	return nil
+}
+
+// validateRequestDeclarations checks each named HTTP operation and cross-request capture type consistency.
+func validateRequestDeclarations(d *model.Definition) error {
 	captureTypes := map[string]string{}
 	count := 0
 	for id, q := range d.Requests {
@@ -300,6 +361,12 @@ func validateDefinition(d *model.Definition) error {
 			captureTypes[name] = c.Type
 		}
 	}
+	return nil
+}
+
+// validateRequestAvailability proves every request value exists on all execution paths, including immediate and polled completion.
+func validateRequestAvailability(d *model.Definition) error {
+	s := d.Setup
 	if s.Search.Request == s.Select.Request || s.Search.Request == s.Status.Request || s.Select.Request == s.Status.Request || d.Refresh.Request == s.Search.Request || d.Refresh.Request == s.Select.Request || d.Refresh.Request == s.Status.Request {
 		return configError("setup", "Search, selection, status and refresh need distinct requests.")
 	}
@@ -347,6 +414,11 @@ func validateDefinition(d *model.Definition) error {
 			return err
 		}
 	}
+	return nil
+}
+
+// validateResultAndErrorMapping checks output selectors and finite recovery rules without enabling arbitrary retry behavior.
+func validateResultAndErrorMapping(d *model.Definition) error {
 	raw, _ := json.Marshal(d.Mapping)
 	var mapping any
 	_ = json.Unmarshal(raw, &mapping)
@@ -381,6 +453,7 @@ func validateDefinition(d *model.Definition) error {
 	}
 	return nil
 }
+
 func captureNames(q model.Request, complete bool) map[string]bool {
 	m := map[string]bool{}
 	for k, c := range q.Captures {
@@ -470,5 +543,6 @@ func checkMappingAt(v any, path string) error {
 	return nil
 }
 
-// Pointer reads a decoded provider JSON value.
+// Pointer selects a decoded JSON field location (for example /result/collections/0/name).
+// See operations.Pointer for escaping and missing-versus-null semantics; no Go address is involved.
 func Pointer(root any, p string) (any, bool) { return operations.Pointer(root, p) }

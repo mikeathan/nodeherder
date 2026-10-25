@@ -5,6 +5,8 @@ import (
 	"strings"
 )
 
+// ValidPointer validates the bounded RFC 6901 field-location syntax. Empty means the entire
+// document; / separates fields, ~1 escapes a literal slash and ~0 escapes a tilde.
 func ValidPointer(p string) bool {
 	if p == "" {
 		return true
@@ -23,7 +25,11 @@ func ValidPointer(p string) bool {
 	return true
 }
 
-// Pointer reads RFC 6901 paths from decoded JSON, preserving missing versus null.
+// Pointer reads an RFC 6901 JSON field location; it is unrelated to Go memory pointers.
+// For example, /result/collections/0/name selects the first collection's name. Empty selects
+// root; ~1 and ~0 encode literal slash/tilde field names. Array indexes are zero-based canonical
+// integers, so 01 and - are invalid. The returned bool distinguishes a missing field (false)
+// from an explicitly present JSON null (nil, true). Returned maps/slices are borrowed read-only.
 func Pointer(root any, p string) (any, bool) {
 	if !ValidPointer(p) {
 		return nil, false
@@ -32,6 +38,7 @@ func Pointer(root any, p string) (any, bool) {
 		return root, true
 	}
 	for _, part := range strings.Split(p[1:], "/") {
+		// Decode escapes in this order: ~01 denotes the literal text ~1, not a slash.
 		part = strings.ReplaceAll(strings.ReplaceAll(part, "~1", "/"), "~0", "~")
 		switch x := root.(type) {
 		case map[string]any:

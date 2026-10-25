@@ -1,88 +1,81 @@
 import { computed, onBeforeUnmount, ref } from 'vue';
-import { store } from '@/store';
 import { useRouter } from 'vue-router';
-import { connectionsApi, ConnectionError } from '@/services/integrations.service';
+import { store } from '@/store';
+import { createConnectionsApi, ConnectionError } from '@/services/integrations.service';
+import { createOperationObserver } from '@/domain/connection-operation-observer';
 import type { ConnectionsState } from '@/store/modules/integrations';
 import type { ConnectionFailure } from '@/types/integrations.type';
 import { RouteName } from '@/types/router';
 
-// Page-owned reads/timers stop on unmount/logout; shared drafts live only in feature Vuex memory.
+/** Page/session ownership for authenticated requests, feedback and local progress observation. */
 export function useConnections() {
   const router = useRouter();
   const state = computed(() => (store.state as { integrations: ConnectionsState }).integrations);
   const busy = ref(false);
   const error = ref<ConnectionFailure | null>(null);
   const controller = new AbortController();
+  const api = createConnectionsApi(controller.signal);
   const generation = state.value.generation;
-  let alive = true;
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const stop = () => {
-    alive = false;
+  const isActive = () => !controller.signal.aborted && state.value.generation === generation;
+  let observer: ReturnType<typeof createOperationObserver> | undefined;
+
+  function stop() {
     controller.abort();
-    if (timer) clearTimeout(timer);
-  };
+    observer?.stop();
+  }
   const unwatch = store.watch(() => state.value.generation, stop);
   onBeforeUnmount(() => {
     stop();
     unwatch();
   });
-  function commit(name: string, value: unknown) {
-    if (alive && state.value.generation === generation) store.commit(`integrations/${name}`, value);
+
+  async function reportFailure(cause: unknown) {
+    // Replies from an unmounted page or a previous login cannot affect the new session.
+    if (!isActive() || (cause instanceof Error && cause.name === 'AbortError')) return;
+    if (cause instanceof ConnectionError && cause.status === 401) {
+      store.commit('auth/logout');
+      await router.replace({ name: RouteName.Login });
+      return;
+    }
+    error.value =
+      cause instanceof ConnectionError
+        ? cause.failure
+        : {
+            code: 'invalid_response',
+            message: 'This action could not be completed.',
+          };
   }
-  async function perform<T>(fn: () => Promise<T>): Promise<T | undefined> {
-    if (!alive || busy.value) return;
+
+  function commit(name: string, value: unknown) {
+    if (isActive()) store.commit(`integrations/${name}`, value);
+  }
+
+  async function perform<T>(action: () => Promise<T>): Promise<T | undefined> {
+    if (!isActive() || busy.value) return;
     busy.value = true;
     error.value = null;
     try {
-      const result = await fn();
-      return alive ? result : undefined;
-    } catch (e) {
-      if (e instanceof Error && e.name === 'AbortError') return;
-      if (e instanceof ConnectionError && e.status === 401) {
-        if (!alive && store.getters['auth/isAuthenticated']()) return;
-        store.commit('auth/logout');
-        await router.replace({ name: RouteName.Login });
-        return;
-      }
-      if (alive)
-        error.value =
-          e instanceof ConnectionError
-            ? e.failure
-            : {
-                code: 'invalid_response',
-                message: e instanceof Error ? e.message : 'This action could not be completed.',
-              };
+      const result = await action();
+      return isActive() ? result : undefined;
+    } catch (cause) {
+      await reportFailure(cause);
       return undefined;
     } finally {
       busy.value = false;
     }
   }
-  // Observe local execution only. A pending provider lookup requires an explicit Check status.
-  function observe(id: string, refresh: () => Promise<unknown>) {
-    if (timer) clearTimeout(timer);
-    const deadline = Date.now() + 30_000;
-    const tick = async () => {
-      if (!alive) return;
-      try {
-        const operation = await connectionsApi.operation(id, controller.signal);
-        await refresh();
-        if (alive && ['queued', 'running'].includes(operation.status) && Date.now() < deadline)
-          timer = setTimeout(tick, 700);
-      } catch (e) {
-        if (e instanceof ConnectionError && e.status === 401) {
-          if (!store.getters['auth/isAuthenticated']() || alive) {
-            store.commit('auth/logout');
-            await router.replace({ name: RouteName.Login });
-          }
-        } else if (alive && !(e instanceof Error && e.name === 'AbortError')) {
-          error.value =
-            e instanceof ConnectionError
-              ? e.failure
-              : { code: 'invalid_response', message: 'The operation status could not be read.' };
-        }
-      }
-    };
-    void tick();
+
+  function observe(id: string, refresh: (signal: AbortSignal) => Promise<unknown>) {
+    if (!isActive()) return;
+    observer?.stop();
+    observer = createOperationObserver({
+      read: (operationId, signal) => api.operation(operationId, signal),
+      refresh,
+      onError: (cause) => void reportFailure(cause),
+    });
+    observer.start(id);
   }
-  return { store, router, state, busy, error, perform, commit, observe, signal: controller.signal };
+
+  return { store, router, state, api, busy, error, perform, commit, observe, isActive, signal: controller.signal };
 }
+export type ConnectionScope = ReturnType<typeof useConnections>;

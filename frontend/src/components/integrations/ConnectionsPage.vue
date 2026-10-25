@@ -1,28 +1,12 @@
 <script setup lang="ts">
-  import { onMounted } from 'vue';
   import UiPageHeader from '@/components/ui/UiPageHeader.vue';
   import UiCard from '@/components/ui/UiCard.vue';
   import UiButton from '@/components/ui/UiButton.vue';
   import ConnectionFeedback from './ConnectionFeedback.vue';
-  import { useConnections } from '@/composables/useConnections';
-  import { connectionsApi } from '@/services/integrations.service';
+  import { useConnectionsCatalog } from '@/composables/integrations/useConnectionsCatalog';
   import { RouteName } from '@/types/router';
   import './connections.css';
-  const { state, store, router, busy, error, perform, signal } = useConnections();
-  const load = () => perform(() => store.dispatch('integrations/load', signal));
-  onMounted(load);
-  async function add(key: string) {
-    const setup = await perform(() => connectionsApi.createSetup(key));
-    if (setup) await router.push({ name: RouteName.ConnectionSetup, params: { id: setup.id } });
-  }
-  async function reloadProviders() {
-    const value = await perform(() => connectionsApi.reloadProviders());
-    if (value) await load();
-  }
-  const providerRoute = (key: string) => {
-    const [type, provider] = key.split('/');
-    return { name: RouteName.ConnectionProvider, params: { type, provider } };
-  };
+  const { state, busy, error, load, add, reloadProviders, providerRoute } = useConnectionsCatalog();
 </script>
 <template>
   <div class="connections connection-stack">

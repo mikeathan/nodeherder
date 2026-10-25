@@ -1,8 +1,9 @@
 package integrations
 
 import (
-	model "node-herder/models/integrations"
 	"time"
+
+	model "node-herder/models/integrations"
 )
 
 // Public DTOs deliberately exclude raw attempts, captured property tokens and secret values.
@@ -12,11 +13,15 @@ type CatalogDTO struct {
 	Types     []TypeDTO      `json:"types"`
 	Providers []ProviderDTO  `json:"providers"`
 }
+
+// TypeDTO describes an installed capability category available in the Connections catalog.
 type TypeDTO struct {
 	ID          string `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
 }
+
+// ProviderDTO describes local provider availability without exposing private connection inputs.
 type ProviderDTO struct {
 	Key             string `json:"key"`
 	ID              string `json:"id"`
@@ -26,6 +31,9 @@ type ProviderDTO struct {
 	Available       bool   `json:"available"`
 	DiskError       string `json:"disk_error,omitempty"`
 }
+
+// SetupDTO is the browser view of a shared wizard/test. It omits captured state, exact POST
+// bytes and tokens; CredentialConfigured reports presence only.
 type SetupDTO struct {
 	Preview              *model.WasteSchedule `json:"preview,omitempty"`
 	ID                   string               `json:"id"`
@@ -41,6 +49,9 @@ type SetupDTO struct {
 	CredentialConfigured bool                 `json:"credential_configured"`
 	Error                *model.Failure       `json:"last_error"`
 }
+
+// InstanceDTO exposes saved connection status and validated resources. CredentialSlots
+// contains names only so obsolete slots can be explicitly removed without revealing token values.
 type InstanceDTO struct {
 	CredentialSlots      []string              `json:"credential_slots"`
 	Runs                 []model.RunSummary    `json:"runs"`
@@ -58,6 +69,8 @@ type InstanceDTO struct {
 	Error                *model.Failure        `json:"last_error"`
 	UpdatedAt            time.Time             `json:"updated_at"`
 }
+
+// OperationDTO exposes durable progress and retry timing, never private attempt payloads.
 type OperationDTO struct {
 	ID         string         `json:"id"`
 	Status     string         `json:"status"`
@@ -68,6 +81,9 @@ type OperationDTO struct {
 	ExpiresAt  time.Time      `json:"expires_at"`
 	Error      *model.Failure `json:"last_error"`
 }
+
+// DefinitionDTO separates exact host bytes/hash from the active compiled revision.
+// Status makes host changes, missing files and saved-but-not-applied revisions observable.
 type DefinitionDTO struct {
 	ShippedYAML     string           `json:"shipped_yaml,omitempty"`
 	Key             string           `json:"key"`
@@ -81,6 +97,9 @@ type DefinitionDTO struct {
 	DiskError       string           `json:"disk_error,omitempty"`
 	UpdateAvailable bool             `json:"update_available"`
 }
+
+// ValidationDTO is a normalized unsaved definition plus the destination-review scope.
+// Validation does not write the host file or send any provider request.
 type ValidationDTO struct {
 	YAML           string             `json:"yaml"`
 	Document       model.Definition   `json:"document"`
@@ -89,12 +108,18 @@ type ValidationDTO struct {
 	PreviousOrigin string             `json:"previous_origin"`
 	Affected       []CredentialReview `json:"affected_instances"`
 }
+
+// CredentialReview pins the specific active slot and instance/credential revisions a user
+// may reassociate. A stale acknowledgement cannot transfer a newly replaced or unrelated token.
 type CredentialReview struct {
 	CredentialSlot     string `json:"credential_slot"`
 	InstanceID         string `json:"instance_id"`
 	Revision           uint64 `json:"revision"`
 	CredentialRevision uint64 `json:"credential_revision"`
 }
+
+// DestinationReview is explicit consent outside YAML to send private inputs and selected
+// credentials to a changed origin. YAML alone cannot authorize credential reassociation.
 type DestinationReview struct {
 	Origin      string             `json:"origin"`
 	Reassociate []CredentialReview `json:"reassociate"`

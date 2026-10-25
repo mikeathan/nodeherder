@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { computed, ref, onMounted, nextTick } from 'vue';
+  import { computed, ref, onMounted } from 'vue';
   import { useRoute } from 'vue-router';
   import UiPageHeader from '@/components/ui/UiPageHeader.vue';
   import UiCard from '@/components/ui/UiCard.vue';
@@ -9,8 +9,7 @@
   const route = useRoute();
   const search = ref('');
   const topics = computed(() => helpTopics(search.value));
-  onMounted(async () => {
-    await nextTick();
+  onMounted(() => {
     if (route.hash) {
       const topic = document.getElementById(route.hash.slice(1));
       topic?.focus();

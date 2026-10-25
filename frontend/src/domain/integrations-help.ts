@@ -13,6 +13,7 @@ export const CONNECTION_HELP = [
     paragraphs: [
       'Configure operations describes the provider, not your address. Form and YAML edit the same host file under configs/integrations/waste_collection/. Save changes validates the file and applies it to every connection using that provider.',
       'Address choices, provider references, tokens and results are stored privately in the data volume. They are not added to the provider YAML. You can commit provider files using your usual Git tools; NodeHerder does not commit them for you.',
+      'Up to 32 recently visited provider drafts are kept in memory while you are signed in. Save important changes before leaving the application; drafts are cleared on sign out.',
       'Reload from host reads changes you made outside the UI. Restore previous writes the previous good configuration as a new revision. Avoid editing the host file and saving in the UI at the same time.',
     ],
   },

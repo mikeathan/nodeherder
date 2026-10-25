@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"node-herder/internal/integrations/capabilities"
 	model "node-herder/models/integrations"
 	"node-herder/repository"
@@ -105,7 +106,25 @@ func (s *Service) TestDefinition(key, source, instanceID, mode string, sample js
 		if e != nil {
 			return e
 		}
-		p := model.Setup{ID: setupID, DefinitionKey: key, DefinitionYAML: source, DefinitionRevision: 1, Revision: 1, Generation: 1, TargetInstanceID: i.ID, TargetRevision: i.Revision, TestOnly: true, Status: "testing", Inputs: i.Inputs, State: i.State, Choices: []model.Choice{}, Credentials: credentials, CreatedAt: now, ExpiresAt: now.Add(30 * time.Minute), AbsoluteExpiry: now.Add(30 * time.Minute)}
+		p := model.Setup{
+			ID:                 setupID,
+			DefinitionKey:      key,
+			DefinitionYAML:     source,
+			DefinitionRevision: 1,
+			Revision:           1,
+			Generation:         1,
+			TargetInstanceID:   i.ID,
+			TargetRevision:     i.Revision,
+			TestOnly:           true,
+			Status:             "testing",
+			Inputs:             i.Inputs,
+			State:              i.State,
+			Choices:            []model.Choice{},
+			Credentials:        credentials,
+			CreatedAt:          now,
+			ExpiresAt:          now.Add(30 * time.Minute),
+			AbsoluteExpiry:     now.Add(30 * time.Minute),
+		}
 		if mode == "offline" {
 			decoder := json.NewDecoder(bytes.NewReader(sample))
 			decoder.UseNumber()
@@ -117,7 +136,15 @@ func (s *Service) TestDefinition(key, source, instanceID, mode string, sample js
 			if decoder.Decode(&extra) != io.EOF {
 				return model.Fail("invalid_input", "Use one JSON sample.")
 			}
-			result, e := capabilities.NormalizeWaste(body, c.Definition.Mapping, capabilities.WasteContext{InstanceID: i.ID, ProviderID: c.Definition.ID, ProviderVersion: "sha256:" + c.Hash, ProfileRevision: 1, BindingRevision: i.BindingRevision, SelectedProperty: i.Inputs[c.Definition.Setup.Select.Input], Now: now})
+			result, e := capabilities.NormalizeWaste(body, c.Definition.Mapping, capabilities.WasteContext{
+				InstanceID:       i.ID,
+				ProviderID:       c.Definition.ID,
+				ProviderVersion:  "sha256:" + c.Hash,
+				ProfileRevision:  1,
+				BindingRevision:  i.BindingRevision,
+				SelectedProperty: i.Inputs[c.Definition.Setup.Select.Input],
+				Now:              now,
+			})
 			if e != nil {
 				return e
 			}

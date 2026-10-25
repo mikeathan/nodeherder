@@ -9,7 +9,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// FormatVersion identifies the supported shareable provider-definition grammar.
 const FormatVersion = "nodeherder.integration/v1"
+
+// WasteCapability identifies the provider-independent waste schedule output contract.
 const WasteCapability = "waste_schedule/v1"
 
 // Value is either a JSON scalar or an explicit reference to a setup input/captured state.
@@ -19,6 +22,7 @@ type Value struct {
 	Literal any
 }
 
+// UnmarshalYAML rejects implicit or executable YAML forms before accepting the typed value.
 func (v *Value) UnmarshalYAML(n *yaml.Node) error {
 	*v = Value{}
 	if n.Kind == yaml.MappingNode {
@@ -38,6 +42,8 @@ func (v *Value) UnmarshalYAML(n *yaml.Node) error {
 	}
 	return n.Decode(&v.Literal)
 }
+
+// MarshalYAML preserves scalar types and explicit references when saving the host definition.
 func (v Value) MarshalYAML() (any, error) {
 	if v.Ref != "" {
 		return map[string]string{"ref": v.Ref}, nil
@@ -50,12 +56,16 @@ func (v Value) MarshalYAML() (any, error) {
 	}
 	return v.Literal, nil
 }
+
+// MarshalJSON encodes the scalar/reference union without exposing implementation fields.
 func (v Value) MarshalJSON() ([]byte, error) {
 	if v.Ref != "" {
 		return json.Marshal(map[string]string{"ref": v.Ref})
 	}
 	return json.Marshal(v.Literal)
 }
+
+// UnmarshalJSON rejects unsupported JSON shapes and preserves numeric/reference types.
 func (v *Value) UnmarshalJSON(data []byte) error {
 	*v = Value{}
 	data = bytes.TrimSpace(data)
@@ -91,6 +101,7 @@ func (v *Value) UnmarshalJSON(data []byte) error {
 // StrictBool keeps YAML and JSON form validation aligned; legacy yes/no coercion is unsupported.
 type StrictBool bool
 
+// UnmarshalYAML accepts only explicit true/false, keeping Form and YAML validation aligned.
 func (b *StrictBool) UnmarshalYAML(n *yaml.Node) error {
 	if n.Tag != "!!bool" || (n.Value != "true" && n.Value != "false") {
 		return fmt.Errorf("use true or false")
@@ -98,6 +109,8 @@ func (b *StrictBool) UnmarshalYAML(n *yaml.Node) error {
 	*b = n.Value == "true"
 	return nil
 }
+
+// UnmarshalJSON accepts only explicit true/false, keeping Form and YAML validation aligned.
 func (b *StrictBool) UnmarshalJSON(data []byte) error {
 	data = bytes.TrimSpace(data)
 	if !bytes.Equal(data, []byte("true")) && !bytes.Equal(data, []byte("false")) {
@@ -124,29 +137,43 @@ type Definition struct {
 	Refresh         RefreshRecipe      `json:"refresh" yaml:"refresh"`
 	Mapping         Mapping            `json:"mapping" yaml:"mapping"`
 }
+
+// AuthConfig declares how to use a separately stored credential slot; it never holds a token.
 type AuthConfig struct {
 	Mode       string `json:"mode" yaml:"mode"`
 	SecretSlot string `json:"secret_slot,omitempty" yaml:"secret_slot,omitempty"`
 }
+
+// Policy bounds explicit status checks, fresh lookup creation and safe submission-key replay.
+// All durations are seconds; the runtime also enforces stricter local ceilings.
 type Policy struct {
 	PollMinSeconds           int `json:"poll_min_seconds" yaml:"poll_min_seconds"`
 	RenewalMinSeconds        int `json:"renewal_min_seconds" yaml:"renewal_min_seconds"`
 	IdempotencyWindowSeconds int `json:"idempotency_window_seconds" yaml:"idempotency_window_seconds"`
 }
+
+// ErrorRules locates the provider problem code and lists exact status/code recovery matches.
 type ErrorRules struct {
 	Code  string      `json:"code" yaml:"code"`
 	Rules []ErrorRule `json:"rules" yaml:"rules"`
 }
+
+// ErrorRule maps one exact provider failure to a supported recovery action, never an arbitrary retry.
 type ErrorRule struct {
 	Status int    `json:"status" yaml:"status"`
 	Code   string `json:"code" yaml:"code"`
 	Action string `json:"action" yaml:"action"`
 }
+
+// Input describes a setup question. Private answers are stored in Setup/Instance, not this definition.
 type Input struct {
 	Type     string     `json:"type" yaml:"type"`
 	Label    string     `json:"label" yaml:"label"`
 	Required StrictBool `json:"required" yaml:"required"`
 }
+
+// Request describes one named GET/POST operation. Path segments and fields are typed Values;
+// ResponseRoot selects the result object, while Captures read the original response envelope.
 type Request struct {
 	Method       string             `json:"method" yaml:"method"`
 	Path         []Value            `json:"path" yaml:"path"`
@@ -157,6 +184,10 @@ type Request struct {
 	ResponseRoot string             `json:"response_root,omitempty" yaml:"response_root,omitempty"`
 	Captures     map[string]Capture `json:"captures,omitempty" yaml:"captures,omitempty"`
 }
+
+// Capture saves a typed response field for a later request. Pointer is an RFC 6901 JSON
+// location (for example /result/property_id), not a Go address. When=complete defers extraction
+// until successful lookup completion; StripPrefix validates/removes a provider namespace.
 type Capture struct {
 	Pointer     string     `json:"pointer" yaml:"pointer"`
 	Type        string     `json:"type" yaml:"type"`
@@ -164,25 +195,35 @@ type Capture struct {
 	StripPrefix string     `json:"strip_prefix,omitempty" yaml:"strip_prefix,omitempty"`
 	Optional    StrictBool `json:"optional,omitempty" yaml:"optional,omitempty"`
 }
+
+// ChoiceMapping locates an address array and its ID/label fields; child paths are relative to each item.
 type ChoiceMapping struct {
 	Items string `json:"items" yaml:"items"`
 	Value string `json:"value" yaml:"value"`
 	Label string `json:"label" yaml:"label"`
 }
+
+// Discriminator requires an exact provider field value before offering the supported setup journey.
 type Discriminator struct {
 	Pointer string `json:"pointer" yaml:"pointer"`
 	Value   string `json:"value" yaml:"value"`
 }
+
+// SearchStep links a user input to a request and defines how to display its returned choices.
 type SearchStep struct {
 	Input   string         `json:"input" yaml:"input"`
 	Request string         `json:"request" yaml:"request"`
 	Expect  *Discriminator `json:"expect,omitempty" yaml:"expect,omitempty"`
 	Options ChoiceMapping  `json:"options" yaml:"options"`
 }
+
+// SelectionStep links the explicit selected candidate to the first lookup submission.
 type SelectionStep struct {
 	Input   string `json:"input" yaml:"input"`
 	Request string `json:"request" yaml:"request"`
 }
+
+// StatusStep classifies lookup progress using configured exact strings and a named status request.
 type StatusStep struct {
 	Request string   `json:"request" yaml:"request"`
 	Pointer string   `json:"pointer" yaml:"pointer"`
@@ -190,20 +231,29 @@ type StatusStep struct {
 	Done    []string `json:"done" yaml:"done"`
 	Failed  []string `json:"failed" yaml:"failed"`
 }
+
+// SetupRecipe wires the supported search/select/status stages to arbitrary request identifiers.
 type SetupRecipe struct {
 	Type   string        `json:"type" yaml:"type"`
 	Search SearchStep    `json:"search" yaml:"search"`
 	Select SelectionStep `json:"select" yaml:"select"`
 	Status StatusStep    `json:"status" yaml:"status"`
 }
+
+// RefreshRecipe reads a saved schedule and optionally names the lookup used for bounded renewal.
 type RefreshRecipe struct {
 	Request        string `json:"request" yaml:"request"`
 	RenewalRequest string `json:"renewal_request,omitempty" yaml:"renewal_request,omitempty"`
 }
+
+// Mapping converts provider JSON field locations into one typed waste schedule.
 type Mapping struct {
 	Metadata    MetadataMapping   `json:"metadata" yaml:"metadata"`
 	Collections CollectionMapping `json:"collections" yaml:"collections"`
 }
+
+// MetadataMapping holds schedule-level JSON Pointers relative to the selected result root.
+// These fields preserve provenance and quality; they do not manufacture missing evidence.
 type MetadataMapping struct {
 	PropertyID          string `json:"property_id" yaml:"property_id"`
 	SourceRetrievedAt   string `json:"source_retrieved_at" yaml:"source_retrieved_at"`
@@ -216,10 +266,14 @@ type MetadataMapping struct {
 	Notes               string `json:"notes,omitempty" yaml:"notes,omitempty"`
 	SourceURL           string `json:"source_url,omitempty" yaml:"source_url,omitempty"`
 }
+
+// CollectionMapping locates the collection list once; Fields applies to every returned service.
 type CollectionMapping struct {
 	Items  string           `json:"items" yaml:"items"`
 	Fields CollectionFields `json:"fields" yaml:"fields"`
 }
+
+// CollectionFields names JSON locations relative to each collection, independently of bin colour.
 type CollectionFields struct {
 	Name                 string `json:"name" yaml:"name"`
 	Dates                string `json:"dates" yaml:"dates"`

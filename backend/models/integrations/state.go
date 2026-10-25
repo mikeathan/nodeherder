@@ -7,6 +7,9 @@ type Choice struct {
 	ID    string `json:"id"`
 	Label string `json:"label"`
 }
+
+// Failure is a sanitized domain/HTTP error. It may be persisted or sent to the browser, so
+// it must not contain credentials, raw provider bodies or internal filesystem paths.
 type Failure struct {
 	ContentHash string       `json:"content_hash,omitempty"`
 	ActiveHash  string       `json:"active_hash,omitempty"`
@@ -16,6 +19,8 @@ type Failure struct {
 	RetryAt     *time.Time   `json:"retry_at,omitempty"`
 	Fields      []FieldError `json:"field_errors,omitempty"`
 }
+
+// FieldError identifies an invalid definition field and optional source position for editor feedback.
 type FieldError struct {
 	Path    string `json:"path"`
 	Message string `json:"message"`
@@ -23,14 +28,22 @@ type FieldError struct {
 	Column  int    `json:"column,omitempty"`
 }
 
-func (e *Failure) Error() string         { return e.Code + ": " + e.Message }
+// Error implements error using only the sanitized failure code/message.
+func (e *Failure) Error() string { return e.Code + ": " + e.Message }
+
+// Fail constructs a domain failure safe for transport after choosing a public message.
 func Fail(code, message string) *Failure { return &Failure{Code: code, Message: message} }
 
+// Credential is private encrypted state bound to a destination origin and revision.
+// It must never be serialized into a public DTO or shareable YAML.
 type Credential struct {
 	Value    string `json:"value"`
 	Origin   string `json:"origin"`
 	Revision uint64 `json:"revision"`
 }
+
+// DefinitionRecord keeps the active host source and a bounded previous revision. Pending
+// source/hash is the recovery journal for a file written before runtime activation commits.
 type DefinitionRecord struct {
 	SeedHash          string    `json:"seed_hash,omitempty"`
 	Key               string    `json:"key"`
@@ -43,6 +56,8 @@ type DefinitionRecord struct {
 	PendingHash       string    `json:"pending_hash,omitempty"`
 	DiskError         string    `json:"disk_error,omitempty"`
 }
+
+// RunSummary is a bounded, sanitized check history entry; it contains no provider response body.
 type RunSummary struct {
 	OperationID string    `json:"operation_id"`
 	Kind        string    `json:"kind"`
@@ -50,6 +65,10 @@ type RunSummary struct {
 	Message     string    `json:"message"`
 	At          time.Time `json:"at"`
 }
+
+// Instance is the encrypted aggregate for a saved connection and its last validated snapshot.
+// Revision prevents lost edits; Generation fences in-flight work after lifecycle changes.
+// BindingID/ResourceID survive compatible repairs; State contains private captured provider values.
 type Instance struct {
 	Runs            []RunSummary          `json:"runs"`
 	ID              string                `json:"id"`
@@ -76,6 +95,10 @@ type Instance struct {
 	CreatedAt       time.Time             `json:"created_at"`
 	UpdatedAt       time.Time             `json:"updated_at"`
 }
+
+// Setup is an encrypted, expiring shared wizard or isolated test session. Its pinned definition
+// and Generation prevent old choices/requests being reused after edits. A completed setup is
+// reduced to a minimal receipt so a repeated Save returns the original instance instead of a new POST.
 type Setup struct {
 	ID                 string                `json:"id"`
 	DefinitionKey      string                `json:"definition_key"`
@@ -101,6 +124,10 @@ type Setup struct {
 	ConnectionName     string                `json:"connection_name,omitempty"`
 	SubmissionHash     string                `json:"submission_hash,omitempty"`
 }
+
+// Operation is the durable identity/checkpoint of one logical lookup, refresh or test.
+// Body and IdempotencyKey must be persisted together before POST and reused byte-for-byte after
+// an ambiguous response. Generation and definition/credential revisions fence obsolete publication.
 type Operation struct {
 	ID                 string            `json:"id"`
 	InstanceID         string            `json:"instance_id,omitempty"`

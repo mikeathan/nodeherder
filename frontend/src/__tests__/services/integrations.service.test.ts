@@ -1,4 +1,4 @@
-import { connectionsApi, ConnectionError } from '@/services/integrations.service';
+import { connectionsApi, createConnectionsApi, ConnectionError } from '@/services/integrations.service';
 afterEach(() => jest.restoreAllMocks());
 test('definition save sends a revision and cookie mutation header', async () => {
   const fetch = jest.spyOn(global, 'fetch').mockResolvedValue(
@@ -41,4 +41,16 @@ test('preserves actionable conflict errors and rejects malformed success', async
 test('401 is a session failure without retaining an upstream body', async () => {
   jest.spyOn(global, 'fetch').mockResolvedValue(new Response('private upstream details', { status: 401 }));
   await expect(connectionsApi.instances()).rejects.toBeInstanceOf(ConnectionError);
+});
+
+test('page lifetime signals are attached to mutations as well as reads', async () => {
+  const controller = new AbortController();
+  const fetch = jest
+    .spyOn(global, 'fetch')
+    .mockResolvedValue(new Response(JSON.stringify({ data: {}, error: null }), { status: 200 }));
+  const api = createConnectionsApi(controller.signal);
+  await api.remove('id', 'etag');
+  expect(fetch.mock.calls[0][1]?.signal).toBe(controller.signal);
+  controller.abort();
+  expect((fetch.mock.calls[0][1]?.signal as AbortSignal).aborted).toBe(true);
 });

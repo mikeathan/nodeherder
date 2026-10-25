@@ -2,8 +2,9 @@ package integrations
 
 import (
 	"context"
-	"node-herder/repository"
 	"os"
+
+	"node-herder/repository"
 )
 
 // Bootstrap keeps unavailable optional Connections storage independent of device management.

@@ -227,6 +227,9 @@ func (tx *IntegrationTx) bucket(name string) (*bolt.Bucket, error) {
 	}
 	return nil, errors.New("unknown integration aggregate")
 }
+
+// aad binds ciphertext to this installation, schema, bucket and ID. Copying an encrypted
+// record to another row/database must fail authentication even if the same key was restored.
 func (r *IntegrationRepository) aad(bucket, id string) []byte {
 	return []byte("nodeherder.integrations/" + integrationSchema + "\x00" + r.installation + "\x00" + bucket + "\x00" + id)
 }
@@ -248,6 +251,8 @@ func (r *IntegrationRepository) decrypt(bucket, id string, data []byte) ([]byte,
 	}
 	return plain, nil
 }
+
+// Get decrypts one transaction-scoped record; false means absent, never a concealed decode failure.
 func (tx *IntegrationTx) Get(bucket, id string, out any) (bool, error) {
 	b, e := tx.bucket(bucket)
 	if e != nil {
@@ -266,6 +271,8 @@ func (tx *IntegrationTx) Get(bucket, id string, out any) (bool, error) {
 	}
 	return true, nil
 }
+
+// Put JSON-encodes and encrypts an aggregate under its bucket/ID before the transaction commits.
 func (tx *IntegrationTx) Put(bucket, id string, value any) error {
 	b, e := tx.bucket(bucket)
 	if e != nil {
@@ -285,6 +292,7 @@ func (tx *IntegrationTx) Put(bucket, id string, value any) error {
 		return errors.New("integration record limit exceeded")
 	}
 	key := tx.repo.keys[tx.repo.active]
+	// Every write gets a fresh cryptographic nonce, including rewrites of the same aggregate.
 	nonce := make([]byte, key.NonceSize())
 	if _, e = io.ReadFull(rand.Reader, nonce); e != nil {
 		return e
@@ -296,6 +304,8 @@ func (tx *IntegrationTx) Put(bucket, id string, value any) error {
 	}
 	return b.Put([]byte(id), data)
 }
+
+// Delete removes one live record in this transaction; retained backups/free pages are not secure-erased.
 func (tx *IntegrationTx) Delete(bucket, id string) error {
 	b, e := tx.bucket(bucket)
 	if e != nil {

@@ -1,19 +1,8 @@
 <script setup lang="ts">
+  import { focusConnectionField } from './field-focus';
   import type { ConnectionFailure } from '@/types/integrations.type';
   function hasField(path: string) {
     return Boolean(document.getElementById(path));
-  }
-  function focusField(path: string) {
-    const element = document.getElementById(path);
-    if (!element) return;
-    let parent = element.parentElement;
-    while (parent) {
-      if (parent.tagName === 'DETAILS') (parent as HTMLDetailsElement).open = true;
-      parent = parent.parentElement;
-    }
-    element.tabIndex = -1;
-    element.focus();
-    element.scrollIntoView({ block: 'center' });
   }
   defineProps<{ error?: ConnectionFailure | null; busy?: boolean }>();
 </script>
@@ -29,7 +18,7 @@
           v-if="field.path && hasField(field.path)"
           type="button"
           class="nh-btn is-ghost"
-          @click="focusField(field.path)">
+          @click="focusConnectionField(field.path)">
           {{ field.path }}</button
         ><span v-else-if="field.path">{{ field.path }}:</span> {{ field.message }}
       </li>

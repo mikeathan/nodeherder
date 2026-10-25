@@ -266,3 +266,16 @@ Questions block only their dependent implementation, not this investigation.
 
 M1 delivery boundary: later assistant/automation/replacement milestones are roadmap proposals,
 not authorization to change those views now. Resolve their own scenarios before dependent work.
+
+## Follow-up: maintainability and lifecycle review (2026-10-25)
+
+User-requested refactor of the new Connections code, preserving M1 behavior and wire/storage contracts.
+AC-28: Route components present data and delegate orchestration to focused composables; provider
+form sections own one concern and never mutate parent-owned nested props. Pure definition edits
+(request/capture rename and path updates) preserve references and have source-owned tests.
+AC-29: Async reads, observers, timers, animation frames and event listeners have explicit ownership,
+cleanup and stale-result guards. Superseded observers cannot refresh state or schedule work. Draft
+persistence avoids synchronous full-document cloning on every nested mutation; private data stays in memory.
+AC-30: New Go types/exported APIs and non-obvious algorithms document purpose, trust boundaries,
+state invariants and failure behavior. JSON Pointer documentation includes a concrete example and
+escaping/array semantics. Comments explain decisions rather than restating assignments.

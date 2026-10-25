@@ -87,6 +87,9 @@ func (s *Service) loadDefinitions() error {
 		return nil
 	})
 }
+
+// Definition reads host source and active metadata without contacting a provider. Missing or
+// unreadable files retain the last active source so the editor can offer explicit recovery.
 func (s *Service) Definition(key string) (DefinitionDTO, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -109,7 +112,16 @@ func (s *Service) Definition(key string) (DefinitionDTO, error) {
 			source = r.YAML
 			hash = ""
 		}
-		out = DefinitionDTO{Key: key, YAML: source, ContentHash: hash, ActiveHash: r.Hash, Revision: r.Revision, ETag: StrongETag(hash), Status: "active", DiskError: r.DiskError}
+		out = DefinitionDTO{
+			Key:         key,
+			YAML:        source,
+			ContentHash: hash,
+			ActiveHash:  r.Hash,
+			Revision:    r.Revision,
+			ETag:        StrongETag(hash),
+			Status:      "active",
+			DiskError:   r.DiskError,
+		}
 		if c, e := CompileYAML(source); e == nil {
 			out.Document = c.Definition
 		} else {
@@ -140,6 +152,9 @@ func (s *Service) Definition(key string) (DefinitionDTO, error) {
 	})
 	return out, e
 }
+
+// ValidateDefinition checks source or Form JSON without writing files or sending requests.
+// It also reports the origin/credential revisions requiring explicit review before activation.
 func (s *Service) ValidateDefinition(key, source string, document json.RawMessage) (ValidationDTO, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -266,7 +281,13 @@ func (s *Service) SaveDefinition(key, source, expected string, create bool, revi
 			_, writtenHash, readErr := s.files.Read(key)
 			if readErr == nil && writtenHash == validation.Hash {
 				s.mu.Unlock()
-				return DefinitionDTO{}, &model.Failure{Code: "saved_not_applied", Message: "The host file contains these changes, but saving/applying could not be fully confirmed. The previous version remains active; use Reload to recover.", ContentHash: writtenHash, ActiveHash: record.Hash, RetryAction: "reload"}
+				return DefinitionDTO{}, &model.Failure{
+					Code:        "saved_not_applied",
+					Message:     "The host file contains these changes, but saving/applying could not be fully confirmed. The previous version remains active; use Reload to recover.",
+					ContentHash: writtenHash,
+					ActiveHash:  record.Hash,
+					RetryAction: "reload",
+				}
 			}
 		}
 		_ = s.repo.Update(func(tx *repository.IntegrationTx) error {
@@ -283,10 +304,19 @@ func (s *Service) SaveDefinition(key, source, expected string, create bool, revi
 	e = s.activateDefinition(key, source, validation.Hash, review)
 	s.mu.Unlock()
 	if e != nil {
-		return DefinitionDTO{}, &model.Failure{Code: "saved_not_applied", Message: "The file was saved but could not be activated. The previous definition remains active; use Reload to recover.", ContentHash: validation.Hash, ActiveHash: record.Hash, RetryAction: "reload"}
+		return DefinitionDTO{}, &model.Failure{
+			Code:        "saved_not_applied",
+			Message:     "The file was saved but could not be activated. The previous definition remains active; use Reload to recover.",
+			ContentHash: validation.Hash,
+			ActiveHash:  record.Hash,
+			RetryAction: "reload",
+		}
 	}
 	return s.Definition(key)
 }
+
+// reviewDestination requires consent outside the editable file. Configuration text is
+// descriptive and cannot grant itself permission to send saved inputs/credentials elsewhere.
 func reviewDestination(v ValidationDTO, r *DestinationReview) error {
 	if v.PreviousOrigin != "" && v.Origin != v.PreviousOrigin {
 		if r == nil || r.Origin != v.Origin {
@@ -306,6 +336,10 @@ func reviewDestination(v ValidationDTO, r *DestinationReview) error {
 	}
 	return nil
 }
+
+// activateDefinition commits the revision and invalidates obsolete work together. The
+// host file has already been written/journaled; a failure leaves that mismatch observable
+// for explicit retry/restart recovery rather than pretending the active source changed.
 func (s *Service) activateDefinition(key, source, hash string, review *DestinationReview) error {
 	c, e := CompileYAML(source)
 	if e != nil {
@@ -419,6 +453,8 @@ func (s *Service) activateDefinition(key, source, hash string, review *Destinati
 		return nil
 	})
 }
+
+// ReloadDefinition validates and activates the current host file under an optimistic hash check.
 func (s *Service) ReloadDefinition(key, expected string, review *DestinationReview) (DefinitionDTO, error) {
 	s.mu.Lock()
 	if e := s.ready(); e != nil {
@@ -465,6 +501,9 @@ func (s *Service) reloadDefinition(key, expected string, review *DestinationRevi
 	}
 	return s.activateDefinition(key, source, hash, review)
 }
+
+// RestoreDefinition writes the retained previous good source as a new revision; it does not
+// roll back private connection data or bypass changed-destination review.
 func (s *Service) RestoreDefinition(key, expected string, review *DestinationReview) (DefinitionDTO, error) {
 	s.mu.Lock()
 	var previous string
@@ -489,6 +528,8 @@ func (s *Service) RestoreDefinition(key, expected string, review *DestinationRev
 	}
 	return s.SaveDefinition(key, previous, expected, false, review)
 }
+
+// DeleteDefinition removes an unused host definition. Live instances/setup references block deletion.
 func (s *Service) DeleteDefinition(key, expected string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()

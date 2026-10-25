@@ -25,6 +25,7 @@ type IntegrationDefinitions struct {
 	mu   sync.Mutex
 }
 
+// OpenIntegrationDefinitions opens the fixed host-definition directory without a temporary fallback.
 func OpenIntegrationDefinitions(root string) (*IntegrationDefinitions, error) {
 	if root == "" {
 		return nil, errors.New("integration configuration directory is required")
@@ -70,6 +71,8 @@ func (r *IntegrationDefinitions) path(key string, create bool) (string, error) {
 	}
 	return p, nil
 }
+
+// Read returns exact source bytes and their hash after validating the fixed-directory path.
 func (r *IntegrationDefinitions) Read(key string) (string, string, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -86,6 +89,8 @@ func (r *IntegrationDefinitions) Read(key string) (string, string, error) {
 	}
 	return string(b), definitionDigest(b), nil
 }
+
+// List discovers bounded type/provider IDs from regular YAML files, excluding symlinks.
 func (r *IntegrationDefinitions) List() ([]string, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -209,6 +214,8 @@ func (r *IntegrationDefinitions) Write(key, source, expected string) error {
 	}
 	return nil
 }
+
+// Delete conditionally removes one host file after verifying its expected content hash.
 func (r *IntegrationDefinitions) Delete(key, expected string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()

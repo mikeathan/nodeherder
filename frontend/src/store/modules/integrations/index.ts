@@ -35,45 +35,35 @@ export const IntegrationsModule: Module<ConnectionsState, RootState> = {
       state.setup = value;
     },
     draft(state, { key, value }: { key: string; value: ProviderDraft }) {
+      // Definitions are bounded server-side; keep at most 32 recently visited editor drafts.
+      // Reinsert the current key so subsequent eviction never discards the active draft.
+      delete state.drafts[key];
       state.drafts[key] = value;
+      const oldest = Object.keys(state.drafts)[0];
+      if (Object.keys(state.drafts).length > 32) delete state.drafts[oldest];
     },
   },
   actions: {
+    // Transport/auth feedback belongs to the page scope. Store actions only own accepted data.
     async load({ state, commit }, signal?: AbortSignal) {
       const generation = state.generation;
-      try {
-        const [catalog, instances] = await Promise.all([
-          connectionsApi.catalog(signal),
-          connectionsApi.instances(signal).catch((e) => {
-            if (e instanceof ConnectionError && e.status === 503) return [];
-            throw e;
-          }),
-        ]);
-        if (generation === state.generation) {
-          commit('catalog', catalog);
-          commit('instances', instances);
-        }
-      } catch (e) {
-        if (generation === state.generation && e instanceof ConnectionError && e.status === 401) {
-          commit('clear');
-          commit('auth/logout', undefined, { root: true });
-        }
-        throw e;
+      const [catalog, instances] = await Promise.all([
+        connectionsApi.catalog(signal),
+        connectionsApi.instances(signal).catch((error) => {
+          if (error instanceof ConnectionError && error.status === 503) return [];
+          throw error;
+        }),
+      ]);
+      if (generation === state.generation && !signal?.aborted) {
+        commit('catalog', catalog);
+        commit('instances', instances);
       }
     },
     async loadInstance({ state, commit }, { id, signal }: { id: string; signal?: AbortSignal }) {
       const generation = state.generation;
-      try {
-        const value = await connectionsApi.instance(id, signal);
-        if (generation === state.generation) commit('current', value);
-        return value;
-      } catch (e) {
-        if (generation === state.generation && e instanceof ConnectionError && e.status === 401) {
-          commit('clear');
-          commit('auth/logout', undefined, { root: true });
-        }
-        throw e;
-      }
+      const value = await connectionsApi.instance(id, signal);
+      if (generation === state.generation && !signal?.aborted) commit('current', value);
+      return value;
     },
   },
 };

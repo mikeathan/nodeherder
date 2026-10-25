@@ -62,6 +62,11 @@ test('Form and YAML repair share a draft across Help and work without horizontal
   await page.getByRole('link', { name: 'Help', exact: true }).click();
   await page.getByRole('searchbox', { name: 'Find help' }).fill('schema');
   await expect(page.getByRole('heading', { name: 'Map the response fields' })).toBeVisible();
+  // Deliberately slow instance loading: focus must be restored after the disabled fieldset reopens.
+  await page.route('**/api/integrations/instances', async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    await route.fallback();
+  });
   await page.getByRole('link', { name: 'Configure operations', exact: true }).click();
   await expect(page.getByRole('textbox', { name: 'Display name', exact: true })).toHaveValue('Waste dates provider');
   await expect(page.getByRole('textbox', { name: 'Provider URL', exact: true })).toBeFocused();
@@ -100,4 +105,51 @@ test('invalid YAML and a feature network failure keep the editable draft', async
   await page.getByRole('button', { name: 'Validate', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('NodeHerder could not be reached');
   await expect(editor).toHaveValue(valid);
+});
+
+test('connection settings preserve saved results when renamed or disabled', async ({ page }) => {
+  await signInConnections(page);
+  await addConnection(page);
+  await page.getByRole('link', { name: 'Setup', exact: true }).click();
+  await page.getByRole('textbox', { name: 'Connection name', exact: true }).fill('My collection dates');
+  await page.getByRole('button', { name: 'Save name', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'My collection dates', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Disable connection', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Enable connection', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Refresh', exact: true })).toBeDisabled();
+  await page.getByRole('link', { name: 'Results', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Paper and card', exact: true })).toBeVisible();
+});
+
+test('an expired login during catalog loading returns to sign in', async ({ page }) => {
+  await signInConnections(page);
+  await page.context().clearCookies();
+  await page.route('**/api/integrations/**', (route) =>
+    route.fulfill({
+      status: 401,
+      contentType: 'application/json',
+      body: JSON.stringify({ data: null, error: { code: 'unauthorized', message: 'Expired' } }),
+    })
+  );
+  await page.reload();
+  await expect(page.getByRole('button', { name: /Sign in with Google/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Add connection', exact: true })).toHaveCount(0);
+});
+
+test('an expired editor session discards private drafts without a leave confirmation', async ({ page }) => {
+  await signInConnections(page);
+  await page.getByRole('link', { name: 'Configure operations', exact: true }).click();
+  await page.getByRole('textbox', { name: 'Display name', exact: true }).fill('Unsaved editor draft');
+  // Expire the session in both the real feature API and the separate shell auth fixture.
+  await page.context().clearCookies();
+  await page.route('**/api/integrations/**', (route) =>
+    route.fulfill({
+      status: 401,
+      contentType: 'application/json',
+      body: JSON.stringify({ data: null, error: { code: 'unauthorized', message: 'Expired' } }),
+    })
+  );
+  await page.getByRole('button', { name: 'Validate', exact: true }).click();
+  await expect(page.getByRole('button', { name: /Sign in with Google/i })).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
 });

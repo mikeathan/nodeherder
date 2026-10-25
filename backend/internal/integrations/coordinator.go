@@ -3,9 +3,10 @@ package integrations
 import (
 	"context"
 	"errors"
-	"github.com/google/uuid"
 	"slices"
 	"time"
+
+	"github.com/google/uuid"
 
 	"node-herder/internal/integrations/capabilities"
 	"node-herder/internal/integrations/operations"
@@ -89,17 +90,15 @@ func (s *Service) owner(tx *repository.IntegrationTx, o model.Operation) (operat
 	owner.credentials = i.Credentials
 	return owner, nil
 }
-func (s *Service) execute(id string) {
-	ctx, cancel := context.WithTimeout(s.ctx, 30*time.Second)
-	defer cancel()
+
+// claimOperation moves queued work to running atomically before any network request. Admission,
+// credential/generation checks and registration of its cancel function share the Service lock.
+func (s *Service) claimOperation(id string, cancel context.CancelFunc) (op model.Operation, owner operationOwner, c *CompiledDefinition, accepted bool) {
 	s.mu.Lock()
+	defer s.mu.Unlock()
 	if s.closed {
-		s.mu.Unlock()
-		return
+		return op, owner, c, false
 	}
-	var op model.Operation
-	var owner operationOwner
-	var c *CompiledDefinition
 	e := s.repo.Update(func(tx *repository.IntegrationTx) error {
 		ok, e := tx.Get("operations", id, &op)
 		if e != nil {
@@ -134,14 +133,39 @@ func (s *Service) execute(id string) {
 		if e != nil && op.Status == "queued" {
 			s.failedPublication(op, e)
 		}
-		s.mu.Unlock()
-		return
+		return op, owner, c, false
 	}
 	s.running[id] = cancel
-	s.mu.Unlock()
-	defer func() { s.mu.Lock(); delete(s.running, id); s.mu.Unlock() }()
+	return op, owner, c, true
+}
+
+// execute performs at most the admitted request and one bounded renewal. Network I/O is
+// outside the Service lock; every publication rechecks its owner inside the write transaction.
+func (s *Service) execute(id string) {
+	ctx, cancel := context.WithTimeout(s.ctx, 30*time.Second)
+	defer cancel()
+	op, owner, c, accepted := s.claimOperation(id, cancel)
+	if !accepted {
+		return
+	}
+	defer func() {
+		s.mu.Lock()
+		delete(s.running, id)
+		s.mu.Unlock()
+	}()
+	// A renewal is the only extra iteration; pending lookup status never loops/sleeps here.
 	for n := 0; n < 2; n++ {
-		a := operations.Attempt{Definition: c.Definition, RequestID: op.RequestID, Inputs: op.Inputs, State: op.State, ApprovedOrigin: op.Origin, Credential: credential(c.Definition, owner.credentials), Body: op.Body, IdempotencyKey: op.IdempotencyKey, ETag: op.ETag}
+		a := operations.Attempt{
+			Definition:     c.Definition,
+			RequestID:      op.RequestID,
+			Inputs:         op.Inputs,
+			State:          op.State,
+			ApprovedOrigin: op.Origin,
+			Credential:     credential(c.Definition, owner.credentials),
+			Body:           op.Body,
+			IdempotencyKey: op.IdempotencyKey,
+			ETag:           op.ETag,
+		}
 		response, runErr := operations.Execute(ctx, s.http, a, s.clock.Now())
 		if runErr == nil && response.Status == 304 && (a.ETag == "" || op.CacheScope == "" || owner.instance.Snapshot == nil || owner.instance.CacheScope != op.CacheScope) {
 			a.ETag = ""
@@ -157,7 +181,7 @@ func (s *Service) execute(id string) {
 		}
 		next := false
 		var deadlineToPublish *time.Time
-		e = s.repo.Update(func(tx *repository.IntegrationTx) error {
+		e := s.repo.Update(func(tx *repository.IntegrationTx) error {
 			current, e := s.owner(tx, op)
 			if e != nil {
 				return e
@@ -170,10 +194,7 @@ func (s *Service) execute(id string) {
 					f.RetryAt = &deadline
 				}
 				deadlineToPublish = f.RetryAt
-				if e = tx.Put("limits", ContentHash([]byte(op.Origin)), struct {
-					Origin   string    `json:"origin"`
-					Deadline time.Time `json:"deadline"`
-				}{op.Origin, *f.RetryAt}); e != nil {
+				if e = saveProviderLimit(tx, op.Origin, *f.RetryAt); e != nil {
 					return e
 				}
 				return s.failOperation(tx, &op, owner, f)
@@ -192,10 +213,7 @@ func (s *Service) execute(id string) {
 				f := classifiedFailure(c.Definition, response)
 				if f.RetryAt != nil {
 					deadlineToPublish = f.RetryAt
-					if e = tx.Put("limits", ContentHash([]byte(op.Origin)), struct {
-						Origin   string    `json:"origin"`
-						Deadline time.Time `json:"deadline"`
-					}{op.Origin, *f.RetryAt}); e != nil {
+					if e = saveProviderLimit(tx, op.Origin, *f.RetryAt); e != nil {
 						return e
 					}
 				}
@@ -205,113 +223,54 @@ func (s *Service) execute(id string) {
 				return s.finishSearch(tx, &op, owner, c, response)
 			}
 			if response.Status == 304 {
-				if owner.instance.Snapshot == nil {
-					return s.failOperation(tx, &op, owner, model.Fail("invalid_response", "No saved collection data exists for this response."))
+				return s.finishUnchanged(tx, &op, owner)
+			}
+
+			complete, err := s.acceptLookupProgress(tx, &op, owner, c, response)
+			if err != nil || !complete {
+				return err
+			}
+
+			r, e := s.normalizeOperationResult(tx, op, owner, c, response)
+			if e != nil {
+				if failure(e).Code == "no_collection_dates" && op.Kind == "refresh" && !op.Renewed && owner.instance.Snapshot != nil && c.Definition.Refresh.RenewalRequest != "" {
+					if renewalErr := s.renewOperation(tx, &op, owner, c); renewalErr == nil {
+						next = true
+						return nil
+					}
 				}
-				i := owner.instance
-				i.Snapshot.LastCheckedAt = s.clock.Now().UTC()
-				s.recordRun(&i, op, "done", "The schedule is unchanged; source verification time was preserved.")
-				i.OperationID = ""
-				i.LastError = nil
-				i.Revision++
-				i.UpdatedAt = s.clock.Now()
+				return s.failOperation(tx, &op, owner, failure(e))
+			}
+			state, e := operations.Capture(response.Body, c.Definition.Requests[op.RequestID], op.State, true)
+			if e != nil {
+				return s.failOperation(tx, &op, owner, failure(e))
+			}
+			if owner.test {
+				p := owner.setup
+				p.Preview = &r.Snapshot
+				p.Status = "completed"
+				p.Revision++
+				p.Inputs = nil
+				p.State = nil
+				p.Credentials = nil
 				op.Status = "done"
 				clearAttempt(&op)
-				if e = tx.Put("instances", i.ID, i); e != nil {
+				if e = tx.Put("setups", p.ID, p); e != nil {
 					return e
 				}
 				return tx.Put("operations", op.ID, op)
 			}
-			complete := op.Kind == "refresh" || owner.test
-			if !complete {
-				v, ok := Pointer(response.Body, c.Definition.Setup.Status.Pointer)
-				status, is := v.(string)
-				if !ok || !is {
-					return s.failOperation(tx, &op, owner, model.Fail("invalid_response", "The provider omitted its lookup status."))
-				}
-				switch {
-				case slices.Contains(c.Definition.Setup.Status.Pending, status):
-					state, e := operations.Capture(response.Body, c.Definition.Requests[op.RequestID], op.State, false)
-					if e != nil {
-						return s.failOperation(tx, &op, owner, failure(e))
-					}
-					op.State = state
-					op.RequestID = c.Definition.Setup.Status.Request
-					op.Body = nil
-					op.Status = "pending"
-					op.RetryAt = s.nextCheck(c.Definition, response.RetryAt)
-					op.LastError = nil
-					if e = s.savePending(tx, op, owner); e != nil {
-						return e
-					}
-					return nil
-				case slices.Contains(c.Definition.Setup.Status.Done, status):
-					complete = true
-				case slices.Contains(c.Definition.Setup.Status.Failed, status):
-					return s.failOperation(tx, &op, owner, model.Fail("lookup_failed", "The provider could not retrieve this address's collection dates."))
-				default:
-					return s.failOperation(tx, &op, owner, model.Fail("invalid_response", "The provider returned an unknown lookup status."))
-				}
+			if e = s.finishSnapshot(tx, &op, owner, c, r, state, response.ETag); e != nil {
+				return e
 			}
-			if complete {
-				selected := op.Inputs[c.Definition.Setup.Select.Input]
-				prior := owner.instance.Snapshot
-				ids := owner.instance.ServiceIDs
-				resource := owner.instance.ResourceID
-				bindingRevision := owner.instance.BindingRevision
-				if owner.test {
-					prior = nil
-					ids = nil
-					resource = ""
-				}
-				if owner.candidate && owner.instance.Inputs[c.Definition.Setup.Select.Input] != selected {
-					prior = nil
-					ids = nil
-					resource = ""
-					bindingRevision++
-				}
-				r, e := capabilities.NormalizeWaste(response.Root, c.Definition.Mapping, capabilities.WasteContext{NewIdentity: snapshotIdentityAllocator(tx), InstanceID: op.InstanceID, ResourceID: resource, ProviderID: c.Definition.ID, ProviderVersion: "sha256:" + op.DefinitionHash, ProfileRevision: op.ProfileRevision, BindingRevision: bindingRevision, SelectedProperty: selected, Now: s.clock.Now(), Previous: prior, ServiceIDs: ids})
-				if e != nil {
-					if failure(e).Code == "no_collection_dates" && op.Kind == "refresh" && !op.Renewed && owner.instance.Snapshot != nil && c.Definition.Refresh.RenewalRequest != "" {
-						if renewalErr := s.renewOperation(tx, &op, owner, c); renewalErr == nil {
-							next = true
-							return nil
-						}
-					}
-					return s.failOperation(tx, &op, owner, failure(e))
-				}
-				state, e := operations.Capture(response.Body, c.Definition.Requests[op.RequestID], op.State, true)
-				if e != nil {
-					return s.failOperation(tx, &op, owner, failure(e))
-				}
-				if owner.test {
-					p := owner.setup
-					p.Preview = &r.Snapshot
-					p.Status = "completed"
-					p.Revision++
-					p.Inputs = nil
-					p.State = nil
-					p.Credentials = nil
-					op.Status = "done"
-					clearAttempt(&op)
-					if e = tx.Put("setups", p.ID, p); e != nil {
-						return e
-					}
-					return tx.Put("operations", op.ID, op)
-				}
-				if e = s.finishSnapshot(tx, &op, owner, c, r, state, response.ETag); e != nil {
+			if op.Kind == "refresh" && !op.Renewed && horizonExhausted(r.Snapshot, s.clock.Now()) && c.Definition.Refresh.RenewalRequest != "" {
+				var i model.Instance
+				if _, e = tx.Get("instances", op.InstanceID, &i); e != nil {
 					return e
 				}
-				if op.Kind == "refresh" && !op.Renewed && horizonExhausted(r.Snapshot, s.clock.Now()) && c.Definition.Refresh.RenewalRequest != "" {
-					var i model.Instance
-					if _, e = tx.Get("instances", op.InstanceID, &i); e != nil {
-						return e
-					}
-					owner.instance = i
-					if e = s.renewOperation(tx, &op, owner, c); e == nil {
-						next = true
-					}
-					return nil
+				owner.instance = i
+				if e = s.renewOperation(tx, &op, owner, c); e == nil {
+					next = true
 				}
 				return nil
 			}
@@ -332,6 +291,99 @@ func (s *Service) execute(id string) {
 		}
 	}
 }
+
+// finishUnchanged advances check time only; provider verification age and content identity
+// remain untouched by HTTP 304. It runs under the same transaction as operation completion.
+func (s *Service) finishUnchanged(tx *repository.IntegrationTx, op *model.Operation, owner operationOwner) error {
+	if owner.instance.Snapshot == nil {
+		return s.failOperation(tx, op, owner, model.Fail("invalid_response", "No saved collection data exists for this response."))
+	}
+	i := owner.instance
+	i.Snapshot.LastCheckedAt = s.clock.Now().UTC()
+	s.recordRun(&i, *op, "done", "The schedule is unchanged; source verification time was preserved.")
+	i.OperationID = ""
+	i.LastError = nil
+	i.Revision++
+	i.UpdatedAt = s.clock.Now()
+	op.Status = "done"
+	clearAttempt(op)
+	if e := tx.Put("instances", i.ID, i); e != nil {
+		return e
+	}
+	return tx.Put("operations", op.ID, *op)
+}
+
+// acceptLookupProgress saves only the lookup checkpoint for pending statuses. Completion
+// permits normalization; failed/unknown statuses become sanitized durable failures.
+func (s *Service) acceptLookupProgress(tx *repository.IntegrationTx, op *model.Operation, owner operationOwner, c *CompiledDefinition, response operations.Response) (bool, error) {
+	if op.Kind == "refresh" || owner.test {
+		return true, nil
+	}
+
+	v, ok := Pointer(response.Body, c.Definition.Setup.Status.Pointer)
+	status, is := v.(string)
+	if !ok || !is {
+		return false, s.failOperation(tx, op, owner, model.Fail("invalid_response", "The provider omitted its lookup status."))
+	}
+	switch {
+	case slices.Contains(c.Definition.Setup.Status.Pending, status):
+		state, e := operations.Capture(response.Body, c.Definition.Requests[op.RequestID], op.State, false)
+		if e != nil {
+			return false, s.failOperation(tx, op, owner, failure(e))
+		}
+		op.State = state
+		op.RequestID = c.Definition.Setup.Status.Request
+		op.Body = nil
+		op.Status = "pending"
+		op.RetryAt = s.nextCheck(c.Definition, response.RetryAt)
+		op.LastError = nil
+		if e := s.savePending(tx, *op, owner); e != nil {
+			return false, e
+		}
+		return false, nil
+	case slices.Contains(c.Definition.Setup.Status.Done, status):
+		return true, nil
+	case slices.Contains(c.Definition.Setup.Status.Failed, status):
+		return false, s.failOperation(tx, op, owner, model.Fail("lookup_failed", "The provider could not retrieve this address's collection dates."))
+	default:
+		return false, s.failOperation(tx, op, owner, model.Fail("invalid_response", "The provider returned an unknown lookup status."))
+	}
+}
+
+// normalizeOperationResult preserves IDs for a compatible refresh. A candidate for a different
+// property starts fresh identities; previews borrow neither an existing resource ID nor its history.
+func (s *Service) normalizeOperationResult(tx *repository.IntegrationTx, op model.Operation, owner operationOwner, c *CompiledDefinition, response operations.Response) (capabilities.WasteResult, error) {
+	selected := op.Inputs[c.Definition.Setup.Select.Input]
+	prior := owner.instance.Snapshot
+	ids := owner.instance.ServiceIDs
+	resource := owner.instance.ResourceID
+	bindingRevision := owner.instance.BindingRevision
+	if owner.test {
+		prior = nil
+		ids = nil
+		resource = ""
+	}
+	if owner.candidate && owner.instance.Inputs[c.Definition.Setup.Select.Input] != selected {
+		prior = nil
+		ids = nil
+		resource = ""
+		bindingRevision++
+	}
+	return capabilities.NormalizeWaste(response.Root, c.Definition.Mapping, capabilities.WasteContext{
+		NewIdentity:      snapshotIdentityAllocator(tx),
+		InstanceID:       op.InstanceID,
+		ResourceID:       resource,
+		ProviderID:       c.Definition.ID,
+		ProviderVersion:  "sha256:" + op.DefinitionHash,
+		ProfileRevision:  op.ProfileRevision,
+		BindingRevision:  bindingRevision,
+		SelectedProperty: selected,
+		Now:              s.clock.Now(),
+		Previous:         prior,
+		ServiceIDs:       ids,
+	})
+}
+
 func failure(e error) *model.Failure {
 	var f *model.Failure
 	if errors.As(e, &f) {

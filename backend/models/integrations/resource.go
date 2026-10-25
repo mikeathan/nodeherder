@@ -2,6 +2,8 @@ package integrations
 
 import "time"
 
+// Quality preserves evidence for an exact property match and the provider's date confidence.
+// Unknown confidence remains unknown; approximate data cannot become an exact-household snapshot.
 type Quality struct {
 	AddressMatch          string  `json:"address_match"`
 	EvidenceGranularity   string  `json:"evidence_granularity"`
@@ -9,6 +11,9 @@ type Quality struct {
 	Provisional           bool    `json:"provisional"`
 	SourceConfidenceLabel *string `json:"source_confidence_label"`
 }
+
+// Provenance records the definition and property-binding revision that produced a snapshot.
+// ProviderVersion is the exact source hash, not an inferred remote API version.
 type Provenance struct {
 	ProviderID      string  `json:"provider_id"`
 	ProviderVersion string  `json:"provider_version"`
@@ -17,11 +22,17 @@ type Provenance struct {
 	CouncilGSS      *string `json:"council_gss"`
 	SourceURL       *string `json:"source_url"`
 }
+
+// Coverage describes the provider's known calendar horizon. Nullable bounds distinguish
+// unknown coverage from a confirmed range; they are local YYYY-MM-DD dates, not UTC instants.
 type Coverage struct {
 	State   string  `json:"state"`
 	From    *string `json:"from"`
 	Through *string `json:"through"`
 }
+
+// WasteService is one collection stream inside a schedule, with a stable local service ID.
+// Dates are Europe/London calendar dates; nil metadata means unknown, not a default measurement.
 type WasteService struct {
 	ServiceID        string   `json:"service_id"`
 	SourceServiceKey *string  `json:"source_service_key"`
@@ -35,6 +46,10 @@ type WasteService struct {
 	Dates            []string `json:"dates"`
 	Coverage         Coverage `json:"coverage"`
 }
+
+// WasteSchedule is the versioned, validated resource exposed to authenticated consumers.
+// Content revision/source age are independent of LastCheckedAt and read-time EvaluatedAt.
+// Nullable timestamps preserve unknown freshness instead of declaring an unchanged response fresh.
 type WasteSchedule struct {
 	ContractVersion       string         `json:"contract_version"`
 	InstanceID            string         `json:"instance_id"`

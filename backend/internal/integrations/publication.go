@@ -1,10 +1,11 @@
 package integrations
 
 import (
+	"time"
+
 	model "node-herder/models/integrations"
 	"node-herder/repository"
 	"node-herder/utils"
-	"time"
 )
 
 type publicationFailure struct {

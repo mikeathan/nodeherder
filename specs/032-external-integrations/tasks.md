@@ -218,3 +218,22 @@ spec/032-connections. No implementation checks are marked passed until their act
 acceptance evidence, concrete corrections, exact check results and operational limitations.
 T003 completes documented-contract/fixture verification only: live account quotas, council coverage
 and provider availability remain operational checks. T022/T023 apply to M1, not M2–M4.
+
+## Reopened follow-up: maintainability review
+
+- [x] T031 — Refactor controlled provider forms and pure request/capture edits; AC-28; source owners:
+  ProviderForm/section components, useEditableModel and domain/provider-definition companions.
+- [x] T032 — Separate catalog/setup/detail and provider editor draft/actions/preview ownership;
+  AC-28/29; source owners: feature composables, presentational results/settings/editor sections.
+- [x] T033 — Fix/test superseded observers, stale responses, timer/listener/frame cleanup and draft
+  retention/cloning; AC-29; source owners: operation-observer, feature composables/domain companions.
+- [x] T034 — Review/document all newly added Go production APIs/types and difficult algorithms;
+  AC-30; source-owned regressions for any logic changes. Preserve persisted/wire semantics.
+- [x] T035 — Re-run required checks; review SOLID/DRY, performance/cleanup and NH/BE/FE evidence;
+  update implementation review and existing PR. Depends T031–34. No live devices/provider jobs.
+
+2026-10-25 follow-up: T031–T035 completed. Responsibilities, documentation and lifecycle fixes
+are recorded in implementation-review.md. Local checks: full Go suite/build/vet, affected-package
+races, 371 frontend tests, build/lint/E2E types, 14 isolated browser checks and 13 Compose config
+checks passed. Original PR CI exposed a focus timing race and Compose false-serialization test
+assumption; both are corrected with local regression evidence. Updated remote CI is a separate result.

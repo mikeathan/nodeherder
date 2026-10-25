@@ -580,3 +580,31 @@ mount supplies encryption keys. The Docker contract makes key generation/permiss
 backup verification implementation work, not an unspecified user choice. T001 is complete as a
 planning decision task; all implementation tasks remain unstarted. M2 and later consumers/replacement
 remain roadmap phases, outside this first-release scope.
+
+## Follow-up design: code quality and lifecycle ownership
+
+Reopened M1 review after user feedback; existing passing tests did not establish adequate separation
+or documentation. No new capabilities, transport/storage contracts or other-view behavior are intended.
+
+- Extract page orchestration into focused catalog/setup/detail composables. Detail presentation
+  separates schedule results and settings. Precompute date labels/upcoming dates outside templates.
+- Separate provider draft lifecycle, validated save/repair actions and preview execution. ProviderEditor
+  composes these owners and presentation components; no component owns direct HTTP orchestration.
+- Split ProviderForm into identity/input, request/capture, recipe wiring, mapping and policy sections.
+  Shared controlled-form helper clones owned JSON data and emits updates; no nested prop writes.
+  Pure domain helpers update request/capture references consistently and are tested independently.
+- Replace the single timer/alive flag with explicitly cancellable latest-observer ownership and
+  component/session-scoped requests. Guard all awaits, stop timers/listeners/frames on disposal,
+  and coalesce/defer draft snapshots. Bound retained draft count, retaining current dirty work.
+- Review all added Go production files. Document exported types/functions and important private
+  state/JSON Pointer, cache/renewal, fencing, atomicity and encryption algorithms. Prefer named
+  helpers/readable multiline code over compound statements. Fix concrete issues found with regressions.
+
+Checks: full Go tests/build/vet; race affected packages; frontend Jest/lint/build, E2E types and
+isolated Connections browser scenarios. Add source-owned pure editing/observer/controlled-form
+regressions using Vue effect scopes/fake timers (no new mounting framework). Review every NH/BE/FE
+rule again; record actual results and remaining operational limits in implementation-review.md.
+
+Follow-up completed: see implementation-review.md for source ownership, concrete defects corrected,
+63 frontend suites/371 tests, 14 browser checks, Go/race/static results and CI regression details.
+No persisted/wire schema or other-view behavior was changed.

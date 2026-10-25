@@ -138,3 +138,92 @@ not securely erase bbolt free pages or backups; preserve/protect old keys for re
 Next milestones require separate work: M2 automatic scheduling/pending continuation; M3 protected
 assistant/automation consumers; M4 second-provider/replacement mapping and identity review. Widgets,
 Home/Panel placements, marketplace, scripts and additional household roles remain excluded.
+
+## Follow-up refactor and review (2026-10-25, AC-28–30)
+
+The initial implementation passed behavior tests but its Vue route/form components still mixed
+application orchestration, draft lifecycle and rendering; exported Go APIs/types were insufficiently
+documented. The user correctly requested another review. T031–T035 track this same-branch follow-up.
+
+### Responsibilities and abstractions
+
+- Route components now compose `useConnectionsCatalog`, `useConnectionSetup`, `useConnectionDetail`
+  and `useProviderEditor`. The editor separately composes `useProviderDraft` (document/Help lifecycle)
+  and `useProviderPreview` (temporary sample/test state). HTTP stays in the existing service; Vuex
+  owns shared accepted state. There is no new state/UI framework or persistence schema.
+- `ProviderForm.vue` is an 81-line section coordinator, down from 344 lines. Identity/inputs,
+  individual requests/captures, setup wiring, collection mapping and policy have controlled form
+  sections. `useEditableModel` owns each section's JSON draft and emits replacements, rather than
+  mutating parent props. Pure request/capture renaming lives in `domain/provider-definition.ts`.
+- `ProviderEditor.vue` is 134 lines, down from 492. Comparison, explicit destination review and
+  test preview panels are presentation components. Results and settings are separate components;
+  `domain/waste-schedule.ts` computes upcoming cards once per accepted local projection.
+- Go validation has named metadata/input/recipe/request/phase/output checks. Operation claiming,
+  pending-status handling, unchanged-cache completion and normalization context are separate helpers.
+  Long composite literals/imports are formatted for review. New Go types/exported APIs explain their
+  purpose, private/public boundaries and state invariants. Package docs and JSON Pointer comments
+  explain `/result/collections/0/name`, `~0`/`~1`, arrays, missing vs null and borrowed values.
+  Inline comments cover credential selection, exact POST replay, identity, encryption AAD and publication.
+
+### Concrete defects corrected
+
+- Renaming a capture previously left `state.<name>` uses and alternate completion-path producers
+  behind. The pure edit now updates all declared producers and typed uses atomically, preserving
+  fixed strings and rejecting collisions/invalid identifiers.
+- Replaced observers could finish late and refresh/schedule again. `createOperationObserver` owns
+  cancellation and its one timer, checks ownership after each await and stops at terminal status
+  or 30 seconds. Tests cover replacement, disposal mid-refresh and late errors.
+- Mutations now use the page/session abort signal too. Store commits check generation and signal;
+  page scopes own auth handling once. An expired editor session bypasses the dirty-leave dialog,
+  clears private state and reaches Login. Token buffers clear on abort/unmount; pending focus frames
+  are cancelled. Date refresh listeners/intervals are removed on unmount and do no provider I/O.
+- Full-document synchronous deep cloning on each keystroke is removed. Form sections emit owned
+  replacements; editor snapshots occur at explicit validation/navigation points. Memory-only drafts
+  keep the 32 most recently visited providers (documented in Help), with logout clearing all drafts.
+- Expired provider backoff origins previously accumulated. A shared typed limit record and
+  `activeProviderLimits` prune encrypted rows and publish the in-memory map only after commit.
+  Cleanup failures now emit a sanitized warning instead of being silently discarded.
+- Error-target focusing no longer removes actual form controls from keyboard tab order.
+
+### Verification and scope
+
+The follow-up runs full Go tests/build/vet and affected-package race detection, full frontend unit
+checks/build/lint, E2E type checks and the isolated desktop/mobile Connections scenarios. Final
+counts/results are recorded below. Focused regressions belong to their production
+owners: observer, controlled model, provider-definition edits, waste presentation, API service,
+Vuex store, Go JSON Pointer and provider-limit cleanup. Existing public-boundary, storage, shutdown
+and manual lifecycle tests remain part of the full suites.
+
+Every NH/BE/FE rule was revisited: NH-01 uses the existing spec/plan/tasks; NH-02/BE-02 device
+semantics remain untouched; NH-03/BE-05/FE-05 retain authenticated/private contracts and cleanup;
+NH-04/BE-01/FE-01 improve ownership without a framework migration; NH-05 maps regressions to source
+owners; NH-06/BE-03/BE-04 cover bounded retention/observation, transactional pruning and race/shutdown
+checks; FE-02 preserves DTO/mock contracts; FE-03/04 retain feedback, keyboard and viewport evidence.
+No exception, maintainer approval or constitutional ratification is claimed.
+
+This is code/lifecycle review and regression evidence, not a heap-profile, sustained-load benchmark
+or guarantee that no undiscovered issue remains. No live provider/device/deployment checks were added.
+The M1 scope and later roadmap are unchanged.
+
+### Final follow-up check results
+
+- Go 1.24.8: full `go test -count=1 -timeout=5m ./...`, `go build ./...` and `go vet ./...` passed.
+  `go test -race -count=1 ./internal/integrations/... ./models/integrations ./repository ./internal/api
+  ./internal/auth ./internal .` passed; the final coordinator simplification also passed the
+  `./internal/integrations/...` race run.
+- Node 24: 63 Jest suites / **371 tests passed**; frontend build, lint and E2E type checking passed.
+  Lint still reports the same seven existing script warnings, zero errors.
+- **14 isolated Playwright checks passed**, desktop and mobile. This includes slow instance
+  loading before Help focus restoration, name/disable result preservation, catalog expiry and
+  expiry while a dirty provider editor is open.
+- **13 real Compose config-only tests passed** without a running daemon. The original PR CI's
+  omitted-false JSON serialization is now accepted only alongside an explicit source false check.
+- Local Markdown links and `git diff --check` passed; the exported Go declaration comment audit
+  found no undocumented declarations in the new runtime/model/repository APIs. This audit is a
+  review aid, not a replacement for the semantic comments/examples or compiler/test evidence.
+
+During iteration, new expiry tests initially left the shell fixture's cookie valid while rejecting
+Connections. Both fixtures now represent actual expiry consistently. Original PR CI also exposed
+focus restoration while a loading fieldset was disabled: restoration now follows completion of
+that local read, and the browser test deliberately delays it. These failures were resolved locally;
+remote CI for the new commit is tracked separately from these local results.

@@ -16,12 +16,16 @@ import (
 	model "node-herder/models/integrations"
 )
 
+// MaxResponseBytes bounds the decoded provider body, including decompressed responses.
 const MaxResponseBytes = 2 << 20
 
 // Doer permits isolated HTTP fixtures; production uses the policy-bound client.
 type Doer interface {
 	Do(*http.Request) (*http.Response, error)
 }
+
+// Attempt supplies a pinned definition, private input/state and approved credential context.
+// Body is nil before first construction; a persisted non-nil body must be replayed unchanged.
 type Attempt struct {
 	Definition           model.Definition
 	RequestID            string
@@ -32,6 +36,9 @@ type Attempt struct {
 	Body                 []byte
 	IdempotencyKey, ETag string
 }
+
+// Response retains status and selected headers separately from parsed JSON. Body is the
+// original envelope, Root is the configured result object; 304 legitimately has no JSON body.
 type Response struct {
 	Status  int
 	Body    any
@@ -249,6 +256,9 @@ func Execute(ctx context.Context, client Doer, a Attempt, now time.Time) (Respon
 	}
 	return out, nil
 }
+
+// RetryAfter interprets either Retry-After seconds or an HTTP-date relative to now.
+// Malformed values provide no deadline; common admission/backoff policy remains the caller's job.
 func RetryAfter(raw string, now time.Time) *time.Time {
 	if raw == "" {
 		return nil

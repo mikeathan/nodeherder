@@ -1,25 +1,20 @@
 package integrations
 
 import (
+	"time"
+
 	model "node-herder/models/integrations"
 	"node-herder/repository"
-	"time"
+	"node-herder/utils"
 )
 
 func (s *Service) recoverOperations() error {
-	return s.repo.Update(func(tx *repository.IntegrationTx) error {
-		if e := tx.Each("limits", func(_ string, b []byte) error {
-			var limit struct {
-				Origin   string    `json:"origin"`
-				Deadline time.Time `json:"deadline"`
-			}
-			if e := repository.DecodeIntegrationRecord(b, &limit); e != nil {
-				return e
-			}
-			s.providerDeadlines[limit.Origin] = limit.Deadline
-			return nil
-		}); e != nil {
-			return e
+	var deadlines map[string]time.Time
+	err := s.repo.Update(func(tx *repository.IntegrationTx) error {
+		var err error
+		deadlines, err = activeProviderLimits(tx, s.clock.Now())
+		if err != nil {
+			return err
 		}
 		updates := []model.Operation{}
 		if e := tx.Each("operations", func(_ string, b []byte) error {
@@ -44,6 +39,10 @@ func (s *Service) recoverOperations() error {
 		}
 		return nil
 	})
+	if err == nil {
+		s.providerDeadlines = deadlines
+	}
+	return err
 }
 func (s *Service) scheduleCleanup() {
 	s.mu.Lock()
@@ -60,7 +59,9 @@ func (s *Service) scheduleCleanup() {
 		s.wg.Add(1)
 		s.mu.Unlock()
 		defer s.wg.Done()
-		_ = s.Cleanup()
+		if err := s.Cleanup(); err != nil {
+			utils.LogWarn("Connections cleanup could not finish; retained records will be retried.")
+		}
 		s.scheduleCleanup()
 	})
 }
@@ -72,7 +73,13 @@ func (s *Service) Cleanup() error {
 	if e := s.ready(); e != nil {
 		return e
 	}
+	var deadlines map[string]time.Time
 	err := s.repo.Update(func(tx *repository.IntegrationTx) error {
+		var err error
+		deadlines, err = activeProviderLimits(tx, s.clock.Now())
+		if err != nil {
+			return err
+		}
 		expiredSetups := []model.Setup{}
 		if e := tx.Each("setups", func(_ string, b []byte) error {
 			var p model.Setup
@@ -101,7 +108,15 @@ func (s *Service) Cleanup() error {
 					return e
 				}
 			}
-			p = model.Setup{ID: p.ID, DefinitionKey: p.DefinitionKey, Status: "expired", Revision: p.Revision + 1, Generation: p.Generation + 1, Choices: []model.Choice{}, ExpiresAt: s.clock.Now().Add(24 * time.Hour)}
+			p = model.Setup{
+				ID:            p.ID,
+				DefinitionKey: p.DefinitionKey,
+				Status:        "expired",
+				Revision:      p.Revision + 1,
+				Generation:    p.Generation + 1,
+				Choices:       []model.Choice{},
+				ExpiresAt:     s.clock.Now().Add(24 * time.Hour),
+			}
 			if e := tx.Put("setups", p.ID, p); e != nil {
 				return e
 			}
@@ -186,6 +201,7 @@ func (s *Service) Cleanup() error {
 	if err != nil {
 		return err
 	}
+	s.providerDeadlines = deadlines
 	_, err = s.repo.Rotate(32)
 	return err
 }

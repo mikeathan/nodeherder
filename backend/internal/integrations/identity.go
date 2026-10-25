@@ -2,6 +2,7 @@ package integrations
 
 import (
 	"github.com/google/uuid"
+
 	model "node-herder/models/integrations"
 	"node-herder/repository"
 )
@@ -55,6 +56,9 @@ func snapshotIdentityAllocator(tx *repository.IntegrationTx) func(string) (strin
 		return "", model.Fail("identity_collision", "Could not allocate a unique resource identity.")
 	}
 }
+
+// reserveSnapshotIdentities records tentative IDs in the publication transaction, preventing
+// a collision from overwriting another resource while avoiding reservations on failed normalization.
 func reserveSnapshotIdentities(tx *repository.IntegrationTx, snapshot model.WasteSchedule, owner string) error {
 	identities := map[string]string{snapshot.ResourceID: "resource"}
 	for _, service := range snapshot.Services {

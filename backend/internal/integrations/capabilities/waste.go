@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"node-herder/internal/integrations/operations"
 	model "node-herder/models/integrations"
 )
@@ -27,6 +28,9 @@ type WasteContext struct {
 	Previous                           *model.WasteSchedule
 	ServiceIDs                         map[string]string
 }
+
+// WasteResult holds a normalized schedule, tentative local IDs and the provider-to-service map.
+// The caller must reserve IDs and publish that map/snapshot atomically; normalization writes no storage.
 type WasteResult struct {
 	Snapshot   model.WasteSchedule
 	ServiceIDs map[string]string
@@ -83,6 +87,7 @@ func timestamp(root any, p string) (*time.Time, error) {
 // NormalizeWaste rejects non-exact/provisional results and never invents coverage or empty evidence.
 func NormalizeWaste(root any, m model.Mapping, c WasteContext) (WasteResult, error) {
 	var out WasteResult
+	// First prove property identity/quality before allocating IDs or accepting any dates.
 	property, ok := text(root, m.Metadata.PropertyID)
 	if !ok || property != c.SelectedProperty {
 		return out, invalid("The result does not match the selected address. Set up the connection again.")
@@ -121,7 +126,11 @@ func NormalizeWaste(root any, m model.Mapping, c WasteContext) (WasteResult, err
 		return out, invalid("The provider confidence label is too long.")
 	}
 	completeness, _ := text(root, m.Metadata.DateCompleteness)
-	quality := model.Quality{AddressMatch: "exact", EvidenceGranularity: "property", DateConfidence: enum(confidence, "published_calendar", "council_projection", "next_collection_only")}
+	quality := model.Quality{
+		AddressMatch:        "exact",
+		EvidenceGranularity: "property",
+		DateConfidence:      enum(confidence, "published_calendar", "council_projection", "next_collection_only"),
+	}
 	if quality.DateConfidence == "unknown" && confidence != "" {
 		quality.SourceConfidenceLabel = &confidence
 	}
@@ -144,7 +153,23 @@ func NormalizeWaste(root any, m model.Mapping, c WasteContext) (WasteResult, err
 	if c.ProviderVersion == "" {
 		c.ProviderVersion = "unversioned"
 	}
-	snapshot := model.WasteSchedule{ContractVersion: model.WasteCapability, InstanceID: c.InstanceID, ResourceID: resourceID, Revision: revision, Kind: "exact", Timezone: "Europe/London", CapturedAt: c.Now.UTC(), LastCheckedAt: c.Now.UTC(), SourceRetrievedAt: retrieved, FreshUntil: expiry, Quality: quality, Provenance: model.Provenance{ProviderID: c.ProviderID, ProviderVersion: c.ProviderVersion, ProfileRevision: c.ProfileRevision, BindingRevision: c.BindingRevision}, RepresentativeConsent: "not_required", Notices: []string{}, Services: []model.WasteService{}}
+	snapshot := model.WasteSchedule{
+		ContractVersion:       model.WasteCapability,
+		InstanceID:            c.InstanceID,
+		ResourceID:            resourceID,
+		Revision:              revision,
+		Kind:                  "exact",
+		Timezone:              "Europe/London",
+		CapturedAt:            c.Now.UTC(),
+		LastCheckedAt:         c.Now.UTC(),
+		SourceRetrievedAt:     retrieved,
+		FreshUntil:            expiry,
+		Quality:               quality,
+		Provenance:            model.Provenance{ProviderID: c.ProviderID, ProviderVersion: c.ProviderVersion, ProfileRevision: c.ProfileRevision, BindingRevision: c.BindingRevision},
+		RepresentativeConsent: "not_required",
+		Notices:               []string{},
+		Services:              []model.WasteService{},
+	}
 	if u, ok := text(root, m.Metadata.SourceURL); ok {
 		parsed, err := url.Parse(u)
 		if err == nil && parsed.Scheme == "https" && parsed.Hostname() != "" && parsed.User == nil && len(u) <= 2048 {
@@ -221,6 +246,8 @@ func NormalizeWaste(root any, m model.Mapping, c WasteContext) (WasteResult, err
 		if sourceKey != nil && *sourceKey != "" {
 			key = "source:" + *sourceKey
 		} else {
+			// Colour and array order are presentation details, so they cannot define service identity.
+			// Without a provider service key, a changed descriptor deliberately requires a new ID.
 			tuple, _ := json.Marshal([]*string{&name, rawType, container})
 			sum := sha256.Sum256(tuple)
 			key = "descriptor:v1:" + hex.EncodeToString(sum[:])
@@ -248,7 +275,19 @@ func NormalizeWaste(root any, m model.Mapping, c WasteContext) (WasteResult, err
 			usedIDs[id] = true
 		}
 		present[id] = true
-		service := model.WasteService{ServiceID: id, SourceServiceKey: sourceKey, Name: name, WasteType: "unknown", SourceWasteType: rawType, BinColour: colour, Container: container, Subscription: "unknown", DateState: "unavailable", Dates: []string{}, Coverage: model.Coverage{State: "unknown"}}
+		service := model.WasteService{
+			ServiceID:        id,
+			SourceServiceKey: sourceKey,
+			Name:             name,
+			WasteType:        "unknown",
+			SourceWasteType:  rawType,
+			BinColour:        colour,
+			Container:        container,
+			Subscription:     "unknown",
+			DateState:        "unavailable",
+			Dates:            []string{},
+			Coverage:         model.Coverage{State: "unknown"},
+		}
 		if rawType != nil {
 			service.WasteType = enum(*rawType, "refuse", "recycling", "paper_card", "glass", "garden", "food", "mixed", "other")
 		}
@@ -306,9 +345,11 @@ func NormalizeWaste(root any, m model.Mapping, c WasteContext) (WasteResult, err
 		}
 		snapshot.Services = append(snapshot.Services, service)
 	}
+	// An empty upstream list is not evidence of cancelled collections; retain the last good snapshot.
 	if knownServices == 0 {
 		return out, model.Fail("no_collection_dates", "The provider supplied no verified collection dates. Previous saved dates were kept.")
 	}
+	// A service omitted by a later response stays visible as unavailable, not silently deleted.
 	if c.Previous != nil {
 		for _, old := range c.Previous.Services {
 			if !present[old.ServiceID] {

@@ -64,7 +64,17 @@ func NewService(parent context.Context, o Options) (*Service, error) {
 		o.HTTP = NewHTTPClient()
 	}
 	ctx, cancel := context.WithCancel(parent)
-	s := &Service{repo: o.Repository, files: o.Definitions, http: o.HTTP, clock: o.Clock, ctx: ctx, cancel: cancel, queue: make(chan string, 64), running: map[string]context.CancelFunc{}, providerDeadlines: map[string]time.Time{}}
+	s := &Service{
+		repo:              o.Repository,
+		files:             o.Definitions,
+		http:              o.HTTP,
+		clock:             o.Clock,
+		ctx:               ctx,
+		cancel:            cancel,
+		queue:             make(chan string, 64),
+		running:           map[string]context.CancelFunc{},
+		providerDeadlines: map[string]time.Time{},
+	}
 	if e := s.loadDefinitions(); e != nil {
 		cancel()
 		return nil, e
@@ -128,7 +138,12 @@ func (s *Service) Close(ctx context.Context) error {
 
 // Catalog lists supported types and local provider definitions without network I/O.
 func (s *Service) Catalog() (CatalogDTO, error) {
-	result := CatalogDTO{Available: s.availability == nil, Error: s.availability, Types: []TypeDTO{{ID: "waste_collection", Name: "Bin collections", Description: "Collection dates for your address."}}, Providers: []ProviderDTO{}}
+	result := CatalogDTO{
+		Available: s.availability == nil,
+		Error:     s.availability,
+		Types:     []TypeDTO{{ID: "waste_collection", Name: "Bin collections", Description: "Collection dates for your address."}},
+		Providers: []ProviderDTO{},
+	}
 	if s.repo == nil {
 		return result, nil
 	}
@@ -142,11 +157,26 @@ func (s *Service) Catalog() (CatalogDTO, error) {
 			}
 			c, e := CompileYAML(r.YAML)
 			if e != nil {
-				result.Providers = append(result.Providers, ProviderDTO{Key: r.Key, ID: strings.Split(r.Key, "/")[1], IntegrationType: strings.Split(r.Key, "/")[0], Name: r.Key, Available: false, DiskError: r.DiskError})
+				result.Providers = append(result.Providers, ProviderDTO{
+					Key:             r.Key,
+					ID:              strings.Split(r.Key, "/")[1],
+					IntegrationType: strings.Split(r.Key, "/")[0],
+					Name:            r.Key,
+					Available:       false,
+					DiskError:       r.DiskError,
+				})
 				return nil
 			}
 			d := c.Definition
-			result.Providers = append(result.Providers, ProviderDTO{Key: r.Key, ID: d.ID, Name: d.Name, IntegrationType: d.IntegrationType, Origin: c.Origin, Available: r.DiskError == "", DiskError: r.DiskError})
+			result.Providers = append(result.Providers, ProviderDTO{
+				Key:             r.Key,
+				ID:              d.ID,
+				Name:            d.Name,
+				IntegrationType: d.IntegrationType,
+				Origin:          c.Origin,
+				Available:       r.DiskError == "",
+				DiskError:       r.DiskError,
+			})
 			return nil
 		})
 	})
@@ -203,7 +233,23 @@ func (s *Service) instanceDTO(i model.Instance) InstanceDTO {
 		slots = append(slots, slot)
 	}
 	sort.Strings(slots)
-	return InstanceDTO{CredentialSlots: slots, Runs: recentRuns(i.Runs, s.clock.Now()), ID: i.ID, Name: i.Name, ProviderKey: i.DefinitionKey, Revision: i.Revision, ETag: revisionETag("instance", i.ID, i.Revision), Enabled: i.Enabled, Status: status, Postcode: i.Inputs[i.SearchInput], OperationID: i.OperationID, CredentialConfigured: len(i.Credentials) > 0, Resources: resources, Error: i.LastError, UpdatedAt: i.UpdatedAt}
+	return InstanceDTO{
+		CredentialSlots:      slots,
+		Runs:                 recentRuns(i.Runs, s.clock.Now()),
+		ID:                   i.ID,
+		Name:                 i.Name,
+		ProviderKey:          i.DefinitionKey,
+		Revision:             i.Revision,
+		ETag:                 revisionETag("instance", i.ID, i.Revision),
+		Enabled:              i.Enabled,
+		Status:               status,
+		Postcode:             i.Inputs[i.SearchInput],
+		OperationID:          i.OperationID,
+		CredentialConfigured: len(i.Credentials) > 0,
+		Resources:            resources,
+		Error:                i.LastError,
+		UpdatedAt:            i.UpdatedAt,
+	}
 }
 func setupDTO(p model.Setup) SetupDTO {
 	postcode := ""
@@ -212,10 +258,33 @@ func setupDTO(p model.Setup) SetupDTO {
 		configured = credential(c.Definition, p.Credentials) != nil
 		postcode = p.Inputs[c.Definition.Setup.Search.Input]
 	}
-	return SetupDTO{ID: p.ID, Revision: p.Revision, ETag: revisionETag("setup", p.ID, p.Revision), ProviderKey: p.DefinitionKey, Status: p.Status, Choices: p.Choices, Postcode: postcode, InstanceID: p.InstanceID, OperationID: p.OperationID, ExpiresAt: p.ExpiresAt, CredentialConfigured: configured, Error: p.LastError, Preview: p.Preview}
+	return SetupDTO{
+		ID:                   p.ID,
+		Revision:             p.Revision,
+		ETag:                 revisionETag("setup", p.ID, p.Revision),
+		ProviderKey:          p.DefinitionKey,
+		Status:               p.Status,
+		Choices:              p.Choices,
+		Postcode:             postcode,
+		InstanceID:           p.InstanceID,
+		OperationID:          p.OperationID,
+		ExpiresAt:            p.ExpiresAt,
+		CredentialConfigured: configured,
+		Error:                p.LastError,
+		Preview:              p.Preview,
+	}
 }
 func operationDTO(o model.Operation) OperationDTO {
-	return OperationDTO{ID: o.ID, Status: o.Status, Kind: o.Kind, SetupID: o.SetupID, InstanceID: o.InstanceID, RetryAt: o.RetryAt, ExpiresAt: o.ExpiresAt, Error: o.LastError}
+	return OperationDTO{
+		ID:         o.ID,
+		Status:     o.Status,
+		Kind:       o.Kind,
+		SetupID:    o.SetupID,
+		InstanceID: o.InstanceID,
+		RetryAt:    o.RetryAt,
+		ExpiresAt:  o.ExpiresAt,
+		Error:      o.LastError,
+	}
 }
 
 // Instances returns shared, redacted connection summaries and current read-time projections.
