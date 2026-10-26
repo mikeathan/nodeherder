@@ -1,4 +1,5 @@
 <script setup lang="ts">
+  import { integrationViewKey } from '@/domain/integration-navigation';
   /*
    * Signed-in application frame: navigation, header, status banners and the shared hosts
    * (confirm dialog, legacy dialogs, toasts, appearance). Routes with meta.layout = 'panel'
@@ -35,6 +36,17 @@
     }
   );
 
+  watch(
+    () => route.path,
+    () => {
+      // The outer wrapper scrolls, not <main>. Scope the correction to integration page changes;
+      // Help-topic hashes retain native anchor scrolling and other views keep their behaviour.
+      if (integrationViewKey(route.name, route.path)) {
+        main.value?.closest<HTMLElement>('.nh-app-main')?.scrollTo({ top: 0 });
+      }
+    }
+  );
+
   function skipToContent() {
     main.value?.focus();
   }
@@ -57,7 +69,7 @@
       <StatusBanners />
       <main id="nh-content" ref="main" class="nh-content" tabindex="-1">
         <RouterView v-slot="{ Component, route: viewRoute }">
-          <component :is="Component" :key="viewRoute.path.startsWith('/connections') ? viewRoute.path : undefined" />
+          <component :is="Component" :key="integrationViewKey(viewRoute.name, viewRoute.path)" />
         </RouterView>
       </main>
     </div>

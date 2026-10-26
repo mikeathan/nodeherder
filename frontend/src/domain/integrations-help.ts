@@ -3,7 +3,7 @@ export const CONNECTION_HELP = [
     id: 'start',
     title: 'Add bin collections',
     paragraphs: [
-      'Open Connections, choose a provider under Bin collections, then select Add connection. Enter your postcode, choose the exact address and save.',
+      'Open Integrations, choose a provider under Bin collections, then select Add integration. Enter your postcode, choose the exact address and save.',
       'The provider may take a little while. Check status continues the same lookup. Refresh asks for updated dates; this first release does not refresh on a schedule.',
     ],
   },
@@ -11,7 +11,7 @@ export const CONNECTION_HELP = [
     id: 'files',
     title: 'Where changes are saved',
     paragraphs: [
-      'Configure operations describes the provider, not your address. Form and YAML edit the same host file under configs/integrations/waste_collection/. Save changes validates the file and applies it to every connection using that provider.',
+      'Configure operations describes the provider, not your address. Form and YAML edit the same host file under configs/integrations/waste_collection/. Save changes validates the file and applies it to every integration using that provider.',
       'Address choices, provider references, tokens and results are stored privately in the data volume. They are not added to the provider YAML. You can commit provider files using your usual Git tools; NodeHerder does not commit them for you.',
       'Up to 32 recently visited provider drafts are kept in memory while you are signed in. Save important changes before leaving the application; drafts are cleared on sign out.',
       'Reload from host reads changes you made outside the UI. Restore previous writes the previous good configuration as a new revision. Avoid editing the host file and saving in the UI at the same time.',
@@ -50,7 +50,7 @@ export const CONNECTION_HELP = [
     title: 'Repair a changed URL or response',
     paragraphs: [
       'For a changed provider address, edit Provider URL. For a changed endpoint, open its request and edit the URL path or parameters. For a renamed response field, update its field location under Collection fields or Values saved from the response.',
-      'Validate checks the configuration without sending a request. Save changes applies it. Then open an existing connection and choose Refresh to check the provider. A failed refresh keeps the last saved dates.',
+      'Validate checks the configuration without sending a request. Save changes applies it. Then open an existing integration and choose Refresh to check the provider. A failed refresh keeps the last saved dates.',
       'Changing a destination requires review before saved inputs or an existing token can be sent there. The YAML itself cannot approve a credential transfer. If a new login method or a different response transformation is required, the application may need an update.',
     ],
   },
@@ -61,7 +61,7 @@ export const CONNECTION_HELP = [
       'Pending means the provider has accepted the lookup but has not finished it. Check status continues it. A request limit includes the next time you can try; repeated clicks do not bypass it.',
       'An expired setup must be started again. A changed-in-another-session message means another user or host edit saved a newer revision; reload and review before saving.',
       'An old schedule stays visible after a failed refresh. Last checked is when NodeHerder checked the provider; provider verification is the source’s own timestamp. A successful unchanged response does not make old source data fresh.',
-      'If Connections is unavailable, check the persistent config/data mounts and separately mounted private keyring. Never replace a lost key with a new one and expect old data to decrypt; restore the matching key backup.',
+      'If Integrations is unavailable, check the persistent config/data mounts and separately mounted private keyring. Never replace a lost key with a new one and expect old data to decrypt; restore the matching key backup.',
     ],
   },
 ] as const;

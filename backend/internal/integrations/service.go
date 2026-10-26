@@ -2,388 +2,60 @@ package integrations
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"sort"
-	"strings"
-	"sync"
-	"time"
+	"encoding/json"
 
-	"node-herder/internal/integrations/operations"
-	model "node-herder/models/integrations"
-	"node-herder/repository"
-	"node-herder/utils"
+	defaults "node-herder/configs/integrations"
+	"node-herder/internal/integrations/capabilities"
+	"node-herder/internal/integrations/capabilities/waste"
+	"node-herder/internal/integrations/definitions"
+	"node-herder/internal/integrations/runtime"
 )
 
-// DefinitionFiles is the fixed-directory host YAML boundary, independent of runtime storage.
-type DefinitionFiles interface {
-	Read(string) (string, string, error)
-	List() ([]string, error)
-	Write(string, string, string) error
-	Delete(string, string) error
+// Service is the application-facing integration runtime. Composition here installs supported
+// capabilities; runtime and its coordinator have no dependency on concrete capability packages.
+type Service = runtime.Service
+
+// Options injects repositories, HTTP and clock; nil Capabilities installs the shipped adapters.
+type Options = runtime.Options
+
+// NewService composes shipped capabilities unless callers explicitly supply their own registry.
+// Runtime takes lifecycle ownership of its repository/client and performs no startup provider I/O.
+func NewService(ctx context.Context, options Options) (*Service, error) {
+	if options.Shipped == nil {
+		options.Shipped = defaults.Files
+	}
+	if options.Capabilities == nil {
+		registry, err := shippedCapabilities()
+		if err != nil {
+			return nil, err
+		}
+		options.Capabilities = registry
+	}
+	return runtime.NewService(ctx, options)
 }
 
-// Options supplies private storage, host definitions, clock and the policy-bound HTTP client.
-type Options struct {
-	Repository  *repository.IntegrationRepository
-	Definitions DefinitionFiles
-	HTTP        operations.Doer
-	Clock       utils.Clock
+// DegradedService provides readable availability when private startup storage cannot open.
+func DegradedService(code string) *Service { return runtime.DegradedService(code) }
+
+// CompileYAML validates host YAML against the shipped capabilities without activating it.
+func CompileYAML(source string) (*definitions.Compiled, error) {
+	registry, err := shippedCapabilities()
+	if err != nil {
+		return nil, err
+	}
+	return definitions.NewCompiler(registry).CompileYAML(source)
 }
 
-// Service owns admission, four workers and a local-only janitor. All provider work is explicitly
-// admitted by a mutation; GET, startup and the janitor never poll an external provider.
-type Service struct {
-	mu                  sync.Mutex
-	repo                *repository.IntegrationRepository
-	files               DefinitionFiles
-	http                operations.Doer
-	clock               utils.Clock
-	ctx                 context.Context
-	cancel              context.CancelFunc
-	wg                  sync.WaitGroup
-	queue               chan string
-	running             map[string]context.CancelFunc
-	closed              bool
-	closeDone           chan struct{}
-	publicationFailures map[string]publicationFailure
-	availability        *model.Failure
-	providerDeadlines   map[string]time.Time
-	janitor             utils.Timer
+// CompileDocument validates editor JSON with the same shipped capability and YAML rules.
+func CompileDocument(raw json.RawMessage) (*definitions.Compiled, error) {
+	registry, err := shippedCapabilities()
+	if err != nil {
+		return nil, err
+	}
+	return definitions.NewCompiler(registry).CompileDocument(raw)
 }
 
-// NewService loads local state and starts owned workers; it performs no provider request.
-func NewService(parent context.Context, o Options) (*Service, error) {
-	if o.Repository == nil || o.Definitions == nil {
-		return nil, errors.New("connection repositories are required")
-	}
-	if o.Clock == nil {
-		o.Clock = utils.NewRealClock()
-	}
-	if o.HTTP == nil {
-		o.HTTP = NewHTTPClient()
-	}
-	ctx, cancel := context.WithCancel(parent)
-	s := &Service{
-		repo:              o.Repository,
-		files:             o.Definitions,
-		http:              o.HTTP,
-		clock:             o.Clock,
-		ctx:               ctx,
-		cancel:            cancel,
-		queue:             make(chan string, 64),
-		running:           map[string]context.CancelFunc{},
-		providerDeadlines: map[string]time.Time{},
-	}
-	if e := s.loadDefinitions(); e != nil {
-		cancel()
-		return nil, e
-	}
-	if e := s.recoverOperations(); e != nil {
-		cancel()
-		return nil, e
-	}
-	for n := 0; n < 4; n++ {
-		s.wg.Add(1)
-		go s.worker()
-	}
-	s.scheduleCleanup()
-	return s, nil
-}
-
-// DegradedService preserves a readable availability report when private storage cannot open.
-func DegradedService(code string) *Service {
-	return &Service{availability: model.Fail(code, "Connections are unavailable. Check the private key and persistent configuration/data mounts.")}
-}
-func (s *Service) ready() error {
-	if s.availability != nil {
-		return s.availability
-	}
-	if s.closed || s.ctx != nil && s.ctx.Err() != nil {
-		return model.Fail("service_unavailable", "Connections are shutting down.")
-	}
-	return nil
-}
-
-// Close cancels and joins work before closing the database; a deadline leaves active writers intact.
-func (s *Service) Close(ctx context.Context) error {
-	if s.repo == nil {
-		return nil
-	}
-	s.mu.Lock()
-	if s.closeDone == nil {
-		s.closeDone = make(chan struct{})
-		s.closed = true
-		s.cancel()
-		if s.janitor != nil {
-			s.janitor.Stop()
-		}
-		for _, cancel := range s.running {
-			cancel()
-		}
-		if client, ok := s.http.(interface{ CloseIdleConnections() }); ok {
-			client.CloseIdleConnections()
-		}
-		go func() { s.wg.Wait(); close(s.closeDone) }()
-	}
-	done := s.closeDone
-	s.mu.Unlock()
-	select {
-	case <-ctx.Done():
-		return fmt.Errorf("connections shutdown did not finish: %w", ctx.Err())
-	case <-done:
-		return s.repo.Close()
-	}
-}
-
-// Catalog lists supported types and local provider definitions without network I/O.
-func (s *Service) Catalog() (CatalogDTO, error) {
-	result := CatalogDTO{
-		Available: s.availability == nil,
-		Error:     s.availability,
-		Types:     []TypeDTO{{ID: "waste_collection", Name: "Bin collections", Description: "Collection dates for your address."}},
-		Providers: []ProviderDTO{},
-	}
-	if s.repo == nil {
-		return result, nil
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	err := s.repo.View(func(tx *repository.IntegrationTx) error {
-		return tx.Each("definitions", func(_ string, b []byte) error {
-			var r model.DefinitionRecord
-			if e := repository.DecodeIntegrationRecord(b, &r); e != nil {
-				return e
-			}
-			c, e := CompileYAML(r.YAML)
-			if e != nil {
-				result.Providers = append(result.Providers, ProviderDTO{
-					Key:             r.Key,
-					ID:              strings.Split(r.Key, "/")[1],
-					IntegrationType: strings.Split(r.Key, "/")[0],
-					Name:            r.Key,
-					Available:       false,
-					DiskError:       r.DiskError,
-				})
-				return nil
-			}
-			d := c.Definition
-			result.Providers = append(result.Providers, ProviderDTO{
-				Key:             r.Key,
-				ID:              d.ID,
-				Name:            d.Name,
-				IntegrationType: d.IntegrationType,
-				Origin:          c.Origin,
-				Available:       r.DiskError == "",
-				DiskError:       r.DiskError,
-			})
-			return nil
-		})
-	})
-	return result, err
-}
-func (s *Service) definition(tx *repository.IntegrationTx, key string) (model.DefinitionRecord, *CompiledDefinition, error) {
-	var r model.DefinitionRecord
-	ok, e := tx.Get("definitions", key, &r)
-	if e != nil {
-		return r, nil, e
-	}
-	if !ok {
-		return r, nil, model.Fail("not_found", "Provider not found.")
-	}
-	c, e := CompileYAML(r.YAML)
-	if c != nil {
-		c.Revision = r.Revision
-	}
-	return r, c, e
-}
-func revisionETag(kind, id string, revision uint64) string {
-	return fmt.Sprintf(`"%s:%s:%d"`, kind, id, revision)
-}
-func checkRevision(expected, actual string) error {
-	if expected == "" {
-		return model.Fail("precondition_required", "Reload this page before saving changes.")
-	}
-	if expected != actual {
-		return model.Fail("revision_conflict", "This item changed in another session. Reload it before saving.")
-	}
-	return nil
-}
-func (s *Service) instanceDTO(i model.Instance) InstanceDTO {
-	status := "ready"
-	if i.Snapshot == nil {
-		status = "pending"
-	}
-	if i.LastError != nil {
-		status = i.LastError.Code
-	}
-	if !i.Enabled {
-		status = "disabled"
-	}
-	if diagnostic, ok := s.publicationFailures[i.OperationID]; ok && diagnostic.Generation == i.Generation {
-		i.LastError = diagnostic.Error
-		status = "save_failed"
-	}
-	resources := []model.WasteSchedule{}
-	if i.Snapshot != nil {
-		resources = append(resources, i.Snapshot.Project(s.clock.Now()))
-	}
-	slots := []string{}
-	for slot := range i.Credentials {
-		slots = append(slots, slot)
-	}
-	sort.Strings(slots)
-	return InstanceDTO{
-		CredentialSlots:      slots,
-		Runs:                 recentRuns(i.Runs, s.clock.Now()),
-		ID:                   i.ID,
-		Name:                 i.Name,
-		ProviderKey:          i.DefinitionKey,
-		Revision:             i.Revision,
-		ETag:                 revisionETag("instance", i.ID, i.Revision),
-		Enabled:              i.Enabled,
-		Status:               status,
-		Postcode:             i.Inputs[i.SearchInput],
-		OperationID:          i.OperationID,
-		CredentialConfigured: len(i.Credentials) > 0,
-		Resources:            resources,
-		Error:                i.LastError,
-		UpdatedAt:            i.UpdatedAt,
-	}
-}
-func setupDTO(p model.Setup) SetupDTO {
-	postcode := ""
-	configured := false
-	if c, e := CompileYAML(p.DefinitionYAML); e == nil {
-		configured = credential(c.Definition, p.Credentials) != nil
-		postcode = p.Inputs[c.Definition.Setup.Search.Input]
-	}
-	return SetupDTO{
-		ID:                   p.ID,
-		Revision:             p.Revision,
-		ETag:                 revisionETag("setup", p.ID, p.Revision),
-		ProviderKey:          p.DefinitionKey,
-		Status:               p.Status,
-		Choices:              p.Choices,
-		Postcode:             postcode,
-		InstanceID:           p.InstanceID,
-		OperationID:          p.OperationID,
-		ExpiresAt:            p.ExpiresAt,
-		CredentialConfigured: configured,
-		Error:                p.LastError,
-		Preview:              p.Preview,
-	}
-}
-func operationDTO(o model.Operation) OperationDTO {
-	return OperationDTO{
-		ID:         o.ID,
-		Status:     o.Status,
-		Kind:       o.Kind,
-		SetupID:    o.SetupID,
-		InstanceID: o.InstanceID,
-		RetryAt:    o.RetryAt,
-		ExpiresAt:  o.ExpiresAt,
-		Error:      o.LastError,
-	}
-}
-
-// Instances returns shared, redacted connection summaries and current read-time projections.
-func (s *Service) Instances() ([]InstanceDTO, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if e := s.ready(); e != nil {
-		return nil, e
-	}
-	out := []InstanceDTO{}
-	e := s.repo.View(func(tx *repository.IntegrationTx) error {
-		return tx.Each("instances", func(_ string, b []byte) error {
-			var i model.Instance
-			if e := repository.DecodeIntegrationRecord(b, &i); e != nil {
-				return e
-			}
-			out = append(out, s.instanceDTO(i))
-			return nil
-		})
-	})
-	return out, e
-}
-
-// Instance reads one connection without refreshing its provider.
-func (s *Service) Instance(id string) (InstanceDTO, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	var out InstanceDTO
-	if e := s.ready(); e != nil {
-		return out, e
-	}
-	e := s.repo.View(func(tx *repository.IntegrationTx) error {
-		var i model.Instance
-		ok, e := tx.Get("instances", id, &i)
-		if e != nil {
-			return e
-		}
-		if !ok {
-			return model.Fail("not_found", "Connection not found.")
-		}
-		out = s.instanceDTO(i)
-		return nil
-	})
-	return out, e
-}
-
-// Operation reads durable progress and any uncommitted-publication diagnostic.
-func (s *Service) Operation(id string) (OperationDTO, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	var out OperationDTO
-	if e := s.ready(); e != nil {
-		return out, e
-	}
-	e := s.repo.View(func(tx *repository.IntegrationTx) error {
-		var o model.Operation
-		ok, e := tx.Get("operations", id, &o)
-		if e != nil {
-			return e
-		}
-		if !ok {
-			return model.Fail("not_found", "Operation not found.")
-		}
-		out = operationDTO(o)
-		if diagnostic, ok := s.publicationFailures[o.ID]; ok && diagnostic.Generation == o.Generation {
-			out.Error = diagnostic.Error
-			out.Status = "save_failed"
-		}
-		return nil
-	})
-	return out, e
-}
-func (s *Service) enqueue(id string) { delete(s.publicationFailures, id); s.queue <- id } // callers hold admission lock and check capacity before durable admission
-func (s *Service) hasCapacity() error {
-	if len(s.queue) >= cap(s.queue) {
-		return model.Fail("busy", "Connections are busy. Try again shortly.")
-	}
-	return nil
-}
-
-func recentRuns(runs []model.RunSummary, now time.Time) []model.RunSummary {
-	out := []model.RunSummary{}
-	for _, r := range runs {
-		if r.At.After(now.Add(-7 * 24 * time.Hour)) {
-			out = append(out, r)
-		}
-	}
-	if len(out) > 20 {
-		out = out[len(out)-20:]
-	}
-	return out
-}
-func (s *Service) recordRun(i *model.Instance, o model.Operation, outcome, message string) {
-	runs := []model.RunSummary{}
-	for _, r := range i.Runs {
-		if r.OperationID != o.ID {
-			runs = append(runs, r)
-		}
-	}
-	runs = append(runs, model.RunSummary{OperationID: o.ID, Kind: o.Kind, Outcome: outcome, Message: message, At: s.clock.Now().UTC()})
-	i.Runs = recentRuns(runs, s.clock.Now())
+// shippedCapabilities is the single registration point used by runtime and standalone editors.
+func shippedCapabilities() (*capabilities.Registry, error) {
+	return capabilities.NewRegistry(waste.Adapter{})
 }

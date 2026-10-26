@@ -284,3 +284,344 @@ Final user preference retained: Black bin/Blue bin/Brown bin are the headers. No
 Paper & card/Recycling replacement headings and no repeated colour/limited-dates text below dates.
 The last 16-case run verified this exact state, including medium header/icon bounds and the compact
 status disclosure; final desktop/mobile light/dark visuals were reviewed.
+
+## Connections board follow-up — 2026-10-26 (AC-34–37)
+
+Implemented the approved grouped board. ConnectionsPage coordinates presentation only; the new
+ConnectionWidget/ConnectionBoard/ConnectionCatalogDialog separate summaries, arrangement and
+provider discovery. Pure connection-board.ts reuses UK calendar projections and distinguishes
+missing/exhausted/confirmed-empty dates. The real WasteBinIcon SVG/palette is shared with the full
+results page. Real stretched RouterLinks open the existing connection page without nested buttons;
+Refresh/Check are independent siblings. No Details footer, size selector, weather implementation
+or changes to Home/Devices/Overview/Panel were introduced.
+
+useConnectionsBoard owns one bounded operation observer plus a minute/focus local-only read;
+requests/listeners/timer/route guard follow page/login lifetime. Vuex generation and per-instance-read
+sequence guards reject logged-out, aborted and superseded replies. useConnectionBoardLayout owns
+immutable drafts and retains them on failed/conflicting saves. Existing vuedraggable handles and
+keyboard/tap arrows support reordering. Save/Cancel, hide/restore and confirmed deletion/re-add work.
+New setup returns/focuses the board widget; existing-address setup keeps the detail return. Card
+navigation resets the connection page scroll and Back restores the originating focus/board position.
+Deleting also clears the in-memory current instance. No PII is added to browser persistence.
+
+Backend BoardPreference is optional private instance data with an independent revision. Board GET/
+PUT use existing protected auth/CSRF/no-store boundaries. Membership+preference ETags fence lost
+updates; all placements commit atomically. Layout writes preserve lifecycle revision/generation,
+credentials, snapshots and timestamps. Old records are visible by creation time; no encrypted
+schema/AAD/bucket changes or new dependency were needed. Encrypted repository restart, invalid
+proposals/rollback and lifecycle independence are tested. See ADR-002 and the board contract.
+
+Actual verification:
+- 390 frontend unit tests across 66 suites passed, including pure projections/layout, failed draft
+  retention, API validation/auth headers and late/superseded read guards.
+- Frontend build, lint and E2E type checks passed. Lint retains seven existing script warnings;
+  Vite retains the existing DeviceCard naming warning. No new lint errors.
+- 28 isolated Connections browser checks passed on desktop/mobile. Coverage includes direct result
+  cards/shared SVGs, independent Refresh, keyboard navigation/focus, whole-content hit area, drag/
+  arrows, cancelled/failed/conflicting layouts, host-persisted hide/restore, confirmed delete/re-add,
+  normal setup and existing editor/help/auth flows, 1280/736/390/320px, long names, three colours,
+  light/dark and scroll return. Screenshots are temporary QA outputs, not production assets.
+- Go build/vet, focused service/API suites and affected-package race checks passed.
+- The workspace full Go suite failed in internal/automations/scenarios because the already-modified
+  configs/automations/0x001788010d7d9d3f.json references a different dial ID than its committed fixture.
+  That unrelated user file was left untouched. The complete Go suite passed in a temporary source
+  snapshot with the committed automation fixture and these Connections changes.
+
+Browser servers ran only from a temporary source snapshot on 54100/54110/54120 with matching fake
+hub ownership handshakes, temporary databases and provider/MQTT fakes. No live provider lookups or
+household device commands were performed. A hit-area test initially targeted text under the
+intentional stretched link; it now clicks the actual pointer position. Drag coverage checks real
+movement and persistence against displayed order rather than assuming a responsive drop inserts
+before a particular neighbour. Both corrected checks pass. Initial temporary font-path serving
+warnings were corrected in the QA copy before final visual inspection.
+
+Rule review: NH-01 has AC-34–37/contracts/tasks before code; NH-02/BE-02 preserve device paths;
+NH-03/BE-05/FE-05 have authenticated no-store/CSRF tests and no new private browser persistence;
+NH-04/BE-01/FE-01–02 keep service/repository/transport/store/presentation boundaries and validate
+wire data; NH-05/FE-04 have the source-owned and isolated UI evidence above; NH-06/BE-03–04/FE-03
+have atomic writes, independent revisions, bounded cleaned-up local observation, explicit failures,
+draft retention and destructive confirmation. No rule exception or ratification is claimed.
+
+The user's running app was not restarted or tested against. A backend restart/rebuild is needed
+if the local runner does not automatically reload Go changes. No scheduled refresh milestone was
+pulled into this follow-up.
+
+## Navigation flicker and connection icon — 2026-10-26 (AC-38–39)
+
+Confirmed first-detail reproduction: with an isolated instance GET deliberately held pending, the
+page displayed `Connection` instead of the already-known `Bin collections` title and omitted its
+postcode. The regression failed on both desktop and mobile before the fix. Source inspection also
+identified ConnectionFeedback's conditional normal-flow Working paragraph above content; its
+insertion/removal moved results/tabs during revalidation and back navigation. Initial instance and
+provider reads used separate busy intervals, causing additional loading-state churn.
+
+useConnectionDetail now immediately presents only the matching validated private session DTO
+(current detail or board entry), revalidates it, and owns one initial busy interval covering both
+reads. Board/detail opt into compact accessible progress (out of normal flow), truthful aria-busy
+and a visible cold-load message when no cached data exists. Other ConnectionFeedback callers retain
+their previous behavior. No artificial transition/animation, fixed header sizing, global shell
+change, new library or request polling was added.
+
+Failed instance reads no longer proceed to provider loading and clear their error. A 404 evicts
+that matching cached connection instead of resurrecting it; another connection's current data
+never becomes the fallback. Revalidation preserves a name typed while Setup is visible. Timer,
+focus listener and token cleanup now also happens immediately on page-signal abort/logout.
+
+Header-image comparison: title-only is compact but loses the consistent icon identity used by
+other cards. The shared schedule/calendar icon represents the overall collection connection
+without selecting a waste stream or copying the first bin colour. It replaces the header wheelie
+bin; individual coloured WasteBinIcon SVGs remain unchanged beside the service dates and in the
+full Results page. The same calendar treatment works before dates exist.
+
+Verification: 390 frontend unit tests, frontend build, lint (seven existing script warnings), and
+E2E type checks passed. All 32 isolated Connections browser tests passed. The delayed-navigation
+regression holds instance/provider/board reads separately, verifies the real title/postcode while
+pending, and compares exact header height/position, tab position and board-card geometry before
+and after completion. It also verifies a typed Setup name survives revalidation. A second regression
+verifies wrong-ID isolation, cache eviction, preserved not-found feedback and zero provider reads
+after a failed instance lookup. Existing tests now assert a generic schedule icon in the header,
+no header bin SVG and exactly one SVG per displayed service. Existing light/dark, long-name,
+320/390/736/1280px, keyboard, layout, persistence, deletion and editor checks still pass.
+
+Desktop/mobile screenshots of the new generic icon were reviewed. Tests used the already-isolated
+54100/54110/54120 fake hubs and temporary data. No live provider/device/app-restart checks or backend
+suite rerun were needed for this frontend-only follow-up; prior backend evidence is unchanged.
+NH-01/04 and FE-01 retain the existing planning/composable/presentation boundaries; NH-02/device
+behavior and API contracts are unchanged; NH-03/FE-02/05 retain validated matching session cache,
+logout and ingress boundaries; NH-05/FE-04 have before/after browser/geometry evidence;
+NH-06/FE-03 retain explicit failures/cold loading and cleaned-up resources. No exception claimed.
+
+## Chronological consumer data — 2026-10-26 (AC-40)
+
+The provider's collection/service order was being preserved even though each service's Dates was
+already normalized to a sorted unique list. Frontend tests reproducing Black/Brown/Blue ordering,
+undated handling and pre-limit multi-resource ordering failed before the fix. Model tests also
+reproduced the unsorted canonical resource and missing UK-midnight reordering.
+
+WasteSchedule.Project now stably orders a copied Services slice by each service's first upcoming
+ISO date at the UK local date of evaluated_at, with undated/exhausted services last. Normalization,
+Instance/Instances and resource reads already use this projection, so consumers receive ordered
+services on collection and on later local reads. No provider request is needed at date rollover.
+Historical dates, IDs, content revision, source timestamps and stored snapshots are preserved.
+Immutable London timezone data is cached once; standard-library tzdata provides a native/minimal-
+container fallback. No new third-party dependency, JSON field, route or encryption migration.
+
+The shared frontend date presentation also sorts copied upcoming-date arrays and projected cards,
+using raw ISO keys rather than formatted labels. The widget uses that same comparator after merging
+resources, before its three-row limit. Equal-date/undated ties keep source order. Neither operation
+mutates DTOs or the user's independent connection layout. The canonical wire contract now explicitly
+documents this ordering as of evaluated_at and requires consumers to identify bins by stable ID.
+
+Actual verification: 392 frontend tests passed; frontend build/lint/E2E types passed (seven existing
+script warnings). All 34 Connections browser tests passed in the isolated fixture, including both
+rendered views with deliberately shuffled service DTOs. After adding the backend guarantee, those
+two ordering browser cases were rechecked against the updated Go fixture and passed on desktop and
+mobile. Pure model/service tests cover normalization/consumer order, source immutability, same-day
+and undated ties, exhausted dates, UK midnight/BST-GMT boundaries and stable identity/revision.
+Go build/vet and races for models/integrations, internal/integrations and internal/api passed.
+The complete Go suite passed in the temporary source copy with the committed automation fixture;
+the user's pre-existing modified household automation JSON remains untouched. The workspace full
+suite was not repeated against that already-known mismatched fixture. No live provider/device calls
+or app restart. A running native backend needs reload/rebuild to expose the new canonical ordering.
+
+Rule review: NH-01/04 and BE-01/FE-01 place the rule in shared pure domain/presentation functions;
+NH-02/device semantics are untouched; NH-03/BE-05/FE-02/05 retain auth and wire/PII boundaries;
+NH-05/FE-04 have before/after and rendered evidence; NH-06/BE-03–04/FE-03 preserve calendar timezone,
+missing/empty distinctions, identity and stored data, with copy/race checks. No rule exception.
+
+## Calendar ownership, presentation cleanup and documentation — 2026-10-26 (AC-41–42)
+
+Timezone audit found no runtime General timezone setting. Compose sets process TZ=Europe/London;
+the browser-test server has its own TIMEZONE constant; the existing automation scheduler hardcodes
+London; MCP time-scope accepts an explicit timezone/default UTC. These are different contexts, not
+one wired setting. A future General setting should govern display/automation defaults while each
+provider/resource retains its source calendar. Existing schedules and DST gap/overlap behavior
+need a separate scoped plan; this work does not silently change physical automation timing.
+
+Connections now declares its v1 UK source calendar once in backend/models/integrations/calendar.go.
+WasteCalendarDate shares cached immutable zone data across resource ordering and horizon checks;
+normalization uses WasteTimezone. The standard-library zoneinfo fallback is retained. Frontend
+config/integrations.ts owns the supported contract value used by runtime validation and the DTO
+type, while calendar formatting consumes schedule.timezone rather than another hardcoded literal.
+Operational check timestamps retain their prior browser-local display until the General setting
+is designed. No v1 JSON shape, process TZ, automation/device behavior or host configuration changed.
+
+Refactored waste-schedule.ts into a typed presentation composer with narrow service-card and label
+helpers. waste-calendar.ts owns source-day conversion, date-only formatting, bounded upcoming dates
+and comparison. ISO keys come from formatToParts rather than locale punctuation/order. The formatter
+cache is constrained by the validated contract timezone set. Typed view models describe nullable
+next-date keys and outputs. connection-board.ts now separates row construction, merged ordering,
+missing-date text and lifecycle status using named helpers/guard clauses instead of nested ternaries.
+The existing comparator export is preserved. No new framework or provider-specific UI logic.
+
+Added substantive JSDoc for public calendar/view-model/ingress functions and touched composable/API
+methods, including side effects, cancellation, revision fencing, custody, non-mutation and unknown
+values. Go calendar/type/function comments explain source-zone versus app defaults, error policy,
+copying and stable identity. Existing Vue/Go rules now require documentation for new/changed public
+APIs and purposeful comments for non-obvious flows, with a final audit step. Vue guidance explicitly
+rejects nested ternaries/large inline map callbacks and requires cohesive single-responsibility
+helpers. Rules are .agents/rules/vue-engineer.md and go-engineer.md; AGENTS.md was not changed.
+
+Verification: 398 frontend tests across 67 suites, build/lint/E2E types and all 34 isolated Connections
+browser checks passed. New source-owned waste-calendar.test.ts/calendar_test.go cover UK midnight,
+BST/GMT, process-zone independence, non-mutating chronology, nullable dates and bounded labels;
+contract tests reject using an arbitrary app timezone as a v1 resource calendar. Existing source
+presentation/identity/ordering/missing-state tests still pass. Go build/vet, races for models/
+integrations, internal/integrations and internal/api, and the complete isolated Go suite passed.
+Lint retains seven existing script warnings; Vite retains the prior DeviceCard name warning. A
+TypeScript AST audit found no missing JSDoc on touched exported functions; returned public actions
+were reviewed separately. Documentation-only comment edits did not change execution paths.
+
+Tests ran against temporary storage and fake hubs on 54100/54110/54120, with committed automation
+fixtures in the isolated source copy. The user's modified dial configuration and pre-existing index
+staging were left untouched. No live provider/device tests or running-app restart. No new visual
+behavior is intended; prior appearance, flicker and chronology browser regressions remain green.
+
+Rule review: NH-01/04 and FE/BE-01 retain the current planning set and focused domain/presentation
+boundaries; NH-02/device scheduling is unchanged; NH-03/FE-02/05 retain source-calendar ingress and
+private-state handling; NH-05/FE-04 have source-owned and cross-stack evidence; NH-06/BE-03–04/FE-03
+preserve timezone/day boundaries, non-mutation, missing semantics and resource ownership. No rule
+exception or constitutional adoption is claimed.
+
+
+## 2026-10-26: capability execution refactor and Integrations naming (AC-43–46)
+
+Completed on `spec/032-connections`, preserving the existing feature work. Root integration
+composition is separated from `runtime`, YAML `definitions`, reusable `flows/searchselect`,
+`operations`, capability registry/`capabilities/waste`, and restricted `transport/httpclient`.
+The coordinator is 175 lines and imports no concrete capability. Root composition is the one
+shipped capability registration point and injects bundled provider files; runtime imports
+neither waste code nor the bundled provider. Setup/definition commands remain with the runtime's
+single lock/transaction owner instead of spreading state ownership across mutually importing packages.
+
+Waste normalization, semantic service identity and coverage/renewal live under the waste
+capability. Saved resources and previews use a generic immutable JSON payload with a typed common
+header; capability codecs validate/project it. Legacy flat waste JSON and encrypted DB schema/AAD
+remain unchanged. Stored v1 field names `postcode` and `service_ids` remain for compatibility;
+search validation follows its configured input type and identity mappings are generic in Go.
+Separate `doc.go` files were removed; public/complex-flow documentation stays beside code.
+
+Registry dispatch is shared by ordinary execution and offline/live previews. A synthetic reading
+capability has no waste fields/dates/timezone and proves search/select setup, atomic publication,
+refresh, 304, read-time projection, offline/live preview isolation and last-good retention after
+normalization failure. Missing codecs produce visible errors for instances and previews without
+rewriting/deleting stored data. Existing fencing/cancellation/idempotent recovery tests moved with
+source owners. Legacy flat JSON round-trip/buffer-ownership, mapping, flow/input, renewal/calendar,
+registry and outbound-policy checks cover new boundaries.
+
+The visible feature is Integrations throughout navigation, page headings, settings/actions and Help.
+New routes use `/integrations`; matching `/connections` aliases retain list/detail/setup/provider/
+Help/not-found links and authentication. Private component/CSS identifiers remain stable. Home,
+Devices, Overview and Panel layouts/data paths are unchanged. Desktop/mobile/light/dark board
+screenshots were inspected; isolated browser checks cover keyboard navigation, failures, layout
+stability, old bookmarks and the existing setup/editor/board interactions.
+
+Actual verification:
+
+- `go test ./internal/integrations/... ./models/integrations/...` passed in the workspace.
+- Complete `go test ./...`, `go build ./...`, `go vet ./...` passed in a temporary source copy.
+- `go test -race ./internal/integrations/... ./models/integrations/... ./repository/... ./internal/api/...`
+  passed in that isolated copy.
+- `npm test -- --runInBand`: 67 suites / 398 tests passed. Frontend build and E2E type checks passed.
+- `npm run lint`: zero errors; seven existing warnings in get-version.cjs/start.mjs.
+- `npm run test:e2e -- ConnectionsPage.spec.ts`: final 36 desktop/mobile cases passed.
+- `gofmt` and `git diff --check` completed; public comments, package dependencies, lifecycle,
+  credential boundaries and error/publication paths were reviewed.
+
+The sandbox initially prevented Go cache writes/local test listeners; checks used a temporary
+cache and authorized local fixture servers. Initial isolated runs omitted required docs JSON
+fixtures, and a subsequent Vite allow-list correction restarted the test server mid-run; those
+harness attempts failed. The final copy includes committed docs fixtures, correctly resolved font
+paths and test-owned servers on 54100/54110/54120, and the final suites above pass. The pre-existing
+modified household automation JSON was never edited; only the isolated copy uses its committed
+fixture. No live devices/provider calls, app restart, deployment or push was performed.
+
+NH/BE/FE review: outcomes/tasks precede code (NH-01); device semantics stay unchanged (NH-02/BE-02);
+protected routes, redaction, origin grants and egress restrictions remain (NH-03/BE-05/FE-05);
+capability/flow/runtime/repository contracts and compatibility are explicit (NH-04/BE-01/FE-01/02);
+source-owned tests and actual isolated evidence are recorded (NH-05); immutable legacy payloads,
+last-good retention, atomic publication and existing bounded shutdown remain (NH-06/BE-03/04).
+Loading/errors/authentication and accessible responsive controls retain browser coverage (FE-03/04).
+Constitutions remain proposed; no ratification/exception approval is claimed.
+
+Limit: this introduces a generic capability boundary for the supported HTTP/search-select recipe,
+not arbitrary authentication/protocol execution. Adding a provider within existing supported
+operations remains YAML/UI work. A genuinely new capability needs a codec/registration and a UI
+renderer/ingress contract; additional setup/authentication protocols remain explicitly scoped work.
+
+
+## Section navigation and layout stability (AC-47–48, T059–62)
+
+The detail-only navigation disappeared on provider/Help route transitions. Its scoped zero bottom
+margin also removed the normal shared spacing, leaving exactly 0px above the schedule panel.
+Both cases failed in the existing browser companion before implementation.
+
+One presentational IntegrationSections component now renders typed named routes on all relevant
+pages. A saved integration carries explicit instance context into provider/Help links; shared
+provider entry does not guess an instance. Results/Setup hashes restore selection on reload/back.
+Provider Help retains editor query context; draft leave confirmation still applies to data sections
+and other providers. Shared navigation has a 20px bottom margin and native keyboard links, visible
+focus and exactly one current section. Header Help/back links no longer duplicate section links.
+
+The later delayed-read regression reproduced a 26px header-height change when provider metadata
+arrived and a separate 28px offset carried into Help. The editor also initially rebuilt from empty
+state and inserted a Working row between its reads. IntegrationPageHeader reserves the subtitle
+line and keeps mobile actions in the available title row. Loading announcements stay out of flow.
+Up to 32 accepted provider DTOs are cached by key in session-only Vuex state, with explicit removal
+and logout cleanup. Cached documents and dirty buffers hydrate before rendering; fresh metadata
+cannot replace a dirty buffer or its conflict token. Revalidation has one owned loading interval.
+A cold entry uses an inert placeholder, not an interactive fake form. Draft animation frames are
+cancelled/replaced and check page/session ownership before touching focus or scroll.
+
+AppShell previously tried to scroll <main>, while .nh-app-main is the actual scrolling element.
+Integration path changes now reset that outer container only. Top-level Help tabs record a top
+return position; contextual Help anchors still restore the original field/focus position. Hash
+anchors and unrelated view behavior remain unchanged. Canonical and legacy integration page keys
+also remount instance/provider owners when path identity changes; hash/query changes retain them.
+
+Verification performed:
+
+- 403 unit tests in 68 suites passed, including source-owned navigation and definition-cache tests.
+- Frontend production build, E2E type checks and lint passed. Lint retains seven existing warnings
+  in get-version.cjs/start.mjs, with zero errors.
+- Final ConnectionsPage browser suite: 44 cases passed at desktop 1280x800 and mobile 390x844.
+  Cases cover measured spacing, delayed metadata geometry, immediately cached form/draft content,
+  four-section continuity, direct provider entry, reload/history, keyboard use, draft confirmation,
+  focus restoration, expired sessions, missing instances and the existing board/editor flows.
+- Desktop/mobile results, editor and Help screenshots were inspected. Final git diff --check passed.
+
+Tests ran only against test-owned fake hubs/temporary data on 54100/54110/54120. Early runs failed
+on the reproduced defects; the intermediate full suite also needed its missing-instance assertion
+updated to check the intentional hidden empty subtitle rather than the absence of a subtitle node.
+It still asserts the removed property's value is gone, the missing error remains and no provider
+request follows a failed instance read. The final 44-case suite passes. Backend tests were not rerun
+for this frontend-only correction; no live provider/device requests, app restart, commit or push.
+
+Final review: NH-01 uses the existing spec/plan/tasks set before code; NH-02 has no device effects;
+NH-03/FE-05 retain auth and session cleanup without persisting private caches; NH-04/FE-01 keep
+routing, presentation, draft ownership and accepted state separate; NH-05 records failing-before
+and passing-after evidence; NH-06 bounds cached data and asynchronous ownership. FE-02 keeps wire
+contracts unchanged; FE-03/04 preserve loading/errors, guards, keyboard focus and responsive layout.
+No dependencies, backend schemas or provider execution behavior changed. Constitutions remain
+proposed and no exception/ratification is claimed.
+
+
+## YAML editor typography and themed canvas (AC-49, T063)
+
+The code textarea inherited font weight 600 from its wrapping label through `font: inherit`.
+The code-specific class now explicitly uses regular 400-weight system monospace, 0.875rem
+(14px at default scale), line height 1.6 and two-space tab stops. Labels retain their emphasis.
+The prior smaller mobile override was removed, retaining readable, user-scalable code on mobile.
+The editor uses the theme page background with a subtle 3% accent mix, the strong theme border,
+normal foreground and accent caret. Existing focus/contrast tokens, scrolling, resizing and
+editing behaviour remain unchanged. Other ordinary form fields are untouched.
+
+Existing YAML editing/repair browser flows passed on desktop and mobile with isolated fake hubs.
+Temporary harness instrumentation (not a permanent implementation-mirroring CSS test) measured
+weight 400, 14px size and 22.4px line height at both widths. It sampled all 11 palettes × 2 modes ×
+11 default/preset-accent choices: 242 combinations at each viewport, minimum text contrast 12.837:1
+(lagoon/light/#495057). Light/dark desktop/mobile editor screenshots were inspected. 403 frontend
+unit tests, production build and lint passed; lint retains seven existing script warnings and no
+errors. Final git diff --check passed. No new dependencies, state, data/auth contracts, provider
+calls or backend changes; no commit/push. FE-04 readability and existing theme consistency are
+verified; NH-01/04/05 and the existing frontend boundary rules apply, other runtime rules unchanged.

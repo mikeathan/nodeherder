@@ -16,6 +16,7 @@ export function createOperationObserver(options: OperationObserverOptions) {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const now = options.now ?? Date.now;
 
+  /** Revoke ownership before cancelling the timer/read so late callbacks cannot refresh state. */
   function stop() {
     current?.abort();
     current = undefined;
@@ -23,6 +24,7 @@ export function createOperationObserver(options: OperationObserverOptions) {
     timer = undefined;
   }
 
+  /** Observe one admitted operation for at most 30 seconds, superseding the previous observation. */
   function start(id: string) {
     stop();
     const controller = new AbortController();

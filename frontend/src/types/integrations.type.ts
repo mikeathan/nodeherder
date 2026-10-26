@@ -1,3 +1,4 @@
+import type { WASTE_SCHEDULE_TIMEZONE } from '@/config/integrations';
 export type ConnectionFailure = {
   code: string;
   message: string;
@@ -63,7 +64,7 @@ export interface WasteSchedule {
   resource_id: string;
   revision: number;
   kind: string;
-  timezone: 'Europe/London';
+  timezone: typeof WASTE_SCHEDULE_TIMEZONE;
   captured_at: string;
   last_checked_at: string;
   source_retrieved_at: string | null;
@@ -134,6 +135,15 @@ export interface ConnectionInstance {
   resources: WasteSchedule[];
   last_error: ConnectionFailure | null;
   updated_at: string;
+}
+/** One shared placement per configured connection; array position defines display order. */
+export interface ConnectionBoardEntry {
+  instance_id: string;
+  hidden: boolean;
+}
+export interface ConnectionBoard {
+  etag: string;
+  entries: ConnectionBoardEntry[];
 }
 export interface ConnectionOperation {
   id: string;

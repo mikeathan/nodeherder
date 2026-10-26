@@ -1,126 +1,55 @@
 package integrations
 
 import (
-	"time"
-
+	"node-herder/internal/integrations/definitions"
+	"node-herder/internal/integrations/runtime"
 	model "node-herder/models/integrations"
 )
 
-// Public DTOs deliberately exclude raw attempts, captured property tokens and secret values.
-type CatalogDTO struct {
-	Available bool           `json:"available"`
-	Error     *model.Failure `json:"availability_error"`
-	Types     []TypeDTO      `json:"types"`
-	Providers []ProviderDTO  `json:"providers"`
-}
+// CatalogDTO exposes installed integration categories and provider availability.
+type CatalogDTO = runtime.CatalogDTO
 
-// TypeDTO describes an installed capability category available in the Connections catalog.
-type TypeDTO struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-}
+// TypeDTO describes an installed integration category.
+type TypeDTO = runtime.TypeDTO
 
-// ProviderDTO describes local provider availability without exposing private connection inputs.
-type ProviderDTO struct {
-	Key             string `json:"key"`
-	ID              string `json:"id"`
-	Name            string `json:"name"`
-	IntegrationType string `json:"integration_type"`
-	Origin          string `json:"origin"`
-	Available       bool   `json:"available"`
-	DiskError       string `json:"disk_error,omitempty"`
-}
+// ProviderDTO describes a host provider definition without private inputs.
+type ProviderDTO = runtime.ProviderDTO
 
-// SetupDTO is the browser view of a shared wizard/test. It omits captured state, exact POST
-// bytes and tokens; CredentialConfigured reports presence only.
-type SetupDTO struct {
-	Preview              *model.WasteSchedule `json:"preview,omitempty"`
-	ID                   string               `json:"id"`
-	Revision             uint64               `json:"revision"`
-	ETag                 string               `json:"etag"`
-	ProviderKey          string               `json:"provider_key"`
-	Status               string               `json:"status"`
-	Choices              []model.Choice       `json:"choices"`
-	Postcode             string               `json:"postcode,omitempty"`
-	InstanceID           string               `json:"instance_id,omitempty"`
-	OperationID          string               `json:"operation_id,omitempty"`
-	ExpiresAt            time.Time            `json:"expires_at"`
-	CredentialConfigured bool                 `json:"credential_configured"`
-	Error                *model.Failure       `json:"last_error"`
-}
+// SetupDTO exposes redacted setup/preview progress.
+type SetupDTO = runtime.SetupDTO
 
-// InstanceDTO exposes saved connection status and validated resources. CredentialSlots
-// contains names only so obsolete slots can be explicitly removed without revealing token values.
-type InstanceDTO struct {
-	CredentialSlots      []string              `json:"credential_slots"`
-	Runs                 []model.RunSummary    `json:"runs"`
-	ID                   string                `json:"id"`
-	Name                 string                `json:"name"`
-	ProviderKey          string                `json:"provider_key"`
-	Revision             uint64                `json:"revision"`
-	ETag                 string                `json:"etag"`
-	Enabled              bool                  `json:"enabled"`
-	Status               string                `json:"status"`
-	Postcode             string                `json:"postcode"`
-	OperationID          string                `json:"operation_id,omitempty"`
-	CredentialConfigured bool                  `json:"credential_configured"`
-	Resources            []model.WasteSchedule `json:"resources"`
-	Error                *model.Failure        `json:"last_error"`
-	UpdatedAt            time.Time             `json:"updated_at"`
-}
+// InstanceDTO exposes a saved integration and versioned public resources.
+type InstanceDTO = runtime.InstanceDTO
 
-// OperationDTO exposes durable progress and retry timing, never private attempt payloads.
-type OperationDTO struct {
-	ID         string         `json:"id"`
-	Status     string         `json:"status"`
-	Kind       string         `json:"kind"`
-	SetupID    string         `json:"setup_id,omitempty"`
-	InstanceID string         `json:"instance_id,omitempty"`
-	RetryAt    time.Time      `json:"retry_at"`
-	ExpiresAt  time.Time      `json:"expires_at"`
-	Error      *model.Failure `json:"last_error"`
-}
+// OperationDTO exposes durable operation progress without request bytes or credentials.
+type OperationDTO = runtime.OperationDTO
 
-// DefinitionDTO separates exact host bytes/hash from the active compiled revision.
-// Status makes host changes, missing files and saved-but-not-applied revisions observable.
-type DefinitionDTO struct {
-	ShippedYAML     string           `json:"shipped_yaml,omitempty"`
-	Key             string           `json:"key"`
-	YAML            string           `json:"yaml"`
-	Document        model.Definition `json:"document"`
-	ContentHash     string           `json:"content_hash"`
-	ActiveHash      string           `json:"active_hash"`
-	Revision        uint64           `json:"revision"`
-	ETag            string           `json:"etag"`
-	Status          string           `json:"status"`
-	DiskError       string           `json:"disk_error,omitempty"`
-	UpdateAvailable bool             `json:"update_available"`
-}
+// DefinitionDTO exposes editable host definition source and active revision.
+type DefinitionDTO = runtime.DefinitionDTO
 
-// ValidationDTO is a normalized unsaved definition plus the destination-review scope.
-// Validation does not write the host file or send any provider request.
-type ValidationDTO struct {
-	YAML           string             `json:"yaml"`
-	Document       model.Definition   `json:"document"`
-	Hash           string             `json:"content_hash"`
-	Origin         string             `json:"origin"`
-	PreviousOrigin string             `json:"previous_origin"`
-	Affected       []CredentialReview `json:"affected_instances"`
-}
+// ValidationDTO describes validation and destination-review requirements.
+type ValidationDTO = runtime.ValidationDTO
 
-// CredentialReview pins the specific active slot and instance/credential revisions a user
-// may reassociate. A stale acknowledgement cannot transfer a newly replaced or unrelated token.
-type CredentialReview struct {
-	CredentialSlot     string `json:"credential_slot"`
-	InstanceID         string `json:"instance_id"`
-	Revision           uint64 `json:"revision"`
-	CredentialRevision uint64 `json:"credential_revision"`
-}
+// CredentialReview binds destination consent to exact credential and instance revisions.
+type CredentialReview = runtime.CredentialReview
 
-// DestinationReview is explicit consent outside YAML to send private inputs and selected
-// credentials to a changed origin. YAML alone cannot authorize credential reassociation.
-type DestinationReview struct {
-	Origin      string             `json:"origin"`
-	Reassociate []CredentialReview `json:"reassociate"`
-}
+// DestinationReview records explicit consent outside provider YAML.
+type DestinationReview = runtime.DestinationReview
+
+// BoardEntry identifies one integration's order/visibility preference.
+type BoardEntry = runtime.BoardEntry
+
+// BoardDTO exposes the shared board's preferences and conditional edit token.
+type BoardDTO = runtime.BoardDTO
+
+// DefinitionFiles is the host definition repository boundary.
+type DefinitionFiles = runtime.DefinitionFiles
+
+// CompiledDefinition is an immutable validated provider revision.
+type CompiledDefinition = definitions.Compiled
+
+// MaxDefinitionBytes bounds host YAML input to 64 KiB.
+const MaxDefinitionBytes = definitions.MaxDefinitionBytes
+
+// DefinitionKey derives a stable type/provider identifier from validated metadata.
+func DefinitionKey(d model.Definition) string { return definitions.DefinitionKey(d) }

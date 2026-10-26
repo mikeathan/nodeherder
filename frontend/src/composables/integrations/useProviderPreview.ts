@@ -17,6 +17,7 @@ export function useProviderPreview(
     sample.value = '';
     preview.value = null;
   });
+  /** Validate a sample or explicitly confirmed live request in transient state; saved resources are untouched. */
   async function test(mode: 'offline' | 'live') {
     const v = await validate();
     if (!v) return;
@@ -34,7 +35,7 @@ export function useProviderPreview(
       !(await confirm({
         title: 'Send a test request?',
         message:
-          'This sends a saved-schedule request using the selected connection’s private inputs and token. The preview does not replace its saved results.',
+          'This sends a saved-schedule request using the selected integration’s private inputs and token. The preview does not replace its saved results.',
         confirmLabel: 'Send test request',
       }))
     )

@@ -148,3 +148,46 @@ func TestIntegrationCredentialsAreWriteOnlyAndCookieWins(t *testing.T) {
 		t.Fatal("bearer overrode invalid cookie", w.Code)
 	}
 }
+
+func TestIntegrationBoardAuthorizationAndContract(t *testing.T) {
+	router, one, two := integrationAPIFixture(t)
+	const path = "/api/integrations/board"
+	if w := integrationRequest(router, "GET", path, "", false, "", nil); w.Code != 401 {
+		t.Fatal(w.Code)
+	}
+	read := integrationRequest(router, "GET", path, one, false, "", nil)
+	var envelope struct{ Data connections.BoardDTO }
+	if err := json.Unmarshal(read.Body.Bytes(), &envelope); err != nil {
+		t.Fatal(err)
+	}
+	if read.Code != 200 || read.Header().Get("ETag") != envelope.Data.ETag || read.Header().Get("Cache-Control") != "private, no-store" {
+		t.Fatal(read.Code, read.Header(), read.Body.String())
+	}
+	for _, tc := range []struct {
+		body    string
+		etag    string
+		cookie  bool
+		headers map[string]string
+		status  int
+	}{
+		{`{"entries":[]}`, "", false, nil, 428},
+		{`{"entries":[]}`, `"stale"`, false, nil, 409},
+		{`{}`, envelope.Data.ETag, false, nil, 400},
+		{`{"entries":null}`, envelope.Data.ETag, false, nil, 400},
+		{`{"entries":[{"instance_id":"x"}]}`, envelope.Data.ETag, false, nil, 400},
+		{`{"entries":[{"instance_id":"x","hidden":null}]}`, envelope.Data.ETag, false, nil, 400},
+		{`{"entries":[{"instance_id":"x","hidden":false,"extra":true}]}`, envelope.Data.ETag, false, nil, 400},
+		{`{"entries":[]}`, envelope.Data.ETag, true, nil, 403},
+		{`{"entries":[]}`, envelope.Data.ETag, true, map[string]string{"Origin": "https://evil.test", "X-NodeHerder-Request": "1"}, 403},
+		{`{"entries":[]}`, envelope.Data.ETag, true, map[string]string{"Origin": "https://ui.example.test", "X-NodeHerder-Request": "1"}, 200},
+	} {
+		headers := map[string]string{"If-Match": tc.etag}
+		for k, v := range tc.headers {
+			headers[k] = v
+		}
+		w := integrationRequest(router, "PUT", path, two, tc.cookie, tc.body, headers)
+		if w.Code != tc.status {
+			t.Fatalf("%s: want %d got %d %s", tc.body, tc.status, w.Code, w.Body.String())
+		}
+	}
+}

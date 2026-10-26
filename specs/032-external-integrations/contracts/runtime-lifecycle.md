@@ -5,6 +5,16 @@ Status: M1 implementation contract; later-milestone provisions remain deferred. 
 
 ## Composition and shutdown
 
+Current package ownership after AC-43–46: root `internal/integrations` composes the shipped
+capability registry and provider seeds, then constructs `runtime.Service`. Runtime owns the
+existing transaction/lifecycle semantics below. `definitions`, `flows/searchselect`, `operations`,
+`capabilities/waste` and `transport/httpclient` are separate cohesive packages. The runtime
+imports no concrete capability or bundled provider. Registry/codec methods create no goroutines,
+write no repository records and perform no HTTP. See [ADR-003](../adr-003-capability-execution.md).
+Existing flat resource JSON and encrypted schema/AAD remain unchanged; registered codecs validate
+and project stored resources/previews. Unsupported versions produce visible failures without
+discarding data. Product terminology is now Integrations; older Connections URLs remain aliases.
+
 Current `backend/main.go` calls store.Create, hub.Register and h.Listen, with os.Exit on startup
 errors. `internal/api/server.go` closes HTTP on context cancellation and Listen can return before
 background callbacks finish. AppStore has no Close method. A context.AfterFunc alone is not a join.
@@ -39,11 +49,11 @@ wait. Record the actual selected path in deployment documentation; do not log pr
 Partial constructor failures close any already-open handle and start no leftover worker.
 
 An unavailable key, unwritable directory, locked/corrupt DB, unsupported schema or invalid definition
-produces a degraded Connections service/status, not a fatal hub.Register/store.Create failure.
+produces a degraded Integrations service/status, not a fatal hub.Register/store.Create failure.
 Its read-only catalog can report feature availability; operations needing private state return 503
 with a stable code. Do not pretend the installation has no connections, replace keys/DBs, run
 migrations on unknown versions or overwrite unreadable data. Unaffected device management still runs.
-No permanent feature warning/banner is added to other views; status lives within Connections.
+No permanent feature warning/banner is added to other views; status lives within Integrations.
 
 Store schema version in the owned DB. Validate and back up before an upgrade, migrate in one bbolt
 transaction per schema step, and commit the version with its data. Abort/rollback on failure; unknown

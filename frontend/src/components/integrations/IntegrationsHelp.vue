@@ -1,12 +1,14 @@
 <script setup lang="ts">
   import { computed, ref, onMounted } from 'vue';
   import { useRoute } from 'vue-router';
-  import UiPageHeader from '@/components/ui/UiPageHeader.vue';
+  import IntegrationPageHeader from './IntegrationPageHeader.vue';
   import UiCard from '@/components/ui/UiCard.vue';
   import { helpTopics } from '@/domain/integrations-help';
-  import { RouteName } from '@/types/router';
+  import IntegrationSections from './IntegrationSections.vue';
+  import { useProviderSections } from '@/composables/integrations/useProviderSections';
   import './connections.css';
   const route = useRoute();
+  const sectionContext = useProviderSections();
   const search = ref('');
   const topics = computed(() => helpTopics(search.value));
   onMounted(() => {
@@ -19,10 +21,9 @@
 </script>
 <template>
   <div class="connections connection-stack">
-    <UiPageHeader
-      title="Connections help"
-      :back="{ name: RouteName.ConnectionProvider, params: route.params, query: route.query }"
-      back-label="Configure operations" /><label class="connection-field"
+    <IntegrationPageHeader title="Integrations help" />
+    <IntegrationSections active="help" :context="sectionContext" />
+    <label class="connection-field"
       ><span>Find help</span
       ><input v-model="search" type="search" placeholder="For example: change URL or collection fields"
     /></label>

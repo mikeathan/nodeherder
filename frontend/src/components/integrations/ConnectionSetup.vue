@@ -25,7 +25,7 @@
 </script>
 <template>
   <div class="connections connection-stack">
-    <UiPageHeader title="Set up bin collections" :back="{ name: RouteName.Connections }" back-label="Connections" />
+    <UiPageHeader title="Set up bin collections" :back="{ name: RouteName.Integrations }" back-label="Integrations" />
     <ConnectionFeedback :error="error ?? setup?.last_error" :busy="busy" />
     <UiCard v-if="setup" title="Your address"
       ><div class="connection-form">
@@ -66,11 +66,11 @@
             No addresses were found. Check the postcode or try another provider.
           </p>
           <label class="connection-field"
-            ><span>Connection name</span><input v-model="name" maxlength="120" required
+            ><span>Integration name</span><input v-model="name" maxlength="120" required
           /></label>
           <div>
             <UiButton type="submit" variant="primary" :disabled="busy || !property || !name.trim()"
-              >Save connection</UiButton
+              >Save integration</UiButton
             >
           </div>
         </form>
@@ -84,8 +84,8 @@
           </p>
           <UiButton :disabled="busy" @click="check">Check status</UiButton>
         </div>
-        <UiButton v-if="setup.instance_id" :to="{ name: RouteName.Connection, params: { id: setup.instance_id } }"
-          >Open saved connection</UiButton
+        <UiButton v-if="setup.instance_id" :to="{ name: RouteName.Integration, params: { id: setup.instance_id } }"
+          >Open saved integration</UiButton
         >
         <div><UiButton variant="ghost" :disabled="busy" @click="cancel">Discard setup</UiButton></div>
       </div></UiCard

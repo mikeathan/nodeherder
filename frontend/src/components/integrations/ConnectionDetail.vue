@@ -1,11 +1,11 @@
 <script setup lang="ts">
-  import UiPageHeader from '@/components/ui/UiPageHeader.vue';
+  import IntegrationPageHeader from './IntegrationPageHeader.vue';
   import WasteScheduleResults from './WasteScheduleResults.vue';
   import ConnectionSettings from './ConnectionSettings.vue';
   import UiButton from '@/components/ui/UiButton.vue';
   import ConnectionFeedback from './ConnectionFeedback.vue';
+  import IntegrationSections from './IntegrationSections.vue';
   import { useConnectionDetail } from '@/composables/integrations/useConnectionDetail';
-  import { RouteName } from '@/types/router';
   import './connections.css';
   const {
     item,
@@ -13,7 +13,7 @@
     name,
     token,
     definition,
-    providerParams,
+    sectionContext,
     busy,
     error,
     refresh,
@@ -26,17 +26,17 @@
   } = useConnectionDetail();
 </script>
 <template>
-  <div class="connections connection-stack connection-detail">
-    <UiPageHeader
-      :title="item?.name ?? 'Connection'"
-      :subtitle="item?.postcode"
-      :back="{ name: RouteName.Connections }"
-      back-label="Connections"
-      ><template #actions
-        ><UiButton :disabled="busy || !item?.enabled" icon="refresh" @click="refresh">Refresh</UiButton></template
-      ></UiPageHeader
-    >
-    <ConnectionFeedback :error="error ?? item?.last_error" :busy="busy" />
+  <div class="connections connection-stack connection-detail" :aria-busy="busy">
+    <IntegrationPageHeader
+      :title="item?.name ?? 'Integration'"
+      :subtitle="item?.postcode">
+      <template #actions>
+        <UiButton :disabled="busy || !item?.enabled" icon="refresh" @click="refresh">Refresh</UiButton>
+      </template>
+    </IntegrationPageHeader>
+    <IntegrationSections v-if="item" :active="tab" :context="sectionContext" />
+    <ConnectionFeedback :error="error ?? item?.last_error" :busy="busy" compact-busy />
+    <p v-if="busy && !item" class="connection-muted">Loading integration…</p>
     <UiButton
       v-if="
         item &&
@@ -54,16 +54,8 @@
       >Repeat address setup</UiButton
     >
     <template v-if="item">
-      <nav class="connection-tabs" aria-label="Connection sections">
-        <a href="#results" :aria-current="tab === 'results' ? 'page' : undefined" @click.prevent="tab = 'results'"
-          >Results</a
-        ><a href="#setup" :aria-current="tab === 'setup' ? 'page' : undefined" @click.prevent="tab = 'setup'">Setup</a
-        ><RouterLink :to="{ name: RouteName.ConnectionProvider, params: providerParams }"
-          >Configure operations</RouterLink
-        ><RouterLink :to="{ name: RouteName.ConnectionHelp, params: providerParams }">Help</RouterLink>
-      </nav>
       <div v-if="!item.enabled" class="connection-notice" role="status">
-        This connection is disabled. Saved dates remain visible.
+        This integration is disabled. Saved dates remain visible.
       </div>
       <div v-if="item.operation_id" class="connection-notice" role="status">
         <p>A lookup is in progress. Check status continues that lookup without submitting a new one.</p>
@@ -90,12 +82,6 @@
         </ol>
       </details>
     </template>
-    <UiButton v-if="error" @click="reloadPage">Reload connection</UiButton>
+    <UiButton v-if="error" @click="reloadPage">Reload integration</UiButton>
   </div>
 </template>
-
-<style scoped>
-  .connection-detail .connection-tabs {
-    margin-bottom: 0;
-  }
-</style>

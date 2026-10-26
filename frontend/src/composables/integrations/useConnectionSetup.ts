@@ -15,12 +15,18 @@ export function useConnectionSetup() {
   const name = ref('Bin collections');
   const token = ref('');
   const definition = ref<ProviderDefinition | null>(null);
+  // Only named return intents are accepted; setup never redirects to a supplied URL.
+  async function finishSetup(id: string) {
+    if (route.query.return_to === 'board') {
+      commit('boardReturn', { id, scrollTop: 0 });
+      await router.replace({ name: RouteName.Integrations });
+    } else await router.replace({ name: RouteName.Integration, params: { id } });
+  }
   async function reload(requestSignal = signal) {
     const value = await api.setup(String(route.params.id), requestSignal);
     if (!isActive() || requestSignal.aborted) return value;
     commit('setup', value);
-    if (value.instance_id && value.status === 'completed')
-      await router.replace({ name: RouteName.Connection, params: { id: value.instance_id } });
+    if (value.instance_id && value.status === 'completed') await finishSetup(value.instance_id);
     return value;
   }
   onMounted(async () => {
@@ -41,6 +47,7 @@ export function useConnectionSetup() {
   onBeforeUnmount(() => {
     token.value = '';
   });
+  /** Submit the postcode search and observe its admitted operation; old address choices are discarded. */
   async function search() {
     const current = setup.value;
     if (!current) return;
@@ -53,6 +60,7 @@ export function useConnectionSetup() {
       if (value.operation_id) observe(value.operation_id, reload);
     }
   }
+  /** Save the selected provider property ID and follow the named board/detail return flow. */
   async function save() {
     const current = setup.value;
     if (!current) return;
@@ -65,9 +73,10 @@ export function useConnectionSetup() {
     );
     if (!value) return;
     commit('setup', value);
-    if (value.instance_id) await router.replace({ name: RouteName.Connection, params: { id: value.instance_id } });
+    if (value.instance_id) await finishSetup(value.instance_id);
     else if (value.operation_id) observe(value.operation_id, reload);
   }
+  /** Continue an admitted setup operation without starting a duplicate search/lookup. */
   async function check() {
     const current = setup.value;
     if (!current) return;
@@ -76,6 +85,7 @@ export function useConnectionSetup() {
     const value = await perform(() => api.check(operationId, current.etag));
     if (value) observe(value.id, reload);
   }
+  /** Save the setup token in server-owned custody and immediately clear its plaintext field. */
   async function saveToken() {
     const current = setup.value;
     if (!current) return;
@@ -85,6 +95,7 @@ export function useConnectionSetup() {
     token.value = '';
     if (value && 'choices' in value) commit('setup', value);
   }
+  /** Confirm deletion of this unfinished setup; already-submitted remote work cannot be recalled. */
   async function cancel() {
     const current = setup.value;
     if (!current) return;
@@ -99,8 +110,9 @@ export function useConnectionSetup() {
     )
       return;
     const value = await perform(() => api.cancel(current.id, current.etag));
-    if (value) await router.replace({ name: RouteName.Connections });
+    if (value) await router.replace({ name: RouteName.Integrations });
   }
+  /** Retry the local setup read, preserving explicit manual provider admission. */
   const reloadPage = () => perform(() => reload());
   return {
     reloadPage,

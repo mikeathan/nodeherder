@@ -1,6 +1,10 @@
 package integrations
 
-import "time"
+import (
+	"slices"
+	"sort"
+	"time"
+)
 
 // Quality preserves evidence for an exact property match and the provider's date confidence.
 // Unknown confidence remains unknown; approximate data cannot become an exact-household snapshot.
@@ -70,7 +74,8 @@ type WasteSchedule struct {
 	Services              []WasteService `json:"services"`
 }
 
-// Project derives date-dependent metadata without changing content identity or source age.
+// Project derives freshness and next-collection order without changing content identity or source age.
+// Sorting a copied service slice keeps saved snapshots and simultaneous consumers independent.
 func (s WasteSchedule) Project(now time.Time) WasteSchedule {
 	s.EvaluatedAt = now.UTC()
 	s.Freshness = "unknown"
@@ -80,5 +85,42 @@ func (s WasteSchedule) Project(now time.Time) WasteSchedule {
 			s.Freshness = "stale"
 		}
 	}
+	if len(s.Services) < 2 || s.Timezone != WasteTimezone {
+		return s
+	}
+	today, err := WasteCalendarDate(now)
+	if err != nil {
+		// Never substitute UTC and silently reorder around the wrong local midnight.
+		return s
+	}
+	s.Services = orderedServices(s.Services, today)
 	return s
+}
+
+// orderedServices owns its new slice. Sorting must not change the stored resource or another
+// consumer's projection; service IDs and full date evidence remain attached to their services.
+func orderedServices(services []WasteService, today string) []WasteService {
+	ordered := slices.Clone(services)
+	sort.SliceStable(ordered, func(left, right int) bool {
+		leftDate := nextCollectionDate(ordered[left].Dates, today)
+		rightDate := nextCollectionDate(ordered[right].Dates, today)
+		if leftDate == "" {
+			return false
+		}
+		if rightDate == "" {
+			return true
+		}
+		return leftDate < rightDate
+	})
+	return ordered
+}
+
+// Canonical service dates are already sorted/unique. Keep past dates as evidence while
+// ordering by the next one; an exhausted horizon is not a confirmed cancellation.
+func nextCollectionDate(dates []string, today string) string {
+	index := sort.SearchStrings(dates, today)
+	if index == len(dates) {
+		return ""
+	}
+	return dates[index]
 }

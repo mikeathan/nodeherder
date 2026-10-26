@@ -78,7 +78,7 @@ for ordinary configuration. Generated schemas can be reconsidered later if actua
 
 ## Help page in the operations/configuration screen
 
-Proposed navigation: Connections → Waste collection → provider → Configure operations → Help.
+Proposed navigation: Integrations → Waste collection → provider → Configure operations → Help.
 Use an inline Help tab plus `/connections/providers/:type/:provider/help`; the
 [navigation contract](connections-navigation.md) defines instance and provider routes. All signed-in
 users can read it. Desktop can retain the editor alongside contextual help; mobile opens a full-width
@@ -174,7 +174,7 @@ preserves its buffer and blocks Form/save until corrected. Reference-name dictio
 own-property checks, so names such as constructor cannot become inherited object values.
 
 AppShell's existing fullPath watcher resets its main scroll on navigation. Do not change that
-behavior globally: restore editor field/focus/scroll inside the Connections feature after its route
+behavior globally: restore editor field/focus/scroll inside the Integrations feature after its route
 mount/watch completes, or keep the editor in a stable feature parent while Help opens. Use existing
 shared controls/themes and source-owned pure helpers plus browser assertions. Unmount cancels local
 status polls; it does not cancel an already admitted provider operation. Logout/session invalidation

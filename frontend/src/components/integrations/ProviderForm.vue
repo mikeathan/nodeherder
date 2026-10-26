@@ -50,7 +50,7 @@
     </p>
     <ProviderIdentityFields :model-value="identity" @update:model-value="patch" />
     <h2>Requests</h2>
-    <RouterLink :to="{ name: RouteName.ConnectionHelp, params: route.params, query: route.query, hash: '#values' }"
+    <RouterLink :to="{ name: RouteName.IntegrationHelp, params: route.params, query: route.query, hash: '#values' }"
       >Help choosing request values</RouterLink
     >
     <p class="connection-muted">

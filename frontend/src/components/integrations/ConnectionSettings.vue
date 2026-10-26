@@ -13,13 +13,13 @@
   }>();
 </script>
 <template>
-  <UiCard title="Connection settings"
+  <UiCard title="Integration settings"
     ><div class="connection-form">
-      <label class="connection-field"><span>Connection name</span><input v-model="name" maxlength="120" /></label>
+      <label class="connection-field"><span>Integration name</span><input v-model="name" maxlength="120" /></label>
       <div class="connection-actions">
         <UiButton :disabled="busy || !name.trim()" @click="emit('update', item.enabled)">Save name</UiButton
         ><UiButton :disabled="busy" @click="emit('update', !item.enabled)">{{
-          item.enabled ? 'Disable connection' : 'Enable connection'
+          item.enabled ? 'Disable integration' : 'Enable integration'
         }}</UiButton
         ><UiButton :disabled="busy" @click="emit('editAddress')">Change address</UiButton>
       </div>
@@ -57,7 +57,7 @@
         </div>
       </fieldset>
       <div class="connection-delete">
-        <UiButton variant="danger" :disabled="busy" @click="emit('remove')">Remove connection</UiButton>
+        <UiButton variant="danger" :disabled="busy" @click="emit('remove')">Remove integration</UiButton>
       </div>
     </div></UiCard
   >

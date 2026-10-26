@@ -54,3 +54,23 @@ test('page lifetime signals are attached to mutations as well as reads', async (
   controller.abort();
   expect((fetch.mock.calls[0][1]?.signal as AbortSignal).aborted).toBe(true);
 });
+
+test('board save uses authenticated revision transport and runtime validation', async () => {
+  const entries = [{ instance_id: 'a', hidden: true }];
+  const fetch = jest
+    .spyOn(global, 'fetch')
+    .mockResolvedValue(new Response(JSON.stringify({ data: { etag: 'next', entries }, error: null }), { status: 200 }));
+  const controller = new AbortController();
+  expect(await createConnectionsApi(controller.signal).saveBoard(entries, 'previous')).toEqual({
+    etag: 'next',
+    entries,
+  });
+  expect(fetch.mock.calls[0][0]).toContain('/integrations/board');
+  expect(fetch.mock.calls[0][1]).toMatchObject({
+    method: 'PUT',
+    credentials: 'include',
+    signal: controller.signal,
+    body: JSON.stringify({ entries }),
+    headers: expect.objectContaining({ 'If-Match': 'previous', 'X-NodeHerder-Request': '1' }),
+  });
+});

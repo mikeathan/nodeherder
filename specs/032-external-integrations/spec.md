@@ -1,9 +1,44 @@
 # Spec: Configurable external integrations
 
-ID: 032 | Status: M1 implemented and verified locally; later milestones deferred | Owner: NodeHerder contributors | Updated: 2026-10-25
+ID: 032 | Status: M1 implemented and verified locally; Integrations board implemented and verified locally; later milestones deferred | Owner: NodeHerder contributors | Updated: 2026-10-26
 Constitution: proposed 1.0.0 | Components: backend and frontend
 
 ## Problem, scope, exclusions
+
+- AC-49: provider YAML uses regular-weight monospace text, comfortable line spacing and a
+  readable desktop/mobile size; label emphasis must not make the editable document bold.
+  Its inset background, border, text and caret follow theme/accent tokens with readable contrast
+  across light/dark palettes and selected accent colours.
+
+- AC-47: Results/Setup/Configure operations/Help share visible section navigation when opened
+  from an integration. Selected states follow navigation/reload/back; links preserve the explicit
+  instance and provider context, and editor drafts retain their existing leave safeguards.
+  Direct provider/catalogue entry shows provider-level sections without guessing an instance.
+  At desktop/mobile widths, tabs and focus outlines have at least 12px clear space above content.
+- AC-48: moving between data, Configure operations and Help does not temporarily shift header,
+  navigation or cached editor content while reads finish. Loading remains accessible. Cached
+  definitions are key-scoped, bounded, cleared on logout and revalidated; stale replies cannot
+  publish across page/session ownership. Unsaved drafts never flash a saved version during return.
+
+Current follow-up (2026-10-26): the user requested **Integrations** as the visible name
+and a backend package refactor on this branch. Manual refresh and existing functionality remain.
+
+- AC-43: a registered non-waste test capability completes setup, publication, refresh,
+  projection and preview through the same coordinator without waste mapping/date rules.
+- AC-44: waste normalization, service identity and coverage/renewal belong to its capability;
+  choice/status interpretation belongs to reusable search/select. Runtime retains atomicity,
+  generation fencing, cancellation and bounded execution.
+- AC-45: existing encrypted records, provider YAML and waste resource JSON remain compatible;
+  unsupported/corrupt payloads fail visibly without overwriting last-good data.
+- AC-46: visible navigation/actions/Help use Integrations/integration. Canonical URLs use
+  `/integrations`, retaining `/connections` aliases. Other views retain their layouts. Remove
+  separate `doc.go` files; keep useful documentation beside the relevant declarations.
+
+The user approved the recommended grouped Integrations board on 2026-10-26 after reviewing
+Home-like card styling, shared coloured bin SVGs and whole-card navigation. AC-34–37 and the
+[board contract](contracts/connections-board.md) cover its implementation and actual verification.
+The [design investigation](designs/connections-dashboard-review.md) retains alternative analysis;
+individual tiles, weather/energy and resizing are outside the implemented scope.
 
 Household users need to connect external services by answering ordinary questions, without
 understanding HTTP, response mappings or provider identifiers. Bin collections are the first
@@ -19,7 +54,7 @@ and proposes a staged design. [Tasks](tasks.md), the
 [host YAML configuration contract](contracts/configuration.md) make the remaining work concrete.
 The [operations/help contract](contracts/operations-and-help.md) and small typed definition format
 describe reusable operations, request references and the in-app guide.
-The [Connections navigation and page-boundary contract](contracts/connections-navigation.md) defines
+The [Integrations navigation and page-boundary contract](contracts/connections-navigation.md) defines
 the new top-level category, future type structure and preservation of existing pages.
 The [audit](review.md), [runtime ownership](contracts/runtime-lifecycle.md) and
 [API/recovery contract](contracts/api-and-recovery.md) close the remaining execution paths.
@@ -38,7 +73,7 @@ data; this does not authorize external purchases, messages or device commands.
 
 Exclusions: marketplace, arbitrary scripts, visual workflow editor, automatic API repair by an
 LLM, silent provider switching, a replacement device/automation system, and packaging NodeHerder
-as a Home Assistant app. The initial UI lives only within Connections: Home, Devices, Overview
+as a Home Assistant app. The initial UI lives only within Integrations: Home, Devices, Overview
 and Panel content/layout are unchanged; no cross-page promotion, pins or room tiles. Push transports and device control are future capability-specific work.
 
 ## Scenarios and acceptance
@@ -148,23 +183,23 @@ Independent verification: isolated egress/security tests and UI privacy inspecti
   request and its references or adding another bin colour requires no provider-specific Go change.
   Provider mappings validate consumed fields and produce the shared waste output contract.
 
-- AC-23: Connections is a separate top-level section after Devices on desktop and mobile, preserving
+- AC-23: Integrations is a separate top-level section after Devices on desktop and mobile, preserving
   all existing sections and device counts. Its catalog distinguishes types, providers and configured
   instances; only supported types can be installed. Normal setup requires no operation editing.
   Authenticated deep links, active navigation and Help work without a configured device. The
-  approved name is Connections; this is one shared home with no household switcher/extra household
-  heading or breadcrumb. Connections is reached from its shared main-navigation entry.
-- AC-26: Connection setup, provider editing, results and health are presented only in Connections.
+  approved name is Integrations; this is one shared home with no household switcher/extra household
+  heading or breadcrumb. Integrations is reached from its shared main-navigation entry.
+- AC-26: Connection setup, provider editing, results and health are presented only in Integrations.
   Home areas/tiles/counts, Panel rooms/device controls/status, Overview content/counts/activity and
   Devices content remain unchanged. No connection pin/card, room assignment, dashboard-setting
   field, extra greeting/date/header, explanatory banner or management button is added there.
-- AC-27: The shared Connections main-navigation entry is the discovery/entry route. Do not add
+- AC-27: The shared Integrations main-navigation entry is the discovery/entry route. Do not add
   cross-promotion buttons, links, notices or connection-specific footer copy to Devices, Home,
-  Overview or Panel. Links between views inside Connections and authenticated direct routes work.
+  Overview or Panel. Links between views inside Integrations and authenticated direct routes work.
   Desktop/mobile negative UI assertions verify the page boundaries and unchanged baseline counts.
 
 Withdrawn scope: AC-24/FR-14 (Home resource tiles) and AC-25/FR-15 (Panel room tiles/details) are
-retired following the user's Connections-only decision. The earlier placement samples were
+retired following the user's Integrations-only decision. The earlier placement samples were
 exploration, not approved product scope. Their IDs are not reused; T029/T030 are withdrawn too.
 Any future dashboard/panel presentation requires a separately scoped design and user decision.
 
@@ -184,7 +219,7 @@ Any future dashboard/panel presentation requires a separately scoped design and 
 | FR-10 | Use host YAML as definition source of truth with equal-access Form/YAML editing and intentional Git versioning | AC-15–17/20 |
 | FR-11 | Explain operation configuration through contextual and full-page help | AC-21 |
 | FR-12 | Reuse generic operations with typed validated configuration and explicit flow references | AC-22 |
-| FR-13 | Expose an extensible top-level Connections category beside Devices | AC-23 |
+| FR-13 | Expose an extensible top-level Integrations category beside Devices | AC-23 |
 | FR-16 | Keep initial connection UI contained and preserve existing pages | AC-26 |
 | FR-17 | Use main navigation without cross-page promotion or extra prose | AC-27 |
 
@@ -269,7 +304,7 @@ not authorization to change those views now. Resolve their own scenarios before 
 
 ## Follow-up: maintainability and lifecycle review (2026-10-25)
 
-User-requested refactor of the new Connections code, preserving M1 behavior and wire/storage contracts.
+User-requested refactor of the new Integrations code, preserving M1 behavior and wire/storage contracts.
 AC-28: Route components present data and delegate orchestration to focused composables; provider
 form sections own one concern and never mutate parent-owned nested props. Pure definition edits
 (request/capture rename and path updates) preserve references and have source-owned tests.
@@ -282,8 +317,8 @@ escaping/array semantics. Comments explain decisions rather than restating assig
 
 ## Follow-up: local first-run storage key (AC-31)
 
-The user runs natively and needs Connections to work without Docker-specific manual setup.
-AC-31: With no explicit key path and no existing Connections DB, native startup creates/reuses a
+The user runs natively and needs Integrations to work without Docker-specific manual setup.
+AC-31: With no explicit key path and no existing Integrations DB, native startup creates/reuses a
 private key in the OS user-configuration directory outside the checkout. An explicit key path is
 never auto-provisioned. Missing keys alongside any existing DB, invalid keys, filesystem failures
 and concurrent startup fail safely without replacing keys/data. Restart reuses the same key.
@@ -304,3 +339,71 @@ The user requests a less space-intensive, professional results view, especially 
 Show one compact saved/stale/check-time summary with timestamps, refresh explanation and provider
 notes behind a native Details disclosure. Put recent checks after the results. Card headers retain Black bin/Blue bin/Brown bin names with medium-size colour-bin icons; dates remain primary. Coverage belongs in Details, with no repeated colour/coverage row. Keep full provider descriptions available inside Details. Preserve pending,
 error, stale and subscription feedback, keyboard access and no horizontal overflow.
+
+## Integrations board follow-up (approved 2026-10-26)
+
+The user authorized implementing the recommended Connection board after reviewing the examples.
+Use one widget per saved connection, Home-like rounded surfaces and the existing coloured bin SVGs.
+Weather/energy remain examples only. No resize controls, Details footer or intermediate details dialog.
+
+- AC-34: /connections shows saved next dates directly, with one normally sized card per instance,
+  a separate Add connection dialog and no provider/configuration catalog on the board. Card content
+  is a real keyboard-operable link to the existing full detail page; its Refresh/Check action stays
+  independent. Existing larger Results/Setup/provider editing/Help remain available there.
+- AC-35: Edit layout supports drag handles and tap/keyboard movement, hide, Save and Cancel.
+  Navigation is disabled while editing. Shared order/visibility survive reload/restart on the host.
+  Hiding retains setup; Add offers restoration. Deleting remains a confirmed full-page action.
+  Conflicts/failed saves retain the draft; reload is explicit. New instances appear automatically.
+- AC-36: Setup started from Add returns to the board on Save; editing an existing address retains
+  the detail-page return. Local-only projections update on minute/focus without provider polling.
+  Pending/no-data/confirmed-empty/stale/error/disabled states stay distinguishable; no invented dates.
+  Back restores card focus/scroll when possible. All page work/listeners stop on logout/unmount.
+- AC-37: Verify 1280/736/390/320px layouts, light/dark, long names, actual bin SVGs and accessible
+  actions; no PII in browser persistence. Home/Devices/Overview/Panel/public MCP remain unchanged.
+
+[Board contract](contracts/connections-board.md) freezes layout wire/storage and UI ownership.
+
+## Navigation polish (AC-38–39, 2026-10-26)
+
+- AC-38: Opening Integrations, opening a cached connection and returning must not insert/remove
+  loading text in normal flow or briefly replace the known detail title/postcode with a generic
+  heading. Reuse only matching, validated session cache during revalidation. Loading remains
+  accessible, controls/errors truthful, and failed/deleted/mismatched loads cannot use another
+  connection's details. Cold deep links show a loading state; no fabricated saved data. Do not
+  change global shell geometry or other pages. Verify delayed instance/provider/board reads,
+  background reads, error handling and measured header/content positions at desktop/mobile widths.
+- AC-39: The summary card header represents the overall connection with a generic collection-
+  calendar icon, rather than copying the first bin colour. Individual Black/Blue/Brown bin SVGs
+  remain beside their own dates. Preserve shared icon styling and full results artwork. Compare
+  title-only versus generic icon; choose the latter for consistency and connection identification.
+
+## Chronological collections (AC-40)
+
+Both the Integrations widget and full Results order bin services by their next upcoming collection
+calendar date, earliest first. Compare raw ISO dates using the existing UK-calendar projection,
+not formatted weekday/month text. Order individual upcoming dates too; never mutate saved/provider
+arrays. Services without an upcoming date follow dated services; equal dates and undated services
+retain their relative source order. Apply ordering before the widget's three-row limit, including
+multiple resources. Example: Black 27 Oct, Brown 3 Nov, Blue 17 Nov. Preserve labels, SVG colours,
+stable service IDs, missing/confirmed-empty semantics and the user's separate connection layout.
+
+AC-40 backend clarification: authenticated consumers receive services already ordered by next
+upcoming date at evaluated_at. Normalization and read-time WasteSchedule.Project own that shared
+rule, so midnight reordering does not need provider I/O or a content-revision change. Clone the
+service slice before sorting; preserve all dates, IDs, provider binding, source age and stored
+snapshot. The frontend may still combine multiple resources and defend its displayed order, but
+ordering is now guaranteed by the backend resource contract as well.
+
+## Maintainable calendar and documentation rules (AC-41–42)
+
+- AC-41: Centralize the waste_schedule/v1 UK calendar contract in the Integrations domain and
+  use the resource's declared timezone for frontend date interpretation. Shared backend calendar
+  helpers serve normalization/projection and horizon checks. Existing automation/server timezone
+  behavior stays unchanged. A General timezone setting is a separate follow-up: app display and
+  automation defaults must coexist with explicit provider/source calendar zones and UTC instants.
+- AC-42: Refactor waste schedule presentation into small typed helpers with separate calendar/date
+  projection, service-card mapping and schedule composition. Remove nested conditional expressions
+  and large map callbacks in the touched presentation code. Preserve chronology, nullable/empty
+  semantics, raw source data and labels. Add JSDoc to touched public frontend functions/returned
+  APIs and GoDoc to touched exported Go declarations; explain non-obvious lifetime/timezone/copy
+  behavior. Record enduring documentation/clean-code requirements in .agents/rules/ (not AGENTS.md).

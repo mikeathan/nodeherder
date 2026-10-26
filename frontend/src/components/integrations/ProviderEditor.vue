@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import UiPageHeader from '@/components/ui/UiPageHeader.vue';
+  import IntegrationPageHeader from './IntegrationPageHeader.vue';
   import UiCard from '@/components/ui/UiCard.vue';
   import UiButton from '@/components/ui/UiButton.vue';
   import ProviderForm from './ProviderForm.vue';
@@ -8,7 +8,8 @@
   import ProviderTestPanel from './ProviderTestPanel.vue';
   import ProviderComparison from './ProviderComparison.vue';
   import { useProviderEditor } from '@/composables/integrations/useProviderEditor';
-  import { RouteName } from '@/types/router';
+  import { useProviderSections } from '@/composables/integrations/useProviderSections';
+  import IntegrationSections from './IntegrationSections.vue';
   import './connections.css';
   const {
     key,
@@ -24,7 +25,6 @@
     message,
     busy,
     error,
-    helpRoute,
     affectedInstances,
     instances,
     rememberFocus,
@@ -43,18 +43,15 @@
     preview,
     test,
   } = useProviderEditor();
+  const sectionContext = useProviderSections();
 </script>
 
 <template>
-  <div class="connections connection-stack" @focusin="rememberFocus">
-    <UiPageHeader
-      title="Configure operations"
-      :subtitle="provider?.document.name"
-      :back="{ name: RouteName.Connections }"
-      back-label="Connections"
-      ><template #actions><UiButton :to="helpRoute" icon="unknown">Help</UiButton></template></UiPageHeader
-    >
-    <ConnectionFeedback :error="error" :busy="busy" />
+  <div class="connections connection-stack provider-editor" :aria-busy="busy" @focusin="rememberFocus">
+    <IntegrationPageHeader title="Configure operations" :subtitle="provider?.document.name" />
+    <IntegrationSections active="operations" :context="sectionContext" />
+    <ConnectionFeedback :error="error" :busy="busy" compact-busy />
+    <div v-if="busy && !provider" class="provider-loading-placeholder" aria-hidden="true" />
     <div v-if="message" class="connection-notice" role="status">{{ message }}</div>
     <div v-if="provider?.status === 'host_changed'" class="connection-notice" role="status">
       The host file differs from the active configuration. Review it and choose Reload from host to apply it.
@@ -63,7 +60,7 @@
     <UiCard v-if="provider" title="Provider configuration"
       ><div class="connection-stack">
         <p class="connection-muted">
-          Changes affect every connection using this provider. Saved on the host as configs/integrations/{{ key }}.yaml.
+          Changes affect every integration using this provider. Saved on the host as configs/integrations/{{ key }}.yaml.
           Address choices, tokens and results stay separate.
         </p>
         <ProviderComparison
@@ -132,3 +129,12 @@
     >
   </div>
 </template>
+
+<style scoped>
+  .provider-loading-placeholder {
+    min-height: 20rem;
+    border: 1px solid var(--nh-border);
+    border-radius: var(--nh-radius-m);
+    background: var(--nh-surface);
+  }
+</style>

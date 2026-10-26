@@ -1,4 +1,6 @@
+import { WASTE_SCHEDULE_TIMEZONE } from '@/config/integrations';
 import type {
+  ConnectionBoard,
   ConnectionCatalog,
   ConnectionDefinition,
   ConnectionFailure,
@@ -10,30 +12,31 @@ import type {
   WasteSchedule,
 } from '@/types/integrations.type';
 
+/** Reject non-object API data before field-level parsing; this is not a deep validator. */
 export function object(value: unknown): Record<string, unknown> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Invalid Connections response.');
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Invalid Integrations response.');
   return value as Record<string, unknown>;
 }
 function text(value: unknown): string {
-  if (typeof value !== 'string') throw new Error('Invalid Connections text field.');
+  if (typeof value !== 'string') throw new Error('Invalid Integrations text field.');
   return value;
 }
 function flag(value: unknown): boolean {
-  if (typeof value !== 'boolean') throw new Error('Invalid Connections flag.');
+  if (typeof value !== 'boolean') throw new Error('Invalid Integrations flag.');
   return value;
 }
 function number(value: unknown): number {
   if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0)
-    throw new Error('Invalid Connections revision.');
+    throw new Error('Invalid Integrations revision.');
   return value;
 }
 function list<T>(value: unknown, parse: (v: unknown) => T): T[] {
-  if (!Array.isArray(value)) throw new Error('Invalid Connections list.');
+  if (!Array.isArray(value)) throw new Error('Invalid Integrations list.');
   return value.map(parse);
 }
 function member(value: unknown, values: string[]): string {
   const s = text(value);
-  if (!values.includes(s)) throw new Error('Unsupported Connections value.');
+  if (!values.includes(s)) throw new Error('Unsupported Integrations value.');
   return s;
 }
 function nullableText(value: unknown): string | null {
@@ -41,7 +44,7 @@ function nullableText(value: unknown): string | null {
 }
 function timestamp(value: unknown): string {
   const s = text(value);
-  if (!s.endsWith('Z') || !Number.isFinite(Date.parse(s))) throw new Error('Invalid Connections timestamp.');
+  if (!s.endsWith('Z') || !Number.isFinite(Date.parse(s))) throw new Error('Invalid Integrations timestamp.');
   return s;
 }
 function nullableTime(value: unknown): string | null {
@@ -53,6 +56,7 @@ function date(value: unknown): string {
     throw new Error('Invalid collection date.');
   return s;
 }
+/** Validate a nullable, sanitized failure envelope without retaining a raw upstream body. */
 export function parseFailure(value: unknown): ConnectionFailure | null {
   if (value === null) return null;
   const v = object(value);
@@ -65,10 +69,15 @@ export function parseFailure(value: unknown): ConnectionFailure | null {
     });
   return result;
 }
+/**
+ * Validate the versioned exact-property resource before it enters private frontend state.
+ * Rejects unsupported source calendars, provisional evidence and inconsistent date states.
+ * @throws Error for malformed/unsupported data; TypeScript types alone do not validate API input.
+ */
 export function parseWasteSchedule(value: unknown): WasteSchedule {
   const v = object(value);
   member(v.contract_version, ['waste_schedule/v1']);
-  member(v.timezone, ['Europe/London']);
+  member(v.timezone, [WASTE_SCHEDULE_TIMEZONE]);
   text(v.instance_id);
   text(v.resource_id);
   number(v.revision);
@@ -125,6 +134,7 @@ export function parseWasteSchedule(value: unknown): WasteSchedule {
   });
   return value as WasteSchedule;
 }
+/** Validate discovery/availability data; catalog reads do not contain private credentials. */
 export function parseCatalog(value: unknown): ConnectionCatalog {
   const v = object(value);
   flag(v.available);
@@ -145,6 +155,7 @@ export function parseCatalog(value: unknown): ConnectionCatalog {
   });
   return value as ConnectionCatalog;
 }
+/** Validate shared wizard identity, choices, revisions and optional transient preview data. */
 export function parseSetup(value: unknown): ConnectionSetup {
   const v = object(value);
   text(v.id);
@@ -164,6 +175,7 @@ export function parseSetup(value: unknown): ConnectionSetup {
   });
   return value as ConnectionSetup;
 }
+/** Validate a redacted saved instance, including every resource, before consumers use it. */
 export function parseInstance(value: unknown): ConnectionInstance {
   const v = object(value);
   list(v.credential_slots, text);
@@ -190,9 +202,28 @@ export function parseInstance(value: unknown): ConnectionInstance {
   });
   return value as ConnectionInstance;
 }
+/** Validate each instance in a shared installation listing; one malformed item rejects the reply. */
 export function parseInstances(value: unknown): ConnectionInstance[] {
   return list(value, parseInstance);
 }
+
+/** Reject malformed/duplicate placements before they can become shared layout state. */
+export function parseBoard(value: unknown): ConnectionBoard {
+  const v = object(value);
+  const etag = text(v.etag);
+  if (!etag) throw new Error('Missing Integrations board revision.');
+  const seen = new Set<string>();
+  const entries = list(v.entries, (entry) => {
+    const item = object(entry);
+    const id = text(item.instance_id);
+    if (!id || id.length > 256 || seen.has(id)) throw new Error('Invalid Integrations board membership.');
+    seen.add(id);
+    return { instance_id: id, hidden: flag(item.hidden) };
+  });
+  if (entries.length > 50) throw new Error('Integrations board limit exceeded.');
+  return { etag, entries };
+}
+/** Validate local operation progress/check timing; reading it does not authorize provider work. */
 export function parseOperation(value: unknown): ConnectionOperation {
   const v = object(value);
   text(v.id);
@@ -216,6 +247,7 @@ function parseValue(value: unknown): void {
   if (Object.keys(ref).length !== 1 || !/^(input|state)\.[a-z][a-z0-9_]*$/.test(text(ref.ref)))
     throw new Error('Invalid request value reference.');
 }
+/** Validate supported Form/YAML document fields at ingress; server execution validation still applies. */
 export function parseProviderDefinition(value: unknown): ProviderDefinition {
   const v = object(value);
   member(v.schema_version, ['nodeherder.integration/v1']);
@@ -300,6 +332,7 @@ export function parseProviderDefinition(value: unknown): ProviderDefinition {
   Object.values(object(collections.fields)).forEach(text);
   return value as ProviderDefinition;
 }
+/** Validate host-definition metadata; inactive/error documents may remain editable recovery drafts. */
 export function parseDefinition(value: unknown): ConnectionDefinition {
   const v = object(value);
   optionalText(v.shipped_yaml);
@@ -317,6 +350,7 @@ export function parseDefinition(value: unknown): ConnectionDefinition {
   if (v.status === 'active') parseProviderDefinition(v.document);
   return value as ConnectionDefinition;
 }
+/** Validate the reviewed document and affected credential revisions used before activation. */
 export function parseValidation(value: unknown): DefinitionValidation {
   const v = object(value);
   text(v.yaml);

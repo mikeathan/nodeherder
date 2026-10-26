@@ -4,10 +4,11 @@ import (
 	"context"
 	"io"
 	"net/http"
-	model "node-herder/models/integrations"
 	"strings"
 	"testing"
 	"time"
+
+	model "node-herder/models/integrations"
 )
 
 type doerFunc func(*http.Request) (*http.Response, error)

@@ -1,7 +1,29 @@
 # Tasks: Configurable external integrations
 
+- [x] T063 — AC-49 correct inherited YAML editor typography; inspect computed styles and
+  desktop/mobile appearance, run required frontend checks and existing YAML-editing flow.
+
+- [x] T059 — AC-47 reproduce disappearing navigation/zero spacing in existing browser companion;
+  define typed section routes/context and unit cases before production changes.
+- [x] T060 — AC-47 shared presentation, hash-backed detail section and provider/Help context;
+  preserve draft guards, correct spacing and avoid arbitrary instance selection.
+- [x] T061 — AC-47 frontend and isolated browser/viewport/keyboard verification, screenshots
+  and final rule/error-path review; record actual results in implementation-review.md.
+- [x] T062 — AC-48 capture delayed operations/Help navigation geometry and draft regression;
+  shared stable header, bounded session definition cache and synchronous draft hydration;
+  scoped route-key correctness, source-owned state tests and final browser/rule verification.
+
+- [x] T054 — AC-43–46 specify registry/resource/package and naming compatibility; ADR-003.
+- [x] T055 — AC-43–45 extract compiler/flow/transport; introduce capability registry and waste
+  adapter; isolate service runtime; retain source-owned companion tests through package moves.
+- [x] T056 — AC-43–45 generic stored/public resources, coordinator/preview/catalogue dispatch;
+  add synthetic non-waste execution and legacy serialization/failure tests in source companions.
+- [x] T057 — AC-46 Integrations UI copy/canonical routes and legacy aliases; update owned tests.
+- [x] T058 — AC-43–46 run required isolated checks, audit comments/ownership/error paths and
+  record actual evidence, rule review and limitations. Preserve unrelated workspace changes.
+
 Spec: [spec.md](spec.md) | Plan: [plan.md](plan.md)
-Status: M1 implemented and verified locally, 2026-10-25; M2–M4 deferred
+Status: M1 implemented and verified locally, 2026-10-25; Integrations board implemented and verified locally; M2–M4 deferred
 
 M1 is authorized by the user. This is a dependency-ordered backlog (stable IDs are not execution order);
 M2 and later roadmap phases remain outside the first release. Stable task IDs refer to the existing
@@ -117,19 +139,19 @@ frontend unit files mirror source paths under src/__tests__/. M1 source owners a
   errors/offline/login denial, retention/key recovery/host
   deployment docs and recorded tests/lint/build/vet/races. No claim of M2 automatic completion.
 
-- [x] T028 — Expose the top-level Connections category and type/provider/instance navigation;
+- [x] T028 — Expose the top-level Integrations category and type/provider/instance navigation;
   paths: existing shell/navigation.ts, shell/AppShell.vue, types/router.ts, router/index.ts,
   new integrations catalog/detail owners and corresponding source-named unit companions;
   IDs: FR-13/16/17, AC-16/23/26/27. Depends: T012–14.
-  Done: all existing sections retained, Connections after Devices in desktop/mobile, auth/deep-link/
+  Done: all existing sections retained, Integrations after Devices in desktop/mobile, auth/deep-link/
   active-section/not-found handling, type/provider distinctions, device counts unchanged and no
-  device prerequisite. Only installed types have setup actions; shared-provider edit scope visible. Connections-only
+  device prerequisite. Only installed types have setup actions; shared-provider edit scope visible. Integrations-only
   UI: preserve Home/Devices/Overview/Panel content/counts/layout and shared auth routes; no pin,
   room placement, cross-promotion links/buttons/notices or global footer copy. Negative browser
   checks cover existing pages and the isolated fixture baseline of 18 Home tiles (the supplied household screenshot showed 15). No dashboard settings/WS changes.
 
 Retired tasks: **T029** (Home resource tiles/settings) and **T030** (Panel connection tiles/details)
-are withdrawn by the Connections-only scope decision. Do not implement their proposed schemas,
+are withdrawn by the Integrations-only scope decision. Do not implement their proposed schemas,
 renderers or dashboard persistence changes. These IDs remain reserved and are not dependencies.
 
 ## M2 — Automatic lifecycle
@@ -261,3 +283,97 @@ colour-name headings without repeated metadata, hidden source/coverage details a
 380 unit tests, frontend build/lint/E2E types and 16 isolated browser checks passed. Desktop/mobile
 light/dark screenshots reviewed. Tests used a temporary source snapshot on alternate ports because
 the user's local app owns the standard ports; no running app/device/provider mutations were made.
+
+- [x] T039 — Investigate the generic Integrations landing page and create design-only alternatives
+  before application changes. Record source reuse/boundaries, responsive and accessible layout,
+  direct result widgets, add/setup return, removal/restore semantics and persistence alternatives
+  in designs/connections-dashboard-review.md. Compare grouped board, individual tiles and compact
+  overview in the interactive prototype. Verify local interactions and narrow layouts. This task
+  completes investigation only; the subsequent user approval is implemented by T041–45.
+
+- [x] T040 — Revise the design comparison and investigation from the user's Home-tile reference:
+  coloured circular icons, no resize/size control, no Details footer, whole-card navigation to the
+  existing full connection page and editing there. Demonstrate full-page Results/Setup/operations/
+  Help, separate Refresh, edit-mode navigation suppression and keyboard focus return. Verify the
+  revised prototype at desktop/mobile widths; application implementation remains pending review.
+
+- [x] T041 — AC-35/37 board domain/atomic preferences and protected transport, companion tests for
+  conflicts, membership, invalid payloads, restart/rollback and lifecycle independence; board contract.
+- [x] T042 — AC-34/35 accepted frontend contract/service/store plus pure board projection/layout and
+  draft ownership; source-owned companions, cancellation/session cleanup and conflict preservation.
+- [x] T043 — AC-34/35/37 presentational shared-SVG widget/board/Add dialog and page coordination;
+  clickable links, independent actions, drag and tap/keyboard alternatives; no size/Details footer.
+- [x] T044 — AC-36 setup return intent, local projection/observer lifecycle and return focus/scroll;
+  cover pending/stale/error/disabled/empty and hide/delete/re-add paths in isolated browser tests.
+- [x] T045 — AC-34–37 run required checks, isolated desktop/mobile/light/dark visual review and
+  final NH/BE/FE review; record actual evidence and unrun checks. Leave unrelated runtime data alone.
+
+AC-34–37 / T041–45 verified 2026-10-26: 390 frontend tests, build/lint/E2E types, 28 isolated browser
+checks, Go build/vet and service/API races passed. Complete Go suite passed in the isolated snapshot
+with the committed automation fixture; the workspace suite fails in automation scenarios due to
+its pre-existing user-edited dial ID. User/runtime file untouched. See implementation-review.md for
+actual evidence, rule review and native-run restart note. No live provider/device tests or app restart.
+
+- [x] T046 — AC-38 reproduce delayed first-detail/back navigation shifts; fix matching cached
+  presentation, loading ownership/feedback and deleted/error paths. Existing source-owned
+  ConnectionsPage browser checks verify live geometry, accessible status and no wrong-ID reuse.
+- [x] T047 — AC-39 compare title-only versus generic collection-calendar header; replace duplicate
+  first-bin image with the shared schedule icon; keep coloured service SVGs and responsive styling.
+- [x] T048 — AC-38–39 run frontend/isolated browser checks, inspect desktop/mobile appearance and
+  update implementation-review with the verified cause, evidence and any unrun checks.
+
+AC-38–39 / T046–48 verified: first-entry placeholder-title regression failed before the fix on
+both viewports; matching cached titles and exact delayed-read header/tab/card geometry now pass.
+390 frontend tests, build/lint/E2E types and 32 isolated browser checks passed. Generic calendar
+header reviewed in desktop/mobile/light/dark; per-service bin SVGs remain. See implementation-review.
+
+- [x] T049 — AC-40 add shared chronological presentation ordering and source-owned regressions;
+  verify both widget and full Results in isolated desktop/mobile browser checks, run frontend
+  checks and record actual evidence. Preserve source arrays, stable IDs and connection layout.
+
+- [x] T050 — AC-40 canonical backend ordering in WasteSchedule.Project; resource_test.go and
+  service_test.go regressions for provider order, consumer/list order, stable identity/revision,
+  UK rollover and no source mutation. Run Go build/vet/suite/races; record complete cross-stack evidence.
+
+AC-40 / T049–50 verified: 392 frontend tests, build/lint/E2E types, 34 isolated browser cases
+(and two ordering cases rechecked with the updated Go fixture), model/service tests, Go build/vet,
+affected races and the complete isolated Go suite passed. Canonical consumer order and UI merging
+now agree. No user configuration/device/provider mutations; see implementation-review.md.
+
+- [x] T051 — AC-41 timezone ownership audit, shared waste contract/calendar helpers and source-owned
+  date/DST tests; retain current app/automation timezone behavior and document General-setting follow-up.
+- [x] T052 — AC-42 typed, focused waste schedule/calendar and board presentation; document public
+  APIs/complex returned actions. Add mandatory Vue/Go documentation and clean-code rules outside AGENTS.md.
+- [x] T053 — AC-41–42 review behavior/rule compliance and run required cross-stack checks; record exact
+  evidence and remaining limitations without altering unrelated household data or staged changes.
+
+AC-41–42 / T051–53 verified: source timezone centralized within Integrations; app General timezone
+remains a separate design. Typed calendar/service/schedule/widget helpers, public API documentation
+and enduring Vue/Go comment rules are in place. 398 unit tests, 34 isolated browser checks, frontend
+build/lint/types, Go build/vet/races and the complete isolated Go suite passed; AGENTS.md unchanged.
+
+
+AC-43–46 / T054–58 verified 2026-10-26: capability-neutral runtime/resources/previews,
+cohesive packages and Integrations UI naming with legacy URL aliases are implemented.
+The synthetic capability proves setup, refresh, 304, projection, offline/live previews,
+last-good retention and unsupported-codec feedback. Legacy flat JSON ownership/round-trip,
+strict mapping, input/flow and transport policy tests pass. Full isolated Go suite, build,
+vet and affected races passed; 398 frontend tests, build/lint/E2E types and 36 isolated
+browser cases passed. See implementation-review.md for actual harness corrections and limits.
+
+
+AC-47–48 / T059–62 verified: shared section navigation and 20px content clearance; hash-backed
+Results/Setup, explicit provider/Help context, draft guards and stable loading/header geometry.
+Both original issues failed in the browser before the fix (zero gap and missing navigation).
+The delayed-read regression also reproduced the subtitle/scroll shifts before correction.
+403 unit tests / 68 suites, frontend build/lint/E2E types and final 44 isolated desktop/mobile
+browser cases pass. Source-owned cache tests cover bounded membership/removal/logout; screenshots
+and final NH/FE review are recorded in implementation-review.md. No backend/device changes.
+
+
+AC-49 / T063 verified: code text is regular weight 400, 14px at default text scale and 22.4px
+line height on desktop/mobile. Theme page background with a 3% accent tint, strong theme border,
+normal text and accent caret adapt with appearance settings. Manual browser inspection covered
+242 theme/mode/preset-accent combinations at each viewport (minimum text contrast 12.84:1),
+and light/dark editor screenshots. Both existing YAML repair flows passed; 403 frontend tests,
+build and lint passed (seven existing warnings, zero errors). No dependency/API/backend changes.

@@ -24,6 +24,9 @@
   margin: 0 0 1.25rem;
 }
 .connections .connection-tabs a {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
   padding: 0.65rem 0.8rem;
   border-radius: var(--nh-radius-m);
   text-decoration: none;
@@ -99,8 +102,17 @@
   font-size: 0.85rem;
 }
 .connections .connection-code {
-  font-family: ui-monospace, monospace;
-  font-size: 0.85rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+  /* Labels use semibold text; editable code must not inherit that weight. */
+  font-weight: 400;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  tab-size: 2;
+  color: var(--nh-text);
+  background: var(--nh-bg);
+  background: color-mix(in srgb, var(--nh-accent) 3%, var(--nh-bg));
+  border-color: var(--nh-border-strong);
+  caret-color: var(--nh-accent);
   min-height: 32rem;
   white-space: pre;
   overflow: auto;
@@ -171,9 +183,6 @@
   }
   .connections .connection-tabs a {
     padding: 0.65rem 0.55rem;
-  }
-  .connections .connection-code {
-    font-size: 0.8rem;
   }
   .connections .connection-date {
     font-size: 1.15rem;

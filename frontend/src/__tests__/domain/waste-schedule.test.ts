@@ -49,3 +49,34 @@ test('unknown bin colours and categories preserve literal provider names', () =>
   expect(card.title).toBe('[Mixed (subscription)');
   expect(card.name).toBe('[Mixed (subscription)');
 });
+
+test('collection cards use the earliest real upcoming date across months and keep undated services last', () => {
+  const schedule = parseWasteSchedule(structuredClone(examples.exact));
+  schedule.evaluated_at = '2026-10-26T12:00:00Z';
+  const original = schedule.services[0];
+  schedule.services = [
+    { ...original, service_id: 'blue', dates: ['2026-11-17', '2026-12-15'] },
+    { ...original, service_id: 'missing', date_state: 'unavailable', dates: [] },
+    { ...original, service_id: 'black', dates: ['2026-12-22', '2026-10-27', '2026-10-20'] },
+    { ...original, service_id: 'brown', dates: ['2026-11-03'] },
+    { ...original, service_id: 'same-day', dates: ['2026-11-03'] },
+    { ...original, service_id: 'empty', date_state: 'confirmed_empty', dates: [] },
+    { ...original, service_id: 'exhausted', dates: ['2026-10-25'] },
+    { ...original, service_id: 'next-year', dates: ['2027-01-01'] },
+  ];
+  const before = structuredClone(schedule);
+  const cards = presentWasteSchedule(schedule).cards;
+  expect(cards.map((card) => card.service_id)).toEqual([
+    'black',
+    'brown',
+    'same-day',
+    'blue',
+    'next-year',
+    'missing',
+    'empty',
+    'exhausted',
+  ]);
+  expect(cards[0].nextDate).toBe('Tuesday 27 October');
+  expect(cards[0].laterDates).toEqual(['Tuesday 22 December']);
+  expect(schedule).toEqual(before);
+});

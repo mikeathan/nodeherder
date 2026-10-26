@@ -25,6 +25,8 @@ type Doer interface {
 }
 
 // Attempt supplies a pinned definition, private input/state and approved credential context.
+// Input/state references resolve saved values, never executable templates. The caller owns
+// durable checkpoints and retries; Execute never silently repeats a provider submission.
 // Body is nil before first construction; a persisted non-nil body must be replayed unchanged.
 type Attempt struct {
 	Definition           model.Definition

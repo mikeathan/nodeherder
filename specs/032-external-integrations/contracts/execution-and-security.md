@@ -97,7 +97,7 @@ middleware with the same feature access; no new service-principal allowlist is i
 
 M1 publishes no integration data or references on the global/settings WS hub; protected REST
 polling is sufficient. The [navigation contract](connections-navigation.md) confines the UI to
-Connections and introduces no dashboard setting or device snapshot extension.
+Integrations and introduces no dashboard setting or device snapshot extension.
 Future WS may use the same shared-household access with session validity checked at delivery.
 Private multiple-household tenancy would require a separate design; equal authenticated access is
 intentional here. No changes to anonymous/public existing routes are implied.
@@ -245,7 +245,7 @@ Mount the directory rather than a single key file so an atomic key-file replacem
 through the mount. The backend reloads the configured keyring on restart; rotation keeps old keys
 until records/backups are migrated or expired. Back up YAML and a consistent runtime DB plus the
 keyring separately outside the checkout; restore all three into an isolated Docker test before
-production acceptance. A missing mount/key fails the Connections feature closed and leaves device
+production acceptance. A missing mount/key fails the Integrations feature closed and leaves device
 management running. Tests use generated throwaway keys/containers and never the household stack.
 
 Occasional manual use may use the provider's anonymous mode within its limits. The existing optional

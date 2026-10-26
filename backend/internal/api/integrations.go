@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"node-herder/internal/auth"
-	connections "node-herder/internal/integrations"
+	"node-herder/internal/integrations"
 	model "node-herder/models/integrations"
 )
 
@@ -21,7 +21,7 @@ type connectionEnvelope struct {
 func connectionError(w http.ResponseWriter, err error) {
 	var failure *model.Failure
 	if !errors.As(err, &failure) {
-		failure = model.Fail("storage_error", "The change could not be saved. Check the Connections storage and try again.")
+		failure = model.Fail("storage_error", "The change could not be saved. Check the Integrations storage and try again.")
 	}
 	status := http.StatusBadRequest
 	switch failure.Code {
@@ -55,21 +55,28 @@ func connectionJSON(w http.ResponseWriter, status int, data any, failure *model.
 }
 
 type connectionInput struct {
-	InstanceID        string                         `json:"instance_id"`
-	Mode              string                         `json:"mode"`
-	Sample            json.RawMessage                `json:"sample"`
-	ProviderKey       string                         `json:"provider_key"`
-	TargetInstanceID  string                         `json:"target_instance_id"`
-	TargetETag        string                         `json:"target_etag"`
-	Action            string                         `json:"action"`
-	Postcode          string                         `json:"postcode"`
-	PropertyID        string                         `json:"property_id"`
-	Name              string                         `json:"name"`
-	Enabled           bool                           `json:"enabled"`
-	Value             string                         `json:"value"`
-	YAML              string                         `json:"yaml"`
-	Document          json.RawMessage                `json:"document"`
-	DestinationReview *connections.DestinationReview `json:"destination_review"`
+	Entries           []connectionBoardInput          `json:"entries"`
+	InstanceID        string                          `json:"instance_id"`
+	Mode              string                          `json:"mode"`
+	Sample            json.RawMessage                 `json:"sample"`
+	ProviderKey       string                          `json:"provider_key"`
+	TargetInstanceID  string                          `json:"target_instance_id"`
+	TargetETag        string                          `json:"target_etag"`
+	Action            string                          `json:"action"`
+	Postcode          string                          `json:"postcode"`
+	PropertyID        string                          `json:"property_id"`
+	Name              string                          `json:"name"`
+	Enabled           bool                            `json:"enabled"`
+	Value             string                          `json:"value"`
+	YAML              string                          `json:"yaml"`
+	Document          json.RawMessage                 `json:"document"`
+	DestinationReview *integrations.DestinationReview `json:"destination_review"`
+}
+
+// Hidden is a pointer only at ingress so omitted/null differs from an explicit false.
+type connectionBoardInput struct {
+	InstanceID string `json:"instance_id"`
+	Hidden     *bool  `json:"hidden"`
 }
 
 func decodeConnectionInput(r *http.Request) (connectionInput, error) {
@@ -87,8 +94,9 @@ func decodeConnectionInput(r *http.Request) (connectionInput, error) {
 }
 
 // RegisterIntegrationRoutes installs only protected routes, without changing device/MCP payloads.
-func RegisterIntegrationRoutes(router *Router, service *connections.Service) {
+func RegisterIntegrationRoutes(router *Router, service *integrations.Service) {
 	routes := []struct{ method, path, action string }{
+		{"GET", "/board", "board"}, {"PUT", "/board", "board_save"},
 		{"GET", "/catalog", "catalog"}, {"POST", "/definitions/reload", "reload_all"}, {"GET", "/instances", "instances"}, {"GET", "/instances/:id", "instance"}, {"GET", "/instances/:id/resources", "resources"}, {"PUT", "/instances/:id", "update"}, {"DELETE", "/instances/:id", "delete"}, {"POST", "/instances/:id/refresh", "refresh"}, {"POST", "/instances/:id/check-status", "check_instance"},
 		{"POST", "/setup", "setup_create"}, {"GET", "/setup/:id", "setup"}, {"POST", "/setup/:id/step", "step"}, {"DELETE", "/setup/:id", "cancel"},
 		{"GET", "/operations/:id", "operation"}, {"POST", "/operations/:id/check-status", "check"},
@@ -112,12 +120,12 @@ func RegisterIntegrationRoutes(router *Router, service *connections.Service) {
 }
 
 // NewIntegrationHandler checks the established auth context even when called outside the router.
-func NewIntegrationHandler(service *connections.Service, action string) http.Handler {
+func NewIntegrationHandler(service *integrations.Service, action string) http.Handler {
 	allowed := allowedOriginsMap()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "private, no-store")
 		if _, ok := auth.GetUserFromContext(r); !ok {
-			connectionError(w, model.Fail("unauthorized", "Sign in to use Connections."))
+			connectionError(w, model.Fail("unauthorized", "Sign in to use Integrations."))
 			return
 		}
 		mutation := r.Method != "GET"
@@ -125,7 +133,7 @@ func NewIntegrationHandler(service *connections.Service, action string) http.Han
 			if cookie, e := r.Cookie(auth.CookieNameSession); e == nil && cookie.Value != "" {
 				origin := r.Header.Get("Origin")
 				if origin == "" || origin == "null" || !allowed[origin] || r.Header.Get("X-NodeHerder-Request") != "1" {
-					connectionError(w, model.Fail("csrf_rejected", "Reload the page from the configured NodeHerder address before changing Connections."))
+					connectionError(w, model.Fail("csrf_rejected", "Reload the page from the configured NodeHerder address before changing Integrations."))
 					return
 				}
 			}
@@ -145,6 +153,24 @@ func NewIntegrationHandler(service *connections.Service, action string) http.Han
 		status := 200
 		var data any
 		switch action {
+		case "board":
+			data, err = service.Board()
+		case "board_save":
+			if input.Entries == nil {
+				err = model.Fail("invalid_input", "Send the complete integration layout.")
+				break
+			}
+			entries := make([]integrations.BoardEntry, 0, len(input.Entries))
+			for _, entry := range input.Entries {
+				if entry.Hidden == nil {
+					err = model.Fail("invalid_input", "Each layout entry needs an explicit hidden value.")
+					break
+				}
+				entries = append(entries, integrations.BoardEntry{InstanceID: entry.InstanceID, Hidden: *entry.Hidden})
+			}
+			if err == nil {
+				data, err = service.SaveBoard(entries, expected)
+			}
 		case "reload_all":
 			data, err = service.ReloadDefinitions()
 		case "catalog":
@@ -154,7 +180,7 @@ func NewIntegrationHandler(service *connections.Service, action string) http.Han
 		case "instance":
 			data, err = service.Instance(id)
 		case "resources":
-			var i connections.InstanceDTO
+			var i integrations.InstanceDTO
 			i, err = service.Instance(id)
 			data = i.Resources
 		case "update":
@@ -166,11 +192,11 @@ func NewIntegrationHandler(service *connections.Service, action string) http.Han
 			data, err = service.Refresh(id, expected)
 			status = 202
 		case "check_instance":
-			var i connections.InstanceDTO
+			var i integrations.InstanceDTO
 			i, err = service.Instance(id)
 			if err == nil {
 				if i.OperationID == "" {
-					err = model.Fail("not_found", "No pending lookup exists for this connection.")
+					err = model.Fail("not_found", "No pending lookup exists for this integration.")
 				} else {
 					data, err = service.CheckOperation(i.OperationID, expected)
 				}
@@ -233,23 +259,25 @@ func NewIntegrationHandler(service *connections.Service, action string) http.Han
 		case "restore":
 			data, err = service.RestoreDefinition(key, expected, input.DestinationReview)
 		default:
-			err = model.Fail("not_found", "Connection operation not found.")
+			err = model.Fail("not_found", "Integration operation not found.")
 		}
 		if err != nil {
 			connectionError(w, err)
 			return
 		}
 		switch dto := data.(type) {
-		case connections.SetupDTO:
+		case integrations.BoardDTO:
+			w.Header().Set("ETag", dto.ETag)
+		case integrations.SetupDTO:
 			w.Header().Set("ETag", dto.ETag)
 			if dto.OperationID != "" {
 				w.Header().Set("Location", "/api/integrations/operations/"+dto.OperationID)
 			}
-		case connections.InstanceDTO:
+		case integrations.InstanceDTO:
 			w.Header().Set("ETag", dto.ETag)
-		case connections.DefinitionDTO:
+		case integrations.DefinitionDTO:
 			w.Header().Set("ETag", dto.ETag)
-		case connections.OperationDTO:
+		case integrations.OperationDTO:
 			if !dto.RetryAt.Before(time.Now()) {
 				w.Header().Set("Retry-After", dto.RetryAt.Format(http.TimeFormat))
 			}

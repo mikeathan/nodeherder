@@ -11,9 +11,9 @@
     <summary>Test without changing saved results</summary>
     <div class="connection-form">
       <label class="connection-field"
-        ><span>Use inputs from this connection</span
+        ><span>Use inputs from this integration</span
         ><select v-model="instance" :disabled="busy">
-          <option value="">Choose a saved connection</option>
+          <option value="">Choose a saved integration</option>
           <option v-for="item in instances" :key="item.id" :value="item.id">{{ item.name }}</option>
         </select></label
       >

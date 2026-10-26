@@ -18,30 +18,45 @@ export function useProviderEditor() {
   const draft = useProviderDraft(scope, key);
   const { provider, yaml, documentValue, mode, dirty, etag, validation, approve, reassociate, remember, apply } = draft;
   const message = ref('');
-  const helpRoute = computed(() => ({ name: RouteName.ConnectionHelp, params: route.params, query: route.query }));
   const affectedInstances = computed(
     () =>
       validation.value?.affected_instances.map((item) => ({
         ...item,
-        name: state.value.instances.find((instance) => instance.id === item.instance_id)?.name ?? 'Existing connection',
+        name: state.value.instances.find((instance) => instance.id === item.instance_id)?.name ?? 'Existing integration',
       })) ?? []
   );
   const instances = computed(() => state.value.instances.filter((item) => item.provider_key === key.value));
 
+  const saved = state.value.drafts[key.value];
+  const cached = newFile.value ? undefined : state.value.definitions[key.value];
+  // Render the already accepted document/draft immediately; revalidation must not flash defaults.
+  if (cached) {
+    apply(cached);
+    if (saved?.dirty) draft.hydrate(saved);
+  }
+
   onMounted(async () => {
-    const saved = state.value.drafts[key.value];
-    const value = await perform(() => api.definition(newFile.value ? String(route.query.from) : key.value));
-    if (!value) return;
-    apply(value);
-    if (newFile.value) {
-      const copy = cloneDefinitionValue(value.document);
-      copy.id = String(route.params.provider);
-      copy.name += ' copy';
-      documentValue.value = copy;
-      etag.value = '';
-      dirty.value = true;
-    }
+    if (cached && saved?.dirty) await draft.restore(saved);
+    // One loading interval covers both reads, so controls and feedback never flicker between them.
     await perform(async () => {
+      const value = await api.definition(newFile.value ? String(route.query.from) : key.value);
+      if (!scope.isActive()) return;
+      commit('definition', value);
+      if (saved?.dirty && !newFile.value) {
+        // Fresh metadata may change warnings, but the draft and its edit token remain pinned.
+        provider.value = value;
+        if (!cached) draft.hydrate(saved);
+      } else {
+        apply(value);
+      }
+      if (newFile.value) {
+        const copy = cloneDefinitionValue(value.document);
+        copy.id = String(route.params.provider);
+        copy.name += ' copy';
+        documentValue.value = copy;
+        etag.value = '';
+        dirty.value = true;
+      }
       const items = await api.instances(signal);
       commit('instances', items);
     });
@@ -107,7 +122,7 @@ export function useProviderEditor() {
     if (value) {
       await apply(value);
       message.value = 'Saved on the host and applied. Existing collection dates were kept.';
-      if (newFile.value) await router.replace({ name: RouteName.ConnectionProvider, params: route.params });
+      if (newFile.value) await router.replace({ name: RouteName.IntegrationProvider, params: route.params });
     }
   }
   async function reload() {
@@ -116,7 +131,7 @@ export function useProviderEditor() {
       !(await confirm({
         title: 'Replace unsaved draft?',
         message:
-          'Reload reads the provider file on the host and replaces this editor buffer. Your saved connection data is kept.',
+          'Reload reads the provider file on the host and replaces this editor buffer. Your saved integration data is kept.',
         confirmLabel: 'Reload from host',
       }))
     )
@@ -143,7 +158,7 @@ export function useProviderEditor() {
       !(await confirm({
         title: 'Restore last active file?',
         message:
-          'This recreates the missing host file from the last active configuration and replaces your unsaved draft. Saved connection data is kept.',
+          'This recreates the missing host file from the last active configuration and replaces your unsaved draft. Saved integration data is kept.',
         confirmLabel: 'Restore file',
       }))
     )
@@ -158,7 +173,7 @@ export function useProviderEditor() {
     if (
       !(await confirm({
         title: 'Restore previous provider configuration?',
-        message: 'This writes the previous good revision to the host as a new revision. Saved connection data is kept.',
+        message: 'This writes the previous good revision to the host as a new revision. Saved integration data is kept.',
         confirmLabel: 'Restore previous',
       }))
     )
@@ -173,12 +188,12 @@ export function useProviderEditor() {
     const id = `${String(route.params.provider).slice(0, 44)}_${crypto.randomUUID().slice(0, 8)}`;
     const value = await confirm({
       title: 'Copy provider?',
-      message: `Create a separate editable provider named ${id}. It will not share connection addresses or credentials.`,
+      message: `Create a separate editable provider named ${id}. It will not share integration addresses or credentials.`,
       confirmLabel: 'Create copy',
     });
     if (value && scope.isActive())
       await router.push({
-        name: RouteName.ConnectionProvider,
+        name: RouteName.IntegrationProvider,
         params: { type: route.params.type, provider: id },
         query: { new: '1', from: key.value },
       });
@@ -188,7 +203,7 @@ export function useProviderEditor() {
       !(await confirm({
         title: 'Remove provider definition?',
         message:
-          'This removes the host YAML file. Connections and setups using it must be removed first. No provider account is deleted.',
+          'This removes the host YAML file. Integrations and setups using it must be removed first. No provider account is deleted.',
         confirmLabel: 'Remove definition',
         danger: true,
       }))
@@ -197,7 +212,9 @@ export function useProviderEditor() {
     const value = await perform(() => api.deleteDefinition(key.value, etag.value));
     if (value) {
       dirty.value = false;
-      await router.replace({ name: RouteName.Connections });
+      commit('forgetDefinition', key.value);
+      provider.value = null;
+      await router.replace({ name: RouteName.Integrations });
     }
   }
 
@@ -221,7 +238,6 @@ export function useProviderEditor() {
     message,
     busy,
     error,
-    helpRoute,
     affectedInstances,
     instances,
     rememberFocus: draft.rememberFocus,

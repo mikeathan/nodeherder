@@ -169,3 +169,19 @@ automatic fetches or credential recipients. Unsafe schemes/URLs are omitted with
 provider_version is the exact active source SHA-256 (`sha256:<hex>`), not a guessed remote API
 version. profile_revision is the local definition revision. Local read-time projection owns
 date rollover; browser minute/on-focus reads do not call the provider.
+
+## Service ordering for consumers (AC-40)
+
+Returned services are ordered by their earliest date on or after the Europe/London date at
+`evaluated_at`, earliest first. Services without an upcoming date follow dated services. Equal
+upcoming dates and undated services preserve relative source order. Dates inside each service
+remain sorted, unique and complete as supplied; historical dates are not removed from the resource.
+Ordering is a read-time projection, so midnight can change order without changing resource/service
+IDs, content revision, captured/source timestamps or the persisted snapshot. Array position must
+never be used as service identity. Existing saved records need no migration. Instance, list and
+resources consumers use the same projection; UI summaries merging resources apply the same date
+comparison before limiting visible rows.
+
+The v1 source timezone is the UK calendar contract value, centralized in each stack and carried
+in the resource. App/process/browser timezone defaults must not reinterpret date-only collections.
+A future General timezone setting governs display/automation defaults and requires its own design.

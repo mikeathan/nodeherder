@@ -135,7 +135,8 @@ type Definition struct {
 	Requests        map[string]Request `json:"requests" yaml:"requests"`
 	Setup           SetupRecipe        `json:"setup" yaml:"setup"`
 	Refresh         RefreshRecipe      `json:"refresh" yaml:"refresh"`
-	Mapping         Mapping            `json:"mapping" yaml:"mapping"`
+	// Mapping is heterogeneous only at the configuration boundary; the capability strictly decodes it.
+	Mapping map[string]any `json:"mapping" yaml:"mapping"`
 }
 
 // AuthConfig declares how to use a separately stored credential slot; it never holds a token.
@@ -196,7 +197,7 @@ type Capture struct {
 	Optional    StrictBool `json:"optional,omitempty" yaml:"optional,omitempty"`
 }
 
-// ChoiceMapping locates an address array and its ID/label fields; child paths are relative to each item.
+// ChoiceMapping locates a selection array and its ID/label fields; child paths are relative to each item.
 type ChoiceMapping struct {
 	Items string `json:"items" yaml:"items"`
 	Value string `json:"value" yaml:"value"`
@@ -240,47 +241,13 @@ type SetupRecipe struct {
 	Status StatusStep    `json:"status" yaml:"status"`
 }
 
-// RefreshRecipe reads a saved schedule and optionally names the lookup used for bounded renewal.
+// RefreshRecipe reads a saved resource and optionally names the lookup used for bounded renewal.
 type RefreshRecipe struct {
 	Request        string `json:"request" yaml:"request"`
 	RenewalRequest string `json:"renewal_request,omitempty" yaml:"renewal_request,omitempty"`
 }
 
-// Mapping converts provider JSON field locations into one typed waste schedule.
-type Mapping struct {
-	Metadata    MetadataMapping   `json:"metadata" yaml:"metadata"`
-	Collections CollectionMapping `json:"collections" yaml:"collections"`
-}
-
-// MetadataMapping holds schedule-level JSON Pointers relative to the selected result root.
-// These fields preserve provenance and quality; they do not manufacture missing evidence.
-type MetadataMapping struct {
-	PropertyID          string `json:"property_id" yaml:"property_id"`
-	SourceRetrievedAt   string `json:"source_retrieved_at" yaml:"source_retrieved_at"`
-	RefreshDueAt        string `json:"refresh_due_at" yaml:"refresh_due_at"`
-	DateConfidence      string `json:"date_confidence" yaml:"date_confidence"`
-	DateCompleteness    string `json:"date_completeness" yaml:"date_completeness"`
-	AddressMatch        string `json:"address_match" yaml:"address_match"`
-	EvidenceGranularity string `json:"evidence_granularity" yaml:"evidence_granularity"`
-	Provisional         string `json:"provisional" yaml:"provisional"`
-	Notes               string `json:"notes,omitempty" yaml:"notes,omitempty"`
-	SourceURL           string `json:"source_url,omitempty" yaml:"source_url,omitempty"`
-}
-
-// CollectionMapping locates the collection list once; Fields applies to every returned service.
-type CollectionMapping struct {
-	Items  string           `json:"items" yaml:"items"`
-	Fields CollectionFields `json:"fields" yaml:"fields"`
-}
-
-// CollectionFields names JSON locations relative to each collection, independently of bin colour.
-type CollectionFields struct {
-	Name                 string `json:"name" yaml:"name"`
-	Dates                string `json:"dates" yaml:"dates"`
-	Colour               string `json:"colour,omitempty" yaml:"colour,omitempty"`
-	WasteType            string `json:"waste_type,omitempty" yaml:"waste_type,omitempty"`
-	Container            string `json:"container,omitempty" yaml:"container,omitempty"`
-	DatesComplete        string `json:"dates_complete,omitempty" yaml:"dates_complete,omitempty"`
-	SubscriptionRequired string `json:"subscription_required,omitempty" yaml:"subscription_required,omitempty"`
-	SourceServiceKey     string `json:"source_service_key,omitempty" yaml:"source_service_key,omitempty"`
+// InvalidDefinition returns a safe field-level error shared by syntax, flow and capability validators.
+func InvalidDefinition(path, message string) *Failure {
+	return &Failure{Code: "invalid_definition", Message: "Check the provider configuration.", Fields: []FieldError{{Path: path, Message: message}}}
 }

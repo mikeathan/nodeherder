@@ -138,7 +138,7 @@ Use source-owned API/middleware/service/setup/configuration/repository/frontend 
 cross-origin conditional-save preflights, stale destination acknowledgements, missing preconditions, credential
 create/remove/reauth, 404 code distinctions, missing payload on 304, saved-input renewal, expired
 setups, disabled reads versus mutations, property edits and failed publication. No household devices
-or routine live POSTs. UI faults/statuses remain inside Connections, not other pages.
+or routine live POSTs. UI faults/statuses remain inside Integrations, not other pages.
 
 ## Closed error/size boundaries
 

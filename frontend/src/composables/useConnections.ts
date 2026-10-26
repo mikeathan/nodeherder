@@ -16,6 +16,7 @@ export function useConnections() {
   const controller = new AbortController();
   const api = createConnectionsApi(controller.signal);
   const generation = state.value.generation;
+  /** Whether this page still owns the current login generation and may publish a reply. */
   const isActive = () => !controller.signal.aborted && state.value.generation === generation;
   let observer: ReturnType<typeof createOperationObserver> | undefined;
 
@@ -46,10 +47,15 @@ export function useConnections() {
           };
   }
 
+  /** Commit accepted private state only while this page/session still owns the request. */
   function commit(name: string, value: unknown) {
     if (isActive()) store.commit(`integrations/${name}`, value);
   }
 
+  /**
+   * Serialize a page action and translate failures into page/session feedback.
+   * Returns undefined after failure, cancellation or lost ownership; stale replies cannot publish.
+   */
   async function perform<T>(action: () => Promise<T>): Promise<T | undefined> {
     if (!isActive() || busy.value) return;
     busy.value = true;
@@ -65,6 +71,7 @@ export function useConnections() {
     }
   }
 
+  /** Replace the bounded local-progress observer; this never starts a provider polling job. */
   function observe(id: string, refresh: (signal: AbortSignal) => Promise<unknown>) {
     if (!isActive()) return;
     observer?.stop();

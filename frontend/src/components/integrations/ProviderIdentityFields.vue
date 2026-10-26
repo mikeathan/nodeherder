@@ -18,7 +18,7 @@
   <div class="connection-form">
     <fieldset class="connection-form">
       <legend>Provider</legend>
-      <RouterLink :to="{ name: RouteName.ConnectionHelp, params: route.params, query: route.query, hash: '#repair' }"
+      <RouterLink :to="{ name: RouteName.IntegrationHelp, params: route.params, query: route.query, hash: '#repair' }"
         >Help changing a URL</RouterLink
       ><label class="connection-field"
         ><span>Display name</span><input id="name" v-model="fields.name" maxlength="120" /></label

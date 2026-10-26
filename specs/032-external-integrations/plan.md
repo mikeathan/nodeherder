@@ -1,10 +1,113 @@
 # External integrations: investigation, DeepSeek review and proposed plan
 
-Spec: [spec.md](spec.md) | Status: M1 implemented and verified locally; later milestones deferred | Updated: 2026-10-25
+Spec: [spec.md](spec.md) | Status: M1 implemented and verified locally; Integrations board implemented and verified locally; later milestones deferred | Updated: 2026-10-26
 Constitutions: parent/backend/frontend proposed v1.0.0; no ratification or approval claimed.
 Repository inspected: `986b923c` on `main`.
 
 ## 1. Recommendation and evidence status
+
+AC-49 is a small typography correction in `components/integrations/connections.css`:
+explicit regular code weight, system monospace stack, 14px-equivalent size on desktop/mobile
+and 1.6 line height. Use the theme page background with a subtle 3% accent tint, normal text,
+strong theme border and accent caret. Preserve textarea behaviour, labels and configuration data.
+Manually measure text contrast across all theme/mode/preset-accent combinations in the isolated UI.
+Verify existing YAML editing browser flow, computed typography and desktop/mobile screenshots;
+run required frontend lint/build/unit checks. No backend/API/state changes or new dependencies.
+
+### Section-navigation follow-up (AC-47)
+
+AC-48 additionally covers transient geometry: a shared feature page-header component reserves its
+subtitle line and keeps mobile actions on the title row when they fit. Loading announcements are
+out of flow. Reuse up to 32 accepted definition DTOs in session-only Vuex state, keyed by provider,
+with logout cleanup and authoritative revalidation. Hydrate cached editor/draft state before its
+first render; one loading interval covers both metadata and instance reads. Never let revalidation
+overwrite a dirty buffer; draft etags stay pinned so concurrent changes still conflict safely.
+Use a lightweight content placeholder on cold entry. Preserve guarded focus/scroll restoration.
+Reset the actual `.nh-app-main` scroller for integration path changes only; preserve native Help
+topic hashes and other views. Distinguish top-level Help tabs (return to the top) from contextual
+Help anchors (restore the field position) so an asynchronous draft restore cannot move the header.
+Existing AppShell route-key checks must recognize canonical `/integrations` as well as the old
+alias, so changing instance/provider IDs remounts the page owner correctly. No other shell layout
+or navigation behaviour changes. Regression checks delay reads and compare live header/nav/body
+geometry, draft contents, cancellation/logout and distinct provider IDs at both viewports.
+
+Replace detail-only tab markup with one presentational `IntegrationSections.vue`, driven by
+typed routes from `domain/integration-navigation.ts`. Carry `instance` in provider/Help query
+parameters only when explicitly entered from detail; do not select an arbitrary integration
+when a provider has multiple instances. Results/Setup use detail URL hashes for reload and
+browser history. Preserve provider editor `new/from` context across Help, existing in-memory
+draft retention/focus restoration and confirmation before leaving an unsaved editor.
+Use shared tab spacing rather than the detail override that sets bottom margin to zero.
+No API/backend/storage/device changes. Source-owned domain tests and ConnectionsPage browser
+checks cover all four pages, active links, history/direct entry/drafts and >=12px spacing at
+1280x800 and 390x844. Run frontend suite/lint/build/E2E types and isolated browser fixtures.
+NH-01/04/05 and FE-01/03/04 apply; NH-03/06 and FE-02/05 retain their existing boundaries;
+NH-02 and backend rules are N/A to this frontend-only change. AC-47–48 passed 403 frontend unit
+tests, build/lint/E2E types and 44 isolated desktop/mobile browser checks; see implementation-review.
+
+### Current follow-up: generic execution and aligned naming
+
+Implemented package layout:
+
+```text
+backend/internal/integrations/
+  bootstrap.go, service.go, dto.go   # composition and compatible public API aliases
+  runtime/                         # admission, coordinator, setup/definition actions, transactions
+  definitions/                     # bounded YAML compiler
+  flows/searchselect/              # input, choices, progress and recipe validation
+  operations/                      # HTTP primitives and JSON field locations
+  capabilities/                    # immutable registry and domain execution contract
+    waste/                         # mapping, normalization, projection and renewal
+  transport/httpclient/            # pooled HTTPS client and outbound/DNS policy
+```
+
+The coordinator is now 175 lines and imports no waste capability. Runtime is the single owner
+of locks, queues, transactions and shutdown; its setup/definition action files intentionally
+remain with that owner. Pure flow/definition/capability packages do not acquire runtime locks or
+own repository writes. Root `Service`/DTO aliases preserve existing application callers.
+The v1 `postcode` and `service_ids` JSON names remain compatibility fields; execution treats
+search answers and capability identity maps generically, with input-type validation in the flow.
+
+AC-43–46 supersede the older Connections naming below. Root `internal/integrations` is
+the composition boundary; `runtime` owns service actions/lifecycle and repository transactions.
+Extract YAML compilation to `definitions`, choice/status interpretation to `flows/searchselect`,
+and restricted outbound transport to `transport/httpclient`. Retain `operations` for bounded
+HTTP primitives. `capabilities` supplies an immutable injected registry and small execution
+contract; `capabilities/waste` owns mapping validation, normalization, semantic identities and
+coverage/renewal decisions. Child packages never import the composition root.
+
+Store resources as opaque versioned JSON, validated/projected by capability codecs. Retain
+the existing flat waste JSON and encrypted storage schema/AAD so old records need no rewrite.
+Runtime/public previews, normal execution and catalogue use the same capability registry.
+Domain mappings cross the generic YAML boundary as heterogeneous data, then undergo strict
+capability-owned decoding. Unsupported capabilities fail closed. Existing HTTP clients in
+OAuth/assistant lack integration egress restrictions; preserve the dedicated policy client.
+
+Keep lock ownership, atomic publication, last-good data, revision fences, exact POST replay,
+explicit status continuation, bounded renewal and idle-client shutdown. A synthetic capability
+fixture proves extensibility without shipping another integration. Canonical UI paths become
+`/integrations` with old URL aliases; current copy uses Integrations. No other view redesign.
+Remove `doc.go`, keeping useful GoDoc at declaration/algorithm boundaries. See ADR-003.
+
+T054–58 verify new boundaries, legacy-resource compatibility, failure isolation and lifecycle;
+run Go suite/build/vet/affected races, frontend suite/lint/build and isolated desktop/mobile
+browser navigation. NH-01/03–06, BE-01/03–05 and FE-01–05 apply; device semantics NH-02/BE-02
+remain unchanged. Do not touch household data or run browser tests against the personal hub.
+These are proposed checks until actual results are recorded in implementation-review.md.
+
+### Integrations landing-page follow-up — implemented
+
+The user approved the grouped Connection board on 2026-10-26. One data widget per connection,
+a separate Add catalog, draft reordering and separate hide/delete actions are implemented.
+Home-like cards reuse the shared bin SVGs and navigate to the existing full page. Refresh is
+independent; layout editing disables navigation. There are no resize or Details-footer controls.
+The [board contract](contracts/connections-board.md), [ADR-002](adr-002-connection-board-layout.md)
+and [implementation review](implementation-review.md) record ownership and verification.
+Home/Devices/Overview/Panel, manual refresh and equal signed-in access remain unchanged.
+The [design investigation](designs/connections-dashboard-review.md) retains the alternatives;
+its weather/energy examples do not represent implemented features.
+
+### Existing M1 architecture
 
 Build a first-class **integration subsystem** with server-driven setup, durable instances,
 validated typed resources and credential isolation. The first release is user-confirmed personal Docker use
@@ -12,7 +115,7 @@ with manual setup/refresh (M1). Later roadmap phases cover automatic refresh (M2
 automation consumers (M3) and provider replacement/second-provider proof (M4). Manual M1 is useful but does not complete the original
 request's automatic-refresh objective.
 
-The user approved the name **Connections** and narrowed its initial UI to its own section.
+The user approved the name **Integrations** and narrowed its initial UI to its own section.
 Add one main-navigation entry after Devices; discovery, setup, results, health, provider editing
 and Help stay inside it. Home, Devices, Overview and Panel retain their existing content/counts/
 layouts/controls. No pins, room tiles, cross-promotion shortcuts, notices or new global footer copy.
@@ -127,7 +230,7 @@ All paths below exist today; proposed paths appear later.
 Home areas and Panel are currently device-oriented. Earlier samples explored extending their
 models, cache writers and renderers; those changes are now outside scope. The existing dashboard
 cache persistence issue is not touched by this feature. No dashboard schema/WS migration or core
-Home/Panel refactoring is required for the contained Connections UI.
+Home/Panel refactoring is required for the contained Integrations UI.
 
 The repository has no general plugin loader, provider catalog, durable external workflow runtime,
 encrypted credential repository or integration lifecycle. MQTT, automation serializers and MCP
@@ -232,7 +335,7 @@ backend/internal/api/integrations.go         protected DTOs and mutation-origin 
 frontend/src/contracts/integrations.ts        runtime ingress validation
 frontend/src/services/integrations.service.ts
 frontend/src/store/modules/integrations/index.ts
-frontend/src/components/integrations/         Connections catalog, wizard, health, Form/YAML editor, Help
+frontend/src/components/integrations/         Integrations catalog, wizard, health, Form/YAML editor, Help
 ```
 
 The generic runner receives context, definition, state and injected policy-bound HTTP/clock/scoped
@@ -249,7 +352,7 @@ Provisional/unavailable examples describe transient outcomes, not durable replac
 Typed decoding and focused domain checks enforce those rules; no runtime JSON Schema engine is required.
 
 One bbolt repository owns private runtime data and active compiled revisions. Its path must be
-strict, without the generic GetDataDir/KV temporary fallback; failure is local to Connections. Host YAML is the
+strict, without the generic GetDataDir/KV temporary fallback; failure is local to Integrations. Host YAML is the
 single editable definition source; compiled snapshots/revision journals are recovery/runtime data,
 not a second independently editable configuration store. A separate definition repository owns
 safe file paths, content-hash conflicts, atomic rename and reload. There is no filesystem/DB atomic
@@ -259,23 +362,23 @@ is read-only. Current backend Compose already mounts ./backend/configs at /backe
 
 ## 7. User setup and protected API
 
-### Connections entry and page boundaries
+### Integrations entry and page boundaries
 
-Desktop/sidebar and mobile/drawer retain Overview → Home → Devices → **Connections** →
-Automations → Assistant → Console → Settings. Inside Connections: Waste collection → WhenIsBins →
+Desktop/sidebar and mobile/drawer retain Overview → Home → Devices → **Integrations** →
+Automations → Assistant → Console → Settings. Inside Integrations: Waste collection → WhenIsBins →
 postcode → address → saved results. Tabs are Results, Setup, Configure operations and Help.
 Provider configuration edits show their shared scope; ordinary setup requires no HTTP knowledge.
 
 The [navigation contract](contracts/connections-navigation.md) fixes routes and page isolation.
 Backend /api/integrations naming and configs/integrations remain. No Show on Home, room assignment,
 Panel tile, connection-specific dashboard field or settings WS payload is introduced. Devices and
-other existing pages have no links/notices promoting Connections; users use the existing main menu.
+other existing pages have no links/notices promoting Integrations; users use the existing main menu.
 All other existing navigation is retained; no connection data or extra product copy appears
-outside Connections.
+outside Integrations.
 
 ### Setup and API
 
-Normal flow: Connections → Waste collection → WhenIsBins → postcode → exact address selection → save → current
+Normal flow: Integrations → Waste collection → WhenIsBins → postcode → exact address selection → save → current
 collections, source/coverage and health. Unsupported required inputs show a clear unsupported journey,
 not a guessed property. Dynamic options and step/revision state remain server-owned. Generic Vue
 controls render form/choice/progress/complete/error steps. No raw provider HTML or arbitrary JS.
@@ -482,10 +585,10 @@ User decisions are recorded: manual refresh first (D-01), UI-editable host YAML/
 access (D-02/D-03), and personal Docker use (D-05). The keyring-file contract (D-04) now has concrete
 Docker paths/mount/backup behavior. No delivery/deployment clarification remains pending. Technical
 fixture/provider-behavior/deployment verification stays in T002/T003; it is not another permission
-gate. Later consumer scenarios are M3 gates, not blockers for Connections-only M1. The user subsequently authorized M1 implementation. Local technical self-review and checks are complete; maintainer ADR adoption and real deployment are not claimed.
+gate. Later consumer scenarios are M3 gates, not blockers for Integrations-only M1. The user subsequently authorized M1 implementation. Local technical self-review and checks are complete; maintainer ADR adoption and real deployment are not claimed.
 
 The old 16–28/25–46 day ranges are withdrawn as a planning baseline. They did not separately budget
-the repair editor, wire contract and replacement workflow. The latest scope contains the UI entirely within Connections. It removes feature-role
+the repair editor, wire contract and replacement workflow. The latest scope contains the UI entirely within Integrations. It removes feature-role
 work and adds YAML source-of-truth/host synchronization; do not infer a net time saving without
 estimation. The existing provisional ranges below are coarse effort scenarios, not commitments; re-estimate work packages after gate M0 and
 captured fixtures. One engineer familiar with Go/Vue; review waits/deployment approvals excluded.
@@ -495,7 +598,7 @@ Do not promise a fixed delivery date from these numbers.
 | --- | --- | --- |
 | M0 — Contracts/evidence | Delivery/deployment decisions confirmed; verify strict YAML/file contracts, provider fixtures/idempotency and task boundaries; revise estimates. | 4–8 engineer-days; may expand for changed deployment needs |
 | M1a — Secure manual backend | One repository, schema/identity, keys/retention, bounded transport, generic recipe/request operations, strict YAML compilation, host-save/reload recovery, manual refresh/check-status and anonymous/origin negative tests. | 10–18 days |
-| M1b — Connections UI + repair | Top-level Connections/routes, catalog/wizard/data/health, shared sessions, Form/YAML editor, offline/live test, save/reload/restore, Git-friendly files, contextual/full Help, consent/error/expiry/touch/viewport checks; no recurring provider schedule. | 8–15 days |
+| M1b — Integrations UI + repair | Top-level Integrations/routes, catalog/wizard/data/health, shared sessions, Form/YAML editor, offline/live test, save/reload/restore, Git-friendly files, contextual/full Help, consent/error/expiry/touch/viewport checks; no recurring provider schedule. | 8–15 days |
 | M2 — Automatic lifecycle | Durable coordinator, quota backoff, pending/due recovery, coverage exhaustion, projection deadlines and shutdown/race evidence. | 5–10 days |
 | M3 — Consumers | Protected assistant/MCP transport plus one agreed automation path/recipe UI and occurrence rules. | 6–12 days |
 | M4 — Replacement and reuse | Actual second provider/binding, candidate preview/mapping, previous/current coexistence, atomic identity preservation/rollback and automation review; prove common runtime unchanged. | 7–14 days |
@@ -538,7 +641,7 @@ DeepSeek report, or replace its link with a durable reference; an untracked file
 ### Final scope review
 
 The earlier Home/Garden/Panel placements were exploratory samples. The user's latest decision is
-Connections-only UI, reached through its main-navigation item. The updated spec replaces those
+Integrations-only UI, reached through its main-navigation item. The updated spec replaces those
 positive placement requirements with AC-26/27 preservation/no-promotion checks; AC-24/25, FR-14/15
 and T029/T030 are retired and not reused. Removed their proposed models/renderers/cache work and
 reduced M1b's coarse range accordingly. Future widgets require separate scope, not an implicit
@@ -601,7 +704,7 @@ or documentation. No new capabilities, transport/storage contracts or other-view
   helpers/readable multiline code over compound statements. Fix concrete issues found with regressions.
 
 Checks: full Go tests/build/vet; race affected packages; frontend Jest/lint/build, E2E types and
-isolated Connections browser scenarios. Add source-owned pure editing/observer/controlled-form
+isolated Integrations browser scenarios. Add source-owned pure editing/observer/controlled-form
 regressions using Vue effect scopes/fake timers (no new mounting framework). Review every NH/BE/FE
 rule again; record actual results and remaining operational limits in implementation-review.md.
 
@@ -635,7 +738,7 @@ behavior unchanged. Add one presentational WasteBinIcon.vue with static SVG geom
 pure colour palette; no provider-supplied style/markup, image dependency or external asset request.
 Use its existing tools slot for the illustration. Test palette/unknown fallbacks and an isolated
 three-card browser fixture with short/long titles at desktop/mobile widths. Run frontend unit,
-lint/build, E2E types and Connections browser checks. NH/FE boundaries and other views are unchanged.
+lint/build, E2E types and Integrations browser checks. NH/FE boundaries and other views are unchanged.
 
 AC-33 refines AC-32 after the user's visual feedback: replace the tall status paragraph block with
 a compact native details/summary row, move recent checks below results, reduce header icon/spacing,
@@ -644,3 +747,109 @@ source descriptions/verification/refresh notes under Details instead of deleting
 small flat SVG geometry matching UI icon styling; no image network dependency or provider HTML.
 Extend the existing isolated browser layout test for compact mobile bounds/disclosure accessibility,
 light/dark rendering, and shared desktop tracks; keep the actual application on its own ports.
+
+## Approved Integrations board implementation (AC-34–37, 2026-10-26)
+
+User approved the recommended grouped Connection board and the shared wheelie-bin SVG treatment.
+The [board contract](contracts/connections-board.md) supersedes pending design/resize/permission
+questions in the investigation. Freeze shared order+visibility (no size) and separate hide/delete.
+Add optional per-instance preferences with independent revisions; atomically expose a protected
+board GET/PUT, without changing encrypted schema/AAD. This is smaller than a separate widget DB,
+while avoiding private Home/device settings or browser persistence. Follow existing boundaries.
+
+Backend owners: models/integrations/state.go (optional preference), internal/integrations/board.go
+(layout domain/transaction), internal/api/integrations.go (transport/auth). Frontend owners:
+types/contracts/service/store (accepted board), domain/connection-board.ts (pure layout/summary),
+useConnectionBoardLayout (draft), useConnectionsBoard (page lifecycle), useConnectionsCatalog
+(Add), ConnectionWidget/ConnectionBoard/ConnectionCatalogDialog (presentation), ConnectionsPage
+(coordinator). Reuse WasteBinIcon, UiDialog/UiButton/UiIcon and installed vuedraggable. Preserve
+all existing detail/provider/help views. Setup receives only a named return intent, not a URL.
+No new dependency, automatic upstream polling, device feature, public route or role tier.
+
+Proceed T041–45 in order. Checks/ownership and NH/BE/FE review are in the contract. New acceptance
+requires actual application checks; prior prototype passes do not count as implementation evidence.
+
+## Navigation/header polish — AC-38–39
+
+Investigate with stalled isolated read responses before editing. Source hypotheses: ConnectionFeedback
+conditionally inserts a Working paragraph into page flow; useConnectionDetail initially ignores the
+validated instance already on the board and sequentially toggles busy for instance/provider reads.
+A generic Connection title gains a postcode after the first read, changing the header geometry.
+Confirm with title text/geometry probes on initial detail entry and back; do not add a transition
+animation to disguise movement.
+
+Use matching private session cache for immediate detail presentation while revalidating; keep
+request/session guards and explicit not-found handling. Keep initial instance/provider work in one
+owned busy interval. Opt board/detail into non-flow accessible loading feedback, preserving other
+callers' current feedback. Keep the page aria-busy truthful and use an actual cold-load message when
+no cached data exists. Compare no header image (more compact, weaker connection identity) with the
+existing generic schedule/calendar icon (consistent Home-like identity, no duplicate bin); use the
+latter without a new asset or dependency.
+
+Owners: ConnectionFeedback.vue, useConnectionDetail.ts, ConnectionsPage.vue, ConnectionDetail.vue,
+ConnectionWidget.vue and existing ConnectionsPage.spec.ts. NH-01/04 and FE-01 retain presentation/
+composable boundaries; NH-02 has no device changes; NH-03/FE-02/05 retain validated private cache,
+auth and cleanup; NH-05/FE-04 require measured delayed-navigation browser regressions; NH-06/FE-03
+retain errors, missing/deleted states, no new timers/network retries. No backend/wire change.
+Run frontend unit/lint/build/E2E types and isolated Integrations checks; no live household fixtures.
+
+## Chronological collections for consumers — AC-40
+
+Current UI maps provider service order directly into both views. Add a shared nullable ISO-date
+comparator and raw next-date presentation key in domain/waste-schedule.ts; sort newly projected
+cards and their copied upcoming-date arrays. connection-board.ts sorts flattened summary rows with
+the same comparator before taking three rows. Same-date/no-date ties preserve source order. This
+does not change resource identity, JSON fields or the user's connection layout. The backend
+projection below guarantees chronological ordering to all authenticated resource consumers too.
+
+Extend existing source companions waste-schedule.test.ts and connection-board.test.ts for shuffled
+provider dates, cross-month/year ordering, ties, undated/exhausted services, UK rollover, no mutation
+and multiple-resource widget truncation; add an existing ConnectionsPage.spec.ts regression for
+both rendered views. Run unit/lint/build/E2E types and isolated browser tests. NH-01/04/FE-01 keep
+this shared pure logic out of components; NH-02/03/FE-02/05 boundaries are unchanged; NH-05/FE-04
+require ordering evidence; NH-06/FE-03 preserve UK dates and missing-versus-empty semantics. No
+timer, cache lifetime or other-page changes; only the backend domain projection is extended below.
+
+AC-40 clarification after user review: sort the backend's canonical returned resources too, not
+only the UI projection. WasteSchedule.Project (models/integrations/resource.go) is already called
+by normalization and authenticated instance/resource reads. Clone/sort Services there by the first
+canonical date >= the UK local date, keeping missing-date/tie behavior stable. Preserve revisions,
+complete date arrays and snapshot identity. Cache immutable London timezone data with sync.OnceValues
+and embed the standard-library tzdata fallback so native/container sorting does not depend on an
+external zoneinfo install; no new third-party dependency. Unsupported/unresolvable zones retain
+source order rather than guessing a local date; v1 validates Europe/London.
+
+Extend resource_test.go (chronology, ties, no mutation and UK-midnight/DST reordering) and existing
+service_test.go (provider normalization plus instance/list consumers). Contract: services array is
+ordered as of evaluated_at; dates within services remain complete sorted-unique lists. No JSON
+fields/route/auth/storage change. NH-03/BE-05/FE-02 preserve private API fields; BE-01 owns this in
+the domain, BE-03 gets clone/race checks, BE-04 defines date/order semantics with old snapshots read
+without migration. Run Go suite/build/vet/affected races in addition to the frontend checks.
+
+## Calendar ownership and clean presentation — AC-41–42
+
+Repo audit: Compose sets process TZ; frontend mock server has its own TIMEZONE; existing automation
+scheduler hardcodes London; MCP accepts a timezone option/default UTC; checked timestamps currently
+use browser timezone. There is no shared runtime General timezone setting. Do not repurpose process
+TZ as the date semantics for provider data. General timezone remains a separate feature requiring
+settings persistence, client/server consumers, DST rules and existing-schedule migration decisions.
+
+Centralize UK waste contract values in backend/models/integrations/calendar.go and frontend/src/config/
+integrations.ts; use the frontend constant in contract/type declarations and schedule.timezone in
+calendar formatting. Reuse the backend's cached immutable location for projection and horizon checks;
+normalization uses the shared contract constant. No changes to automation/device behavior or v1 wire.
+
+Refactor frontend/domain/waste-schedule.ts into a typed schedule composer and small card/label helpers;
+extract pure calendar/date formatting and chronology to waste-calendar.ts. Keep the comparator export
+compatible. Refactor touched connection-board.ts row/status projection into named helpers and typed
+models. No generic framework, new dependencies or cosmetic wrapper layers. Preserve public output
+fields and nullable meanings; do not move transport/persistence into presentation.
+
+Update existing Vue/Go rules with mandatory JSDoc/GoDoc for new/changed public APIs and purposeful
+comments for complex flow/ownership/units, plus review checks. Keep guidance concise and AGENTS.md
+unchanged. New source companion ownership: waste-calendar.ts→domain/waste-calendar.test.ts;
+calendar.go→calendar_test.go. Extend existing schedule/board/contract companions and retain all UI
+regressions. Run frontend unit/lint/build/E2E types/browser, Go suite/build/vet/affected races. NH-01/
+04 and FE/BE-01 enforce ownership; NH-02/device pipeline unchanged; NH-03/FE-02/05 contracts/private
+state unchanged; NH-05/FE-04 have regression evidence; NH-06/BE-03–04/FE-03 preserve copy, date and
+cleanup behavior. Local user automation config and already-staged changes remain untouched.

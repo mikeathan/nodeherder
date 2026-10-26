@@ -1,23 +1,31 @@
-import { onMounted } from 'vue';
-import { useConnections } from '@/composables/useConnections';
+import { ref } from 'vue';
+import type { ConnectionScope } from '@/composables/useConnections';
 import { RouteName } from '@/types/router';
 
-/** Owns catalog loading and navigation after an admitted setup. */
-export function useConnectionsCatalog() {
-  const { api, state, store, router, busy, error, perform, signal } = useConnections();
-  const load = () => perform(() => store.dispatch('integrations/load', signal));
-  onMounted(load);
+/** Owns the separate Add dialog and whitelisted setup navigation, not board presentation. */
+export function useConnectionsCatalog(scope: ConnectionScope) {
+  const open = ref(false);
+  /** Create a shared setup session and navigate with a named board-return intent, never a URL redirect. */
   async function add(key: string) {
-    const setup = await perform(() => api.createSetup(key));
-    if (setup) await router.push({ name: RouteName.ConnectionSetup, params: { id: setup.id } });
+    const setup = await scope.perform(() => scope.api.createSetup(key));
+    if (setup) {
+      open.value = false;
+      await scope.router.push({
+        name: RouteName.IntegrationSetup,
+        params: { id: setup.id },
+        query: { return_to: 'board' },
+      });
+    }
   }
+  /** Reload host definitions and update discovery; existing saved connections remain separate state. */
   async function reloadProviders() {
-    const value = await perform(() => api.reloadProviders());
-    if (value) await load();
+    const catalog = await scope.perform(() => scope.api.reloadProviders());
+    if (catalog) scope.commit('catalog', catalog);
   }
+  /** Resolve a validated provider key to the existing protected editor route. */
   const providerRoute = (key: string) => {
     const [type, provider] = key.split('/');
-    return { name: RouteName.ConnectionProvider, params: { type, provider } };
+    return { name: RouteName.IntegrationProvider, params: { type, provider } };
   };
-  return { state, busy, error, load, add, reloadProviders, providerRoute };
+  return { open, add, reloadProviders, providerRoute };
 }

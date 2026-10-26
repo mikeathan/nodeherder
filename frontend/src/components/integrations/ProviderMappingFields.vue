@@ -16,7 +16,7 @@
   <div class="connection-form">
     <details>
       <summary>Collection fields</summary>
-      <RouterLink :to="{ name: RouteName.ConnectionHelp, params: route.params, query: route.query, hash: '#fields' }"
+      <RouterLink :to="{ name: RouteName.IntegrationHelp, params: route.params, query: route.query, hash: '#fields' }"
         >Help mapping collection fields</RouterLink
       >
       <div class="connection-form">

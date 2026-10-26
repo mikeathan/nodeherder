@@ -70,6 +70,7 @@ type RunSummary struct {
 // Revision prevents lost edits; Generation fences in-flight work after lifecycle changes.
 // BindingID/ResourceID survive compatible repairs; State contains private captured provider values.
 type Instance struct {
+	Board           *BoardPreference      `json:"board,omitempty"`
 	Runs            []RunSummary          `json:"runs"`
 	ID              string                `json:"id"`
 	Name            string                `json:"name"`
@@ -85,8 +86,8 @@ type Instance struct {
 	State           map[string]any        `json:"state"`
 	Credentials     map[string]Credential `json:"credentials"`
 	Origin          string                `json:"origin"`
-	Snapshot        *WasteSchedule        `json:"snapshot,omitempty"`
-	ServiceIDs      map[string]string     `json:"service_ids"`
+	Snapshot        *Resource             `json:"snapshot,omitempty"`
+	Identities      map[string]string     `json:"service_ids"`
 	ETag            string                `json:"etag,omitempty"`
 	CacheScope      string                `json:"cache_scope,omitempty"`
 	OperationID     string                `json:"operation_id,omitempty"`
@@ -94,6 +95,15 @@ type Instance struct {
 	LastError       *Failure              `json:"last_error,omitempty"`
 	CreatedAt       time.Time             `json:"created_at"`
 	UpdatedAt       time.Time             `json:"updated_at"`
+}
+
+// BoardPreference stores only presentation choices. Its independent revision prevents a
+// layout save from invalidating provider work or conflicting with an ordinary refresh.
+// A nil Instance.Board represents an older/default record: visible, with creation-time order.
+type BoardPreference struct {
+	Order    int    `json:"order"`
+	Hidden   bool   `json:"hidden"`
+	Revision uint64 `json:"revision"`
 }
 
 // Setup is an encrypted, expiring shared wizard or isolated test session. Its pinned definition
@@ -120,7 +130,7 @@ type Setup struct {
 	ExpiresAt          time.Time             `json:"expires_at"`
 	AbsoluteExpiry     time.Time             `json:"absolute_expiry"`
 	TestOnly           bool                  `json:"test_only,omitempty"`
-	Preview            *WasteSchedule        `json:"preview,omitempty"`
+	Preview            *Resource             `json:"preview,omitempty"`
 	ConnectionName     string                `json:"connection_name,omitempty"`
 	SubmissionHash     string                `json:"submission_hash,omitempty"`
 }

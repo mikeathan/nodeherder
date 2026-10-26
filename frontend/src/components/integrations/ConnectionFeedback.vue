@@ -4,7 +4,7 @@
   function hasField(path: string) {
     return Boolean(document.getElementById(path));
   }
-  defineProps<{ error?: ConnectionFailure | null; busy?: boolean }>();
+  defineProps<{ error?: ConnectionFailure | null; busy?: boolean; compactBusy?: boolean }>();
 </script>
 <template>
   <div v-if="error" class="connection-notice connection-error" role="alert">
@@ -24,5 +24,6 @@
       </li>
     </ul>
   </div>
-  <p v-if="busy" role="status" class="connection-muted">Working…</p>
+  <!-- Cached pages announce revalidation without inserting a row that shifts the content. -->
+  <p v-if="busy" role="status" :class="compactBusy ? 'sr-only' : 'connection-muted'">Working…</p>
 </template>
