@@ -16,6 +16,7 @@ services:
       - ./backend/logs:/backend/logs
     environment:
       APP_ENV: production
+      INTEGRATION_KEYRING_FILE: ${INTEGRATION_KEYRING_FILE:-/run/nodeherder-secrets/integration-keyring.json}
       TZ: Europe/London
     depends_on:
       - mqtt

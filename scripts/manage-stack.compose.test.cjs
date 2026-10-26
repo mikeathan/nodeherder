@@ -15,7 +15,7 @@ test('real Compose configuration', {
     for (const dir of ['scripts', 'backend', 'frontend', 'elsewhere', 'bin', '.docker']) {
       fs.mkdirSync(path.join(root, dir));
     }
-    for (const file of ['scripts/manage-stack.sh', 'docker-compose.backend.yml', 'docker-compose.frontend.yml']) {
+    for (const file of ['scripts/manage-stack.sh', 'docker-compose.backend.yml', 'docker-compose.frontend.yml', 'docker-compose.connections.yml']) {
       fs.copyFileSync(path.join(__dirname, '..', file), path.join(root, file));
     }
     fs.writeFileSync(path.join(root, 'backend/.env'), 'MQTT_USER=test\nMQTT_PASS=fixture-only\n');
@@ -91,5 +91,23 @@ exec "$NODEHERDER_COMPOSE_BINARY" "$@"
     assert.ok(services.backend.volumes.some(v => v.source === path.join(f.root, 'backend/data')));
     assert.ok(services.mqtt.volumes.some(v => v.source === path.join(f.env.DATA_ROOT, 'mqtt/data')));
     assert.ok(services.zigbee2mqtt.devices.some(d => d.source === f.env.Z2M_DEVICE && d.target === f.env.Z2M_SERIAL_PORT));
+  });
+  await t.test('Connections overlay mounts only the supplied external key directory read-only', t => {
+    const f = fixture(t);
+    const r = f.run('docker', [
+      'compose', '--project-directory', f.root,
+      '-f', path.join(f.root, 'docker-compose.backend.yml'),
+      '-f', path.join(f.root, 'docker-compose.connections.yml'),
+      'config', '--format', 'json',
+    ], { NODEHERDER_SECRETS_DIR: path.join(f.root, 'secrets-fixture') });
+    assert.equal(r.status, 0, r.stderr);
+    const backend = JSON.parse(r.stdout).services.backend;
+    const mount = backend.volumes.find(v => v.target === '/run/nodeherder-secrets');
+    assert.equal(mount.read_only, true);
+    // Compose versions may omit false boolean zero values from normalized JSON.
+    // Check the explicit source setting and the resulting effective flag.
+    assert.match(fs.readFileSync(path.join(f.root, 'docker-compose.connections.yml'), 'utf8'), /create_host_path:\s*false/);
+    assert.equal(mount.bind?.create_host_path ?? false, false);
+    assert.equal(backend.environment.INTEGRATION_KEYRING_FILE, '/run/nodeherder-secrets/integration-keyring.json');
   });
 });

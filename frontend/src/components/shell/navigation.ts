@@ -14,6 +14,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { route: RouteName.Overview, label: 'Overview', icon: 'overview' },
   { route: RouteName.GroupDashboard, label: 'Home', icon: 'home' },
   { route: RouteName.Devices, label: 'Devices', icon: 'devices', includes: [RouteName.DeviceView, RouteName.DeviceList, RouteName.DevicePage] },
+  { route: RouteName.Integrations, label: 'Integrations', icon: 'connections', includes: [RouteName.Integration, RouteName.IntegrationSetup, RouteName.IntegrationProvider, RouteName.IntegrationHelp,RouteName.IntegrationNotFound] },
   { route: RouteName.Viewer, label: 'Automations', icon: 'automation', includes: [RouteName.Editor, RouteName.Creator] },
   { route: RouteName.Assistant, label: 'Assistant', icon: 'assistant' },
   { route: RouteName.ConsoleViewer, label: 'Console', icon: 'console' },

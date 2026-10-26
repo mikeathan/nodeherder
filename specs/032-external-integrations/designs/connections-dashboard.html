@@ -1,0 +1,334 @@
+<style>
+.nh-preview {
+  --nhp-bg: light-dark(#f6f7f8, #111416); --nhp-side: light-dark(#edf1f4, #171b1e);
+  --nhp-card: light-dark(#fff, #202427); --nhp-fg: light-dark(#202a32, #e9edef);
+  --nhp-muted: light-dark(#596773, #a5adb3); --nhp-line: light-dark(#d9e0e4, #343a3e);
+  --nhp-blue: light-dark(#086e9b, #40b5e4); --nhp-active: light-dark(#dcedf6, #172f3b);
+  --nhp-danger: light-dark(#a82d37, #f18e94); --nhp-icon-bg: light-dark(#e9edf0, #2a3035);
+  color-scheme: light dark; color: var(--nhp-fg); background: var(--nhp-bg);
+  font: 14px/1.45 Figtree, system-ui, sans-serif; position: relative;
+  min-height: 710px; border: 1px solid var(--nhp-line); border-radius: 14px;
+  display: grid; grid-template-columns: 154px minmax(0, 1fr);
+}
+.nh-preview *, .nh-preview *::before, .nh-preview *::after { box-sizing: border-box; }
+.nh-preview [hidden] { display: none !important; }
+.nh-preview button, .nh-preview input, .nh-preview select { font: inherit; }
+.nh-preview button { color: inherit; }
+.nh-preview i, .nh-preview svg { width: 18px; height: 18px; display: inline-block; flex: none; }
+.nh-preview h1, .nh-preview h2, .nh-preview h3, .nh-preview p { margin: 0; }
+.nh-preview h1 { font-size: 24px; font-weight: 500; line-height: 1.25; }
+.nh-preview h2 { font-size: 20px; font-weight: 500; }
+.nh-preview h3 { font-size: 15px; font-weight: 500; }
+.nh-preview .np-sidebar { padding: 22px 12px; background: var(--nhp-side); border-right: 1px solid var(--nhp-line); border-radius: 14px 0 0 14px; }
+.nh-preview .np-brand { display: flex; gap: 8px; align-items: center; margin: 0 6px 28px; font-weight: 500; }
+.nh-preview .np-brand b { color: var(--nhp-blue); font-weight: 500; }
+.nh-preview .np-nav { display: grid; gap: 6px; }
+.nh-preview .np-nav span { padding: 10px 8px; border-radius: 9px; color: var(--nhp-muted); }
+.nh-preview .np-nav [aria-current] { color: var(--nhp-blue); background: var(--nhp-active); }
+.nh-preview .np-main { min-width: 0; }
+.nh-preview .np-top { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 16px 22px; border-bottom: 1px solid var(--nhp-line); }
+.nh-preview .np-preview-label { font-size: 12px; color: var(--nhp-muted); }
+.nh-preview .np-content { padding: 26px 22px 32px; }
+.nh-preview .np-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+.nh-preview .np-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.nh-preview .np-button { min-height: 38px; padding: 8px 12px; border: 1px solid var(--nhp-line); border-radius: 10px; background: var(--nhp-card); display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.nh-preview .np-button.primary { background: var(--nhp-blue); border-color: var(--nhp-blue); color: light-dark(#fff, #102631); }
+.nh-preview .np-button.danger { color: var(--nhp-danger); }
+.nh-preview .np-button:disabled { opacity: .5; }
+.nh-preview .np-icon-button { width: 34px; min-height: 34px; padding: 7px; border: 0; border-radius: 9px; background: transparent; color: var(--nhp-muted); display: inline-flex; justify-content: center; align-items: center; }
+.nh-preview .np-icon-button:hover, .nh-preview .np-button:hover:not(:disabled) { background: var(--nhp-active); color: var(--nhp-fg); }
+.nh-preview .np-board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: stretch; }
+.nh-preview .np-widget { position: relative; isolation: isolate; min-width: 0; padding: 16px; border: 1px solid var(--nhp-line); border-radius: 22px; background: var(--nhp-card); }
+.nh-preview[data-design='board'] .np-widget { display: flex; flex-direction: column; }
+.nh-preview .np-widget:has(.np-card-link:hover) { border-color: var(--nhp-blue); }
+.nh-preview .np-widget-head { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.nh-preview .np-title { min-width: 0; flex: 1; }
+.nh-preview .np-subtitle { display: block; margin-top: 3px; color: var(--nhp-muted); font-size: 12px; }
+.nh-preview .np-card-link { color: inherit; text-decoration: none; }
+.nh-preview .np-card-link::after { content: ''; position: absolute; inset: 0; border-radius: 22px; z-index: 1; }
+.nh-preview .np-card-link:focus-visible::after { outline: 2px solid var(--nhp-blue); outline-offset: 3px; }
+.nh-preview .np-widget-action { position: relative; z-index: 2; align-self: start; margin: -5px -5px 0 0; }
+.nh-preview .np-icon { width: 44px; height: 44px; border-radius: 50%; background: var(--nhp-icon-bg); color: var(--nhp-blue); display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.nh-preview .np-icon svg { width: 23px; height: 23px; }
+.nh-preview .np-black { color: light-dark(#4c5962, #bfccd5); background: light-dark(#e6ebee, #303940); }
+.nh-preview .np-blue { color: light-dark(#1d75a6, #64baf0); background: light-dark(#dfedf7, #1f3d51); }
+.nh-preview .np-brown { color: light-dark(#86552e, #daa370); background: light-dark(#f3e7da, #47372a); }
+.nh-preview .np-weather { color: light-dark(#a96e09, #e9bc55); background: light-dark(#f8edcf, #453b24); }
+.nh-preview .np-energy { color: light-dark(#2d7950, #70bf8a); background: light-dark(#e0efe5, #263f30); }
+.nh-preview .np-bin-list { display: grid; gap: 9px; }
+.nh-preview .np-bin-row { display: flex; justify-content: space-between; align-items: center; gap: 9px; }
+.nh-preview .np-bin-label { display: inline-flex; align-items: center; gap: 8px; }
+.nh-preview .np-bin-row .np-icon { width: 30px; height: 30px; }
+.nh-preview .np-bin-row svg { width: 17px; height: 17px; }
+.nh-preview .np-date { font-weight: 500; white-space: nowrap; }
+.nh-preview .np-stamp { margin-top: auto; padding-top: 16px; color: var(--nhp-muted); font-size: 12px; }
+.nh-preview .np-value { font-size: 29px; font-weight: 500; margin-bottom: 5px; }
+.nh-preview .np-value small { font-size: 13px; font-weight: 400; }
+.nh-preview .np-muted { color: var(--nhp-muted); }
+.nh-preview .np-edit-note { font-size: 12px; color: var(--nhp-muted); margin: -10px 0 16px; }
+.nh-preview .np-edit-bar { position: relative; z-index: 2; margin-top: 15px; padding-top: 10px; border-top: 1px dashed var(--nhp-line); display: flex; justify-content: space-between; gap: 5px; }
+.nh-preview .np-edit-bar > div { display: flex; }
+.nh-preview.np-editing .np-widget { border-style: dashed; }
+.nh-preview .np-empty { grid-column: 1 / -1; text-align: center; padding: 40px 12px; color: var(--nhp-muted); }
+.nh-preview .np-empty h2 { color: var(--nhp-fg); margin-bottom: 9px; }
+.nh-preview .np-empty button { margin-top: 16px; }
+.nh-preview .np-toast { min-height: 18px; font-size: 12px; color: var(--nhp-muted); margin-top: 20px; }
+.nh-preview[data-design='tiles'] .np-widget { min-height: 120px; padding: 18px 14px; }
+.nh-preview[data-design='tiles'] .np-widget-head { align-items: center; margin-bottom: 0; }
+.nh-preview[data-design='tiles'] .np-widget-action { position: absolute; right: 8px; top: 8px; opacity: 1; }
+.nh-preview[data-design='tiles'] .np-title { padding-right: 8px; }
+.nh-preview .np-tile-date { display: block; font-size: 16px; margin-top: 3px; }
+.nh-preview[data-design='list'] .np-board { grid-template-columns: 1fr; }
+.nh-preview[data-design='list'] .np-widget { padding: 18px; }
+.nh-preview[data-design='list'] .np-bin-list { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-left: 54px; }
+.nh-preview[data-design='list'] .np-bin-row { display: grid; gap: 4px; }
+.nh-preview[data-design='list'] .np-bin-row .np-icon { display: none; }
+.nh-preview[data-design='list'] .np-value, .nh-preview[data-design='list'] .np-reading { margin-left: 54px; }
+.nh-preview[data-design='list'] .np-stamp { margin-left: 54px; padding-top: 10px; }
+.nh-preview .np-back { border: 0; background: transparent; padding: 6px 0; color: var(--nhp-blue); display: inline-flex; align-items: center; gap: 6px; margin-bottom: 17px; min-height: 34px; }
+.nh-preview .np-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: -4px 0 20px; }
+.nh-preview .np-tabs button { border: 0; background: transparent; color: var(--nhp-muted); padding: 10px 12px; min-height: 40px; border-radius: 12px; }
+.nh-preview .np-tabs [aria-pressed='true'] { background: var(--nhp-active); color: var(--nhp-blue); }
+.nh-preview .np-result-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 18px; }
+.nh-preview .np-result { background: var(--nhp-card); border: 1px solid var(--nhp-line); border-radius: 22px; padding: 18px 16px; }
+.nh-preview .np-result-head { display: flex; align-items: center; justify-content: space-between; gap: 9px; margin-bottom: 22px; }
+.nh-preview .np-result-date { font-size: 19px; font-weight: 500; }
+.nh-preview .np-result .np-subtitle { margin-top: 8px; }
+.nh-preview .np-status { font-size: 12px; color: var(--nhp-muted); padding: 10px 0; }
+.nh-preview .np-status summary { min-height: 32px; }
+.nh-preview .np-status p { margin: 8px 0; }
+.nh-preview .np-detail-form { max-width: 480px; display: grid; gap: 18px; }
+.nh-preview .np-detail-form label { display: grid; gap: 6px; }
+.nh-preview input, .nh-preview select { width: 100%; min-width: 0; border: 1px solid var(--nhp-line); border-radius: 9px; background: var(--nhp-card); color: var(--nhp-fg); font-size: 16px; padding: 10px; }
+.nh-preview .np-layer { position: absolute; inset: 0; z-index: 20; display: flex; align-items: start; justify-content: center; padding: 68px 16px 28px; background: light-dark(#263d4f55, #0009); border-radius: 14px; }
+.nh-preview .np-dialog { width: min(100%, 440px); background: var(--nhp-card); border: 1px solid var(--nhp-line); border-radius: 18px; padding: 22px; }
+.nh-preview .np-dialog-head { display: flex; justify-content: space-between; gap: 9px; align-items: center; margin-bottom: 18px; }
+.nh-preview .np-dialog p { color: var(--nhp-muted); margin-bottom: 14px; }
+.nh-preview .np-dialog-actions { display: flex; justify-content: end; gap: 8px; flex-wrap: wrap; margin-top: 20px; }
+.nh-preview .np-catalog-row { padding: 14px 0; border-top: 1px solid var(--nhp-line); display: flex; align-items: center; gap: 10px; }
+.nh-preview .np-catalog-row > div { min-width: 0; flex: 1; }
+.nh-preview.np-phone { max-width: 390px; margin: auto; grid-template-columns: 1fr; min-height: 1080px; }
+.nh-preview.np-phone .np-sidebar { display: none; }
+.nh-preview.np-phone .np-content { padding: 22px 15px 28px; }
+.nh-preview.np-phone .np-board, .nh-preview.np-phone .np-result-grid { grid-template-columns: 1fr; }
+.nh-preview.np-phone[data-design='list'] .np-bin-list { grid-template-columns: 1fr; }
+.nh-preview.np-phone[data-design='list'] .np-bin-row { display: flex; }
+@media (max-width: 860px) and (min-width: 701px) {
+ .nh-preview .np-board, .nh-preview .np-result-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 700px) {
+ .nh-preview { grid-template-columns: 1fr; min-height: 1080px; }
+ .nh-preview .np-sidebar { display: none; }
+ .nh-preview .np-content { padding: 22px 15px 28px; }
+ .nh-preview .np-board, .nh-preview .np-result-grid { grid-template-columns: 1fr; }
+ .nh-preview[data-design='list'] .np-bin-list { grid-template-columns: 1fr; margin-left: 0; }
+ .nh-preview[data-design='list'] .np-bin-row { display: flex; }
+ .nh-preview[data-design='list'] .np-stamp { margin-left: 0; }
+}
+@media (pointer: coarse) {
+ .nh-preview .np-button, .nh-preview .np-icon-button, .nh-preview .np-back, .nh-preview .np-tabs button { min-height: 44px; }
+ .nh-preview .np-icon-button { width: 44px; }
+}
+</style>
+<div id="connections-dashboard-options" class="viz-carousel" aria-label="Connections landing page designs">
+  <section data-variant="Connection board" aria-label="Connection board design">
+    <div class="nh-preview" data-design="board" aria-label="Connection board preview"></div>
+  </section>
+  <section data-variant="Individual tiles" aria-label="Individual tiles design" hidden>
+    <div class="nh-preview" data-design="tiles" aria-label="Individual tiles preview"></div>
+  </section>
+  <section data-variant="Compact overview" aria-label="Compact overview design" hidden>
+    <div class="nh-preview" data-design="list" aria-label="Compact overview preview"></div>
+  </section>
+</div>
+<script>
+(() => {
+  const root = document.getElementById('connections-dashboard-options');
+  const icon = name => `<i data-lucide="${name}" aria-hidden="true"></i>`;
+  const escape = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+  const bins = [
+    {id:'black', name:'Black bin', date:'Tue 27 Oct', longDate:'Tuesday 27 October', colour:'black'},
+    {id:'blue', name:'Blue bin', date:'Tue 17 Nov', longDate:'Tuesday 17 November', colour:'blue'},
+    {id:'brown', name:'Brown bin', date:'Tue 3 Nov', longDate:'Tuesday 3 November', colour:'brown'}
+  ];
+  const apps = [];
+  const button = (action, text, extra='') => `<button type="button" class="np-button cursor-interaction ${extra}" data-action="${action}">${text}</button>`;
+  const iconButton = (action, symbol, label, id='', extra='') => `<button type="button" class="np-icon-button cursor-interaction ${extra}" data-action="${action}" data-id="${id}" aria-label="${escape(label)}" data-tooltip="${escape(label)}">${icon(symbol)}</button>`;
+  const badge = (symbol, colour='') => `<span class="np-icon ${colour ? `np-${colour}` : ''}">${icon(symbol)}</span>`;
+  const activateIcons = () => { if(globalThis.lucide) lucide.createIcons({attrs:{width:18,height:18}}); };
+  function persist() {
+    if(!window.openai?.setWidgetState) return;
+    const snapshots = Object.fromEntries(apps.map(app => [app.type, {
+      order:app.state.order, hidden:app.state.hidden, future:app.state.future,
+      phone:app.state.phone, configured:app.state.configured
+    }]));
+    window.openai.setWidgetState({modelContent:{connectionsDesign:'Icon cards; whole-card navigation; no resizing'},privateContent:{connectionsDashboard:snapshots}}).catch(() => {});
+  }
+  function hydrate(app, snapshot) {
+    if(!snapshot || typeof snapshot !== 'object') return;
+    if(Array.isArray(snapshot.order)) app.state.order = [...new Set(snapshot.order.filter(id => app.ids.includes(id)))];
+    app.ids.forEach(id => {if(!app.state.order.includes(id)) app.state.order.push(id);});
+    if(Array.isArray(snapshot.hidden)) app.state.hidden = [...new Set(snapshot.hidden.filter(id => app.ids.includes(id)))];
+    for(const key of ['future','phone','configured']) if(typeof snapshot[key] === 'boolean') app.state[key] = snapshot[key];
+  }
+  root.querySelectorAll('.nh-preview').forEach(shell => {
+    const type = shell.dataset.design;
+    const ids = type === 'tiles' ? ['black','blue','brown','weather','energy'] : ['bins','weather','energy'];
+    const app = {type, ids, state:{order:[...ids],hidden:[],future:true,phone:false,configured:true},
+      editing:false, before:null, dragging:null, view:'board', current:'bins', tab:'Results',
+      name:'Bin collections', checked:'Checked 18:33', returnWidget:null, focusReturn:null};
+    hydrate(app, window.openai?.widgetState?.privateContent?.connectionsDashboard?.[type]);
+    apps.push(app);
+    shell.innerHTML = `<aside class="np-sidebar"><div class="np-brand">${icon('network')}<span>Node<b>Herder</b></span></div><nav class="np-nav" aria-label="Main"><span>Overview</span><span>Home</span><span>Devices</span><span aria-current="page">Connections</span><span>Automations</span><span>Assistant</span><span>Console</span><span>Settings</span></nav></aside><div class="np-main"><header class="np-top"><span>Connections</span><span class="np-preview-label">Design preview</span></header><main class="np-content" data-page></main></div><div class="np-layer" data-layer hidden></div>`;
+    const page = shell.querySelector('[data-page]');
+    const layer = shell.querySelector('[data-layer]');
+    const isFuture = id => id === 'weather' || id === 'energy';
+    const allowed = id => isFuture(id) ? app.state.future : app.state.configured;
+    const visible = () => app.state.order.filter(id => allowed(id) && !app.state.hidden.includes(id));
+    const itemName = id => id === 'bins' ? app.name : id === 'weather' ? 'Weather' : id === 'energy' ? 'Energy prices' : bins.find(bin => bin.id === id)?.name ?? id;
+    function announce(text) {const status = page.querySelector('.np-toast'); if(status) status.textContent = text;}
+    function row(bin) {return `<div class="np-bin-row"><span class="np-bin-label">${badge('trash-2',bin.colour)}${bin.name}</span><span class="np-date">${bin.date}</span></div>`;}
+    function heading(id) {
+      const name = escape(itemName(id));
+      return app.editing ? name : `<a class="np-card-link cursor-interaction" href="#preview-connection-${id}" data-action="open" data-id="${id}" aria-label="Open ${name} connection">${name}</a>`;
+    }
+    function editControls(id) {
+      return `<div class="np-edit-bar"><div>${iconButton('earlier','arrow-left',`Move ${itemName(id)} earlier`,id)}${iconButton('later','arrow-right',`Move ${itemName(id)} later`,id)}</div>${iconButton('hide','eye-off',`Remove ${itemName(id)} from page`,id)}</div>`;
+    }
+    function card(id) {
+      const bin = bins.find(item => item.id === id);
+      const symbol = id === 'weather' ? 'cloud-sun' : id === 'energy' ? 'leaf' : 'trash-2';
+      const colour = bin?.colour ?? (isFuture(id) ? id : 'black');
+      const tools = !app.editing && type !== 'tiles' ? iconButton('refresh','refresh-cw',`Refresh ${itemName(id)}`,id,'np-widget-action') : '';
+      if(type === 'tiles') {
+        const value = bin ? bin.date : id === 'weather' ? '14° · Partly cloudy' : '18.4 p/kWh';
+        return `<article class="np-widget" data-widget="${id}" ${app.editing ? 'draggable="true"' : ''} aria-label="${escape(itemName(id))}"><header class="np-widget-head">${badge(symbol,colour)}<div class="np-title"><h3>${heading(id)}</h3><span class="np-tile-date">${value}</span><span class="np-subtitle">${isFuture(id) ? 'Future example' : escape(app.name)}</span></div></header>${app.editing ? editControls(id) : ''}</article>`;
+      }
+      const content = id === 'bins' ? `<div class="np-bin-list">${bins.map(row).join('')}</div>` : `<p class="np-value">${id === 'weather' ? '14°' : '18.4 <small>p/kWh</small>'}</p><div class="np-reading"><p class="np-muted">${id === 'weather' ? 'Partly cloudy' : 'Current unit rate'}</p><span class="np-subtitle">${id === 'weather' ? 'High 16° · Low 9°' : 'Sample tariff'}</span></div>`;
+      return `<article class="np-widget" data-widget="${id}" ${app.editing && type !== 'list' ? 'draggable="true"' : ''} aria-label="${escape(itemName(id))}"><header class="np-widget-head">${badge(symbol,colour)}<div class="np-title"><h3>${heading(id)}</h3><span class="np-subtitle">${isFuture(id) ? 'Future example' : 'AB1 2CD'}</span></div>${tools}</header>${content}${app.editing ? editControls(id) : `<p class="np-stamp">${isFuture(id) ? 'Illustrative data' : app.checked}</p>`}</article>`;
+    }
+    function boardPage() {
+      const controls = app.editing ? `${button('cancel-layout','Cancel')}${button('save-layout',`${icon('check')}Save layout`,'primary')}` : `${button('edit',`${icon('sliders-horizontal')}Edit layout`)}${button('add',`${icon('plus')}Add connection`,'primary')}`;
+      const items = visible();
+      return `<div class="np-heading"><h1>Connections</h1><div class="np-actions">${controls}</div></div>${app.editing ? '<p class="np-edit-note">Drag a card or use the arrows to change the order.</p>' : ''}<div class="np-board">${items.length ? items.map(card).join('') : `<div class="np-empty"><h2>No connections on this page</h2><p>Add a connection or show one you have hidden.</p>${button('add','Add connection','primary')}</div>`}</div><p class="np-toast" role="status" aria-live="polite"></p>`;
+    }
+    function resultsPage() {
+      if(isFuture(app.current)) return `<p class="np-muted">Illustrative ${itemName(app.current).toLowerCase()} connection. This type is not implemented.</p>`;
+      return `<details class="np-status"><summary>Saved schedule · ${app.checked.toLowerCase()}</summary><p>Provider: WhenIsBins. Refresh is manual; dates use the UK calendar.</p><p>The provider supplies a limited date range. Later collections may not yet be available.</p></details><div class="np-result-grid">${bins.map(bin => `<article class="np-result"><header class="np-result-head"><h3>${bin.name}</h3>${badge('trash-2',bin.colour)}</header><p class="np-result-date">${bin.longDate}</p><span class="np-subtitle">Next collection</span></article>`).join('')}</div><details class="np-status" style="margin-top:18px"><summary>Recent checks</summary><p>Last successful check: 25 October, 18:33.</p></details>`;
+    }
+    function setupPage() {
+      return `<div class="np-detail-form"><label>Connection name<input data-name value="${escape(app.name)}" maxlength="80"></label><label>Postcode<input value="AB1 2CD" readonly></label><label>Address<input value="1 Example Road, AB1 2CD" readonly></label><div class="np-actions">${button('save-settings','Save changes','primary')}${button('change-address','Change address')}</div><div>${button('disconnect','Remove connection…','danger')}</div></div>`;
+    }
+    function operationsPage() {
+      return `<div class="np-detail-form"><h2>WhenIsBins</h2><p class="np-muted">Provider operations are configured on the full connection page.</p><label>Property search URL<input value="https://whenisbins.com/v1/addresses" data-example-url></label><div>${button('save-example-operation','Save provider configuration','primary')}</div><p class="np-subtitle">Preview only; no provider configuration is changed.</p></div>`;
+    }
+    function detailPage() {
+      const future = isFuture(app.current);
+      const tabs = future ? '' : `<nav class="np-tabs" aria-label="Connection sections">${['Results','Setup','Configure operations','Help'].map(tab => `<button type="button" class="cursor-interaction" data-tab="${tab}" aria-pressed="${app.tab === tab}">${tab}</button>`).join('')}</nav>`;
+      const title = future ? itemName(app.current) : app.name;
+      const content = future || app.tab === 'Results' ? resultsPage() : app.tab === 'Setup' ? setupPage() : app.tab === 'Configure operations' ? operationsPage() : `<div class="np-detail-form"><h2>Using this connection</h2><p>Results shows your saved dates. Refresh checks the provider for updates.</p><p>Setup lets you change the connection name or address. Configure operations is for repairing provider requests when their API changes.</p><p>Removing a card from the board keeps its setup. Removing the connection deletes its saved address and results.</p></div>`;
+      return `<button type="button" class="np-back cursor-interaction" data-action="back">${icon('arrow-left')}Connections</button><div class="np-heading"><div><h1>${escape(title)}</h1><span class="np-subtitle">${future ? 'Future example' : 'AB1 2CD'}</span></div>${button('refresh-detail',`${icon('refresh-cw')}Refresh`)}</div>${tabs}${content}<p class="np-toast" role="status" aria-live="polite"></p>`;
+    }
+    function render() {
+      shell.classList.toggle('np-phone',app.state.phone);
+      shell.classList.toggle('np-editing',app.editing && app.view === 'board');
+      page.innerHTML = app.view === 'board' ? boardPage() : detailPage();
+      activateIcons();
+    }
+    function closeModal() {
+      layer.hidden = true;layer.innerHTML = '';
+      const fallback = page.querySelector('[data-action="add"], [data-action="back"]');
+      (app.focusReturn?.isConnected ? app.focusReturn : fallback)?.focus();
+    }
+    function modal(title, content, actions='') {
+      if(layer.hidden) app.focusReturn = shell.contains(document.activeElement) ? document.activeElement : null;
+      layer.innerHTML = `<section class="np-dialog" role="dialog" aria-modal="true" aria-label="${escape(title)}"><div class="np-dialog-head"><h2>${title}</h2>${iconButton('close-modal','x','Close')}</div>${content}${actions ? `<div class="np-dialog-actions">${actions}</div>` : ''}</section>`;
+      layer.hidden = false;layer.querySelector('button')?.focus();activateIcons();
+    }
+    function navigate(id) {
+      app.returnWidget = id;app.current = id;app.view = 'detail';app.tab = 'Results';render();
+      page.querySelector('[data-action="back"]')?.focus();
+    }
+    function showCatalog() {
+      const hidden = app.state.order.filter(id => allowed(id) && app.state.hidden.includes(id));
+      const restore = hidden.length ? `<h3>Configured connections</h3>${hidden.map(id => `<div class="np-catalog-row"><div>${escape(itemName(id))}<span class="np-subtitle">Hidden from this page</span></div><button type="button" class="np-button cursor-interaction" data-action="restore" data-id="${id}">Show on page</button></div>`).join('')}` : '';
+      modal('Add connection',`${restore}<h3>Available connections</h3><div class="np-catalog-row">${badge('trash-2','black')}<div>Bin collections<span class="np-subtitle">WhenIsBins</span></div>${button(app.state.configured ? 'open-saved' : 'setup',app.state.configured ? 'Open' : 'Set up')}</div><div class="np-catalog-row">${badge('cloud-sun','weather')}<div>Weather<span class="np-subtitle">Future example</span></div><button type="button" class="np-button" disabled>Coming later</button></div><div class="np-catalog-row">${badge('leaf','energy')}<div>Energy prices<span class="np-subtitle">Future example</span></div><button type="button" class="np-button" disabled>Coming later</button></div>`);
+    }
+    function showSetup(changeAddress=false) {
+      modal(changeAddress ? 'Change address' : 'Set up bin collections',`<div class="np-detail-form" data-setup-form><label>Postcode<input value="AB1 2CD" required maxlength="10"></label><label>Choose your address<select required><option value="">Select an address</option><option>1 Example Road, AB1 2CD</option></select></label><span class="np-subtitle">Example choices for this preview</span>${button('save-setup',changeAddress ? 'Save address' : 'Save connection','primary')}</div>`);
+    }
+    function focusWidgetAction(id, action) {page.querySelector(`[data-widget="${id}"] [data-action="${action}"]`)?.focus();}
+    function move(id, offset) {
+      const items = visible(), current = items.indexOf(id), target = current + offset;
+      if(current < 0 || target < 0 || target >= items.length) return;
+      const a = app.state.order.indexOf(id), b = app.state.order.indexOf(items[target]);
+      [app.state.order[a],app.state.order[b]] = [app.state.order[b],app.state.order[a]];
+      render();focusWidgetAction(id,offset < 0 ? 'earlier' : 'later');announce(`${itemName(id)} moved ${offset < 0 ? 'earlier' : 'later'}.`);
+    }
+    shell.addEventListener('click', event => {
+      const tab = event.target.closest('button[data-tab]');
+      if(tab) {app.tab = tab.dataset.tab;render();page.querySelector(`[data-tab="${app.tab}"]`)?.focus();return;}
+      const control = event.target.closest('[data-action]');
+      if(!control || !shell.contains(control)) return;
+      const action = control.dataset.action, id = control.dataset.id || 'bins';
+      if(action === 'open') {event.preventDefault();if(!app.editing)navigate(id);}
+      else if(action === 'back') {app.view = 'board';render();focusWidgetAction(app.returnWidget,'open');}
+      else if(action === 'refresh' || action === 'refresh-detail') {app.checked = 'Checked just now';render();if(action === 'refresh')focusWidgetAction(id,'refresh');announce('Preview updated. No provider request was sent.');}
+      else if(action === 'edit') {app.before = JSON.stringify(app.state);app.editing = true;render();page.querySelector('[data-action="cancel-layout"]')?.focus();}
+      else if(action === 'cancel-layout') {Object.assign(app.state,JSON.parse(app.before));app.editing = false;render();page.querySelector('[data-action="edit"]')?.focus();announce('Layout changes cancelled.');}
+      else if(action === 'save-layout') {app.editing = false;render();page.querySelector('[data-action="edit"]')?.focus();announce('Layout saved for this preview.');persist();}
+      else if(action === 'earlier' || action === 'later') move(id,action === 'earlier' ? -1 : 1);
+      else if(action === 'hide') {if(!app.state.hidden.includes(id)) app.state.hidden.push(id);render();page.querySelector('[data-action="save-layout"]')?.focus();announce('Removed from page. The connection is still configured.');}
+      else if(action === 'add') showCatalog();
+      else if(action === 'restore') {app.state.hidden = app.state.hidden.filter(item => item !== id);closeModal();render();focusWidgetAction(id,'open');announce('Connection shown on this page.');persist();}
+      else if(action === 'open-saved') {closeModal();navigate('bins');}
+      else if(action === 'setup' || action === 'change-address') showSetup(action === 'change-address');
+      else if(action === 'save-setup') {
+        const fields = [...layer.querySelectorAll('input,select')];
+        if(!fields.every(field => field.reportValidity())) return;
+        app.state.configured = true;app.state.hidden = app.state.hidden.filter(isFuture);app.view = 'board';app.editing = false;closeModal();render();page.querySelector('[data-action="open"]')?.focus();announce('Connection saved. Results are shown on the board.');persist();
+      }
+      else if(action === 'save-settings') {const value = page.querySelector('[data-name]')?.value.trim();if(value) app.name = value;render();announce('Name updated in this preview.');}
+      else if(action === 'save-example-operation') announce('Preview only. Your provider configuration has not changed.');
+      else if(action === 'disconnect') modal('Remove Bin collections?','<p>This deletes the saved address, credentials and collection data. Adding it again requires setup.</p>',`${button('close-modal','Keep connection')}${button('confirm-disconnect','Remove connection','danger')}`);
+      else if(action === 'confirm-disconnect') {app.state.configured = false;app.state.hidden = app.state.hidden.filter(isFuture);app.view = 'board';closeModal();render();page.querySelector('[data-action="add"]')?.focus();announce('Connection removed in this preview.');persist();}
+      else if(action === 'close-modal') closeModal();
+    });
+    shell.addEventListener('dragstart',event => {
+      const item = event.target.closest('[data-widget]');
+      if(!app.editing || !item) return;
+      app.dragging = item.dataset.widget;event.dataTransfer?.setData('text/plain',app.dragging);
+    });
+    shell.addEventListener('dragover',event => {if(app.editing && event.target.closest('[data-widget]'))event.preventDefault();});
+    shell.addEventListener('drop',event => {
+      const target = event.target.closest('[data-widget]');
+      if(!app.editing || !target || !app.dragging) return;
+      event.preventDefault();const from = app.state.order.indexOf(app.dragging), to = app.state.order.indexOf(target.dataset.widget);
+      if(from >= 0 && to >= 0) {const [item] = app.state.order.splice(from,1);app.state.order.splice(to,0,item);}
+      app.dragging = null;render();
+    });
+    shell.addEventListener('dragend',() => {app.dragging = null;});
+    shell.addEventListener('keydown',event => {
+      if(layer.hidden) return;
+      if(event.key === 'Escape') {closeModal();return;}
+      if(event.key === 'Tab') {
+        const fields = [...layer.querySelectorAll('button:not(:disabled),input,select')];
+        const first = fields[0], last = fields[fields.length-1];
+        if(event.shiftKey && document.activeElement === first) {event.preventDefault();last?.focus();}
+        else if(!event.shiftKey && document.activeElement === last) {event.preventDefault();first?.focus();}
+      }
+    });
+    app.render = render;render();
+    if(globalThis.Tweak) {
+      const tweak = new Tweak({container:shell,onChange:render});
+      tweak.addToggle(app.state,'future',{label:'Show future connection examples'});
+      tweak.addToggle(app.state,'phone',{label:'Phone layout'});
+    }
+  });
+  window.addEventListener('openai:set_globals',event => {
+    const snapshot = event.detail?.globals?.widgetState?.privateContent?.connectionsDashboard;
+    if(!snapshot) return;
+    apps.forEach(app => {hydrate(app,snapshot[app.type]);app.render();});
+  });
+})();
+</script>

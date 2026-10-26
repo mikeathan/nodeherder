@@ -1,0 +1,42 @@
+{
+  "reviewed_at": "2026-10-25T07:13:42.122553+00:00",
+  "kind": "documentation/schema inspection only",
+  "checks_passed": [
+    "newline/whitespace adr-001-integration-boundaries.md",
+    "newline/whitespace review-evidence.json",
+    "newline/whitespace tasks.md",
+    "newline/whitespace plan.md",
+    "newline/whitespace spec.md",
+    "newline/whitespace review.md",
+    "newline/whitespace contracts/api-and-recovery.md",
+    "newline/whitespace contracts/runtime-lifecycle.md",
+    "newline/whitespace contracts/connections-navigation.md",
+    "newline/whitespace contracts/operations-and-help.md",
+    "newline/whitespace contracts/configuration.md",
+    "newline/whitespace contracts/definition-format.md",
+    "newline/whitespace contracts/whenisbins.definition.example.yaml",
+    "newline/whitespace contracts/execution-and-security.md",
+    "newline/whitespace contracts/waste_schedule.v1.md",
+    "newline/whitespace contracts/waste_schedule.v1.examples.json",
+    "all Markdown links, fences and JSON artifacts",
+    "25 active acceptance IDs, no retired placements",
+    "28 active tasks, retired IDs excluded",
+    "all explicit task dependencies resolve without cycles",
+    "every active acceptance criterion has a task owner",
+    "all NH/BE/FE rules have review rows",
+    "provider OpenAPI version/hash matches review evidence",
+    "typed example refs/policies/renewal, rename and missing-reference case",
+    "example consumed fields exist in provider schema",
+    "five output examples: notices, dates, freshness, identity, partial/empty/provisional meaning"
+  ],
+  "check_count": 26,
+  "production_code_changed": false,
+  "application_tests_run": false,
+  "live_lookup_jobs_created": false,
+  "user_decisions": "confirmed 2026-10-25: manual first release; personal Docker use",
+  "limitations": [
+    "No implementation correctness/security proof.",
+    "Only public provider documentation/schema fetched; no lookup behavior tested.",
+    "Dependency graph checks cover explicit dependency IDs; milestone gates still need human review."
+  ]
+}

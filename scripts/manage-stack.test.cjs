@@ -22,7 +22,7 @@ function fixture(t) {
     assert.equal(found.status, 0);
     fs.symlinkSync(found.stdout.trim(), path.join(root, 'bin', tool));
   }
-  for (const file of ['docker-compose.backend.yml', 'docker-compose.frontend.yml']) {
+  for (const file of ['docker-compose.backend.yml', 'docker-compose.frontend.yml', 'docker-compose.connections.yml']) {
     fs.writeFileSync(path.join(root, file), 'services: {}\n');
   }
   fs.writeFileSync(path.join(root, 'frontend/package.json'), '{"version":"1.2.3"}\n');
@@ -404,4 +404,15 @@ test('a project without a resolvable gateway warns instead of trusting a guess',
   assert.equal(r.status, 0, r.output);
   assert.match(r.output, /TRUSTED_PROXY_CIDRS manually/);
   assert.equal(fs.existsSync(path.join(f.root, '.generated')), false);
+});
+
+test('Connections key mount is explicit and never affects frontend-only commands', t => {
+  const f = fixture(t);
+  const r = f.run(['start', 'backend', '--connections']);
+  assert.equal(r.status, 0, r.output);
+  assert.ok(operation(r, 'up').includes(path.join(f.root, 'docker-compose.connections.yml')));
+  assert.ok(!operation(f.run(['start', 'backend']), 'up').includes(path.join(f.root, 'docker-compose.connections.yml')));
+  const bad = f.run(['start', 'frontend', '--connections']);
+  assert.notEqual(bad.status, 0);
+  assert.equal(bad.calls.length, 0);
 });

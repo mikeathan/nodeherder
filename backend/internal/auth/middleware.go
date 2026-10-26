@@ -70,19 +70,19 @@ func Auth(jwtService *JWTService, blacklist *TokenBlacklist) func(http.Handler) 
 			}
 
 			if token == "" {
-				writeJSONAuthError(w, http.StatusUnauthorized, "missing token")
+				writeJSONAuthRequestError(w, r, http.StatusUnauthorized, "missing token")
 				return
 			}
 
 			// Check if token is blacklisted
 			if blacklist != nil && blacklist.IsBlacklisted(token) {
-				writeJSONAuthError(w, http.StatusUnauthorized, "token revoked")
+				writeJSONAuthRequestError(w, r, http.StatusUnauthorized, "token revoked")
 				return
 			}
 
 			user, err := jwtService.ValidateJWT(token)
 			if err != nil {
-				writeJSONAuthError(w, http.StatusUnauthorized, "invalid token")
+				writeJSONAuthRequestError(w, r, http.StatusUnauthorized, "invalid token")
 				return
 			}
 
@@ -118,4 +118,16 @@ func writeJSONAuthError(w http.ResponseWriter, code int, msg string) {
 func GetUserFromContext(r *http.Request) (*Claims, bool) {
 	user, ok := r.Context().Value(userKey).(*Claims)
 	return user, ok
+}
+
+// Keep the existing authentication decision and give Connections its documented envelope.
+func writeJSONAuthRequestError(w http.ResponseWriter, r *http.Request, code int, message string) {
+	if strings.HasPrefix(r.URL.Path, "/api/integrations/") {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Cache-Control", "private, no-store")
+		w.WriteHeader(code)
+		_ = json.NewEncoder(w).Encode(map[string]any{"data": nil, "error": map[string]string{"code": "unauthorized", "message": "Sign in to use Connections."}})
+		return
+	}
+	writeJSONAuthError(w, code, message)
 }

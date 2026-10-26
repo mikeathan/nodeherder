@@ -17,6 +17,15 @@ Scope: Go implementation, refactoring, review. Authority:
   Reuse suitable `backend/testing/` and `backend/mocks/` helpers; inspect their cleanup.
   Reuse `utils.Clock` (`backend/utils/time.go`) for controllable time where applicable.
 - Prefer concrete types; reserve `any` for heterogeneous external data or genuine
-  generic boundaries. Document exported APIs using Go conventions; format changed Go with `gofmt`.
+  generic boundaries. Format changed Go with `gofmt`.
 
-Review readability, ownership, error paths, and regression evidence.
+- Add GoDoc to every new or changed exported function, method, type and constant. Describe the
+  declaration's purpose and contract, including units/timezones, errors, mutation/ownership and
+  meaningful nil/pointer semantics. Document important struct invariants, not just field spellings.
+- Explain non-obvious private algorithms and control flow with concise comments: concurrency and
+  cleanup, revision/generation fencing, transactions, credential boundaries, date handling and
+  shared-slice copying. Avoid comments that only narrate an assignment or obvious syntax.
+
+Review readability, ownership, error paths, and regression evidence. Before finishing, audit touched
+public declarations for useful GoDoc and complex flows for explanatory comments; passing tests alone
+does not satisfy the documentation/readability rules.

@@ -21,4 +21,16 @@ Code paths below are relative to `frontend/`.
 - Treat external/assistant content as untrusted; raw HTML requires justified sanitization
   satisfying FE-05. Prefer `const`, then `let`.
 
-Review contracts, state ownership, bundle cost, cleanup, and affected UI behavior.
+- Keep functions and components focused on one responsibility. Separate calendar/domain rules,
+  formatting, view-model mapping, transport and persistence using cohesive modules and named helpers.
+  Avoid nested ternaries and large inline mapping callbacks; prefer guard clauses or typed label maps.
+- Add JSDoc to every new or changed exported/public frontend function and composable, including
+  methods returned as its public API. Explain purpose, inputs/output, nullable values, units/timezones,
+  side effects and ownership where relevant; do not merely repeat the function name or TypeScript type.
+- Add concise comments for non-obvious control flow: cancellation/stale replies, lifecycle cleanup,
+  copying versus mutation, reference mapping, date-only semantics and ordering. Keep simple code
+  self-explanatory rather than adding line-by-line narration.
+
+Review contracts, state ownership, bundle cost, cleanup, and affected UI behavior. Before finishing,
+audit touched public APIs for useful JSDoc and complex flows for explanatory comments; passing tests
+alone does not satisfy the documentation/readability rules.

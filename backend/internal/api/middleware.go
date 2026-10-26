@@ -45,7 +45,12 @@ func CORS(next http.Handler) http.Handler {
 		if allowedOrigins[origin] {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 			w.Header().Set("Access-Control-Allow-Credentials", "true")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Cache-Control, Connection")
+			headers := "Content-Type, Authorization, Cache-Control, Connection"
+			if integrationPath(r.URL.Path) {
+				headers += ", X-NodeHerder-Request, If-Match, If-None-Match"
+				w.Header().Set("Access-Control-Expose-Headers", "ETag, Retry-After, Location")
+			}
+			w.Header().Set("Access-Control-Allow-Headers", headers)
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		} else if origin != "" {
 			utils.LogWarnf("CORS: Blocked request from origin: %s", origin)
