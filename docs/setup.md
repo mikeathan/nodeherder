@@ -203,6 +203,14 @@ Manual equivalent for starting/building both services (without manager version i
 docker compose -f docker-compose.backend.yml -f docker-compose.frontend.yml up -d --build
 ```
 
+Integrations now use a separate persistent Docker key volume by default. First startup creates a
+private storage key; normal start/rebuild commands do not need `--connections` or host Node.
+That flag is only for an existing, pre-provisioned read-only host keyring. When updating from the
+initial v0.15.0 configuration, rebuild/recreate the backend with the updated image and Compose
+files; a restart alone keeps the old mounts. Preserve the Compose project name and back up the
+key separately from data. See [integration setup and recovery](connections.md) before moving a DB,
+changing key custody or removing Docker volumes.
+
 Mocked CLI tests run without Docker/devices: `node --test scripts/manage-stack.test.cjs`.
 Real configuration checks use temporary dummy env files and an unreachable daemon:
 

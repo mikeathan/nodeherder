@@ -1,6 +1,6 @@
-# Connections: local and personal Docker setup
+# Integrations: local and personal Docker setup
 
-Connections adds external information independently of Devices. The first release supports UK
+Integrations adds external information independently of Devices. The first release supports UK
 bin collections through a supplied WhenIsBins definition. Updates are manual: Refresh retrieves a
 schedule, and Check status continues a pending lookup. No provider work runs on a recurring timer.
 All signed-in users have the same controls. Nothing is added to Home, Overview, Devices or Panel.
@@ -21,43 +21,87 @@ If a DB already exists but its key is missing, startup reports unavailable and r
 matching backup; it never invents a replacement key. Existing invalid keys also stay untouched.
 
 Setting `INTEGRATION_KEYRING_FILE` selects an explicit key file instead: it must already exist.
-This permits external custody/rotation and keeps missing Docker mounts from silently provisioning
-an ephemeral container key. The default native key is not a WhenIsBins API credential.
+It takes precedence over all managed defaults and never creates a missing explicit file. If that
+setting is empty, `INTEGRATION_KEYRING_DIR` can select an absolute managed directory; otherwise
+native runs use the OS path above. The default storage key is not a WhenIsBins API credential.
 
-## Docker: enable private persistence
+## Docker: automatic first-time setup
 
-Existing backend Compose mounts already persist `./backend/configs` and `./backend/data`. Provider
-YAML lives in `backend/configs/integrations/waste_collection/whenisbins.yaml`; private state lives
-in `backend/data/integrations.db` (0600). No temporary-storage fallback is permitted.
+The production and development backend Compose files now work with integrations by default.
+No extra flag, host Node installation or manual key generation is required. Existing bind mounts
+still persist `./backend/configs` and `./backend/data`. A separate named Docker volume,
+`integration-secrets`, is mounted at `/run/nodeherder-secrets`; Docker prefixes the actual volume
+name with the Compose project name. The key is stored inside a private child directory:
 
-Create a private directory **outside the checkout**, owned by the user running the container, and
-provision a keyring explicitly. For example, after creating `/srv/nodeherder-secrets` with mode 0700:
+```text
+/run/nodeherder-secrets/managed/integration-keyring.json
+```
+
+The managed directory is 0700 and the key is 0600. Using a child is intentional: a newly created
+Docker volume root may be 0755. First startup provisions the key only when no integrations DB
+exists; later starts reuse it. Config/data/key mounts survive normal container replacement and
+`manage-stack.sh down` (which does not delete volumes). Keep the same Compose project name.
+
+Provider YAML lives in `backend/configs/integrations/waste_collection/whenisbins.yaml`; private
+state lives in `backend/data/integrations.db` (0600). The key is kept separately from both trees.
+There is no temporary-storage fallback and installation performs no provider lookup.
+
+### Updating an existing installation
+
+Use the updated backend image **and** Compose files, then recreate the backend. Restarting an
+old container alone does not add mounts or environment settings. The usual manager command is:
+
+```sh
+./scripts/manage-stack.sh rebuild backend
+```
+
+`--connections` is not needed for the default. If the previous broken installation never created
+an integrations DB, it will initialize automatically. An existing DB without its original key
+remains unavailable and requires the matching key backup; the fix does not invent a replacement.
+If `INTEGRATION_KEYRING_FILE` was explicitly set in your root `.env`, that override still wins:
+check its actual mount rather than silently switching an existing database to a different key.
+
+Do not delete the secrets volume, use `docker compose down -v`, or prune it while retaining the DB
+unless you have a verified matching key backup. A different Compose project name selects a different
+volume and may require restoring/reattaching the original key. Do not run two backends against the
+same data directory: one process owns the bbolt DB.
+
+### Optional externally managed key
+
+For an existing externally held key or a deliberately read-only host keyring, retain the existing
+`--connections` override. This is an advanced option, not a requirement for ordinary startup.
+Create a private directory outside the checkout, owned by the container user. For a **new DB only**,
+a fresh host key can be provisioned after creating `/srv/nodeherder-secrets` with mode 0700:
 
 ```sh
 node scripts/create-integration-keyring.mjs /srv/nodeherder-secrets/integration-keyring.json
 ```
 
-Back up that file separately. Set `NODEHERDER_SECRETS_DIR=/srv/nodeherder-secrets` in the root local
-`.env`. With the stack manager use `scripts/manage-stack.sh start all --connections`, and keep
-`--connections` on later backend/all build/rebuild commands. For direct Compose commands, add
-`-f docker-compose.connections.yml` alongside your usual backend/frontend files. The overlay mounts the external secrets directory read-only;
-the explicit Compose key path is never auto-generated. Keep existing MQTT/Zigbee deployment arguments.
-Do not run a second backend against the same data directory: one process owns the bbolt database.
+For an existing DB, copy its matching keyring there instead of generating a new one. Set the file
+mode to 0600 and set `NODEHERDER_SECRETS_DIR=/srv/nodeherder-secrets` in the root local `.env`.
+Then use `scripts/manage-stack.sh start all --connections`, retaining that flag on later backend/
+all commands. Direct Compose users add `-f docker-compose.connections.yml` alongside their usual
+files. The overlay replaces the default named-volume mount with the supplied host directory,
+read-only, and selects `/run/nodeherder-secrets/integration-keyring.json` as an existing explicit file.
 
-Without a readable keyring, Connections reports unavailable inside its own page. The base stack
-still runs device features; the optional overlay is not required for those. A locked/corrupt/newer
-DB or unwritable mount also degrades this feature rather than replacing private data. Check keyring
-mode 0600, directory permissions and the selected environment paths before retrying/restarting.
-Never fix lost encryption keys by generating an unrelated keyring: restore the matching backup.
+### Diagnosing startup
 
-Non-Compose installs use `INTEGRATION_KEYRING_FILE`, `INTEGRATIONS_CONFIG_DIR` and `DATA_DIR` directly.
-With no explicit key path, native startup uses the managed OS path above. Config/data defaults are `./configs/integrations` and `./data`; Compose explicitly uses `/run/nodeherder-secrets/integration-keyring.json`.
-Use a persistent writable config/data path. Configure `FRONTEND_ALLOWED_ORIGINS` with the exact
-browser origin, including scheme/port; cookie mutations require that Origin and the feature header.
+The authenticated Integrations page distinguishes storage-key, saved-data and provider-directory
+failures. Startup logs include `Integrations startup unavailable [code]` and a safe reason, without
+raw key/config values. Use `docker logs nodeherder-backend` and `docker inspect` to check mounts.
+Missing keys, corrupt/locked storage and unwritable directories disable only integrations; existing
+device features continue running. Restore the key backup rather than replacing encrypted data.
+
+Non-Compose installs use `INTEGRATION_KEYRING_FILE`, `INTEGRATION_KEYRING_DIR`,
+`INTEGRATIONS_CONFIG_DIR` and `DATA_DIR` directly. With no key override, native startup retains the
+OS config path. Config/data defaults are `./configs/integrations` and `./data`; Docker explicitly
+selects `/run/nodeherder-secrets/managed`. Use persistent writable config/data/key paths.
+Cookie mutations still require the exact configured `FRONTEND_ALLOWED_ORIGINS` origin and the
+feature request header; no authentication behavior changes in this startup fix.
 
 ## Use and repair
 
-Open Connections in the sidebar. Add a connection, enter a postcode, select an explicit address and
+Open Integrations in the sidebar. Add an integration, enter a postcode, select an explicit address and
 save. A provider token is optional for the supplied personal-use flow; provider access/quotas may
 change. Supply your own token if required. No live lookup is created by installation or page reads.
 Unsupported address-input branches and approximate/neighbour results are rejected clearly.
@@ -73,7 +117,8 @@ belong in Setup, never in shareable YAML. Form edits can normalize YAML formatti
 host changes, Restore previous creates a new revision, and stale edits return conflicts. Avoid
 simultaneous host-editor/Git checkout and UI writes. Upgrades never overwrite an existing host file.
 A new provider for the supported recipe can be copied through the UI or added as a matching host
-YAML file and loaded with Reload providers in Connections (or on restart). Invalid files retain the last active revision and show a repair error.
+YAML file and loaded with Reload providers in Integrations (or on restart). Invalid files retain
+the last active revision and show a repair error.
 
 Destination changes require explicit review outside YAML before saved inputs/tokens can be sent to
 the new origin. This is shared configuration, not an admin role. Only public HTTPS on port 443 is
@@ -84,17 +129,32 @@ are distinct; an unchanged response does not make stale provider data fresh.
 ## Back up, restore and rotate
 
 For a simple consistent backup, stop the backend using your normal deployment procedure, then copy
-the config tree and `integrations.db`. Copy the external keyring to a **separately protected backup**.
+the config tree and `integrations.db`. Back up the matching keyring **separately**. For the default
+Docker key, the existing stopped container retains its volume mounts and supports `docker cp`:
+
+```sh
+install -d -m 700 "$HOME/nodeherder-key-backup"
+docker cp nodeherder-backend:/run/nodeherder-secrets/managed/integration-keyring.json \
+  "$HOME/nodeherder-key-backup/integration-keyring.json"
+chmod 600 "$HOME/nodeherder-key-backup/integration-keyring.json"
+```
+
+Use a separately protected backup location outside the checkout. For external custody, back up its
+host key file instead. Protect the actual key bytes, not only the Docker volume name.
 Do not commit the DB or keyring. Start the backend after the copy. The repository also provides a
 transactional encrypted `Backup(io.Writer)` for future administrative tooling; there is no public
 backup-download API. Test a restore into isolated directories before relying on a backup.
 
-Restore matching YAML, DB and keyring with their permissions. Startup retains last-good compiled
-revisions when a host file is invalid; use Configure operations to compare and Reload. Unknown DB
-schemas fail closed. This is the initial schema; there is no older Connections schema to migrate.
+Restore matching YAML, DB and keyring with their permissions. Restore the original named key
+volume using your Docker backup tooling, or use the optional external-key overlay with the
+exported matching keyring. A new empty volume cannot decrypt an existing database. Startup retains
+last-good compiled revisions when a host file is invalid; use Configure operations to compare and Reload. Unknown DB
+schemas fail closed. This is the initial schema; there is no older integrations schema to migrate.
 
-To rotate, first take/verify the backup, then run the provisioning script with the same path and
-`--rotate`. It adds a fresh active key and retains all older keys. Restart the backend to load the
+To rotate an externally managed key, first take/verify the backup, then run the provisioning
+script with the same host path and `--rotate`. Managed-volume users can export their matching
+keyring and switch to the external-key option before using this explicit rotation procedure.
+The script adds a fresh active key and retains all older keys. Restart the backend to load the
 new keyring. New writes use the new key; the local janitor re-encrypts up to 32 older records per
 minute without provider calls. Interrupted rotation is safe with the mixed keyring. **Keep old keys
 for every retained backup**; this first release deliberately provides no key-pruning command.

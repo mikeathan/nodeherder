@@ -26,6 +26,25 @@ import (
 
 type providerFunc func(*http.Request) (*http.Response, error)
 
+func TestDegradedServiceExplainsStorageFailure(t *testing.T) {
+	for _, scenario := range []struct{ code, remedy string }{
+		{"key_unavailable", "matching key backup"},
+		{"storage_unavailable", "data mount"},
+		{"config_directory_unwritable", "configuration mount"},
+	} {
+		t.Run(scenario.code, func(t *testing.T) {
+			service := DegradedService(scenario.code)
+			catalog, err := service.Catalog()
+			if err != nil || catalog.Available || catalog.Error == nil || catalog.Error.Code != scenario.code || !strings.Contains(catalog.Error.Message, scenario.remedy) {
+				t.Fatal(catalog, err)
+			}
+			if err := service.Close(context.Background()); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
 func (f providerFunc) Do(r *http.Request) (*http.Response, error) { return f(r) }
 func reply(status int, body string) *http.Response {
 	return &http.Response{StatusCode: status, Header: http.Header{}, Body: io.NopCloser(bytes.NewBufferString(body))}

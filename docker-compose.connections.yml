@@ -1,9 +1,10 @@
-# Optional overlay: add this only after provisioning the external private keyring.
-# The base stack continues serving devices when Connections has no key.
+# Optional external-custody override for the default managed Docker key volume.
+# Provision the host keyring first; this mount replaces the default volume read-only.
 services:
   backend:
     environment:
       INTEGRATION_KEYRING_FILE: /run/nodeherder-secrets/integration-keyring.json
+      INTEGRATION_KEYRING_DIR: ""
       INTEGRATIONS_CONFIG_DIR: /backend/configs/integrations
       DATA_DIR: /backend/data
     volumes:

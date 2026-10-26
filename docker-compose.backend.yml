@@ -14,9 +14,11 @@ services:
       - ./backend/configs:/backend/configs
       - ./backend/data:/backend/data
       - ./backend/logs:/backend/logs
+      - integration-secrets:/run/nodeherder-secrets
     environment:
       APP_ENV: production
-      INTEGRATION_KEYRING_FILE: ${INTEGRATION_KEYRING_FILE:-/run/nodeherder-secrets/integration-keyring.json}
+      INTEGRATION_KEYRING_FILE: ${INTEGRATION_KEYRING_FILE:-}
+      INTEGRATION_KEYRING_DIR: /run/nodeherder-secrets/managed
       TZ: Europe/London
     depends_on:
       - mqtt
@@ -58,3 +60,6 @@ services:
 networks:
   nodeherder:
     driver: bridge
+
+volumes:
+  integration-secrets:
