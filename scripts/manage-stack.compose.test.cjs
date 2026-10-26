@@ -15,11 +15,12 @@ test('real Compose configuration', {
     for (const dir of ['scripts', 'backend', 'frontend', 'elsewhere', 'bin', '.docker']) {
       fs.mkdirSync(path.join(root, dir));
     }
-    for (const file of ['scripts/manage-stack.sh', 'docker-compose.backend.yml', 'docker-compose.frontend.yml', 'docker-compose.connections.yml']) {
+    for (const file of ['scripts/manage-stack.sh', 'docker-compose.backend.yml', 'docker-compose.backend-dev.yml', 'docker-compose.frontend.yml', 'docker-compose.connections.yml']) {
       fs.copyFileSync(path.join(__dirname, '..', file), path.join(root, file));
     }
     fs.writeFileSync(path.join(root, 'backend/.env'), 'MQTT_USER=test\nMQTT_PASS=fixture-only\n');
     fs.writeFileSync(path.join(root, 'backend/.env.production'), 'APP_ENV=production\n');
+    fs.writeFileSync(path.join(root, 'backend/.env.development'), 'APP_ENV=development\n');
     const env = {
       PATH: process.env.PATH, NO_COLOR: '1', COMPOSE_PROJECT_NAME: 'nodeherder-check',
       DOCKER_CONFIG: path.join(root, '.docker'), DOCKER_HOST: 'tcp://127.0.0.1:1',
@@ -92,6 +93,24 @@ exec "$NODEHERDER_COMPOSE_BINARY" "$@"
     assert.ok(services.mqtt.volumes.some(v => v.source === path.join(f.env.DATA_ROOT, 'mqtt/data')));
     assert.ok(services.zigbee2mqtt.devices.some(d => d.source === f.env.Z2M_DEVICE && d.target === f.env.Z2M_SERIAL_PORT));
   });
+  for (const file of ['docker-compose.backend.yml', 'docker-compose.backend-dev.yml']) {
+    await t.test(`${file} enables managed integration keys in a separate persistent volume`, t => {
+      const f = fixture(t);
+      const r = f.run('docker', ['compose', '--project-directory', f.root,
+        '-f', path.join(f.root, file), 'config', '--format', 'json']);
+      assert.equal(r.status, 0, r.stderr);
+      const model = JSON.parse(r.stdout);
+      const backend = model.services.backend;
+      const mount = backend.volumes.find(v => v.target === '/run/nodeherder-secrets');
+      assert.ok(mount, 'the default backend must mount persistent key storage');
+      assert.equal(mount.type, 'volume');
+      assert.equal(mount.source, 'integration-secrets');
+      assert.equal(mount.read_only ?? false, false);
+      assert.equal(model.volumes['integration-secrets'].name, 'nodeherder-check_integration-secrets');
+      assert.equal(backend.environment.INTEGRATION_KEYRING_FILE, '');
+      assert.equal(backend.environment.INTEGRATION_KEYRING_DIR, '/run/nodeherder-secrets/managed');
+    });
+  }
   await t.test('Connections overlay mounts only the supplied external key directory read-only', t => {
     const f = fixture(t);
     const r = f.run('docker', [
@@ -104,10 +123,13 @@ exec "$NODEHERDER_COMPOSE_BINARY" "$@"
     const backend = JSON.parse(r.stdout).services.backend;
     const mount = backend.volumes.find(v => v.target === '/run/nodeherder-secrets');
     assert.equal(mount.read_only, true);
+    assert.equal(mount.type, 'bind');
+    assert.equal(backend.volumes.filter(v => v.target === '/run/nodeherder-secrets').length, 1);
     // Compose versions may omit false boolean zero values from normalized JSON.
     // Check the explicit source setting and the resulting effective flag.
     assert.match(fs.readFileSync(path.join(f.root, 'docker-compose.connections.yml'), 'utf8'), /create_host_path:\s*false/);
     assert.equal(mount.bind?.create_host_path ?? false, false);
     assert.equal(backend.environment.INTEGRATION_KEYRING_FILE, '/run/nodeherder-secrets/integration-keyring.json');
+    assert.equal(backend.environment.INTEGRATION_KEYRING_DIR, '');
   });
 });

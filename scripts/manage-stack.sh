@@ -32,7 +32,7 @@ usage() {
     '' \
     '  --dry-run    Print commands only; no Docker/config/daemon checks' \
     '  --no-cache   Disable build cache (build/rebuild only)' \
-    '  --connections Include the optional external keyring mount (backend/all)' \
+    '  --connections Use a pre-provisioned read-only host keyring instead of managed Docker keys' \
     '  --follow     Follow logs until interrupted (logs only)' \
     '  --tail N     Log lines per service, or all (logs only)' \
     '  --no-color   Disable color (also honors NO_COLOR)' \

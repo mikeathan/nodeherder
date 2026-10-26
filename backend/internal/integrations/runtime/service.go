@@ -111,7 +111,16 @@ func NewService(parent context.Context, o Options) (*Service, error) {
 
 // DegradedService preserves a readable availability report when private storage cannot open.
 func DegradedService(code string) *Service {
-	return &Service{availability: model.Fail(code, "Integrations are unavailable. Check the private key and persistent configuration/data mounts.")}
+	message := "Integrations are unavailable. Check the persistent key, data and configuration mounts."
+	switch code {
+	case "key_unavailable":
+		message = "Integrations cannot open their storage key. Check the persistent key volume or restore the matching key backup."
+	case "storage_unavailable":
+		message = "Integrations cannot open their saved data. Check the data mount, permissions and matching storage key; another backend may already be using this database."
+	case "config_directory_unwritable":
+		message = "Integrations cannot access their provider configuration directory. Check that the configuration mount is writable."
+	}
+	return &Service{availability: model.Fail(code, message)}
 }
 func (s *Service) ready() error {
 	if s.availability != nil {
