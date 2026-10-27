@@ -1,0 +1,922 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NodeHerder · Individual cards</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #e9ece7; color: #263329; font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    button, select, input { font: inherit; }
+    button, select { cursor: pointer; }
+    button { color: inherit; }
+    button:disabled { opacity: .35; cursor: default; }
+    button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible { outline: 3px solid #75bba2; outline-offset: 3px; }
+    h1, h2, h3, p { margin: 0; }
+    svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex: none; pointer-events: none; }
+    [hidden] { display: none !important; }
+    .study { max-width: 1560px; margin: auto; padding: 28px 30px 40px; }
+    .kicker { text-transform: uppercase; letter-spacing: .16em; font-size: 10px; font-weight: 750; color: #61725d; }
+    .study h1 { font-size: 28px; font-weight: 650; letter-spacing: -.8px; margin: 7px 0; }
+    .study-intro { color: #61705c; max-width: 800px; }
+    .study-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 22px 0 14px; }
+    .study-tools label { display: flex; gap: 7px; align-items: center; font-size: 12px; color: #586952; }
+    .study-tools select { background: #f8faf5; border: 1px solid #c7d0c1; border-radius: 7px; padding: 7px; max-width: 175px; }
+    .segments { display: flex; background: #dbe1d5; border-radius: 9px; padding: 3px; }
+    .segments button { background: none; border: 0; padding: 7px 15px; border-radius: 7px; font-size: 12px; }
+    .segments button[aria-pressed="true"] { background: #fff; box-shadow: 0 1px 4px #22392218; }
+    .preview {
+      --bg: #111516; --surface: #1e2426; --raised: #2a3032; --border: #343e40;
+      --text: #e8eeeb; --muted: #a5b2b0; --accent: #a1ccb9; --blue: #8ebce5;
+      --gold: #dfc36c; --purple: #b29ce3; --red: #e48980; --green: #98c895;
+      container-type: inline-size; width: 100%; max-width: 100%; margin: auto;
+      color: var(--text); background: var(--bg); border: 1px solid var(--border);
+      border-radius: 16px; overflow: hidden; box-shadow: 0 12px 30px #23342118;
+    }
+    .preview.light { --bg: #f4f6f1; --surface: #fff; --raised: #e7eee4; --border: #d0dacf; --text: #27352c; --muted: #586b5d; --accent: #35694c; --blue: #316d9b; --gold: #896718; --purple: #74549c; --red: #a8443d; --green: #3e743d; }
+    .appbar { display: flex; align-items: center; gap: 24px; min-height: 65px; padding: 13px 25px; border-bottom: 1px solid var(--border); }
+    .brand { display: flex; align-items: center; gap: 9px; font-size: 15px; font-weight: 650; }
+    .brand svg { color: var(--accent); width: 25px; height: 25px; }
+    .sample-nav { display: flex; gap: 20px; color: var(--muted); font-size: 12px; }
+    .sample-nav b { color: var(--text); font-weight: 500; }
+    .spacer { flex: 1; }
+    .connection { display: flex; align-items: center; gap: 7px; font-size: 10px; color: var(--muted); white-space: nowrap; }
+    .connection::before { content: ""; width: 6px; height: 6px; background: var(--accent); border-radius: 50%; }
+    .main { min-height: 680px; padding: 27px 26px 35px; background-image: radial-gradient(var(--border) .65px, transparent .65px); background-size: 22px 22px; }
+    .pagehead { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 25px; }
+    .pagehead h2 { font-size: 26px; font-weight: 650; letter-spacing: -.7px; }
+    .subtitle { margin-top: 4px; color: var(--muted); font-size: 12px; }
+    .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 43px; padding: 9px 13px; border: 1px solid var(--border); border-radius: 10px; color: var(--text); background: var(--surface); font-size: 12px; }
+    .button svg { width: 17px; height: 17px; }
+    .button.primary { background: #724adc; border-color: #724adc; color: white; }
+    .hint { padding: 13px 16px; margin: -3px 0 24px; border-radius: 12px; font-size: 12px; background: #1e2b3a; color: #d0d9e5; }
+    .light .hint { background: #e2ebf6; color: #36516f; }
+    .board { display: grid; grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); grid-auto-rows: 12px; gap: 12px 18px; align-items: start; }
+    .block { min-width: 0; align-self: start; grid-row: auto / span 5; }
+    .block.group, .block.wide { grid-column: span 2; }
+    .block-content { min-width: 0; }
+    .group-heading { display: flex; gap: 7px; align-items: center; min-height: 32px; margin: 0 0 11px 2px; }
+    .group-heading h3 { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 16px; font-weight: 650; }
+    .group-tools { display: flex; flex: none; gap: 1px; }
+    .icon-button { display: inline-grid; place-items: center; background: transparent; border: 0; border-radius: 6px; color: var(--muted); width: 28px; height: 32px; padding: 5px; }
+    .icon-button svg { width: 17px; height: 17px; }
+    .icon-button:hover { color: var(--text); background: var(--raised); }
+    .icon-button.danger { color: #c95048; }
+    .grip { cursor: grab; width: 20px; flex: none; }
+    .grip:active { cursor: grabbing; }
+    .tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .card { position: relative; min-width: 0; border: 1px solid var(--border); border-radius: 18px; background: var(--surface); }
+    .card-link { display: flex; align-items: center; gap: 10px; padding: 13px 11px; min-height: 90px; color: inherit; text-decoration: none; border-radius: inherit; }
+    .card-link:focus-visible { outline-offset: 4px; }
+    .badge { display: grid; place-items: center; flex: none; width: 36px; height: 36px; border-radius: 50%; color: var(--muted); background: var(--raised); }
+    .badge.gold { color: var(--gold); background: color-mix(in srgb, var(--gold) 16%, var(--surface)); }
+    .badge.green { color: var(--green); background: color-mix(in srgb, var(--green) 16%, var(--surface)); }
+    .badge.blue { color: var(--blue); background: color-mix(in srgb, var(--blue) 16%, var(--surface)); }
+    .badge.purple { color: var(--purple); background: color-mix(in srgb, var(--purple) 16%, var(--surface)); }
+    .badge.red { color: var(--red); background: color-mix(in srgb, var(--red) 12%, var(--surface)); }
+    .badge.black { color: var(--text); }
+    .badge.brown { color: #bd9876; background: color-mix(in srgb, #bd9876 16%, var(--surface)); }
+    .card-copy { min-width: 0; flex: 1; }
+    .card-title { display: block; font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .card-value { display: block; font-size: 12px; color: var(--muted); margin-top: 1px; overflow-wrap: anywhere; }
+    .card-meta { display: block; font-size: 10px; color: var(--muted); margin-top: 3px; overflow-wrap: anywhere; }
+    .card.has-warning { border-color: color-mix(in srgb, var(--gold) 55%, var(--border)); }
+    .card.has-warning .card-meta { color: var(--gold); }
+    .card-edit { display: flex; align-items: center; justify-content: flex-end; padding: 0 5px 5px; gap: 2px; }
+    .card-edit .icon-button { width: 30px; height: 28px; }
+    .remove { position: absolute; right: -7px; top: -8px; width: 25px; height: 25px; padding: 0; background: #c44e47; color: white; border: 0; border-radius: 50%; font-size: 20px; line-height: 1; z-index: 2; box-shadow: 0 0 0 2px var(--bg); }
+    .add-tile, .root-drop { display: flex; justify-content: center; align-items: center; gap: 7px; min-height: 90px; padding: 12px; background: transparent; color: var(--muted); border: 2px dashed var(--border); border-radius: 18px; font-size: 13px; font-weight: 600; }
+    .add-tile:hover { color: var(--accent); border-color: var(--accent); }
+    .editing .group > .block-content { outline: 2px dashed var(--border); outline-offset: 6px; border-radius: 20px; background: color-mix(in srgb, var(--surface) 30%, transparent); }
+    .editing .card-link { pointer-events: none; }
+    .drop-target > .block-content, .root-drop.drop-target { outline: 2px solid var(--accent) !important; outline-offset: 6px; }
+    .root-drop { margin-top: 25px; min-height: 65px; font-size: 12px; }
+    .status-line { min-height: 20px; margin-top: 20px; color: var(--accent); font-size: 12px; }
+    .summary .card-link { align-items: flex-start; padding: 16px; }
+    .summary .card-value { margin-top: 8px; }
+    .summary .card-meta { margin-top: 9px; }
+    .tiles > .summary { grid-column: 1 / -1; }
+    .panelbar { display: flex; align-items: center; gap: 18px; padding: 17px 25px; border-bottom: 1px solid var(--border); }
+    .clock { font-size: 26px; font-weight: 500; letter-spacing: -.8px; line-height: 1.2; }
+    .clock small { display: block; font-size: 10px; color: var(--muted); letter-spacing: 0; margin-top: 5px; }
+    .pager { display: flex; align-items: center; justify-content: center; gap: 7px; overflow-x: auto; padding: 0 4px 10px; margin-bottom: 25px; }
+    .pager button { min-height: 44px; white-space: nowrap; border: 1px solid transparent; border-radius: 24px; padding: 9px 14px; background: transparent; color: var(--muted); font-size: 12px; }
+    .pager button[aria-pressed="true"] { border-color: var(--border); background: var(--surface); color: var(--text); }
+    .panel-page { max-width: 1050px; margin: auto; }
+    .panel-page h3 { font-size: 27px; font-weight: 500; margin-bottom: 22px; letter-spacing: -.7px; }
+    .panel-page .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+    .panel-page .card-link { min-height: 115px; padding: 18px; }
+    .panel-page .card-title { font-size: 15px; }
+    .panel-page .card-value { font-size: 15px; }
+    .panel-page .card-meta { font-size: 11px; }
+    .panel-dock { display: flex; justify-content: center; gap: 10px; padding: 13px; border-top: 1px solid var(--border); }
+    .panel-dock button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 54px; min-width: 90px; padding: 8px 14px; border: 0; border-radius: 12px; background: transparent; color: var(--muted); font-size: 10px; }
+    .panel-dock button[aria-pressed="true"] { background: var(--surface); color: var(--accent); }
+    .health { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+    .health div { border: 1px solid var(--border); border-radius: 18px; padding: 25px; background: var(--surface); }
+    .health b { display: block; font-size: 32px; font-weight: 500; color: var(--accent); }
+    .health span { color: var(--muted); font-size: 12px; }
+    .footnote { margin-top: 18px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; font-size: 12px; color: #5d6d56; }
+    .footnote a { color: #3b6347; }
+    dialog { width: min(500px, calc(100% - 24px)); max-height: calc(100dvh - 30px); overflow: auto; padding: 25px; border: 1px solid #c2cfbb; border-radius: 17px; color: #2b392c; background: #f6f8f2; box-shadow: 0 15px 60px #0005; }
+    dialog::backdrop { background: #06120cc2; backdrop-filter: blur(3px); }
+    dialog h2 { font-size: 21px; font-weight: 600; margin-bottom: 8px; }
+    dialog p { color: #5c6d55; font-size: 12px; }
+    dialog label.field { display: block; font-size: 12px; margin-top: 20px; }
+    dialog input[type="text"], dialog select { width: 100%; padding: 10px; margin-top: 7px; border: 1px solid #becdb5; border-radius: 8px; background: white; color: #263526; }
+    dialog .check { display: flex; align-items: center; gap: 10px; padding: 12px 0; font-size: 13px; }
+    dialog input[type="checkbox"] { width: 18px; height: 18px; accent-color: #3f7450; }
+    .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 25px; }
+    dialog .button { background: #e5ecdf; color: #344c31; border-color: #c7d4bf; }
+    dialog .button.primary { background: #386446; color: white; border-color: #386446; }
+    dialog .button.danger { background: #a43b33; color: white; border-color: #a43b33; }
+    .form-error { color: #a13730; min-height: 20px; margin-top: 7px; font-size: 12px; }
+    .catalog-row { display: flex; align-items: center; gap: 10px; padding: 11px 0; border-bottom: 1px solid #d4ddcf; font-size: 13px; }
+    .catalog-row small { display: block; font-size: 10px; color: #63775c; }
+    .details-value { font-size: 27px; margin: 22px 0 9px; }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+    @container (max-width: 750px) {
+      .appbar { padding: 13px 18px; gap: 13px; }
+      .sample-nav { display: none; }
+      .main { padding: 23px 18px 28px; }
+      .pagehead { flex-wrap: wrap; align-items: flex-start; gap: 15px; }
+      .pager { justify-content: flex-start; }
+      .panel-page .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .panel-page .card-link { padding: 13px; }
+      .panelbar { padding: 15px 18px; }
+      .panelbar .brand b { display: none; }
+      .health { grid-template-columns: 1fr; }
+    }
+    @container (max-width: 410px) {
+      .board { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+      .card-link { gap: 8px; padding: 12px 9px; }
+      .badge { width: 31px; height: 31px; }
+      .card-title, .card-value { font-size: 11px; }
+      .card-meta { font-size: 9px; }
+      .panel-page .tiles { grid-template-columns: 1fr; }
+      .panel-page .card-title, .panel-page .card-value { font-size: 15px; }
+      .panel-page .card-meta { font-size: 11px; }
+      .panelbar { gap: 12px; }
+      .clock { font-size: 23px; }
+      .clock small { font-size: 9px; }
+      .panel-dock { gap: 3px; }
+      .panel-dock button { min-width: 75px; }
+    }
+    @media (max-width: 700px) {
+      .study { padding: 20px 12px 30px; }
+      .study h1 { font-size: 24px; }
+      .study-intro { font-size: 12px; }
+      .study-tools { gap: 10px; }
+      .study-tools label { font-size: 11px; }
+      .study-tools select { max-width: 160px; }
+    }
+  </style>
+</head>
+<body>
+  <svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+    <symbol id="logo" viewBox="0 0 24 24"><path d="m5 7 7-4 7 4v10l-7 4-7-4zM5 7l7 4 7-4M12 11v10"/></symbol>
+    <symbol id="home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v11H3zM9 21v-8h6v8"/></symbol>
+    <symbol id="bin" viewBox="0 0 24 24"><path d="M5 6h14M9 6V3h6v3M7 6l1 15h8l1-15M10 10v7M14 10v7"/></symbol>
+    <symbol id="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1 1M18 18l1 1M5 19l1-1M18 6l1-1"/></symbol>
+    <symbol id="leaf" viewBox="0 0 24 24"><path d="M5 18C0 8 12 4 21 3c0 12-8 19-16 15ZM4 21 16 9"/></symbol>
+    <symbol id="bolt" viewBox="0 0 24 24"><path d="m13 2-8 12h6l-1 8 9-13h-7z"/></symbol>
+    <symbol id="temperature" viewBox="0 0 24 24"><path d="M10 14V5a2 2 0 0 1 4 0v9a4 4 0 1 1-4 0ZM12 9v9"/></symbol>
+    <symbol id="drop" viewBox="0 0 24 24"><path d="M12 3C8 9 5 12 5 16a7 7 0 0 0 14 0c0-4-3-7-7-13ZM9 17a3 3 0 0 0 3 3"/></symbol>
+    <symbol id="light" viewBox="0 0 24 24"><path d="M9 18v-2a6 6 0 1 1 6 0v2M9 18h6M10 21h4"/></symbol>
+    <symbol id="presence" viewBox="0 0 24 24"><circle cx="12" cy="4" r="2"/><path d="m7 22 3-8-2-4 5-2 3 5h4M13 13l4 8"/></symbol>
+    <symbol id="alarm" viewBox="0 0 24 24"><path d="M5 20h14M7 17V9a5 5 0 0 1 10 0v8zM12 1v1M3 5l2 2M21 5l-2 2"/></symbol>
+    <symbol id="door" viewBox="0 0 24 24"><path d="M4 21h16M6 21V4l11-2v19M13 12h.1"/></symbol>
+    <symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="up" viewBox="0 0 24 24"><path d="M13,20H11V8L5.5,13.5L4.08,12.08L12,4.16L19.92,12.08L18.5,13.5L13,8V20Z" style="fill:currentColor;stroke:none"/></symbol>
+    <symbol id="down" viewBox="0 0 24 24"><path d="M11,4H13V16L18.5,10.5L19.92,11.92L12,19.84L4.08,11.92L5.5,10.5L11,16V4Z" style="fill:currentColor;stroke:none"/></symbol>
+    <symbol id="edit" viewBox="0 0 24 24"><path d="M14.06,9L15,9.94L5.92,19H5V18.08L14.06,9M17.66,3C17.41,3 17.15,3.1 16.96,3.29L15.13,5.12L18.88,8.87L20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18.17,3.09 17.92,3 17.66,3M14.06,6.19L3,17.25V21H6.75L17.81,9.94L14.06,6.19Z" style="fill:currentColor;stroke:none"/></symbol>
+    <symbol id="delete" viewBox="0 0 24 24"><path d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6M9,8V17H11V8H9M13,8V17H15V8H13Z" style="fill:currentColor;stroke:none"/></symbol>
+    <symbol id="grip" viewBox="0 0 24 24"><path d="M9,3H11V5H9V3M13,3H15V5H13V3M9,7H11V9H9V7M13,7H15V9H13V7M9,11H11V13H9V11M13,11H15V13H13V11M9,15H11V17H9V15M13,15H15V17H13V15M9,19H11V21H9V19M13,19H15V21H13V19Z" style="fill:currentColor;stroke:none"/></symbol>
+    <symbol id="panel" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M13 9h4M13 13h4"/></symbol>
+    <symbol id="move" viewBox="0 0 24 24"><path d="M12 2v20M2 12h20M8 6l4-4 4 4M8 18l4 4 4-4M6 8l-4 4 4 4M18 8l4 4-4 4"/></symbol>
+    <symbol id="export" viewBox="0 0 24 24"><path d="M12 15V2m-4 4 4-4 4 4M5 9H3v12h18V9h-2"/></symbol>
+    <symbol id="import" viewBox="0 0 24 24"><path d="M4 12h12m-4-4 4 4-4 4M8 5V3h13v18H8v-2"/></symbol>
+    <symbol id="back" viewBox="0 0 24 24"><path d="M20 12H4m6-6-6 6 6 6"/></symbol>
+    <symbol id="gauge" viewBox="0 0 24 24"><path d="M3 18a10 10 0 1 1 18 0zM12 13l5-5"/><circle cx="12" cy="14" r="2"/></symbol>
+  </svg>
+  <div class="study">
+    <p class="kicker">NodeHerder / Card-first direction</p>
+    <h1>Everything has its place.</h1>
+    <p class="study-intro">Individual cards, with groups when they help. Move a bin beside a device, or let it stand on its own.</p>
+    <div class="study-tools">
+      <div class="segments" aria-label="Preview mode"><button data-mode="home" aria-pressed="true">Home</button><button data-mode="panel" aria-pressed="false">Panel mode</button></div>
+      <div class="segments" aria-label="Preview theme"><button data-theme="dark" aria-pressed="true">Dark</button><button data-theme="light" aria-pressed="false">Light</button></div>
+      <label>Width <select id="preview-width"><option value="full">Fill</option><option value="1024">Tablet · 1024</option><option value="390">Phone · 390</option></select></label>
+      <label>Integration data <select id="data-state"><option value="fresh">Saved schedule</option><option value="updated">Updated next date</option><option value="stale">Stale</option><option value="offline">Offline</option><option value="pending">Pending lookup</option><option value="empty">None scheduled</option><option value="unavailable">Dates unavailable</option></select></label>
+    </div>
+    <div class="preview" id="preview">
+      <header class="appbar" id="appbar"><div class="brand" id="brand"></div><nav class="sample-nav" aria-label="Illustrative navigation"><b>Home</b><span>Devices</span><span>Automations</span><span>Integrations</span></nav><span class="spacer"></span><span class="connection">Connected · demo</span></header>
+      <header class="panelbar" id="panelbar" hidden><div class="brand" id="panel-brand"></div><div class="clock">08:42<small>Monday 26 October · demo</small></div><span class="spacer"></span><span class="connection">Connected</span></header>
+      <main class="main">
+        <section id="home-view">
+          <div class="pagehead"><div><h2>Home</h2><p class="subtitle" id="home-subtitle"></p></div><div class="actions" id="home-actions"></div></div>
+          <p class="hint" id="edit-hint" hidden>Drag an area by its handle, or use the arrows. Use a card's Move control to place it in another area or directly on Home. Changes save as you go in this preview.</p>
+          <div class="board" id="board" aria-label="Home layout"></div>
+          <div class="root-drop" id="root-drop" hidden>Drop a card here to place it directly on Home</div>
+        </section>
+        <section id="panel-view" hidden><nav class="pager" id="pager" aria-label="Panel pages"></nav><div class="panel-page" id="panel-page"></div></section>
+        <section id="status-view" class="panel-page" hidden><h3>Home status</h3><div class="health"><div><b>18/18</b><span>Devices online · sample</span></div><div><b>8/8</b><span>Batteries healthy · sample</span></div><div><b>6</b><span>Automations on · sample</span></div></div></section>
+        <p class="status-line" id="status" role="status" aria-live="polite"></p>
+      </main>
+      <nav class="panel-dock" id="panel-dock" aria-label="Panel" hidden></nav>
+    </div>
+    <div class="footnote"><p>Synthetic data · fixed date · no requests, device commands or browser storage. Change the data state to see the same cards update in place.</p><a href="home-assistant-investigation.md">Research and architecture ↗</a></div>
+  </div>
+  <dialog id="editor" aria-labelledby="editor-title"><form id="editor-form"><h2 id="editor-title"></h2><p id="editor-description"></p><div id="editor-fields"></div><p class="form-error" id="editor-error" role="alert"></p><div class="dialog-actions"><button class="button" type="button" data-action="close-editor">Cancel</button><button class="button primary" type="submit" id="editor-submit">Save</button></div></form></dialog>
+  <dialog id="details" aria-labelledby="details-title"><h2 id="details-title"></h2><p id="details-source"></p><div class="details-value" id="details-value"></div><p id="details-status"></p><p style="margin-top:20px">Read-only example. In the application this opens the existing source details; setup and provider operations stay there.</p><div class="dialog-actions"><button class="button primary" data-action="close-details">Back to preview</button></div></dialog>
+  <input id="import-file" class="sr-only" type="file" accept=".json,application/json" tabindex="-1" aria-hidden="true">
+  <script>
+    'use strict';
+
+    (() => {
+      const select = (selector, root = document) => root.querySelector(selector);
+      const board = select('#board');
+      const preview = select('#preview');
+      const eventScope = new AbortController();
+      const blockElements = new Map();
+      const cardElements = new Map();
+      const pendingSizes = new Map();
+      let resizeFrame = 0;
+      let dragged = null;
+      let editorContext = null;
+      let dialogReturnTarget = null;
+      let stopped = false;
+      let exportedUrl = null;
+
+      // Source values live here only. Placements never copy dates, readings or provider data.
+      const sources = new Map();
+      const deviceSamples = [
+        ['living-brightness', 'Brightness', '74 %', 'Living Room light', 'sun', 'gold'],
+        ['living-energy', 'Energy today', '0.28 kWh', 'TV power socket', 'leaf', 'green'],
+        ['living-power', 'Power', '116.1 W', 'TV power socket', 'bolt', 'gold'],
+        ['living-presence', 'Presence', 'Detected', 'Living room sensor', 'presence', 'purple'],
+        ['living-illuminance', 'Illuminance', '175 lx', 'Living room sensor', 'sun', 'gold'],
+        ['attic-temperature', 'Temperature', '20.3 °C', 'Attic room sensor', 'temperature', 'red'],
+        ['attic-humidity', 'Humidity', '78 %', 'Attic room sensor', 'drop', 'blue'],
+        ['attic-brightness', 'Brightness', '100 %', 'Attic room light', 'sun', 'gold'],
+        ['attic-state', 'State', 'On', 'Attic room pendant', 'light', 'purple'],
+        ['attic-alarm', 'Alarm', 'Silent', 'Attic alarm', 'alarm', 'red'],
+        ['attic-smoke', 'Smoke', 'Clear', 'Attic smoke sensor', 'alarm', 'red'],
+        ['garden-humidity', 'Humidity', '99 %', 'Garden sensor', 'drop', 'blue'],
+        ['garden-temperature', 'Temperature', '14 °C', 'Garden sensor', 'temperature', 'red'],
+        ['kitchen-contact', 'Contact', 'Closed', 'Front door sensor', 'door', 'blue'],
+        ['kitchen-energy', 'Energy', '294.2 kWh', 'Kitchen socket', 'leaf', 'green'],
+      ];
+      for (const [id, title, value, origin, icon, colour] of deviceSamples) {
+        sources.set(id, { kind: 'device', title, value, origin, icon, colour });
+      }
+      const binSamples = [
+        ['bin-black', 'Black bin', 'black', 'Tue 27 Oct', 'Tue 3 Nov'],
+        ['bin-blue', 'Blue bin', 'blue', 'Thu 29 Oct', 'Thu 5 Nov'],
+        ['bin-brown', 'Brown bin', 'brown', 'Mon 2 Nov', 'Mon 9 Nov'],
+      ];
+      for (const [id, title, colour, date, updatedDate] of binSamples) {
+        sources.set(id, {
+          kind: 'integration', title, colour, date, updatedDate, icon: 'bin',
+          instanceId: 'demo-waste', resourceId: 'demo-schedule', serviceId: id,
+        });
+      }
+      sources.set('bin-summary', { kind: 'summary', title: 'Bin collections', icon: 'bin', colour: 'green', instanceId: 'demo-waste', resourceId: 'demo-schedule' });
+
+      const state = {
+        mode: 'home', theme: 'dark', editing: false, data: 'fresh', panelPage: null,
+        showStatus: false, nextId: 1,
+        layout: {
+          blocks: [
+            { id: 'living', kind: 'group', title: 'Living room', cards: deviceSamples.slice(0, 5).map(item => item[0]) },
+            { id: 'black-standalone', kind: 'standalone', cards: ['bin-black'] },
+            { id: 'blue-standalone', kind: 'standalone', cards: ['bin-blue'] },
+            { id: 'attic', kind: 'group', title: 'Attic room', cards: deviceSamples.slice(5, 11).map(item => item[0]) },
+            { id: 'garden', kind: 'group', title: 'Garden', cards: ['garden-humidity', 'garden-temperature', 'bin-brown'] },
+            { id: 'kitchen', kind: 'group', title: 'Kitchen', cards: ['kitchen-contact', 'kitchen-energy'] },
+          ],
+          panelHidden: [],
+        },
+      };
+
+      /** Create named DOM without interpreting labels/provider text as markup. */
+      function element(tag, className, text) {
+        const node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text !== undefined) node.textContent = text;
+        return node;
+      }
+
+      function icon(name) {
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+        svg.setAttribute('aria-hidden', 'true');
+        use.setAttribute('href', '#' + name);
+        svg.append(use);
+        return svg;
+      }
+
+      function actionButton(action, label, symbol, className = 'button', values = {}) {
+        const button = element('button', className);
+        button.type = 'button';
+        button.dataset.action = action;
+        Object.assign(button.dataset, values);
+        if (symbol) button.append(icon(symbol));
+        if (className.includes('icon-button')) {
+          button.setAttribute('aria-label', label);
+          button.title = label;
+        } else button.append(document.createTextNode(label));
+        return button;
+      }
+
+      function announce(message) {
+        select('#status').textContent = message;
+      }
+
+      function findBlock(id) {
+        return state.layout.blocks.find(block => block.id === id);
+      }
+
+      function ownerOf(cardId) {
+        return state.layout.blocks.find(block => block.cards.includes(cardId));
+      }
+
+      function blockTitle(block) {
+        if (block.kind === 'group') return block.title;
+        return sources.get(block.cards[0]).title;
+      }
+
+      /** Project accepted example data; a missing date is never inferred or replaced by zero. */
+      function presentCard(id) {
+        const source = sources.get(id);
+        if (source.kind === 'device') return { title: source.title, value: source.value, meta: source.origin, warning: false };
+        const states = {
+          fresh: { meta: 'Saved · checked 07:10', warning: false },
+          updated: { meta: 'Updated · checked 08:42', warning: false },
+          stale: { meta: 'Needs refreshing · checked 23 Oct', warning: true },
+          offline: { meta: 'Offline · showing saved date', warning: true },
+          pending: { value: 'Awaiting dates', meta: 'Lookup in progress', warning: false },
+          empty: { value: 'None scheduled', meta: 'Confirmed by provider', warning: false },
+          unavailable: { value: 'Dates unavailable', meta: 'No date supplied', warning: true },
+        };
+        const status = states[state.data];
+        if (source.kind === 'summary') {
+          const value = status.value || binSamples.map(item => {
+            const bin = sources.get(item[0]);
+            return bin.title + ': ' + (state.data === 'updated' ? bin.updatedDate : bin.date);
+          }).join(' · ');
+          return { title: source.title, value, meta: status.meta, warning: status.warning };
+        }
+        return { title: source.title, value: status.value || (state.data === 'updated' ? source.updatedDate : source.date), meta: status.meta, warning: status.warning };
+      }
+
+      function createCard(cardId, panel = false) {
+        const source = sources.get(cardId);
+        const card = element('article', 'card' + (source.kind === 'summary' ? ' summary' : ''));
+        card.dataset.card = cardId;
+        const link = element('a', 'card-link');
+        link.href = '#source-' + cardId;
+        link.dataset.action = 'details';
+        link.dataset.cardId = cardId;
+        link.setAttribute('aria-label', 'Open ' + source.title + ' source details');
+        const badge = element('span', 'badge ' + source.colour);
+        badge.append(icon(source.icon));
+        const copy = element('span', 'card-copy');
+        copy.append(element('strong', 'card-title'), element('span', 'card-value'), element('span', 'card-meta'));
+        link.append(badge, copy);
+        card.append(link);
+        if (state.editing && !panel) {
+          const remove = actionButton('remove-card', 'Remove ' + source.title + ' from Home', null, 'remove', { cardId });
+          remove.textContent = '×';
+          remove.title = 'Remove card placement';
+          const tools = element('div', 'card-edit');
+          const drag = actionButton('move-card', 'Drag or move ' + source.title, 'grip', 'icon-button grip', { cardId });
+          drag.draggable = true;
+          drag.dataset.dragCard = cardId;
+          tools.append(drag);
+          const owner = ownerOf(cardId);
+          if (owner?.kind === 'standalone') {
+            const index = state.layout.blocks.indexOf(owner);
+            const earlier = actionButton('move-block', 'Move ' + source.title + ' earlier', 'up', 'icon-button', { blockId: owner.id, offset: '-1' });
+            const later = actionButton('move-block', 'Move ' + source.title + ' later', 'down', 'icon-button', { blockId: owner.id, offset: '1' });
+            earlier.disabled = index === 0;
+            later.disabled = index === state.layout.blocks.length - 1;
+            tools.append(earlier, later);
+          }
+          tools.append(actionButton('move-card', 'Move ' + source.title, 'move', 'icon-button', { cardId }));
+          card.append(remove, tools);
+          link.tabIndex = -1;
+        }
+        updateCard(card, cardId);
+        return card;
+      }
+
+      function updateCard(card, id) {
+        const view = presentCard(id);
+        select('.card-title', card).textContent = view.title;
+        select('.card-value', card).textContent = view.value;
+        select('.card-meta', card).textContent = view.meta;
+        card.classList.toggle('has-warning', view.warning);
+      }
+
+      /** Update only card text/status. Data refresh preserves DOM identity, placement and focus. */
+      function updateValues() {
+        for (const [id, card] of cardElements) updateCard(card, id);
+        for (const card of select('#panel-page').querySelectorAll('[data-card]')) updateCard(card, card.dataset.card);
+        const detailsId = select('#details').dataset.cardId;
+        if (select('#details').open && detailsId) fillDetails(detailsId);
+      }
+
+      function createHeading(block, index) {
+        const heading = element('header', 'group-heading');
+        if (state.editing) {
+          const drag = actionButton('noop', 'Drag ' + block.title + ' group', 'grip', 'icon-button grip', { blockId: block.id });
+          drag.draggable = true;
+          drag.dataset.dragBlock = block.id;
+          heading.append(drag);
+        }
+        const title = element('h3', '', block.title);
+        title.title = block.title;
+        heading.append(title);
+        if (!state.editing) return heading;
+        const tools = element('div', 'group-tools');
+        const earlier = actionButton('move-block', 'Move ' + block.title + ' earlier', 'up', 'icon-button', { blockId: block.id, offset: '-1' });
+        const later = actionButton('move-block', 'Move ' + block.title + ' later', 'down', 'icon-button', { blockId: block.id, offset: '1' });
+        earlier.disabled = index === 0;
+        later.disabled = index === state.layout.blocks.length - 1;
+        tools.append(earlier, later,
+          actionButton('rename-group', 'Rename ' + block.title, 'edit', 'icon-button', { blockId: block.id }),
+          actionButton('delete-group', 'Delete ' + block.title, 'delete', 'icon-button danger', { blockId: block.id }));
+        heading.append(tools);
+        return heading;
+      }
+
+      function createBlock(block, index) {
+        const wide = block.kind === 'standalone' && sources.get(block.cards[0]).kind === 'summary';
+        const section = element('section', 'block ' + block.kind + (wide ? ' wide' : ''));
+        section.dataset.block = block.id;
+        section.setAttribute('aria-label', blockTitle(block));
+        const content = element('div', 'block-content');
+        if (block.kind === 'group') content.append(createHeading(block, index));
+        const tiles = element('div', block.kind === 'group' ? 'tiles' : '');
+        for (const id of block.cards) {
+          const card = createCard(id);
+          cardElements.set(id, card);
+          tiles.append(card);
+        }
+        if (state.editing && block.kind === 'group') tiles.append(actionButton('add-cards', 'Add tiles', 'plus', 'add-tile', { blockId: block.id }));
+        content.append(tiles);
+        section.append(content);
+        return section;
+      }
+
+      // One observer owns intrinsic block heights for the entire board. Reads are batched before
+      // style writes; observing the natural-height inner content prevents grid-span feedback loops.
+      const resizeObserver = new ResizeObserver(entries => {
+        if (stopped) return;
+        for (const entry of entries) pendingSizes.set(entry.target.parentElement, entry.contentRect.height);
+        if (!resizeFrame && !stopped) resizeFrame = requestAnimationFrame(applyMeasuredSpans);
+      });
+
+      function applyMeasuredSpans() {
+        resizeFrame = 0;
+        if (stopped) return;
+        const styles = getComputedStyle(board);
+        const row = parseFloat(styles.gridAutoRows);
+        const gap = parseFloat(styles.rowGap);
+        for (const [block, height] of pendingSizes) {
+          if (!block.isConnected || height <= 0) continue;
+          block.style.gridRowEnd = 'span ' + Math.ceil((height + gap) / (row + gap));
+        }
+        pendingSizes.clear();
+      }
+
+      function renderBoard() {
+        // Editing changes the controls, not source ownership. Dispose observations before removing
+        // old elements so the observer/maps cannot retain deleted cards or groups.
+        resizeObserver.disconnect();
+        if (resizeFrame) cancelAnimationFrame(resizeFrame);
+        resizeFrame = 0;
+        pendingSizes.clear();
+        blockElements.clear();
+        cardElements.clear();
+        const fragment = document.createDocumentFragment();
+        state.layout.blocks.forEach((block, index) => {
+          const section = createBlock(block, index);
+          blockElements.set(block.id, section);
+          fragment.append(section);
+        });
+        board.replaceChildren(fragment);
+        if (!state.layout.blocks.length) board.append(element('p', 'subtitle', 'No cards yet. Use Edit layout to create an area and add cards.'));
+        board.classList.toggle('editing', state.editing);
+        for (const section of blockElements.values()) resizeObserver.observe(section.firstElementChild);
+        // Seed all spans before first paint, then let the shared observer handle width/content
+        // changes. Read every natural height before writing any grid span to avoid layout thrash.
+        for (const section of blockElements.values()) pendingSizes.set(section, section.firstElementChild.getBoundingClientRect().height);
+        applyMeasuredSpans();
+      }
+
+      function renderActions() {
+        const actions = select('#home-actions');
+        if (state.editing) {
+          actions.replaceChildren(
+            actionButton('new-group', 'New area', 'plus'),
+            actionButton('export', 'Export', 'export'),
+            actionButton('import', 'Import', 'import'),
+            actionButton('done', 'Done', 'check', 'button primary'));
+        } else actions.replaceChildren(actionButton('panel', 'Panel mode', 'panel'), actionButton('edit-layout', 'Edit layout', 'edit'));
+        const count = state.layout.blocks.reduce((total, block) => total + block.cards.length, 0);
+        const groups = state.layout.blocks.filter(block => block.kind === 'group').length;
+        select('#home-subtitle').textContent = groups + ' areas · ' + count + ' individual cards';
+        select('#edit-hint').hidden = !state.editing;
+        select('#root-drop').hidden = !state.editing;
+      }
+
+      function panelBlocks() {
+        return state.layout.blocks.filter(block => block.cards.some(id => !state.layout.panelHidden.includes(id)));
+      }
+
+      function renderPanel() {
+        const pages = panelBlocks();
+        if (!pages.some(block => block.id === state.panelPage)) state.panelPage = pages[0]?.id || null;
+        const pager = select('#pager');
+        pager.replaceChildren();
+        for (const block of pages) {
+          const button = actionButton('panel-page', blockTitle(block), null, '', { blockId: block.id });
+          button.setAttribute('aria-pressed', String(block.id === state.panelPage));
+          pager.append(button);
+        }
+        const page = select('#panel-page');
+        page.replaceChildren();
+        const block = findBlock(state.panelPage);
+        if (block) {
+          page.append(element('h3', '', blockTitle(block)));
+          const tiles = element('div', 'tiles');
+          for (const id of block.cards) if (!state.layout.panelHidden.includes(id)) tiles.append(createCard(id, true));
+          page.append(tiles);
+        } else page.append(element('p', 'subtitle', 'No cards selected for panel mode. Add or show them on Home.'));
+        const dock = select('#panel-dock');
+        dock.replaceChildren(actionButton('panel-cards', 'Home cards', 'home', ''), actionButton('panel-status', 'Status', 'gauge', ''), actionButton('home', 'Exit panel', 'back', ''));
+        select('[data-action="panel-cards"]', dock).setAttribute('aria-pressed', String(!state.showStatus));
+        select('[data-action="panel-status"]', dock).setAttribute('aria-pressed', String(state.showStatus));
+        if (state.mode === 'panel' && !state.showStatus) {
+          select('[aria-pressed="true"]', pager)?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        }
+      }
+
+      function render() {
+        preview.classList.toggle('light', state.theme === 'light');
+        select('#appbar').hidden = state.mode !== 'home';
+        select('#panelbar').hidden = state.mode !== 'panel';
+        select('#home-view').hidden = state.mode !== 'home';
+        select('#panel-view').hidden = state.mode !== 'panel' || state.showStatus;
+        select('#status-view').hidden = state.mode !== 'panel' || !state.showStatus;
+        select('#panel-dock').hidden = state.mode !== 'panel';
+        renderActions();
+        renderBoard();
+        renderPanel();
+        for (const button of document.querySelectorAll('[data-mode]')) button.setAttribute('aria-pressed', String(button.dataset.mode === state.mode));
+        for (const button of document.querySelectorAll('[data-theme]')) button.setAttribute('aria-pressed', String(button.dataset.theme === state.theme));
+      }
+
+      /** Move one placement atomically, retaining its stable identity and source reference. */
+      function moveCard(cardId, destination) {
+        const owner = ownerOf(cardId);
+        const target = destination === 'root' ? null : findBlock(destination);
+        if (!owner || (destination !== 'root' && target?.kind !== 'group')) return;
+        if (owner === target) return;
+        // Visibility-only edits to a standalone card must not recreate/reorder its block.
+        if (owner.kind === 'standalone' && destination === 'root') return;
+        owner.cards = owner.cards.filter(id => id !== cardId);
+        state.layout.blocks = state.layout.blocks.filter(block => block.kind === 'group' || block.cards.length);
+        if (target) target.cards.push(cardId);
+        else state.layout.blocks.push({ id: 'card-' + state.nextId++, kind: 'standalone', cards: [cardId] });
+        render();
+        announce(sources.get(cardId).title + ' moved to ' + (target ? target.title : 'Home') + '.');
+      }
+
+      function moveBlock(blockId, offset) {
+        const blocks = state.layout.blocks;
+        const from = blocks.findIndex(block => block.id === blockId);
+        const to = from + offset;
+        if (from < 0 || to < 0 || to >= blocks.length) return;
+        const [block] = blocks.splice(from, 1);
+        blocks.splice(to, 0, block);
+        render();
+        focusAction('move-block', 'blockId', blockId);
+        announce(blockTitle(block) + ' moved ' + (offset < 0 ? 'earlier.' : 'later.'));
+      }
+
+      function focusAction(action, key, value) {
+        const buttons = [...preview.querySelectorAll('[data-action="' + action + '"]')];
+        const target = buttons.find(button => (!key || button.dataset[key] === value) && !button.disabled);
+        (target || select('[data-action="done"]') || select('[data-action="edit-layout"]'))?.focus({ preventScroll: true });
+      }
+
+      function closeEditor() {
+        select('#editor').close();
+        if (dialogReturnTarget?.isConnected) dialogReturnTarget.focus();
+        else focusAction('done');
+        editorContext = null;
+        dialogReturnTarget = null;
+      }
+
+      function field(label, input) {
+        const wrapper = element('label', 'field', label);
+        wrapper.append(input);
+        return wrapper;
+      }
+
+      function openEditor(kind, id) {
+        editorContext = { kind, id };
+        dialogReturnTarget = document.activeElement;
+        const fields = select('#editor-fields');
+        fields.replaceChildren();
+        select('#editor-error').textContent = '';
+        select('#editor-submit').className = 'button primary';
+        select('#editor-submit').textContent = 'Save';
+        const block = findBlock(id);
+        const titles = { 'new-group': 'New area', 'rename-group': 'Rename area', 'delete-group': 'Delete area?', 'move-card': 'Move card', 'add-cards': 'Add tiles' };
+        select('#editor-title').textContent = titles[kind];
+        select('#editor-description').textContent = '';
+        if (kind === 'new-group' || kind === 'rename-group') {
+          if (kind === 'new-group' && state.layout.blocks.length >= 50) { select('#editor-error').textContent = 'This preview supports up to 50 layout blocks.'; return; }
+          const input = element('input');
+          input.name = 'name'; input.type = 'text'; input.required = true; input.maxLength = 60;
+          input.value = block?.title || '';
+          fields.append(field('Area name', input));
+        }
+        if (kind === 'delete-group') {
+          select('#editor-description').textContent = 'Remove ' + block.title + ' and its card placements from Home and panel. Devices, integrations and their saved results are kept.';
+          select('#editor-submit').textContent = 'Delete area';
+          select('#editor-submit').className = 'button danger';
+        }
+        if (kind === 'move-card') {
+          const owner = ownerOf(id);
+          const destination = element('select'); destination.name = 'destination';
+          const root = element('option', '', 'Directly on Home'); root.value = 'root'; destination.append(root);
+          for (const group of state.layout.blocks.filter(item => item.kind === 'group')) {
+            const option = element('option', '', group.title); option.value = group.id; destination.append(option);
+          }
+          destination.value = owner.kind === 'group' ? owner.id : 'root';
+          fields.append(field('Place ' + sources.get(id).title, destination));
+          const panel = element('label', 'check');
+          const checkbox = element('input'); checkbox.type = 'checkbox'; checkbox.name = 'panel'; checkbox.checked = !state.layout.panelHidden.includes(id);
+          panel.append(checkbox, document.createTextNode('Show this card in panel mode'));
+          fields.append(panel);
+          select('#editor-description').textContent = 'Move this card independently. Its source, identity and current result are kept.';
+        }
+        if (kind === 'add-cards') {
+          select('#editor-description').textContent = 'Device values and integration results share the same picker. Already placed cards can be moved with their Move control.';
+          for (const [cardId, source] of sources) {
+            const row = element('label', 'catalog-row');
+            const checkbox = element('input'); checkbox.type = 'checkbox'; checkbox.name = 'card'; checkbox.value = cardId;
+            const owner = ownerOf(cardId); checkbox.disabled = Boolean(owner);
+            const label = element('span', '', source.title);
+            label.append(element('small', '', owner ? 'Already in ' + blockTitle(owner) : source.kind === 'device' ? source.origin : 'Bin collections · integration result'));
+            row.append(checkbox, label); fields.append(row);
+          }
+          select('#editor-submit').textContent = 'Add selected tiles';
+        }
+        select('#editor').showModal();
+      }
+
+      function submitEditor(event) {
+        event.preventDefault();
+        if (!editorContext) return;
+        const { kind, id } = editorContext;
+        const form = new FormData(event.target);
+        const block = findBlock(id);
+        if (kind === 'new-group' || kind === 'rename-group') {
+          const name = String(form.get('name') || '').trim();
+          if (!name || name.length > 60) { select('#editor-error').textContent = 'Enter a name of 1–60 characters.'; return; }
+          if (state.layout.blocks.some(item => item.kind === 'group' && item.id !== id && item.title.toLowerCase() === name.toLowerCase())) { select('#editor-error').textContent = 'An area already has this name.'; return; }
+          if (kind === 'new-group') state.layout.blocks.push({ id: 'group-' + state.nextId++, kind: 'group', title: name, cards: [] });
+          else block.title = name;
+        }
+        if (kind === 'delete-group') {
+          state.layout.blocks = state.layout.blocks.filter(item => item.id !== id);
+          const placed = new Set(state.layout.blocks.flatMap(item => item.cards));
+          state.layout.panelHidden = state.layout.panelHidden.filter(cardId => placed.has(cardId));
+        }
+        if (kind === 'move-card') {
+          moveCard(id, String(form.get('destination')));
+          const hidden = new Set(state.layout.panelHidden);
+          if (form.has('panel')) hidden.delete(id); else hidden.add(id);
+          state.layout.panelHidden = [...hidden];
+        }
+        if (kind === 'add-cards') {
+          for (const cardId of form.getAll('card')) if (sources.has(cardId) && !ownerOf(cardId)) block.cards.push(cardId);
+        }
+        closeEditor();
+        render();
+        focusAction('done');
+        announce(kind === 'move-card' ? sources.get(id).title + ' placement saved.' : 'Layout updated in this preview.');
+      }
+
+      function fillDetails(id) {
+        const source = sources.get(id);
+        const view = presentCard(id);
+        select('#details-title').textContent = view.title;
+        select('#details-source').textContent = source.kind === 'device' ? source.origin : 'Bin collections · existing integration result';
+        select('#details-value').textContent = view.value;
+        select('#details-status').textContent = view.meta;
+      }
+
+      function openDetails(id) {
+        dialogReturnTarget = document.activeElement;
+        select('#details').dataset.cardId = id;
+        fillDetails(id);
+        select('#details').showModal();
+      }
+
+      function exportLayout() {
+        const payload = { format: 'nodeherder-card-preview/v1', layout: state.layout };
+        if (exportedUrl) URL.revokeObjectURL(exportedUrl);
+        const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
+        // Keep at most one bounded download URL; release it on replacement or page disposal.
+        exportedUrl = url;
+        const link = element('a'); link.href = url; link.download = 'example-home-cards.json'; link.click();
+        announce('Exported synthetic layout references only. This is not the production export format.');
+      }
+
+      /** Parse the complete bounded example before mutating accepted layout; reject unknown refs. */
+      function parseLayout(text) {
+        const payload = JSON.parse(text);
+        const layout = payload?.layout;
+        if (payload?.format !== 'nodeherder-card-preview/v1' || !Array.isArray(layout?.blocks) || layout.blocks.length > 50 || !Array.isArray(layout.panelHidden)) throw new Error('Invalid layout');
+        const blocks = []; const blockIds = new Set(); const cardIds = new Set(); const titles = new Set();
+        for (const block of layout.blocks) {
+          if (!block || typeof block.id !== 'string' || !/^[a-z0-9-]{1,80}$/.test(block.id) || blockIds.has(block.id) || !['group', 'standalone'].includes(block.kind) || !Array.isArray(block.cards) || block.cards.length > sources.size) throw new Error('Invalid block');
+          if (block.kind === 'group' && (typeof block.title !== 'string' || !block.title.trim() || block.title.length > 60)) throw new Error('Invalid group title');
+          if (block.kind === 'group') {
+            const title = block.title.trim().toLowerCase();
+            if (titles.has(title)) throw new Error('Duplicate group title');
+            titles.add(title);
+          }
+          if (block.kind === 'standalone' && block.cards.length !== 1) throw new Error('A standalone block needs one card');
+          for (const id of block.cards) {
+            if (typeof id !== 'string' || !sources.has(id) || cardIds.has(id)) throw new Error('Invalid card reference');
+            cardIds.add(id);
+          }
+          blockIds.add(block.id);
+          blocks.push({ id: block.id, kind: block.kind, ...(block.kind === 'group' ? { title: block.title.trim() } : {}), cards: [...block.cards] });
+        }
+        if (layout.panelHidden.length > sources.size || new Set(layout.panelHidden).size !== layout.panelHidden.length || !layout.panelHidden.every(id => cardIds.has(id))) throw new Error('Invalid panel references');
+        return { blocks, panelHidden: [...layout.panelHidden] };
+      }
+
+      async function importLayout(event) {
+        const file = event.target.files[0]; event.target.value = '';
+        if (!file) return;
+        try {
+          if (file.size > 32768) throw new Error('File too large');
+          const parsed = parseLayout(await file.text());
+          if (stopped) return;
+          state.layout = parsed;
+          // Imported IDs may use our generated prefix; choose a suffix beyond existing IDs.
+          state.nextId = Math.max(state.nextId, ...parsed.blocks.map(block => Number(block.id.match(/-(\d+)$/)?.[1] || 0) + 1));
+          render(); announce('Example card layout imported.');
+        } catch { if (!stopped) announce('Choose a valid exported example layout. Existing layout kept.'); }
+      }
+
+      function changeMode(mode) {
+        state.mode = mode; state.editing = false; state.showStatus = false;
+        render(); announce('');
+      }
+
+      function handleClick(event) {
+        const target = event.target.closest('button, a');
+        if (!target) return;
+        if (target.dataset.mode) { changeMode(target.dataset.mode); return; }
+        if (target.dataset.theme) { state.theme = target.dataset.theme; render(); return; }
+        const action = target.dataset.action;
+        if (!action) return;
+        event.preventDefault();
+        const id = target.dataset.cardId || target.dataset.blockId;
+        if (['new-group', 'rename-group', 'delete-group', 'move-card', 'add-cards'].includes(action)) { openEditor(action, id); return; }
+        switch (action) {
+          case 'edit-layout': state.editing = true; render(); focusAction('done'); break;
+          case 'done': state.editing = false; render(); focusAction('edit-layout'); break;
+          case 'panel': changeMode('panel'); break;
+          case 'home': changeMode('home'); break;
+          case 'move-block': moveBlock(id, Number(target.dataset.offset)); break;
+          case 'remove-card': {
+            const block = ownerOf(id); block.cards = block.cards.filter(cardId => cardId !== id);
+            state.layout.blocks = state.layout.blocks.filter(item => item.kind === 'group' || item.cards.length);
+            state.layout.panelHidden = state.layout.panelHidden.filter(cardId => cardId !== id);
+            render(); focusAction('done'); announce('Card placement removed. Its source is kept.'); break;
+          }
+          case 'panel-page': state.panelPage = id; state.showStatus = false; renderPanel(); focusAction('panel-page', 'blockId', id); break;
+          case 'panel-cards': state.showStatus = false; render(); break;
+          case 'panel-status': state.showStatus = true; render(); break;
+          case 'details': if (!state.editing) openDetails(id); break;
+          case 'close-details': select('#details').close(); if (dialogReturnTarget?.isConnected) dialogReturnTarget.focus(); dialogReturnTarget = null; break;
+          case 'close-editor': closeEditor(); break;
+          case 'export': exportLayout(); break;
+          case 'import': select('#import-file').click(); break;
+        }
+      }
+
+      function handleKey(event) {
+        if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+        if (document.querySelector('dialog[open]')) return;
+        if (event.key === 'Escape' && state.editing) {
+          state.editing = false; render(); focusAction('edit-layout'); return;
+        }
+        if (state.mode !== 'panel' || state.showStatus || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+        if (event.target.closest('input, select, textarea, a, button') && !event.target.matches('[data-action="panel-page"]')) return;
+        const pages = panelBlocks();
+        if (!pages.length) return;
+        const index = pages.findIndex(block => block.id === state.panelPage);
+        let next = (index + (event.key === 'ArrowLeft' ? -1 : 1) + pages.length) % pages.length;
+        if (event.key === 'Home') next = 0;
+        if (event.key === 'End') next = pages.length - 1;
+        event.preventDefault(); state.panelPage = pages[next].id;
+        renderPanel(); focusAction('panel-page', 'blockId', state.panelPage);
+        select('[aria-pressed="true"]', select('#pager'))?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      }
+
+      function clearDrag() {
+        dragged = null;
+        for (const node of preview.querySelectorAll('.drop-target')) node.classList.remove('drop-target');
+      }
+
+      function handleDragStart(event) {
+        if (!state.editing) return;
+        const handle = event.target.closest('[data-drag-block], [data-drag-card]');
+        if (!handle) return;
+        dragged = handle.dataset.dragCard ? { kind: 'card', id: handle.dataset.dragCard } : { kind: 'block', id: handle.dataset.dragBlock };
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', dragged.id);
+      }
+
+      function handleDragOver(event) {
+        if (!state.editing || !dragged) return;
+        const target = event.target.closest('[data-block], #root-drop');
+        if (!target) return;
+        if (dragged.kind === 'card' && target.dataset.block && findBlock(target.dataset.block)?.kind !== 'group' && ownerOf(dragged.id)?.kind !== 'standalone') return;
+        event.preventDefault(); event.dataTransfer.dropEffect = 'move';
+        for (const node of preview.querySelectorAll('.drop-target')) node.classList.remove('drop-target');
+        target.classList.add('drop-target');
+      }
+
+      function handleDrop(event) {
+        const target = event.target.closest('[data-block], #root-drop');
+        if (!state.editing || !dragged || !target) return;
+        event.preventDefault();
+        const move = dragged; clearDrag();
+        if (move.kind === 'card') {
+          const owner = ownerOf(move.id);
+          const targetBlock = findBlock(target.dataset.block);
+          if (owner?.kind === 'standalone' && targetBlock?.kind === 'standalone') {
+            moveBlock(owner.id, state.layout.blocks.indexOf(targetBlock) - state.layout.blocks.indexOf(owner));
+          } else moveCard(move.id, target.id === 'root-drop' ? 'root' : target.dataset.block);
+        }
+        else {
+          const from = state.layout.blocks.findIndex(block => block.id === move.id);
+          const to = state.layout.blocks.findIndex(block => block.id === target.dataset.block);
+          if (to >= 0) moveBlock(move.id, to - from);
+        }
+      }
+
+      /** Release page-owned work. No card owns a timer, observer or transport subscription. */
+      function dispose() {
+        if (stopped) return;
+        stopped = true;
+        eventScope.abort();
+        resizeObserver.disconnect();
+        if (resizeFrame) cancelAnimationFrame(resizeFrame);
+        resizeFrame = 0;
+        pendingSizes.clear(); blockElements.clear(); cardElements.clear();
+        if (exportedUrl) URL.revokeObjectURL(exportedUrl);
+        exportedUrl = null;
+        dragged = null; editorContext = null; dialogReturnTarget = null;
+      }
+
+      const listen = (target, type, handler) => target.addEventListener(type, handler, { signal: eventScope.signal });
+      listen(document, 'click', handleClick);
+      listen(document, 'keydown', handleKey);
+      listen(document, 'dragstart', handleDragStart);
+      listen(document, 'dragover', handleDragOver);
+      listen(document, 'drop', handleDrop);
+      listen(document, 'dragend', clearDrag);
+      listen(select('#editor-form'), 'submit', submitEditor);
+      listen(select('#import-file'), 'change', importLayout);
+      listen(select('#data-state'), 'change', event => { state.data = event.target.value; updateValues(); });
+      listen(select('#preview-width'), 'change', event => { preview.style.width = event.target.value === 'full' ? '100%' : event.target.value + 'px'; });
+      listen(select('#editor'), 'cancel', () => { editorContext = null; dialogReturnTarget = null; });
+      listen(select('#details'), 'cancel', () => { dialogReturnTarget = null; });
+      // Persisted back/forward navigation keeps this live document; only a real unload disposes it.
+      listen(window, 'pagehide', event => { if (!event.persisted) dispose(); });
+
+      for (const id of ['#brand', '#panel-brand']) {
+        select(id).append(icon('logo'), element('b', '', 'NodeHerder'));
+      }
+      render();
+    })();
+  </script>
+</body>
+</html>

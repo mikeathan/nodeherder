@@ -182,6 +182,8 @@ func NewHubConfig() *HubConfig {
 type AppConfig struct {
 	Hub    *HubConfig    `json:"hub"`
 	Bridge *BridgeConfig `json:"bridge"`
+	// HomeLayout is persisted privately; AppConfigCache strips it from ordinary snapshots.
+	HomeLayout *HomeLayout `json:"homeLayout,omitempty"`
 }
 
 func (s *AppConfig) AddDeviceConfig(cfg *DeviceConfig) {

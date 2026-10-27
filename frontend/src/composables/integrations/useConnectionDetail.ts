@@ -29,6 +29,7 @@ export function useConnectionDetail() {
   const sectionContext = computed<IntegrationNavigationContext>(() => ({
     providerKey: item.value?.provider_key ?? '',
     instanceId: item.value?.id,
+    query: route.query,
   }));
   async function reload(requestSignal = signal): Promise<ConnectionInstance> {
     try {

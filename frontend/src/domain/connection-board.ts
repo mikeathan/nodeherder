@@ -1,8 +1,8 @@
 import { moveItem } from './dashboard';
 import { compareCollectionDates } from './waste-calendar';
-import { presentWasteSchedule } from './waste-schedule';
+import { presentWasteSchedule, wasteServiceDateLabel } from './waste-schedule';
 import type { WasteSchedulePresentation, WasteServiceCard } from './waste-schedule';
-import type { ConnectionBoardEntry, ConnectionInstance, WasteService } from '@/types/integrations.type';
+import type { ConnectionBoardEntry, ConnectionInstance } from '@/types/integrations.type';
 
 /** One display row, identified by resource/service IDs rather than its chronological position. */
 export interface ConnectionWidgetRow {
@@ -23,11 +23,6 @@ export interface ConnectionWidgetSummary {
 }
 
 const MAX_WIDGET_ROWS = 3;
-const missingDateLabels: Readonly<Record<WasteService['date_state'], string>> = {
-  known: 'No upcoming date',
-  confirmed_empty: 'None scheduled',
-  unavailable: 'Dates unavailable',
-};
 
 /**
  * Reconcile layout membership without losing saved order or hiding new connections.
@@ -71,12 +66,6 @@ export function moveBoardEntry(
   return entries.map((entry) => ({ ...(entry.hidden ? entry : reordered[index++]) }));
 }
 
-/** Keep confirmed-empty, unavailable and exhausted horizons distinct when there is no next date. */
-function rowDateLabel(card: WasteServiceCard): string {
-  if (card.nextDateShort !== null) return card.nextDateShort;
-  return missingDateLabels[card.date_state];
-}
-
 /** Map one card without allowing date/order changes to become a new widget identity. */
 function presentCollectionRow(card: WasteServiceCard, resourceId: string): ConnectionWidgetRow {
   return {
@@ -84,7 +73,7 @@ function presentCollectionRow(card: WasteServiceCard, resourceId: string): Conne
     name: card.title,
     colour: card.bin_colour,
     nextDateISO: card.nextDateISO,
-    date: rowDateLabel(card),
+    date: wasteServiceDateLabel(card),
   };
 }
 
@@ -95,8 +84,8 @@ function collectionRows(resources: readonly WasteSchedulePresentation[]): Connec
     .sort((left, right) => compareCollectionDates(left.nextDateISO, right.nextDateISO));
 }
 
-/** Health/lifecycle messages take precedence over an otherwise valid saved schedule. */
-function widgetStatus(
+/** Project lifecycle/freshness precedence for already-presented resources, without transport or mutation. */
+export function connectionStatus(
   instance: ConnectionInstance,
   resources: readonly WasteSchedulePresentation[],
   isWaste: boolean
@@ -121,7 +110,7 @@ export function connectionWidget(instance: ConnectionInstance): ConnectionWidget
   return {
     rows: rows.slice(0, MAX_WIDGET_ROWS),
     remaining: Math.max(0, rows.length - MAX_WIDGET_ROWS),
-    status: widgetStatus(instance, resources, isWaste),
+    status: connectionStatus(instance, resources, isWaste),
     checked: resources[0]?.checkedLabel ?? null,
     isWaste,
   };

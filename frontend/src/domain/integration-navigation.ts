@@ -3,6 +3,13 @@ import { RouteName } from '@/types/router';
 
 export type IntegrationSection = 'results' | 'setup' | 'operations' | 'help';
 
+/** Allowlisted internal return context; imported/provider query strings cannot create redirects. */
+export function integrationReturnTarget(query: LocationQuery): { to: RouteLocationRaw; label: string } {
+  if (query.returnTo === '/panel') return { to: { name: RouteName.Panel }, label: 'Panel' };
+  if (query.returnTo === '/groupdashboard') return { to: { name: RouteName.GroupDashboard }, label: 'Home' };
+  return { to: { name: RouteName.Integrations }, label: 'Integrations' };
+}
+
 /** Explicit navigation context; a shared provider page never infers an instance from a list. */
 export interface IntegrationNavigationContext {
   providerKey: string;
@@ -44,16 +51,23 @@ export function integrationViewKey(name: unknown, path: string): string | undefi
 }
 
 /** Build authenticated named links without performing requests or changing shared state.
- * Only provider/Help links retain editor query context. Detail links carry an explicit instance
+ * Provider/Help links retain editor query context. Detail links retain only allowlisted return
+ * context and carry an explicit instance
  * and section hash, so reload/history work without restoring a local tab variable.
  */
 export function integrationSectionLinks(context: IntegrationNavigationContext): IntegrationSectionLink[] {
   const links: IntegrationSectionLink[] = [];
   if (context.instanceId) {
     const params = { id: context.instanceId };
+    const returnTo = context.query?.returnTo;
+    const returning = returnTo === '/panel' || returnTo === '/groupdashboard' ? { query: { returnTo } } : {};
     links.push(
-      { section: 'results', label: 'Results', to: { name: RouteName.Integration, params, hash: '#results' } },
-      { section: 'setup', label: 'Setup', to: { name: RouteName.Integration, params, hash: '#setup' } }
+      {
+        section: 'results',
+        label: 'Results',
+        to: { name: RouteName.Integration, params, hash: '#results', ...returning },
+      },
+      { section: 'setup', label: 'Setup', to: { name: RouteName.Integration, params, hash: '#setup', ...returning } }
     );
   }
   const parts = context.providerKey.split('/');

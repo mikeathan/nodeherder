@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NodeHerder · Home + integrations design study</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#eaece8;color:#202820;font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,select,input{font:inherit}button,a,select,input{touch-action:manipulation}button,select{cursor:pointer}button{border:0}button:disabled{cursor:default;opacity:.45}button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #62bfa8;outline-offset:4px}button{color:inherit}svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}a{color:inherit}h1,h2,h3,p{margin:0}button svg{pointer-events:none}.lab{max-width:1536px;margin:auto;padding:28px 32px 48px}.eyebrow{text-transform:uppercase;letter-spacing:.16em;font-size:10px;font-weight:750;color:#5a675c}.lab-title{display:flex;justify-content:space-between;align-items:center;gap:16px;margin:8px 0 22px}.lab-title h1{font-size:29px;letter-spacing:-1px;font-weight:650}.lab-title p{color:#616b61;margin-top:5px}.study-label{border:1px solid #c8cec5;border-radius:30px;padding:7px 13px;white-space:nowrap;font-size:12px}.choices{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.choice{position:relative;display:grid;grid-template-columns:34px 1fr;text-align:left;gap:10px;background:#f4f5f1;border:1px solid #cdd3c9;border-radius:12px;padding:15px}.choice[aria-pressed=true]{background:#fff;border-color:#46715a;box-shadow:0 0 0 1px #46715a}.choice .letter{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;background:#e4e9df;font-weight:700}.choice[aria-pressed=true] .letter{background:#294e3d;color:#fff}.choice strong{font-size:14px;display:block}.choice small{display:block;color:#647063;margin-top:3px}.recommend{font-size:9px;text-transform:uppercase;letter-spacing:.05em;background:#dfebdc;color:#365737;border-radius:4px;margin-left:6px;padding:3px 5px;vertical-align:2px}.toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;padding:20px 0 12px}.toolbar-group{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.seg{display:flex;background:#dce1d7;padding:3px;border-radius:9px}.seg button{padding:6px 15px;border-radius:7px;background:none;font-size:12px}.seg button[aria-pressed=true]{background:white;box-shadow:0 1px 3px #23362415}.toolbar label{display:flex;align-items:center;gap:7px;color:#53604f;font-size:12px}.toolbar select{border:1px solid #c8cec2;background:#f6f7f3;border-radius:7px;padding:6px;max-width:170px}.future-toggle{padding:3px}.preview{--bg:#111516;--surface:#1e2325;--raised:#282e30;--border:#303739;--text:#e9edeb;--muted:#a4b0b0;--accent:#9ccbb7;--blue:#8bbce8;--yellow:#e2c467;--purple:#b79ee5;--red:#ed9696;--green:#95c994;container-type:inline-size;width:100%;max-width:100%;margin:0 auto;border:1px solid #27332c;border-radius:16px;background:var(--bg);color:var(--text);box-shadow:0 12px 35px #23362416;overflow:hidden}.preview.light{--bg:#f4f6f2;--surface:#fff;--raised:#eaf0e9;--border:#d6dfd4;--text:#253029;--muted:#5a695d;--accent:#386c50;--blue:#34729d;--yellow:#8b6915;--purple:#7350a1;--red:#a94242;--green:#3c753d}.app{min-height:700px;background-image:radial-gradient(var(--border) .7px,transparent .7px);background-size:22px 22px}.appbar{display:flex;align-items:center;gap:25px;min-height:64px;padding:12px 24px;background:var(--bg);border-bottom:1px solid var(--border)}.brand{display:flex;align-items:center;gap:9px;font-weight:650;letter-spacing:-.3px}.brand svg{color:var(--accent);width:27px;height:27px}.nav{display:flex;gap:21px;color:var(--muted);font-size:12px}.nav span.active{color:var(--text)}.spacer{flex:1}.online{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:11px;white-space:nowrap}.dot{width:6px;height:6px;border-radius:50%;background:var(--accent)}.avatar{display:grid;place-items:center;width:28px;height:28px;background:var(--raised);border-radius:50%;font-size:10px;color:var(--muted)}.main{padding:27px 26px 36px}.pagehead{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-bottom:25px}.pagehead h1{font-size:26px;letter-spacing:-.7px;font-weight:650}.sub{color:var(--muted);font-size:12px;margin-top:4px}.actions{display:flex;gap:8px;align-items:center}.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 13px;min-height:42px;font-size:12px;text-decoration:none}.btn svg{width:17px;height:17px}.btn.primary{background:var(--accent);color:var(--bg);border-color:var(--accent);font-weight:650}.btn.ghost{background:transparent}.label{font-size:10px;letter-spacing:.13em;color:var(--muted);font-weight:650;text-transform:uppercase}.sectionhead{display:flex;align-items:center;justify-content:space-between;margin:0 0 12px;gap:12px}.sectionhead h2{font-size:14px;font-weight:600}.quiet{color:var(--muted);font-size:11px}.section-gap{margin-top:28px}.rooms{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;align-items:start}.room h2{font-size:14px;font-weight:600;margin-bottom:13px}.count{font-size:11px;color:var(--muted);font-weight:400;margin-left:7px}.tilegrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.tile{display:flex;align-items:center;gap:9px;min-width:0;min-height:79px;padding:12px 10px;border-radius:17px;border:1px solid var(--border);background:var(--surface)}.tile .badge{width:34px;height:34px}.tile .badge svg{width:18px;height:18px}.tilecopy{min-width:0}.tile strong{display:block;font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tile .value{font-size:11px;color:var(--muted);margin-top:1px;white-space:nowrap}.tile .device{font-size:9px;display:block;color:var(--muted);opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}.badge{width:42px;height:42px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:var(--raised);color:var(--muted);flex-shrink:0}.badge.gold{color:var(--yellow);background:color-mix(in srgb,var(--yellow) 15%,var(--surface))}.badge.green{color:var(--green);background:color-mix(in srgb,var(--green) 15%,var(--surface))}.badge.purple{color:var(--purple);background:color-mix(in srgb,var(--purple) 15%,var(--surface))}.badge.red{color:var(--red);background:color-mix(in srgb,var(--red) 10%,var(--surface))}.badge.blue{color:var(--blue);background:color-mix(in srgb,var(--blue) 15%,var(--surface))}.badge.black{color:var(--text)}.badge.brown{color:#c09b78;background:color-mix(in srgb,#c09b78 14%,var(--surface))}.tile.tint-gold{background:color-mix(in srgb,var(--yellow) 10%,var(--surface))}.tile.tint-green{background:color-mix(in srgb,var(--green) 10%,var(--surface))}.tile.tint-purple{background:color-mix(in srgb,var(--purple) 10%,var(--surface))}.integrations{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:start}.integration{border:1px solid var(--border);border-radius:19px;background:var(--surface);padding:17px;position:relative;min-width:0}.int-head{display:flex;align-items:center;gap:11px;margin-bottom:17px}.int-head h3{font-size:14px;font-weight:600}.int-head .sub{font-size:10px;margin-top:2px}.int-head .badge{width:36px;height:36px}.cardlink{text-decoration:none}.cardlink:after{position:absolute;content:"";inset:0;border-radius:19px}.cardlink:focus-visible{outline:0}.cardlink:focus-visible:after{outline:3px solid var(--accent);outline-offset:4px}.arrow{margin-left:auto;color:var(--muted);width:15px;height:15px}.collection{display:flex;align-items:center;gap:10px;margin-top:12px}.collection .badge{width:31px;height:31px}.collection .badge svg{width:18px;height:18px}.collection strong{font-size:12px;font-weight:500}.collection time,.collection .date{margin-left:auto;text-align:right;font-size:12px}.collection .next{color:var(--accent)}.state{display:flex;align-items:flex-start;gap:6px;color:var(--muted);font-size:10px;margin-top:16px}.state.warn{color:var(--yellow)}.state svg{width:13px;height:13px;margin-top:1px}.int-stub{font-size:34px;letter-spacing:-1px;margin:10px 0 2px}.future{font-size:9px;border:1px dashed var(--border);border-radius:4px;padding:2px 5px;color:var(--muted);margin-left:auto}.placeholder{display:flex;align-items:center;justify-content:center;gap:10px;border:1px dashed var(--border);background:transparent;border-radius:19px;color:var(--muted);min-height:224px;max-width:100%;width:100%;text-align:left;font-size:12px;padding:20px}.placeholder span{max-width:160px}.placeholder small{display:block;margin-top:4px;font-size:10px}.household-band{display:grid;grid-template-columns:minmax(220px,1.05fr) 2fr;gap:22px;padding:19px 22px;border-radius:19px;background:var(--surface);border:1px solid var(--border);margin-bottom:29px;position:relative}.band-lead{display:flex;gap:12px;align-items:center}.band-lead h2{font-size:17px;font-weight:550}.band-lead .sub{font-size:11px}.band-rows{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}.band-bin{min-width:0}.band-bin .badge{width:33px;height:33px;margin-bottom:7px}.band-bin strong{display:block;font-size:12px;font-weight:550}.band-bin p{font-size:11px;margin-top:3px;color:var(--muted)}.band-bin .next{color:var(--accent)}.band-status{grid-column:1/-1;border-top:1px solid var(--border);padding-top:10px;margin-top:-5px;font-size:10px;color:var(--muted)}.band-status.warn{color:var(--yellow)}.band-status .detail{float:right;color:var(--text);text-decoration:none}.house-area{grid-column:span 1}.house-area .integration{padding:14px}.house-area .integrations{display:block}.house-area .integration+.integration{margin-top:10px}.rooms.with-house{grid-template-columns:repeat(4,minmax(0,1fr))}.rooms.with-house .room:last-child{grid-column:1}.mixed{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start}.mixed .room{padding:17px;border:1px solid var(--border);border-radius:19px;background:color-mix(in srgb,var(--surface) 55%,var(--bg))}.mixed .room h2{margin-bottom:12px}.mixed .integration{height:100%}.mixed .room .tile{background:var(--surface)}.mixed .room:nth-last-child(1){grid-column:span 2}.mixed .room:nth-last-child(1) .tilegrid{grid-template-columns:repeat(4,minmax(0,1fr))}.contextline{display:flex;gap:10px;align-items:center;margin-bottom:18px;color:var(--muted);font-size:11px}.contextline svg{width:15px;height:15px}.empty{border:1px dashed var(--border);border-radius:15px;text-align:center;padding:28px;color:var(--muted);font-size:12px}.empty .btn{margin-top:14px}.intro{display:flex;gap:10px;align-items:center;margin-bottom:17px}.intro h2{font-size:17px;letter-spacing:-.3px}.panelbar{min-height:80px;display:flex;align-items:center;padding:16px 26px;gap:18px;border-bottom:1px solid var(--border);background:var(--bg)}.clock{font-size:26px;font-weight:500;letter-spacing:-1px;line-height:1.2}.clock small{display:block;font-size:10px;color:var(--muted);letter-spacing:0;margin-top:4px}.panel-content{padding:25px 32px;min-height:490px}.pager{display:flex;gap:8px;align-items:center;justify-content:center;margin-bottom:28px}.pager .roomtab{border:1px solid transparent;background:transparent;border-radius:30px;padding:10px 16px;font-size:12px;color:var(--muted);min-height:44px;white-space:nowrap}.pager .roomtab[aria-pressed=true]{border-color:var(--border);color:var(--text);background:var(--surface)}.panel-room{display:grid;grid-template-columns:1fr 1.3fr;align-items:center;gap:45px;max-width:900px;margin:auto}.dial{aspect-ratio:1;width:min(240px,100%);border-radius:50%;border:8px solid var(--border);outline:1px solid var(--raised);outline-offset:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;margin:20px auto}.dial:after{content:"";position:absolute;inset:-8px;border:8px solid transparent;border-top-color:var(--accent);border-right-color:var(--accent);border-radius:50%;transform:rotate(-32deg)}.dial b{font-size:47px;letter-spacing:-2px;font-weight:450}.dial span{font-size:12px;color:var(--muted)}.dial small{font-size:11px;color:var(--muted);margin-top:10px}.panel-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.panel-tile{min-height:112px;border:1px solid var(--border);border-radius:20px;background:var(--surface);padding:18px;display:flex;flex-direction:column;gap:6px}.panel-tile .badge{width:35px;height:35px;margin-bottom:3px}.panel-tile strong{font-size:15px;font-weight:500}.panel-tile span:last-child{font-size:12px;color:var(--muted)}.panel-glance{margin:24px auto 0;max-width:900px;border:1px solid var(--border);border-radius:13px;background:var(--surface);padding:13px 17px;display:flex;align-items:center;gap:12px;position:relative}.panel-glance svg{color:var(--accent)}.panel-glance b{font-size:13px;font-weight:500}.panel-glance .quiet{margin-left:auto;text-align:right}.panel-glance .quiet.warn{color:var(--yellow)}.panel-dock{display:flex;justify-content:center;gap:10px;padding:13px 20px;border-top:1px solid var(--border);background:var(--bg)}.panel-dock button{min-width:90px;min-height:54px;border-radius:13px;background:none;color:var(--muted);font-size:10px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;padding:8px 13px}.panel-dock button[aria-pressed=true]{background:var(--surface);color:var(--accent)}.panel-dock svg{width:19px;height:19px}.panel-house{max-width:1000px;margin:auto}.panel-house .integration{padding:22px}.panel-house .collection{margin-top:18px}.panel-house .collection strong,.panel-house .collection time,.panel-house .collection .date{font-size:15px}.panel-house .collection .badge{width:39px;height:39px}.panel-house .integrations{grid-template-columns:repeat(2,minmax(0,1fr))}.panel-house .state{font-size:12px}.panel-house .int-head h3{font-size:17px}.panel-house .int-head .sub{font-size:12px}.panel-house .placeholder{min-height:270px}.panel-hero{display:flex;justify-content:space-between;gap:15px;align-items:center;margin-bottom:24px}.panel-hero h1{font-size:28px;font-weight:500;letter-spacing:-.8px}.panel-hero p{color:var(--muted);font-size:12px;margin-top:4px}.panel-overview{display:grid;grid-template-columns:1.1fr 1fr;gap:22px}.panel-overview .roomshort{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.roomjump{min-height:113px;padding:18px;text-align:left;border-radius:18px;background:var(--surface);border:1px solid var(--border);display:flex;flex-direction:column;align-items:flex-start;gap:8px}.roomjump strong{font-weight:500;font-size:15px}.roomjump small{color:var(--muted)}.roomjump svg{color:var(--accent)}.status-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px;max-width:800px;margin:40px auto}.status-card{padding:28px;background:var(--surface);border:1px solid var(--border);border-radius:20px;text-align:center}.status-card b{font-size:35px;font-weight:500;color:var(--accent);display:block}.status-card span{font-size:12px;color:var(--muted)}.study-note{margin-top:17px;display:flex;gap:30px;justify-content:space-between;align-items:start}.study-note p{color:#596655;font-size:12px;max-width:740px}.study-note b{color:#293d2d}.study-note a{font-size:12px;white-space:nowrap;color:#375940}.legend{display:flex;gap:20px;flex-wrap:wrap;margin-top:19px;padding-top:15px;border-top:1px solid #cfd6c9;color:#697462;font-size:11px}.legend span{display:flex;align-items:center;gap:6px}.legend .small-dot{width:5px;height:5px;background:#889c7a;border-radius:50%}.detail-view{max-width:900px;margin:auto;min-height:520px}.detail-tabs{border-bottom:1px solid var(--border);padding:18px 0;margin-bottom:20px;font-size:12px;color:var(--muted)}.detail-tabs strong{color:var(--accent);margin-right:25px}.detail-note{font-size:12px;color:var(--muted);margin-top:25px;max-width:640px}.notice{border:1px solid color-mix(in srgb,var(--yellow) 40%,var(--border));background:color-mix(in srgb,var(--yellow) 8%,var(--surface));border-radius:10px;padding:11px 14px;color:var(--yellow);font-size:12px;margin:0 0 18px}.dialog{background:#f7f8f4;color:#283428;border:1px solid #bcc8b8;border-radius:18px;padding:25px;width:min(490px,calc(100% - 24px));max-height:calc(100dvh - 32px);overflow:auto;box-shadow:0 20px 80px #0006}.dialog::backdrop{background:#06110cc2;backdrop-filter:blur(4px)}.dialog h2{font-size:21px;letter-spacing:-.5px}.dialog p{font-size:12px;color:#5d6d58;margin-top:8px}.dialog-row{display:flex;align-items:center;gap:13px;margin:23px 0;border:1px solid #d5ddce;padding:14px;border-radius:12px}.dialog-row svg{color:#537b5f}.dialog-row strong{font-size:14px}.dialog-row small{font-size:11px;color:#5d6d58;display:block}.checkrow{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid #d8dfd2;font-size:13px;gap:20px}.checkrow small{display:block;font-size:11px;color:#5d6d58;margin-top:3px}.checkrow input{width:19px;height:19px;accent-color:#376c4d;flex-shrink:0}.dialog-footer{display:flex;gap:9px;justify-content:flex-end;margin-top:24px}.dialog .btn{background:#e9eee3;border-color:#cbd7c5;color:#30432f}.dialog .primary{background:#345c42;border-color:#345c42;color:#fff}.dialog .dialog-fine{font-size:11px;color:#64745e;margin-top:16px}.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#e2f0de;color:#284c2f;box-shadow:0 3px 20px #0003;border:1px solid #a8bda0;padding:12px 20px;border-radius:12px;max-width:calc(100% - 24px);font-size:12px;z-index:5}.toast:empty{display:none}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+@container (max-width:1050px){.rooms{grid-template-columns:repeat(2,minmax(0,1fr))}.rooms.with-house{grid-template-columns:repeat(3,minmax(0,1fr))}.rooms.with-house .room:last-child{grid-column:auto}.mixed{grid-template-columns:repeat(2,minmax(0,1fr))}.mixed .room:nth-last-child(1){grid-column:auto}.mixed .room:nth-last-child(1) .tilegrid{grid-template-columns:repeat(2,minmax(0,1fr))}.tile{min-height:80px}.household-band{grid-template-columns:1fr 1.5fr}.nav{gap:13px}.panel-room{gap:25px}.pager{gap:2px}.pager .roomtab{padding:10px 12px}}
+@container (max-width:700px){.appbar{padding:13px 16px;gap:14px}.nav{display:none}.main{padding:23px 18px}.pagehead{align-items:flex-start;flex-wrap:wrap;margin-bottom:22px}.pagehead .actions{flex-wrap:wrap}.pagehead h1{font-size:24px}.integrations{grid-template-columns:1fr}.integration{max-width:100%}.placeholder{min-height:100px}.rooms{gap:22px 15px}.rooms.with-house{grid-template-columns:repeat(2,minmax(0,1fr))}.house-area{grid-column:1/-1}.house-area .integrations{display:grid;grid-template-columns:1fr}.household-band{grid-template-columns:1fr;padding:18px;gap:18px}.band-rows{gap:9px}.band-lead h2{font-size:16px}.mixed{grid-template-columns:1fr}.tile{gap:8px;padding:11px 9px}.tile strong{font-size:11px}.tile .badge{width:31px;height:31px}.panelbar{padding:14px 18px;gap:12px}.panelbar .brand b{display:none}.panel-content{padding:20px 18px}.panel-room{grid-template-columns:1fr;gap:20px}.dial{width:195px;margin:15px auto}.dial b{font-size:40px}.panel-buttons{gap:10px}.panel-tile{min-height:102px;padding:14px}.panel-house .integrations,.panel-overview{grid-template-columns:1fr}.panel-house .placeholder{min-height:100px}.panel-house .integration{padding:18px}.panel-overview .roomshort{gap:10px}.pager{justify-content:flex-start;overflow-x:auto;padding:0 2px 7px;scrollbar-width:thin}.pager .roomtab{font-size:11px}.panel-dock{gap:2px;padding:10px 8px}.panel-dock button{min-width:65px;padding:8px 10px}.panel-glance{flex-wrap:wrap;margin-top:22px;padding:12px}.panel-glance .quiet{width:100%;text-align:left;margin-left:0}.panel-hero h1{font-size:25px}.status-grid{grid-template-columns:1fr;margin-top:15px}.status-card{padding:20px}.band-status .detail{float:none;display:block;margin-top:5px}.pagehead .btn{min-height:44px}.panel-content{min-height:490px}}
+@container (max-width:450px){.rooms{grid-template-columns:1fr}.rooms.with-house{grid-template-columns:1fr}.brand{font-size:13px}.online{font-size:10px}.appbar .avatar{display:none}.appbar{gap:8px}.tile strong{font-size:12px}.tile .value{font-size:12px}.tile .device{font-size:10px}.tile .badge{width:37px;height:37px}.tile{min-height:80px;border-radius:17px;padding:12px}.household-band{margin-bottom:24px}.band-bin strong,.band-bin p{font-size:11px}.band-bin .badge{width:31px;height:31px}.contextline{align-items:flex-start}.clock{font-size:23px}.clock small{font-size:9px}.panelbar{gap:11px}.panelbar .online{font-size:9px}.panelbar .btn{padding:8px}.panel-hero{flex-wrap:wrap}.panel-dock button{font-size:9px}.panel-house .collection strong,.panel-house .collection time,.panel-house .collection .date{font-size:13px}.panel-house .collection .badge{width:34px;height:34px}.panel-house .state{font-size:11px}.panel-glance b{font-size:12px}}
+@media(max-width:760px){.lab{padding:20px 12px 30px}.lab-title{align-items:flex-start;margin-bottom:17px}.lab-title h1{font-size:23px}.lab-title p{font-size:12px}.study-label{display:none}.choices{grid-template-columns:1fr;gap:8px}.choice{padding:11px}.choice small{margin-top:1px;font-size:11px}.toolbar{padding-top:15px;gap:9px}.toolbar-group{gap:6px}.toolbar label{font-size:11px}.toolbar select{max-width:147px}.seg button{padding:6px 12px}.study-note{flex-direction:column;gap:12px}.preview{border-radius:12px}.future-toggle{width:100%}.legend{gap:8px 15px}.recommend{font-size:8px}.dialog{padding:20px}}
+@media(prefers-reduced-motion:no-preference){.choice,.btn{transition:background .15s,border-color .15s}.preview{transition:width .2s}}
+.panelbar .btn{min-height:44px;min-width:44px}
+.rooms.with-house .room:last-child{grid-column:auto}.group-heading{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:13px}.group-heading h2{margin:0}.group-move-controls{display:flex;gap:6px;align-items:center;width:100%}.group-move-controls button{display:flex;align-items:center;justify-content:center;min-width:40px;min-height:40px;padding:8px;border-radius:9px;background:var(--surface);border:1px solid var(--border);color:var(--muted)}.group-move-controls button svg{width:16px;height:16px}.group-move-controls .grip{margin-right:auto;cursor:grab}.group-move-controls .grip:active{cursor:grabbing}.group-move-controls .earlier svg{transform:rotate(-90deg)}.group-move-controls .later svg{transform:rotate(90deg)}.is-arranging .room{border:1px dashed var(--border);border-radius:15px;padding:12px;min-width:0}.is-arranging .room.drop-target{outline:2px solid var(--accent);outline-offset:3px}.layout-hint{margin-bottom:20px;color:var(--muted);font-size:12px;border:1px solid var(--border);padding:12px 15px;border-radius:12px;background:var(--surface)}.layout-status{color:var(--accent);margin-top:7px;display:block}.is-arranging .integration .arrow{display:none}
+/* Follow the existing AreaCard geometry: handle, title, then four inline ghost actions. */
+.rooms.with-house{grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));gap:24px 22px}.group-heading{flex-wrap:nowrap;gap:7px;min-height:32px;margin:0 0 10px 2px}.group-heading h2{font-size:16px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}.group-heading>.grip{display:grid;place-items:center;width:20px;height:32px;padding:0;border:0;background:transparent;color:var(--muted);cursor:grab;flex:none}.group-heading>.grip svg{width:14px;height:19px}.group-move-controls{width:auto;flex:none;gap:1px}.group-move-controls button{border:0;background:transparent;min-width:28px;min-height:32px;padding:6px;color:var(--muted);border-radius:7px}.group-move-controls button:hover,.group-heading>.grip:hover{background:var(--raised);color:var(--text)}.group-move-controls button.is-danger{color:#c85450}.group-move-controls button.is-danger:hover{color:#f27e76}.is-arranging .room{padding:0;border:0;outline:2px dashed var(--border);outline-offset:6px;border-radius:20px;background:color-mix(in srgb,var(--surface) 40%,transparent)}.is-arranging .room.drop-target{outline-color:var(--accent);outline-offset:6px}.is-arranging .tilegrid{gap:12px}.tile{position:relative}.tile-remove{position:absolute;top:-7px;right:-7px;z-index:2;display:grid;place-items:center;width:25px;height:25px;background:#c95049;color:white;border-radius:50%;box-shadow:0 0 0 2px var(--bg);font-size:20px;font-weight:400;line-height:1}.tile-add{display:flex;align-items:center;justify-content:center;gap:7px;min-height:79px;border:2px dashed var(--border);border-radius:17px;background:transparent;color:var(--muted);font-weight:600;font-size:13px}.tile-add svg{width:17px;height:17px}.tile-add:hover{border-color:var(--accent);color:var(--accent)}.is-arranging .integrations{position:relative}.integration-remove{top:-7px;right:-7px}.is-arranging .house-area .tile-add{margin-top:12px;width:100%}.layout-hint{background:#1e2a39;border:0;color:#c4cedb;font-size:12px}.preview.light .layout-hint{background:#e4ecf6;color:#394c64}.layout-status{color:inherit}.btn.done{background:#7149df;color:#fff;border-color:#7149df}.dialog input[type=text]{display:block;width:100%;margin-top:8px;border:1px solid #b7c8b0;border-radius:8px;padding:10px;background:#fff;color:#283428}.dialog .field-label{display:block;font-size:12px;margin-top:20px}.dialog .error{color:#a52c26;min-height:18px}.dialog .danger{background:#aa3932;color:#fff;border-color:#aa3932}.tile-choice{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid #d8dfd2;font-size:13px}.tile-choice input{accent-color:#376c4d;width:18px;height:18px}.file-input{display:none}
+.group-move-controls .earlier svg,.group-move-controls .later svg{transform:none}
+</style>
+</head>
+<body>
+<svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden" xmlns="http://www.w3.org/2000/svg">
+<symbol id="i-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10H3zM9 20v-7h6v7"/></symbol>
+<symbol id="i-logo" viewBox="0 0 24 24"><path d="M5 7v10l7 4 7-4V7l-7-4zM5 7l7 4 7-4M12 11v10"/><path d="m8.5 5 7 4"/></symbol>
+<symbol id="i-bin" viewBox="0 0 24 24"><path d="M5 6h14M9 6V3h6v3M7 6l1 15h8l1-15M10 10v7M14 10v7"/></symbol>
+<symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4M17 3v4M3 10h18M8 14h2M14 14h2M8 17h2"/></symbol>
+<symbol id="i-leaf" viewBox="0 0 24 24"><path d="M5 18C0 8 12 4 21 3c0 12-8 19-16 15ZM4 21 16 9"/></symbol>
+<symbol id="i-temp" viewBox="0 0 24 24"><path d="M10 14V5a2 2 0 0 1 4 0v9a4 4 0 1 1-4 0Z"/><path d="M12 9v9"/></symbol>
+<symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 3C8 9 5 12 5 16a7 7 0 0 0 14 0c0-4-3-7-7-13Z"/><path d="M9 17a3 3 0 0 0 3 3"/></symbol>
+<symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5"/></symbol>
+<symbol id="i-bolt" viewBox="0 0 24 24"><path d="m13 2-8 12h6l-1 8 9-13h-7z"/></symbol>
+<symbol id="i-presence" viewBox="0 0 24 24"><circle cx="12" cy="4" r="2"/><path d="m7 22 3-8-2-4 5-2 3 5h4M13 13l4 8M3 11a7 7 0 0 1 1-5M20 4a9 9 0 0 1 2 6"/></symbol>
+<symbol id="i-light" viewBox="0 0 24 24"><path d="M9 18v-2a6 6 0 1 1 6 0v2M9 18h6M10 21h4"/></symbol>
+<symbol id="i-alarm" viewBox="0 0 24 24"><path d="M5 20h14M7 17V9a5 5 0 0 1 10 0v8zM12 1v1M3 5l2 2M21 5l-2 2"/></symbol>
+<symbol id="i-door" viewBox="0 0 24 24"><path d="M4 21h16M6 21V4l11-2v19M13 12h.1"/></symbol>
+<symbol id="i-panel" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M13 9h4M13 13h4"/></symbol>
+<symbol id="i-edit" viewBox="0 0 24 24"><path d="M14.06,9L15,9.94L5.92,19H5V18.08L14.06,9M17.66,3C17.41,3 17.15,3.1 16.96,3.29L15.13,5.12L18.88,8.87L20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18.17,3.09 17.92,3 17.66,3M14.06,6.19L3,17.25V21H6.75L17.81,9.94L14.06,6.19Z" style="fill:currentColor;stroke:none"/></symbol>
+<symbol id="i-arrow" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+<symbol id="i-warning" viewBox="0 0 24 24"><path d="m12 3 10 18H2zM12 9v5M12 17v.1"/></symbol>
+<symbol id="i-back" viewBox="0 0 24 24"><path d="M20 12H4m6-6-6 6 6 6"/></symbol>
+<symbol id="i-gauge" viewBox="0 0 24 24"><path d="M3 18a10 10 0 1 1 18 0zM12 13l5-5"/><circle cx="12" cy="14" r="2"/></symbol>
+<symbol id="i-cloud" viewBox="0 0 24 24"><path d="M6 18a5 5 0 1 1 .5-10A7 7 0 0 1 20 10a4 4 0 0 1-1 8z"/></symbol>
+<symbol id="i-grip" viewBox="0 0 24 24"><path d="M9,3H11V5H9V3M13,3H15V5H13V3M9,7H11V9H9V7M13,7H15V9H13V7M9,11H11V13H9V11M13,11H15V13H13V11M9,15H11V17H9V15M13,15H15V17H13V15M9,19H11V21H9V19M13,19H15V21H13V19Z" style="fill:currentColor;stroke:none"/></symbol>
+<symbol id="i-delete" viewBox="0 0 24 24"><path d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6M9,8V17H11V8H9M13,8V17H15V8H13Z" style="fill:currentColor;stroke:none"/></symbol>
+<symbol id="i-export" viewBox="0 0 24 24"><path d="M12 15V2m-4 4 4-4 4 4M5 9H3v12h18V9h-2"/></symbol>
+<symbol id="i-import" viewBox="0 0 24 24"><path d="M4 12h12m-4-4 4 4-4 4M8 5V3h13v18H8v-2"/></symbol>
+<symbol id="i-move-up" viewBox="0 0 24 24"><path d="M13,20H11V8L5.5,13.5L4.08,12.08L12,4.16L19.92,12.08L18.5,13.5L13,8V20Z" style="fill:currentColor;stroke:none"/></symbol>
+<symbol id="i-move-down" viewBox="0 0 24 24"><path d="M11,4H13V16L18.5,10.5L19.92,11.92L12,19.84L4.08,11.92L5.5,10.5L11,16V4Z" style="fill:currentColor;stroke:none"/></symbol>
+</svg>
+<div class="lab">
+  <div class="eyebrow">NodeHerder / Design study 033</div>
+  <div class="lab-title"><div><h1>A little more of your home.</h1><p>Three ways to bring integrations into Home — and onto the wall.</p></div><span class="study-label">Interactive concept · synthetic data</span></div>
+  <div class="choices" aria-label="Design options">
+    <button class="choice" data-design="a" aria-pressed="false"><span class="letter">A</span><span><strong>Household glance</strong><small>A quiet summary above your existing rooms.</small></span></button>
+    <button class="choice" data-design="b" aria-pressed="true"><span class="letter">B</span><span><strong>Household area <span class="recommend">Selected</span></strong><small>Reorder every group. Clean headings, no numbers.</small></span></button>
+    <button class="choice" data-design="c" aria-pressed="false"><span class="letter">C</span><span><strong>One home board</strong><small>Rooms and service cards in one flexible grid.</small></span></button>
+  </div>
+  <div class="toolbar">
+    <div class="toolbar-group"><div class="seg" aria-label="Preview mode"><button data-mode="home" aria-pressed="true">Home</button><button data-mode="panel" aria-pressed="false">Panel mode</button></div><div class="seg" aria-label="Preview theme"><button data-theme="dark" aria-pressed="true">Dark</button><button data-theme="light" aria-pressed="false">Light</button></div></div>
+    <div class="toolbar-group"><label>Width <select id="width"><option value="full">Fill</option><option value="1024">Tablet · 1024</option><option value="390">Phone · 390</option></select></label><label>Data <select id="data-state"><option value="fresh">Saved schedule</option><option value="stale">Stale</option><option value="offline">Offline</option><option value="pending">Pending lookup</option><option value="empty">None scheduled</option><option value="unavailable">Dates unavailable</option></select></label><label class="future-toggle"><input id="future" type="checkbox"> Future examples</label></div>
+  </div>
+  <div class="preview" id="preview"><div class="app" id="app"></div></div>
+  <div class="study-note"><p id="design-note"></p><a href="investigation.md">Read the investigation ↗</a></div>
+  <div class="legend"><span><i class="small-dot"></i> Bins: existing capability</span><span><i class="small-dot"></i> Fixed demo date: Mon 26 Oct 2026</span><span><i class="small-dot"></i> All changes stay in memory</span><span><i class="small-dot"></i> Device values are read-only samples</span></div>
+</div>
+<dialog class="dialog" id="pin-dialog" aria-labelledby="dialog-title">
+  <form id="pin-form"><h2 id="dialog-title">Choose what appears</h2><p>Pin a configured integration to the places you use. Its setup stays in Integrations.</p>
+  <div class="dialog-row"><svg aria-hidden="true"><use href="#i-calendar"/></svg><div><strong>Bin collections</strong><small>Configured integration · 3 bin services</small></div></div>
+  <label class="checkrow"><span>Show on Home<small>Keep collection dates close to your rooms.</small></span><input id="pin-home" type="checkbox"></label>
+  <label class="checkrow"><span>Show in panel mode<small>Display on the wall tablet independently.</small></span><input id="pin-panel" type="checkbox"></label>
+  <p class="dialog-fine">Unpinning only removes a placement. It keeps the integration, saved results and configuration.</p><p class="dialog-fine" id="placement-note"></p>
+  <div class="dialog-footer"><button type="button" class="btn" id="cancel-pins">Cancel</button><button class="btn primary" type="submit">Save layout</button></div></form>
+</dialog>
+<dialog class="dialog" id="group-dialog" aria-labelledby="group-dialog-title"><form id="group-form"><h2 id="group-dialog-title">Rename area</h2><label class="field-label" for="group-name">Area name</label><input id="group-name" type="text" required maxlength="80" autocomplete="off"><p class="error" id="group-error" role="alert"></p><div class="dialog-footer"><button class="btn" type="button" data-close-dialog="group-dialog">Cancel</button><button class="btn primary" type="submit">Save</button></div></form></dialog>
+<dialog class="dialog" id="delete-dialog" aria-labelledby="delete-dialog-title"><h2 id="delete-dialog-title">Delete area?</h2><p id="delete-description"></p><div class="dialog-footer"><button class="btn" type="button" data-close-dialog="delete-dialog">Cancel</button><button class="btn danger" id="confirm-delete">Delete area</button></div></dialog>
+<dialog class="dialog" id="tiles-dialog" aria-labelledby="tiles-dialog-title"><form id="tiles-form"><h2 id="tiles-dialog-title">Add tiles</h2><p>Choose from this area's synthetic device values.</p><div id="tile-choices"></div><div class="dialog-footer"><button class="btn" type="button" data-close-dialog="tiles-dialog">Cancel</button><button class="btn primary" type="submit">Apply</button></div></form></dialog>
+<input class="file-input" id="layout-file" type="file" accept=".json,application/json" aria-label="Import example areas">
+<div class="toast" id="toast" role="status"></div>
+<script>
+'use strict';
+const $ = (selector) => document.querySelector(selector);
+const state = { design: 'b', mode: 'home', theme: 'dark', data: 'fresh', future: false, home: true, panel: true, panelPage: 'household', room: 0, detail: false, editing: false, groupOrder: ['household','living','attic','garden','kitchen'], labels: {}, hiddenTiles: {}, layoutMessage: '' };
+const roomNames = ['Living room', 'Attic room', 'Garden', 'Kitchen'];
+const roomKeys = ['living','attic','garden','kitchen'];
+const roomData = [
+  [['Brightness','74 %','Living Room light','sun','gold'],['Energy today','0.28 kWh','TV power socket','leaf','green'],['Power','116.1 W','TV power socket','bolt','gold'],['Presence','Detected','Living room sensor','presence','purple'],['Illuminance','175 lx','Living room sensor','sun','gold']],
+  [['Temperature','20.3 °C','Attic room sensor','temp','red'],['Humidity','78 %','Attic room sensor','drop','blue'],['Brightness','100 %','Attic room light','sun','gold'],['State','On','Attic room pendant','light','purple'],['Alarm','Silent','Attic alarm','alarm','red'],['Smoke','Clear','Attic smoke sensor','alarm','red']],
+  [['Humidity','99 %','Garden sensor','drop','blue'],['Temperature','14 °C','Garden sensor','temp','red']],
+  [['Contact','Closed','Front door sensor','door','blue'],['Energy','294.2 kWh','Kitchen socket','leaf','green']]
+];
+const bins = [
+  { name: 'Black bin', colour: 'black', date: 'Tue 27 Oct', iso: '2026-10-27', relative: 'Tomorrow', caption: 'General waste' },
+  { name: 'Blue bin', colour: 'blue', date: 'Thu 29 Oct', iso: '2026-10-29', relative: 'In 3 days', caption: 'Recycling' },
+  { name: 'Brown bin', colour: 'brown', date: 'Mon 2 Nov', iso: '2026-11-02', relative: 'In 7 days', caption: 'Garden waste' }
+];
+const notes = {
+  a: '<b>A · Household glance.</b> The smallest change to Home: one grouped summary above the existing areas. On the wall, rooms keep the focus with a small collection reminder and a Household page for the full schedule.',
+  b: '<b>B · Household area — selected.</b> Existing edit layout preserved: inline drag, move, rename and delete controls, tile removal and Add tiles. Changes apply as you go in this preview; Done leaves edit mode. Panel follows the same group order. No numbers beside group names.',
+  c: '<b>C · One home board.</b> Give rooms and integrations equal weight as cards. The wall starts with an overview and room shortcuts. Most flexible for more capabilities; it also changes the current Home layout the most.'
+};
+function icon(name) { return `<svg aria-hidden="true"><use href="#i-${name}"/></svg>`; }
+function badge(name, colour) { return `<span class="badge ${colour || ''}">${icon(name)}</span>`; }
+function button(action, label, symbol, extra = '') { return `<button class="btn ${extra}" data-action="${action}">${symbol ? icon(symbol) : ''}${label}</button>`; }
+function health() {
+  const labels = {
+    fresh: ['check','Saved schedule · checked 26 Oct, 07:10',false],
+    stale: ['warning','Needs refreshing · last checked 23 Oct, 07:10',true],
+    offline: ['warning','Offline · showing saved dates from 26 Oct, 07:10',true],
+    pending: ['calendar','Lookup in progress · no dates received yet',false],
+    empty: ['check','Provider confirms no scheduled collections',false],
+    unavailable: ['warning','Provider did not supply collection dates',true]
+  };
+  return labels[state.data];
+}
+function statusLine() { const [symbol,text,warn] = health(); return `<p class="state ${warn ? 'warn' : ''}">${icon(symbol)}<span>${text}</span></p>`; }
+function dateLabel(bin, relative = false) {
+  const missing = { pending: 'Awaiting dates', empty: 'None scheduled', unavailable: 'Dates unavailable' };
+  if (missing[state.data]) return `<span class="date">${missing[state.data]}</span>`;
+  return `<time datetime="${bin.iso}" class="${bin === bins[0] ? 'next' : ''}">${relative ? bin.relative : bin.date}</time>`;
+}
+function escapeHtml(value) { return String(value).replace(/[&<>"']/g,char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char])); }
+function tile(item, key) { const [label,value,device,symbol,colour] = item; const tint = ['Brightness','Energy today','Energy','Power','Presence','State'].includes(label) ? `tint-${colour}` : ''; const remove = state.editing ? `<button class="tile-remove" data-remove-tile="${key}" data-tile-label="${label}" aria-label="Remove ${label} from ${escapeHtml(groupName(key))}" title="Remove tile">×</button>` : ''; return `<div class="tile ${tint}">${remove}${badge(symbol,colour)}<div class="tilecopy"><strong title="${label}">${label}</strong><p class="value">${value}</p><span class="device" title="${device}">${device}</span></div></div>`; }
+function currentOrder() { return state.groupOrder; }
+function homePinned() { return state.home; }
+function groupName(key) { return state.labels[key] || (key === 'household' ? 'Household' : roomNames[roomKeys.indexOf(key)]); }
+function groupHeading(key) {
+  const name = escapeHtml(groupName(key));
+  if (!state.editing) return `<div class="group-heading"><h2>${name}</h2></div>`;
+  const index = currentOrder().indexOf(key);
+  return `<div class="group-heading"><button class="grip" draggable="true" data-drag-group="${key}" aria-label="Drag ${name} group" title="Drag to move">${icon('grip')}</button><h2 title="${name}">${name}</h2><div class="group-move-controls"><button class="earlier" data-move-group="${key}" data-offset="-1" aria-label="Move ${name} earlier" title="Move earlier" ${index === 0 ? 'disabled' : ''}>${icon('move-up')}</button><button class="later" data-move-group="${key}" data-offset="1" aria-label="Move ${name} later" title="Move later" ${index === currentOrder().length - 1 ? 'disabled' : ''}>${icon('move-down')}</button><button data-rename-group="${key}" aria-label="Rename ${name}" title="Rename">${icon('edit')}</button><button class="is-danger" data-delete-group="${key}" aria-label="Delete ${name} group" title="Delete area">${icon('delete')}</button></div></div>`;
+}
+function visibleTiles(index) { return roomData[index].filter(item => !(state.hiddenTiles[roomKeys[index]] || []).includes(item[0])); }
+function room(index) { const key = roomKeys[index]; return `<section class="room" data-group-id="${key}">${groupHeading(key)}<div class="tilegrid">${visibleTiles(index).map(item => tile(item,key)).join('')}${state.editing ? `<button class="tile-add" data-add-tiles="${key}">${icon('plus')} Add tiles</button>` : ''}</div></section>`; }
+function householdGroup() { return `<section class="room house-area" data-group-id="household">${groupHeading('household')}<div class="integrations">${homePinned() ? `${state.editing ? '<button class="tile-remove integration-remove" data-action="unpin-home" aria-label="Remove Bin collections from Home">×</button>' : ''}${integration()}` : ''}${futureCards()}</div>${state.editing ? `<button class="tile-add" data-action="pins">${icon('plus')} Add integrations</button>` : !homePinned() && !state.future ? emptyPlacement() : ''}</section>`; }
+function collections() { return bins.map(bin => `<div class="collection">${badge('bin',bin.colour)}<strong>${bin.name}</strong>${dateLabel(bin)}</div>`).join(''); }
+function integration() {
+  const title = state.editing ? 'Bin collections' : '<a class="cardlink" href="#bin-collections" data-action="detail">Bin collections</a>';
+  return `<article class="integration" aria-label="Bin collections"><div class="int-head">${badge('calendar','green')}<div><h3>${title}</h3><p class="sub">Next collection dates</p></div><span class="arrow">${icon('arrow')}</span></div>${collections()}${statusLine()}</article>`;
+}
+function futureCards() {
+  if (!state.future) return '';
+  return `<article class="integration" aria-label="Weather future example"><div class="int-head">${badge('cloud','blue')}<div><h3>Weather</h3><p class="sub">Illustrative capability</p></div><span class="future">Future</span></div><div class="int-stub">14°</div><p class="quiet">Cloudy · feels like 12°</p><p class="state">Example only · no weather integration is available</p></article><article class="integration" aria-label="Energy prices future example"><div class="int-head">${badge('bolt','gold')}<div><h3>Energy prices</h3><p class="sub">Illustrative capability</p></div><span class="future">Future</span></div><div class="int-stub">23.4<span style="font-size:15px;letter-spacing:0"> p/kWh</span></div><p class="quiet">Current unit rate · illustrative</p><p class="state">Example only · no tariff integration is available</p></article>`;
+}
+function emptyPlacement() { return `<div class="empty"><p>No integrations pinned here.</p>${button('edit','Choose integrations','plus')}</div>`; }
+function appbar() { return `<header class="appbar"><div class="brand">${icon('logo')}<b>NodeHerder</b></div><nav class="nav" aria-label="Illustrative navigation"><span class="active">Home</span><span>Devices</span><span>Automations</span><span>Integrations</span></nav><span class="spacer"></span><span class="online"><span class="dot"></span>Connected · demo</span><span class="avatar">NH</span></header>`; }
+function pagehead() {
+  const actions = state.editing ? `${button('new-area','New area','plus')}${button('export','Export','export')}${button('import','Import','import')}${button('done','Done','check','done')}` : `${button('panel','Panel mode','panel')}${button('edit','Edit layout','edit')}`;
+  const areas = state.groupOrder.filter(key => key !== 'household');
+  const tiles = areas.reduce((total,key) => total + visibleTiles(roomKeys.indexOf(key)).length,0);
+  return `<div class="pagehead"><div><h1>Home</h1><p class="sub">${areas.length} areas · ${tiles} device tiles${homePinned() && state.groupOrder.includes('household') ? ' · 1 integration' : ''}</p></div><div class="actions">${actions}</div></div>`;
+}
+function band() {
+  const [symbol,text,warn] = health();
+  return `<section class="household-band" aria-label="Household glance"><div class="band-lead">${badge('calendar','green')}<div><div class="label" style="margin-bottom:5px">Around the house</div><h2>Bin collections</h2><p class="sub">One less thing to remember.</p></div></div><div class="band-rows">${bins.map(bin => `<div class="band-bin">${badge('bin',bin.colour)}<strong>${bin.name}</strong><p>${dateLabel(bin,true)}</p><p>${['fresh','stale','offline'].includes(state.data) ? bin.date : bin.caption}</p></div>`).join('')}</div><div class="band-status ${warn ? 'warn' : ''}">${text}<a href="#bin-collections" data-action="detail" class="detail">Open integration →</a></div></section>`;
+}
+function home() {
+  let content = '';
+  if (state.design === 'a') content = `${state.home ? band() : emptyPlacement()}${state.future ? `<div class="integrations section-gap">${futureCards()}</div>` : ''}<div class="sectionhead ${state.home ? '' : 'section-gap'}"><h2>Your rooms</h2><span class="quiet">Live device values · demo</span></div><div class="rooms">${roomNames.map((_,i) => room(i)).join('')}</div>`;
+  if (state.design === 'b') content = `${state.editing ? '<p class="layout-hint">Drag an area by its handle, or use the arrows, to change the order. Changes save as you go in this preview.<span class="layout-status" role="status">'+escapeHtml(state.layoutMessage)+'</span></p>' : ''}<div class="rooms with-house ${state.editing ? 'is-arranging' : ''}">${currentOrder().map(key => key === 'household' ? householdGroup() : room(roomKeys.indexOf(key))).join('')}</div>`;
+  if (state.design === 'c') content = `<div class="contextline">${icon('home')}<span>Your rooms and household services, together.</span></div><div class="mixed">${state.home ? integration() : emptyPlacement()}${room(0)}${room(1)}${futureCards()}${room(2)}${room(3)}</div>`;
+  return `${appbar()}<main class="main">${pagehead()}${content}</main>`;
+}
+function panelbar() { return `<header class="panelbar"><div class="brand">${icon('logo')}<b>NodeHerder</b></div><div class="clock">08:42<small>Monday 26 October · demo</small></div><span class="spacer"></span><span class="online"><span class="dot"></span>Connected</span>${button('edit','<span class="sr-only">Choose panel integrations</span>','edit','ghost')}</header>`; }
+function pager() {
+  return `<nav class="pager" aria-label="Panel pages">${panelOrder().map(key => key === 'household' ? `<button class="roomtab" data-page="household" aria-pressed="${state.panelPage === 'household'}">${escapeHtml(groupName(key))}</button>` : `<button class="roomtab" data-room="${roomKeys.indexOf(key)}" aria-pressed="${state.panelPage === 'rooms' && state.room === roomKeys.indexOf(key)}">${escapeHtml(groupName(key))}</button>`).join('')}</nav>`;
+}
+function panelOrder() { return state.design === 'b' ? state.groupOrder.filter(key => key !== 'household' || state.panel || state.future) : roomKeys; }
+function roomPanel() {
+  const temperatures = [null,'20.3°','14°',null];
+  const captions = ['No climate tiles','78 % humidity','99 % humidity','No climate tiles'];
+  if (state.room < 0 || !roomData[state.room]) return '<p class="empty">No areas yet. Create one on Home.</p>';
+  const tiles = visibleTiles(state.room);
+  const readings = tiles.filter(item => !['Temperature','Humidity'].includes(item[0]));
+  const name = escapeHtml(groupName(roomKeys[state.room]));
+  const climate = temperatures[state.room] == null || !tiles.some(item => item[0] === 'Temperature') ? `<div style="text-align:center;padding:35px 0">${badge('home','green')}<h1 style="font-size:28px;font-weight:500;margin-top:15px">${name}</h1><p class="sub">No climate tiles</p></div>` : `<div class="dial"><b>${temperatures[state.room]}</b><span>${captions[state.room]}</span><small>${name}</small></div>`;
+  return `<div class="panel-room">${climate}<div class="panel-buttons">${readings.map(item => `<div class="panel-tile">${badge(item[3],item[4])}<strong>${item[0]}</strong><span>${item[1]}</span></div>`).join('')}</div></div>${state.design === 'a' && state.panel ? glance() : ''}`;
+}
+function glance() {
+  const [,text,warn] = health();
+  const headline = ['fresh','stale','offline'].includes(state.data) ? 'Black bin · tomorrow, Tue 27 Oct' : 'Bin collections';
+  return `<div class="panel-glance">${icon('bin')}<b><a class="cardlink" href="#household" data-action="household">${headline}</a></b><span class="quiet ${warn ? 'warn' : ''}">${text}</span>${icon('arrow')}</div>`;
+}
+function householdPanel() { return `<div class="panel-house"><div class="panel-hero"><div><h1>${escapeHtml(groupName('household'))}</h1><p>Useful information from your integrations.</p></div></div><div class="integrations">${state.panel ? integration() : emptyPlacement()}${futureCards()}${!state.future ? `<button class="placeholder" data-action="edit">${icon('plus')}<span>Choose integrations<small>Manage what appears on this panel.</small></span></button>` : ''}</div></div>`; }
+function overviewPanel() { return `<div class="panel-hero"><div><div class="label" style="margin-bottom:8px">Your home, at a glance</div><h1>Good morning.</h1><p>Monday 26 October · illustrative home summary</p></div></div><div class="panel-overview"><div>${state.panel ? integration() : emptyPlacement()}</div><div class="roomshort">${roomNames.map((name,i) => `<button class="roomjump" data-room="${i}">${icon('home')}<strong>${name}</strong><small>${['Presence detected','20.3 °C · lights on','14 °C · outdoors','Front door closed'][i]}</small></button>`).join('')}</div></div>${state.future ? `<div class="integrations section-gap">${futureCards()}</div>` : ''}`; }
+function panelStatus() { return `<div class="panel-hero"><div><h1>Home status</h1><p>All values below are samples.</p></div></div><div class="status-grid"><div class="status-card"><b>18/18</b><span>Devices online</span></div><div class="status-card"><b>8/8</b><span>Batteries healthy</span></div><div class="status-card"><b>6</b><span>Automations on</span></div></div><p class="quiet" style="text-align:center">Integration data state: ${$('#data-state').selectedOptions[0].textContent}. Device samples are independent.</p>`; }
+function dock() {
+  const destinations = state.design === 'c' ? [['overview','Overview','home'],['rooms','Rooms','panel'],['status','Status','gauge']] : state.design === 'a' ? [['rooms','Rooms','home'],['household','Household','calendar'],['status','Status','gauge']] : [['rooms','Rooms','home'],['status','Status','gauge']];
+  return `<nav class="panel-dock" aria-label="Panel">${destinations.map(([page,label,symbol]) => `<button data-page="${page}" aria-pressed="${page === state.panelPage || page === 'rooms' && state.design === 'b' && state.panelPage === 'household'}">${icon(symbol)}${label}</button>`).join('')}<button data-action="home">${icon('back')}Exit panel</button></nav>`;
+}
+function panel() { const page = state.panelPage; const showPager = page === 'rooms' || state.design === 'b' && page === 'household'; const content = page === 'status' ? panelStatus() : page === 'household' ? householdPanel() : page === 'overview' ? overviewPanel() : roomPanel(); return `${panelbar()}<main class="panel-content">${showPager ? pager() : ''}${content}</main>${dock()}`; }
+function detail() {
+  const isPanel = state.mode === 'panel';
+  const [,text,warn] = health();
+  return `${isPanel ? panelbar() : appbar()}<main class="main detail-view">${button('back',`Back to ${isPanel ? 'panel' : 'Home'}`,'back','ghost')}<div class="pagehead section-gap"><div><h1>Bin collections</h1><p class="sub">Integration results · synthetic example</p></div></div><div class="detail-tabs"><strong>Results</strong><span>Setup, operations and Help remain on the existing integration page.</span></div>${warn || state.data === 'pending' ? `<p class="notice">${text}</p>` : ''}<div class="integrations">${bins.map(bin => `<article class="integration"><div class="int-head">${badge('bin',bin.colour)}<div><h3>${bin.name}</h3><p class="sub">${bin.caption}</p></div></div><div style="font-size:19px">${dateLabel(bin)}</div><p class="state">${state.data === 'stale' || state.data === 'offline' ? 'Last saved date · verify before relying on it' : 'Collection calendar: Europe/London'}</p></article>`).join('')}</div><p class="detail-note">This represents the existing full integration page. Home and panel cards link to that page; they do not introduce a second setup form. Production navigation must retain the originating Home/panel context and Back destination.</p>${button('mock-refresh',state.data === 'pending' ? 'Check status (demo)' : 'Refresh (demo)','calendar','section-gap')}</main>`;
+}
+function render() {
+  $('#preview').classList.toggle('light',state.theme === 'light');
+  $('#app').innerHTML = state.detail ? detail() : state.mode === 'home' ? home() : panel();
+  $('#design-note').innerHTML = notes[state.design];
+  for (const kind of ['design','mode','theme']) document.querySelectorAll(`[data-${kind}]`).forEach(el => el.setAttribute('aria-pressed',String(el.dataset[kind] === state[kind])));
+}
+let toastTimer;
+function toast(message) { clearTimeout(toastTimer); $('#toast').textContent = message; toastTimer = setTimeout(() => { $('#toast').textContent = ''; },3500); }
+function clearLayoutDraft() { state.editing = false; state.layoutMessage = ''; }
+function setMode(mode) {
+  clearLayoutDraft(); state.mode = mode; state.detail = false;
+  const first = panelOrder()[0];
+  state.panelPage = state.design === 'c' ? 'overview' : first === 'household' ? 'household' : 'rooms';
+  if (first !== 'household') state.room = roomKeys.indexOf(first);
+  render();
+}
+function startLayout() {
+  state.editing = true; state.layoutMessage = '';
+  render(); $('#app [data-drag-group]')?.focus({preventScroll:true});
+}
+function finishLayout() {
+  clearLayoutDraft(); render(); $('#app [data-action="edit"]')?.focus({preventScroll:true});
+  toast('Done. Layout changes are kept in this preview.');
+}
+function moveGroup(key, destination, control = 'drag') {
+  if (!state.editing) return;
+  const order = state.groupOrder;
+  const from = order.indexOf(key);
+  if (from < 0 || destination < 0 || destination >= order.length || destination === from) return;
+  order.splice(from,1); order.splice(destination,0,key);
+  state.layoutMessage = `${groupName(key)} moved ${destination < from ? 'earlier' : 'later'}.`;
+  render();
+  // Re-rendering replaces controls; retain focus on the same group, including at a boundary.
+  const candidate = $('#app [data-move-group="'+key+'"][data-offset="'+control+'"]');
+  const focus = candidate && !candidate.disabled ? candidate : $('#app [data-drag-group="'+key+'"]');
+  focus?.focus({preventScroll:true}); focus?.scrollIntoView({block:'nearest',inline:'nearest'});
+}
+let returnFocus = null;
+function openEditor() {
+  returnFocus = document.activeElement;
+  const pins = state;
+  $('#pin-home').checked = pins.home;
+  $('#pin-panel').checked = pins.panel;
+  $('#placement-note').textContent = { a: 'A: summary above rooms; panel reminder + Household page.', b: 'B: Household joins the saved group order in the panel pager. Arrange groups on Home using Edit layout.', c: 'C: mixed Home board; panel overview with room shortcuts.' }[state.design];
+  $('#pin-form button[type="submit"]').textContent = 'Save layout';
+  $('#pin-dialog').showModal();
+}
+function restoreEditorFocus() {
+  if (returnFocus?.isConnected) returnFocus.focus();
+  else ($('#app [data-action="pins"]') || $('#app [data-action="edit"]'))?.focus();
+}
+let dialogGroup = null;
+let dialogTrigger = null;
+function openGroupDialog(key) {
+  dialogGroup = key; dialogTrigger = document.activeElement;
+  $('#group-dialog-title').textContent = key ? 'Rename area' : 'New area';
+  $('#group-name').value = key ? groupName(key) : ''; $('#group-error').textContent = '';
+  $('#group-dialog').showModal(); $('#group-name').focus(); $('#group-name').select();
+}
+function openDeleteDialog(key) {
+  dialogGroup = key; dialogTrigger = document.activeElement;
+  $('#delete-dialog-title').textContent = `Delete ${groupName(key)}?`;
+  $('#delete-description').textContent = key === 'household' ? 'Remove this group and its Home/panel placements. The integration, saved results and configuration are kept.' : 'The area and its tiles are removed from Home and panel. Devices are not affected.';
+  $('#delete-dialog').showModal();
+}
+function focusGroup(key) { ($('#app [data-drag-group="'+key+'"]') || $('#app [data-action="done"]') || $('#app [data-action="edit"]'))?.focus({preventScroll:true}); }
+function openTilesDialog(key) {
+  dialogGroup = key; dialogTrigger = document.activeElement;
+  const items = roomData[roomKeys.indexOf(key)];
+  $('#tile-choices').innerHTML = items.length ? items.map((item,index) => `<label class="tile-choice"><input type="checkbox" value="${index}" ${!(state.hiddenTiles[key] || []).includes(item[0]) ? 'checked' : ''}>${item[0]}</label>`).join('') : '<p>No synthetic device values for this new area. Production uses the existing device/expose picker.</p>';
+  $('#tiles-dialog').showModal();
+}
+$('#group-form').addEventListener('submit',event => {
+  event.preventDefault(); const name = $('#group-name').value.trim();
+  if (!name) { $('#group-error').textContent = 'Enter an area name.'; return; }
+  if (state.groupOrder.some(key => key !== dialogGroup && groupName(key).toLowerCase() === name.toLowerCase())) { $('#group-error').textContent = 'An area already has this name.'; return; }
+  let key = dialogGroup;
+  if (!key) { key = 'area-'+roomKeys.length; roomKeys.push(key); roomNames.push(name); roomData.push([]); state.groupOrder.push(key); }
+  state.labels[key] = name; $('#group-dialog').close(); render(); focusGroup(key);
+});
+$('#confirm-delete').addEventListener('click',() => {
+  const key = dialogGroup; state.groupOrder = state.groupOrder.filter(item => item !== key);
+  if (key === 'household') { state.home = false; state.panel = false; }
+  $('#delete-dialog').close(); render(); focusGroup(state.groupOrder[0]);
+  toast('Group removed from this preview. Devices and integrations are kept.');
+});
+$('#tiles-form').addEventListener('submit',event => {
+  event.preventDefault(); const items = roomData[roomKeys.indexOf(dialogGroup)];
+  const selected = new Set([...$('#tile-choices').querySelectorAll('input:checked')].map(el => Number(el.value)));
+  state.hiddenTiles[dialogGroup] = items.filter((_,index) => !selected.has(index)).map(item => item[0]);
+  $('#tiles-dialog').close(); render(); focusGroup(dialogGroup);
+});
+for (const dialog of [$('#group-dialog'),$('#delete-dialog'),$('#tiles-dialog')]) dialog.addEventListener('cancel',() => requestAnimationFrame(() => { if (dialogTrigger?.isConnected) dialogTrigger.focus(); }));
+function exportLayout() {
+  const data = { format: 'nodeherder-home-preview/v1', order: state.groupOrder, labels: state.groupOrder.map(key => groupName(key)) };
+  const url = URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
+  const link = document.createElement('a'); link.href = url; link.download = 'example-home-layout.json'; link.click();
+  setTimeout(() => URL.revokeObjectURL(url),1000); toast('Exported synthetic group order and names only.');
+}
+$('#layout-file').addEventListener('change',async event => {
+  const file = event.target.files[0]; event.target.value = ''; if (!file) return;
+  try {
+    if (file.size > 32_768) throw new Error('size');
+    const data = JSON.parse(await file.text()); const known = new Set(['household',...roomKeys]);
+    if (data.format !== 'nodeherder-home-preview/v1' || !Array.isArray(data.order) || data.order.length > 40 || !Array.isArray(data.labels) || data.labels.length !== data.order.length || new Set(data.order).size !== data.order.length || !data.order.every(key => known.has(key)) || !data.labels.every(name => typeof name === 'string' && name.trim() && name.length <= 80) || new Set(data.labels.map(name => name.trim().toLowerCase())).size !== data.labels.length) throw new Error('shape');
+    // Validate the entire import before replacing accepted order or labels.
+    state.groupOrder = [...data.order]; data.order.forEach((key,index) => { state.labels[key] = data.labels[index].trim(); }); render(); toast('Example group order and names imported.');
+  } catch { toast('Choose a valid example layout exported from this preview. Existing layout kept.'); }
+});
+document.addEventListener('click',event => {
+  const target = event.target.closest('button,a');
+  if (!target) return;
+  if (target.dataset.closeDialog) { $('#'+target.dataset.closeDialog).close(); if (dialogTrigger?.isConnected) dialogTrigger.focus(); return; }
+  if (target.dataset.renameGroup) { openGroupDialog(target.dataset.renameGroup); return; }
+  if (target.dataset.deleteGroup) { openDeleteDialog(target.dataset.deleteGroup); return; }
+  if (target.dataset.addTiles) { openTilesDialog(target.dataset.addTiles); return; }
+  if (target.dataset.removeTile) { const key = target.dataset.removeTile; state.hiddenTiles[key] = [...(state.hiddenTiles[key] || []),target.dataset.tileLabel]; render(); focusGroup(key); return; }
+  if (target.dataset.moveGroup) { moveGroup(target.dataset.moveGroup,currentOrder().indexOf(target.dataset.moveGroup)+Number(target.dataset.offset),target.dataset.offset); return; }
+  if (target.dataset.design) { state.design = target.dataset.design; setMode(state.mode); return; }
+  if (target.dataset.mode) { setMode(target.dataset.mode); return; }
+  if (target.dataset.theme) { state.theme = target.dataset.theme; render(); return; }
+  if (target.dataset.room !== undefined) { state.room = Number(target.dataset.room); state.panelPage = 'rooms'; state.detail = false; render(); $('#app [data-room="'+state.room+'"]')?.focus({preventScroll:true}); return; }
+  if (target.dataset.page) { state.panelPage = target.dataset.page; state.detail = false; render(); $('#app .panel-dock [data-page="'+state.panelPage+'"]')?.focus({preventScroll:true}); return; }
+  const action = target.dataset.action;
+  if (!action) return;
+  event.preventDefault();
+  if (action === 'panel' || action === 'home') { setMode(action === 'panel' ? 'panel' : 'home'); $('#app button')?.focus({preventScroll:true}); }
+  if (action === 'edit') { if (state.design === 'b' && state.mode === 'home' && !state.editing) startLayout(); else openEditor(); }
+  if (action === 'pins') openEditor();
+  if (action === 'done') finishLayout();
+  if (action === 'new-area') openGroupDialog(null);
+  if (action === 'export') exportLayout();
+  if (action === 'import') $('#layout-file').click();
+  if (action === 'unpin-home') { state.home = false; render(); focusGroup('household'); }
+  if (action === 'household') { state.panelPage = 'household'; render(); $('#app .cardlink')?.focus({preventScroll:true}); }
+  if (action === 'detail') { state.detail = true; render(); $('#app [data-action="back"]')?.focus({preventScroll:true}); }
+  if (action === 'back') { state.detail = false; render(); $('#app [data-action="detail"]')?.focus({preventScroll:true}); }
+  if (action === 'mock-refresh') toast('Demo only. No request was sent; change “Data” above to inspect another result.');
+});
+$('#width').addEventListener('change',event => { const width = event.target.value; $('#preview').style.width = width === 'full' ? '100%' : `${width}px`; });
+$('#data-state').addEventListener('change',event => { state.data = event.target.value; render(); });
+$('#future').addEventListener('change',event => { state.future = event.target.checked; if (state.design === 'b' && !state.future && !state.panel && state.panelPage === 'household') state.panelPage = 'rooms'; render(); });
+$('#pin-form').addEventListener('submit',event => {
+  event.preventDefault();
+  const pins = state;
+  pins.home = $('#pin-home').checked; pins.panel = $('#pin-panel').checked;
+  if ((pins.home || pins.panel) && !state.groupOrder.includes('household')) state.groupOrder.push('household');
+  if (!state.editing && state.design === 'b' && !state.panel && !state.future && state.panelPage === 'household') { state.panelPage = 'rooms'; state.room = roomKeys.indexOf(panelOrder()[0]); }
+  $('#pin-dialog').close(); render();
+  restoreEditorFocus();
+  toast('Placements saved for this preview. Integration configuration is unchanged.');
+});
+$('#cancel-pins').addEventListener('click',() => { $('#pin-dialog').close(); restoreEditorFocus(); });
+$('#pin-dialog').addEventListener('cancel',() => { requestAnimationFrame(restoreEditorFocus); });
+$('#pin-dialog').addEventListener('keydown',event => {
+  if (event.key !== 'Tab') return;
+  // Keep keyboard focus in the local layout editor, including wraparound at either end.
+  const controls = [...$('#pin-dialog').querySelectorAll('input,button')];
+  const first = controls[0];
+  const last = controls[controls.length - 1];
+  if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+  if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+});
+document.addEventListener('keydown',event => {
+  if (event.key === 'Escape' && state.editing && !document.querySelector('dialog[open]')) { event.preventDefault(); finishLayout(); return; }
+  if (document.querySelector('dialog[open]') || state.mode !== 'panel' || state.detail || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+  const target = event.target;
+  if (target.closest('input,select,textarea,a,button') && !target.matches('[data-room],.roomtab[data-page]')) return;
+  if (!['ArrowLeft','ArrowRight','Home','End'].includes(event.key) || !['rooms','household'].includes(state.panelPage)) return;
+  const pages = panelOrder().map(key => key === 'household' ? -1 : roomKeys.indexOf(key));
+  if (!pages.length) return;
+  const current = pages.indexOf(state.panelPage === 'household' ? -1 : state.room);
+  const next = event.key === 'Home' ? 0 : event.key === 'End' ? pages.length - 1 : (current + (event.key === 'ArrowRight' ? 1 : -1) + pages.length) % pages.length;
+  const selected = pages[next]; state.panelPage = selected === -1 ? 'household' : 'rooms'; if (selected !== -1) state.room = selected;
+  event.preventDefault(); render(); const item = $('#app .pager [aria-pressed="true"]'); item?.focus({preventScroll:true}); item?.scrollIntoView({block:'nearest',inline:'nearest'});
+});
+let draggedGroup = null;
+document.addEventListener('dragstart',event => {
+  const handle = event.target.closest('[data-drag-group]');
+  if (!state.editing || !handle) return;
+  draggedGroup = handle.dataset.dragGroup;
+  event.dataTransfer.setData('text/plain',draggedGroup); event.dataTransfer.effectAllowed = 'move';
+});
+document.addEventListener('dragover',event => {
+  const group = event.target.closest('[data-group-id]');
+  if (!state.editing || !draggedGroup || !group) return;
+  event.preventDefault(); event.dataTransfer.dropEffect = 'move';
+  document.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
+  group.classList.add('drop-target');
+});
+document.addEventListener('drop',event => {
+  const group = event.target.closest('[data-group-id]');
+  if (!state.editing || !draggedGroup || !group) return;
+  event.preventDefault();
+  moveGroup(draggedGroup,currentOrder().indexOf(group.dataset.groupId)); draggedGroup = null;
+  document.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
+});
+document.addEventListener('dragend',() => { draggedGroup = null; document.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target')); });
+render();
+</script>
+</body>
+</html>
