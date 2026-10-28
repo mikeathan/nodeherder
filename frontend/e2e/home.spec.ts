@@ -251,6 +251,8 @@ test('standalone cards align with the neighboring area tile rows', async ({ page
   });
   expect(moved.status()).toBe(200);
   await page.reload();
+  await expect(page.locator('[data-card-id="bins-card"]')).toBeVisible();
+  await expect(page.locator('[data-area="Living room"] .nh-home-card')).toHaveCount(3);
   for (const density of ['comfortable', 'compact', 'spacious']) {
     await page.evaluate((value) => document.documentElement.setAttribute('data-density', value), density);
     for (const width of [1280, 1440, 1680]) {

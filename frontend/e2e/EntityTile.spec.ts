@@ -27,6 +27,7 @@ test('Home tile retains its confirmed reading and appearance while a toggle awai
   const tile = ui.home.tile(page, 'living room group', 'Brightness');
   const toggle = tile.locator('button.nh-tile-ic');
   const value = tile.locator('.nh-tile-value');
+  await expect(value).toHaveText(/72\s*%/);
   const before = { text: await value.innerText(), color: await value.evaluate((el) => getComputedStyle(el).color) };
   await toggle.click();
   await expect(toggle).toHaveAttribute('aria-busy', 'true');

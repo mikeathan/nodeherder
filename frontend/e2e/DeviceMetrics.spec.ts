@@ -159,6 +159,17 @@ test.beforeEach(async ({ page }) => {
     };
     await route.fulfill({ response, json: body });
   });
+  await page.route('**/api/home/layout', async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    body.data.blocks.push({
+      id: 'design-checks', kind: 'group', name: 'Design checks',
+      cards: Object.keys(exposes).map((expose) => ({
+        id: `design-${expose}`, kind: 'device', panel: false, device_id: fixtureId, expose,
+      })),
+    });
+    await route.fulfill({ response, json: body });
+  });
   await page.route('**/api/metrics/query', async (route) => {
     const request = route.request().postDataJSON();
     if (request.deviceIds[0] !== fixtureId) {
