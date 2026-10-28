@@ -32,6 +32,16 @@ const coverageLabels: Readonly<Record<string, string>> = {
   next_only: 'Next date only',
   unknown: 'Coverage unknown',
 };
+const missingDateLabels: Readonly<Record<WasteService['date_state'], string>> = {
+  known: 'No upcoming date',
+  confirmed_empty: 'None scheduled',
+  unavailable: 'Dates unavailable',
+};
+
+/** Show a date only when supplied; keep confirmed-empty, unknown and exhausted horizons distinct. */
+export function wasteServiceDateLabel(card: WasteServiceCard): string {
+  return card.nextDateShort ?? missingDateLabels[card.date_state];
+}
 
 // Operational timestamps retain the existing browser-local display behavior. Collection dates
 // use the resource calendar instead; a future General timezone setting can target timestamps.

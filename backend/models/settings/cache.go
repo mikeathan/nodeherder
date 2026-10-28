@@ -239,13 +239,11 @@ func (s *AppConfigCache) GetDeviceConfigCache() *DeviceConfigCache {
 	return s.deviceCache
 }
 
+// LoadAppConfig returns an owned public snapshot, excluding private Home placement references.
 func (s *AppConfigCache) LoadAppConfig() (*AppConfig, error) {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
-	config := *s.appConfig
-	config.Hub = cloneHubConfig(config.Hub)
-	config.Bridge = cloneBridgeConfig(config.Bridge)
-	return &config, nil
+	return s.publicSnapshotLocked(), nil
 }
 
 // cloneHubConfig copies everything writers replace or mutate under the cache lock
@@ -273,7 +271,15 @@ func cloneHubConfig(hub *HubConfig) *HubConfig {
 		for name, group := range hub.DashboardGroups {
 			if group != nil {
 				groupCopy := *group
-				groupCopy.DeviceGroup = maps.Clone(group.DeviceGroup)
+				groupCopy.DeviceGroup = make(map[string]*DeviceGroup, len(group.DeviceGroup))
+				for id, device := range group.DeviceGroup {
+					if device != nil {
+						copy := *device
+						copy.Exposes = append([]string(nil), device.Exposes...)
+						device = &copy
+					}
+					groupCopy.DeviceGroup[id] = device
+				}
 				groupCopy.Order = clonePointer(group.Order)
 				group = &groupCopy
 			}
@@ -344,6 +350,7 @@ func (s *AppConfigCache) SaveBridgePermitJoin(enabled bool) error {
 	return s.store.SaveBridgeConfig(s.appConfig.Bridge)
 }
 
+// SaveLoggerConfig persists logging settings and returns the public configuration projection.
 func (s *AppConfigCache) SaveLoggerConfig(loggerConfig *LoggerConfig) (*AppConfig, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
@@ -357,9 +364,10 @@ func (s *AppConfigCache) SaveLoggerConfig(loggerConfig *LoggerConfig) (*AppConfi
 
 	s.reloadTasks(s.appConfig)
 
-	return s.appConfig, nil
+	return s.publicSnapshotLocked(), nil
 }
 
+// SaveAssistantConfig persists assistant settings without exposing private Home placements.
 func (s *AppConfigCache) SaveAssistantConfig(assistantConfig *AssistantConfig) (*AppConfig, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
@@ -373,7 +381,7 @@ func (s *AppConfigCache) SaveAssistantConfig(assistantConfig *AssistantConfig) (
 
 	s.reloadTasks(s.appConfig)
 
-	return s.appConfig, nil
+	return s.publicSnapshotLocked(), nil
 }
 
 func (s *AppConfigCache) LoadLoggerConfig() (*LoggerConfig, error) {
@@ -382,6 +390,7 @@ func (s *AppConfigCache) LoadLoggerConfig() (*LoggerConfig, error) {
 	return s.appConfig.Hub.Logger, nil
 }
 
+// SaveHistoryConfig persists history settings and returns the public configuration projection.
 func (s *AppConfigCache) SaveHistoryConfig(historyConfig *HistoryConfig) (*AppConfig, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
@@ -395,9 +404,10 @@ func (s *AppConfigCache) SaveHistoryConfig(historyConfig *HistoryConfig) (*AppCo
 
 	s.reloadTasks(s.appConfig)
 
-	return s.appConfig, nil
+	return s.publicSnapshotLocked(), nil
 }
 
+// SaveMCPConfig persists MCP settings without exposing private Home placements.
 func (s *AppConfigCache) SaveMCPConfig(mcpConfig *MCPConfig) (*AppConfig, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
@@ -411,80 +421,105 @@ func (s *AppConfigCache) SaveMCPConfig(mcpConfig *MCPConfig) (*AppConfig, error)
 
 	s.reloadTasks(s.appConfig)
 
-	return s.appConfig, nil
+	return s.publicSnapshotLocked(), nil
 }
 
+// RenameDashboardGroup preserves canonical placement identities when adapting a legacy area rename.
 func (s *AppConfigCache) RenameDashboardGroup(oldName string, newName string) (*DashboardGroup, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
+	if s.appConfig.HomeLayout != nil {
+		layout, err := s.homeLayoutLocked()
+		if err != nil {
+			return nil, err
+		}
+		found := false
+		for index := range layout.Blocks {
+			if layout.Blocks[index].Kind == "group" && layout.Blocks[index].Name == oldName {
+				layout.Blocks[index].Name = newName
+				found = true
+			}
+		}
+		if !found {
+			return nil, homeFailure("not_found", "That area no longer exists.")
+		}
+		saved, err := s.commitHomeLocked(layout, layout.Revision)
+		if err != nil {
+			return nil, err
+		}
+		return saved.DeviceGroups()[newName], nil
+	}
 
 	group, ok := s.appConfig.Hub.DashboardGroups[oldName]
 	if !ok {
 		return nil, fmt.Errorf("dashboard group %q not found", oldName)
 	}
 
-	delete(s.appConfig.Hub.DashboardGroups, oldName)
-	group.Name = newName
-	s.appConfig.Hub.DashboardGroups[newName] = group
-
-	err := s.store.SaveAppConfig(s.appConfig)
-	if err != nil {
+	groups := cloneHubConfig(s.appConfig.Hub).DashboardGroups
+	delete(groups, oldName)
+	group = groups[newName] // Reject overwriting another area's contents.
+	if group != nil && oldName != newName {
+		return nil, homeFailure("invalid_input", "An area already has this name.")
+	}
+	renamed := *s.appConfig.Hub.DashboardGroups[oldName]
+	renamed.Name = newName
+	groups[newName] = &renamed
+	if err := s.commitLegacyGroupsLocked(groups); err != nil {
 		return nil, err
 	}
-
-	return group, nil
+	return groups[newName], nil
 }
 
+// SaveDashboardGroup atomically adapts legacy device membership/order while retaining integration cards.
 func (s *AppConfigCache) SaveDashboardGroup(exposeGroup *DashboardGroup) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	s.appConfig.Hub.DashboardGroups[exposeGroup.Name] = exposeGroup
-
-	err := s.store.SaveAppConfig(s.appConfig)
-	if err != nil {
-		return err
+	if exposeGroup == nil {
+		return invalidHome()
 	}
-
-	return nil
+	if s.appConfig.HomeLayout != nil {
+		return s.saveLegacyHomeGroupLocked(exposeGroup)
+	}
+	groups := cloneHubConfig(s.appConfig.Hub).DashboardGroups
+	groups[exposeGroup.Name] = exposeGroup
+	return s.commitLegacyGroupsLocked(groups)
 }
 
+// DeleteDashboardGroup removes an area's placements, never its device or integration sources.
 func (s *AppConfigCache) DeleteDashboardGroup(name string) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	delete(s.appConfig.Hub.DashboardGroups, name)
-
-	err := s.store.SaveAppConfig(s.appConfig)
-	if err != nil {
+	if s.appConfig.HomeLayout != nil {
+		layout, err := s.homeLayoutLocked()
+		if err != nil {
+			return err
+		}
+		blocks := make([]HomeBlock, 0, len(layout.Blocks))
+		for _, block := range layout.Blocks {
+			if block.Kind != "group" || block.Name != name {
+				blocks = append(blocks, block)
+			}
+		}
+		layout.Blocks = blocks
+		_, err = s.commitHomeLocked(layout, layout.Revision)
 		return err
 	}
-
-	return nil
+	groups := cloneHubConfig(s.appConfig.Hub).DashboardGroups
+	delete(groups, name)
+	return s.commitLegacyGroupsLocked(groups)
 }
 
+// ImportDashboardGroups replaces legacy device groups, retaining displaced integration cards on Home.
 func (s *AppConfigCache) ImportDashboardGroups(groups map[string]*DashboardGroup) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	// delete all
-	for name, _ := range s.appConfig.Hub.DashboardGroups {
-		if _, ok := groups[name]; !ok {
-			delete(s.appConfig.Hub.DashboardGroups, name)
-		}
+	if s.appConfig.HomeLayout != nil {
+		return s.importLegacyHomeLocked(groups)
 	}
-
-	// import new groups
-	for name, group := range groups {
-		s.appConfig.Hub.DashboardGroups[name] = group
-	}
-
-	err := s.store.SaveAppConfig(s.appConfig)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.commitLegacyGroupsLocked(groups)
 }
 
 func (d *AppConfigCache) SetDeviceConfigOverrides(deviceConfig *DeviceConfig) error {

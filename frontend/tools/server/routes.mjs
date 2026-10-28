@@ -3,14 +3,33 @@ import { hubStatePayload } from './state.mjs';
 import { createMockToken } from './utils.mjs';
 import { registerHistoryRoute } from './history.mjs';
 import { getMetricsForDevice } from './metrics-mock.mjs';
+import { registerHomeRoutes } from './home.mjs';
 
 export function registerRoutes(app) {
-  app.get('/api/__test/health', (_req, res) => res.json({ fixture: 'nodeherder-node-browser', run_id: process.env.NODEHERDER_E2E_RUN_ID ?? 'manual-mock' }));
+  registerHomeRoutes(app, () => hubStatePayload);
+  app.get('/api/__test/health', (_req, res) =>
+    res.json({ fixture: 'nodeherder-node-browser', run_id: process.env.NODEHERDER_E2E_RUN_ID ?? 'manual-mock' })
+  );
   // The ordinary Node mock exposes the same optional-feature degraded contract. Full Connections
   // browser flows use the production Go API with synthetic provider/temp repositories instead.
-  const connectionUnavailable = { code: 'service_unavailable', message: 'Connections are unavailable in this device mock. Use the isolated Go fixture for connection flows.' };
-  app.get('/api/integrations/catalog', (_req,res) => res.set('Cache-Control','private, no-store').json({data:{available:false,availability_error:connectionUnavailable,types:[{id:'waste_collection',name:'Bin collections',description:'Collection dates for your address.'}],providers:[]},error:null}));
-  app.use('/api/integrations', (_req,res) => res.status(503).set('Cache-Control','private, no-store').json({data:null,error:connectionUnavailable}));
+  const connectionUnavailable = {
+    code: 'service_unavailable',
+    message: 'Connections are unavailable in this device mock. Use the isolated Go fixture for connection flows.',
+  };
+  app.get('/api/integrations/catalog', (_req, res) =>
+    res.set('Cache-Control', 'private, no-store').json({
+      data: {
+        available: false,
+        availability_error: connectionUnavailable,
+        types: [{ id: 'waste_collection', name: 'Bin collections', description: 'Collection dates for your address.' }],
+        providers: [],
+      },
+      error: null,
+    })
+  );
+  app.use('/api/integrations', (_req, res) =>
+    res.status(503).set('Cache-Control', 'private, no-store').json({ data: null, error: connectionUnavailable })
+  );
   registerHistoryRoute(app, () => hubStatePayload.devices);
   app.get('/api/auth/mode', (req, res) => {
     res.set('Cache-Control', 'no-store').json({ mode: 'google' });

@@ -52,6 +52,13 @@ func newRouter(port int, ws ws.EventHub, hub *controllers.HubController, store s
 	if configuration.connections != nil {
 		api.RegisterIntegrationRoutes(router, configuration.connections)
 	}
+	var homeSources api.HomeIntegrations
+	if configuration.connections != nil {
+		homeSources = configuration.connections
+	}
+	homeLayout := api.NewHomeLayoutHandler(store.AppConfig(), store, homeSources)
+	router.GET("/api/home/layout", homeLayout)
+	router.PUT("/api/home/layout", homeLayout)
 
 	// websocket routing
 	router.GET("/ws", api.NewWsHandler(ws))

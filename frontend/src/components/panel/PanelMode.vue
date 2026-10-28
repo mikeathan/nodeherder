@@ -7,7 +7,11 @@
   import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
   import { RouteName } from '@/types/router';
   import { Automations } from '@/types/automation.type';
-  import { useDashboardGroups } from '@/composables/useDashboardGroups';
+  import { useHomeLayout } from '@/composables/useHomeLayout';
+  import { homeDeviceGroup } from '@/domain/home-compatibility';
+  import { homePanelBlocks, homePanelItems } from '@/domain/home-panel';
+  import { homeCardTitle } from '@/domain/home-cards';
+  import IntegrationTile from '@/components/dashboards/IntegrationTile.vue';
   import { findDevice, useHub } from '@/composables/useHub';
   import { useAutomationsLoader } from '@/composables/useAutomations';
   import { useThemeSettings } from '@/composables/useThemeSettings';
@@ -31,7 +35,10 @@
   defineEmits<{ (e: 'open-appearance'): void }>();
 
   const ROOM_KEY = 'nodeherder_panel_room';
-  const { groups } = useDashboardGroups();
+  const home = useHomeLayout();
+  const { sources, sourceError } = home;
+  const selectedId = ref<string | null>(null);
+  const groups = computed(() => homePanelBlocks(home.layout.value));
   const { devices, isDeviceDisabled } = useHub();
   const automations = useAutomationsLoader();
   const { mode, toggleMode } = useThemeSettings();
@@ -42,12 +49,28 @@
   watch(roomIndex, (i) => safeStorage.setItem(ROOM_KEY, String(i)));
 
   const roomTabs = ref<HTMLElement | null>(null);
-  const current = computed(() => normalizeRoomIndex(roomIndex.value, groups.value.length));
-  const room = computed(() => (groups.value.length ? panelRoom(groups.value[current.value], findDevice) : null));
-  const go = (i: number) => (roomIndex.value = i);
+  const current = computed(() => {
+    const index = selectedId.value ? groups.value.findIndex((block) => block.id === selectedId.value) : -1;
+    return index >= 0 ? index : normalizeRoomIndex(roomIndex.value, groups.value.length);
+  });
+  const block = computed(() => groups.value[current.value]);
+  const room = computed(() => (block.value ? panelRoom(homeDeviceGroup(block.value), findDevice) : null));
+  const panelItems = computed(() => (block.value && room.value ? homePanelItems(block.value, room.value) : []));
+  function pageName(index: number): string {
+    const group = groups.value[index];
+    if (group.kind === 'group') return group.name;
+    const card = group.cards[0];
+    return homeCardTitle(card, sources.value);
+  }
+  function go(index: number) {
+    roomIndex.value = normalizeRoomIndex(index, groups.value.length);
+    selectedId.value = groups.value[roomIndex.value]?.id ?? null;
+  }
 
   const time = computed(() => new Date(now.value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-  const date = computed(() => new Date(now.value).toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' }));
+  const date = computed(() =>
+    new Date(now.value).toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })
+  );
 
   const climate = computed(() => {
     const c = room.value?.climate;
@@ -70,7 +93,9 @@
   // status page
   const online = computed(() => devices.value.filter(isOnline).length);
   const lqis = computed(() => devices.value.map(linkQuality).filter((v): v is number => v !== null));
-  const avgLqi = computed(() => (lqis.value.length ? Math.round(lqis.value.reduce((a, b) => a + b, 0) / lqis.value.length) : 0));
+  const avgLqi = computed(() =>
+    lqis.value.length ? Math.round(lqis.value.reduce((a, b) => a + b, 0) / lqis.value.length) : 0
+  );
   const batteries = computed(() => devices.value.filter((d) => isBatteryPowered(d) && batteryLevel(d) !== null));
   const healthyBatteries = computed(() => batteries.value.filter((d) => !hasLowBattery(d)).length);
   const rulesOn = computed(() => (automations.value as Automations).filter((a) => a.enabled).length);
@@ -82,8 +107,10 @@
   function onRoomKey(e: KeyboardEvent) {
     if (modifiedKey(e)) return;
     const destinations: Record<string, number> = {
-      ArrowLeft: current.value - 1, ArrowRight: current.value + 1,
-      Home: 0, End: groups.value.length - 1,
+      ArrowLeft: current.value - 1,
+      ArrowRight: current.value + 1,
+      Home: 0,
+      End: groups.value.length - 1,
     };
     if (!Object.prototype.hasOwnProperty.call(destinations, e.key)) return;
     e.preventDefault();
@@ -93,13 +120,21 @@
   function onKey(e: KeyboardEvent) {
     if (modifiedKey(e) || page.value !== 'rooms' || !/^Arrow(Left|Right)$/.test(e.key)) return;
     const target = e.target instanceof HTMLElement ? e.target : null;
-    if (target?.isContentEditable || target?.closest('input, select, textarea, button, a, [role="dialog"], [role="slider"], [role="spinbutton"]')) return;
+    if (
+      target?.isContentEditable ||
+      target?.closest('input, select, textarea, button, a, [role="dialog"], [role="slider"], [role="spinbutton"]')
+    )
+      return;
     e.preventDefault();
     go(current.value + (e.key === 'ArrowLeft' ? -1 : 1));
   }
   watch([current, page], () => {
     // Arrow buttons can select a room outside the horizontal pager viewport.
-    void nextTick(() => roomTabs.value?.querySelector<HTMLElement>('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' }));
+    void nextTick(() =>
+      roomTabs.value
+        ?.querySelector<HTMLElement>('[aria-selected="true"]')
+        ?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+    );
   });
   onMounted(() => window.addEventListener('keydown', onKey));
   onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
@@ -108,21 +143,37 @@
 <template>
   <div class="hp">
     <header class="hp-strip">
-      <RouterLink :to="{ name: RouteName.GroupDashboard }" class="hp-logo" aria-label="Exit panel mode"><AppLogo :size="46" :wordmark="false" /></RouterLink>
+      <RouterLink :to="{ name: RouteName.GroupDashboard }" class="hp-logo" aria-label="Exit panel mode">
+        <AppLogo :size="46" :wordmark="false" />
+      </RouterLink>
       <div class="hp-clock">
         <b>{{ time }}</b>
         <span>{{ date }}</span>
       </div>
       <span class="hp-gap" />
       <ConnectionStatus />
-      <UiButton variant="ghost" :icon="mode === 'dark' ? 'light' : 'dark'" :label="mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'" @click="toggleMode" />
+      <UiButton
+        variant="ghost"
+        :icon="mode === 'dark' ? 'light' : 'dark'"
+        :label="mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+        @click="toggleMode" />
       <UiButton variant="ghost" icon="palette" label="Appearance" @click="$emit('open-appearance')" />
     </header>
-    <div class="hp-notices"><StatusBanners /></div>
+    <div class="hp-notices">
+      <StatusBanners />
+      <p v-if="home.error.value" class="nh-alert is-warning" role="alert">{{ home.error.value }}</p>
+      <p v-if="sourceError" class="nh-alert is-warning" role="status">
+        Integration results could not be updated. Device controls remain available.
+      </p>
+    </div>
 
     <main id="nh-content" class="hp-content" tabindex="-1">
       <template v-if="page === 'rooms'">
-        <UiEmpty v-if="!room" icon="home" title="No rooms yet" text="Panel mode shows your Home areas. Create one on the Home page.">
+        <UiEmpty
+          v-if="!room"
+          icon="home"
+          title="No rooms yet"
+          text="Panel mode shows your Home areas. Create one on the Home page.">
           <UiButton :to="{ name: RouteName.GroupDashboard }">Go to Home</UiButton>
         </UiEmpty>
         <template v-else>
@@ -131,7 +182,7 @@
             <div ref="roomTabs" class="hp-pager-list" role="tablist" aria-label="Rooms" @keydown="onRoomKey">
               <button
                 v-for="(g, i) in groups"
-                :key="g.name"
+                :key="g.id"
                 type="button"
                 role="tab"
                 :aria-selected="i === current"
@@ -139,19 +190,41 @@
                 :id="`panel-room-tab-${i}`"
                 aria-controls="panel-room"
                 @click="go(i)">
-                {{ g.name }}
+                {{ pageName(i) }}
               </button>
             </div>
             <UiButton icon="chevronRight" label="Next room" @click="go(current + 1)" />
           </div>
-          <section class="hp-room" :class="{ 'no-climate': !climate }" id="panel-room" :aria-labelledby="`panel-room-tab-${current}`" role="tabpanel">
+          <section
+            class="hp-room"
+            :class="{ 'no-climate': !climate }"
+            id="panel-room"
+            :aria-labelledby="`panel-room-tab-${current}`"
+            role="tabpanel">
             <div v-if="climate" class="hp-climate">
-              <PanelDial v-if="climate.online" :value="climate.value" :min="5" :max="35" :label="climate.label" :caption="climate.caption" />
-              <div v-else class="hp-dial-off"><UiIcon name="offline" /><b>Offline</b><span>{{ climate.name }}</span></div>
+              <PanelDial
+                v-if="climate.online"
+                :value="climate.value"
+                :min="5"
+                :max="35"
+                :label="climate.label"
+                :caption="climate.caption" />
+              <div v-else class="hp-dial-off">
+                <UiIcon name="offline" />
+                <b>Offline</b>
+                <span>{{ climate.name }}</span>
+              </div>
             </div>
             <div class="hp-buttons">
-              <PanelButton v-for="b in room.buttons" :key="`${b.deviceId}|${b.expose}`" :device-id="b.deviceId" :expose="b.expose" :label="b.label" />
-              <p v-if="!room.buttons.length && !climate" class="nh-muted">This area has no tiles yet.</p>
+              <template v-for="item in panelItems" :key="item.id">
+                <PanelButton
+                  v-if="item.kind === 'device'"
+                  :device-id="item.button.deviceId"
+                  :expose="item.button.expose"
+                  :label="item.button.label" />
+                <IntegrationTile v-else :card="item.card" :sources="sources" :source-error="sourceError" panel />
+              </template>
+              <p v-if="!panelItems.length && !climate" class="nh-muted">This area has no tiles yet.</p>
             </div>
           </section>
         </template>
@@ -159,28 +232,78 @@
 
       <template v-else>
         <div class="hp-gauges">
-          <PanelDial :value="online" :min="0" :max="devices.length" :label="`${online}/${devices.length}`" caption="devices online" kind="ok" />
-          <PanelDial :value="avgLqi" :min="0" :max="255" :label="lqis.length ? String(avgLqi) : '—'" caption="average link quality" kind="signal" />
-          <PanelDial :value="healthyBatteries" :min="0" :max="batteries.length" :label="`${healthyBatteries}/${batteries.length}`" caption="batteries healthy" kind="lamp" />
-          <PanelDial :value="rulesOn" :min="0" :max="automations.length" :label="`${rulesOn}/${automations.length}`" caption="automations on" kind="lamp" />
+          <PanelDial
+            :value="online"
+            :min="0"
+            :max="devices.length"
+            :label="`${online}/${devices.length}`"
+            caption="devices online"
+            kind="ok" />
+          <PanelDial
+            :value="avgLqi"
+            :min="0"
+            :max="255"
+            :label="lqis.length ? String(avgLqi) : '—'"
+            caption="average link quality"
+            kind="signal" />
+          <PanelDial
+            :value="healthyBatteries"
+            :min="0"
+            :max="batteries.length"
+            :label="`${healthyBatteries}/${batteries.length}`"
+            caption="batteries healthy"
+            kind="lamp" />
+          <PanelDial
+            :value="rulesOn"
+            :min="0"
+            :max="automations.length"
+            :label="`${rulesOn}/${automations.length}`"
+            caption="automations on"
+            kind="lamp" />
         </div>
         <h2 class="hp-h2">Needs a look</h2>
         <div class="hp-rows">
-          <RouterLink v-for="a in attention" :key="a.device.id" :to="{ name: RouteName.DevicePage, params: { id: a.device.id } }" class="hp-row">
+          <RouterLink
+            v-for="a in attention"
+            :key="a.device.id"
+            :to="{ name: RouteName.DevicePage, params: { id: a.device.id } }"
+            class="hp-row">
             <UiIcon :path="deviceIcon(a.device)" />
             <b>{{ a.device.friendly_name }}</b>
-            <span>{{ a.reason === 'offline' ? 'Offline' : a.reason === 'low-battery' ? 'Low battery' : a.reason === 'weak-link' ? 'Weak signal' : 'Disabled' }}</span>
+            <span>
+              {{
+                a.reason === 'offline'
+                  ? 'Offline'
+                  : a.reason === 'low-battery'
+                    ? 'Low battery'
+                    : a.reason === 'weak-link'
+                      ? 'Weak signal'
+                      : 'Disabled'
+              }}
+            </span>
           </RouterLink>
-          <p v-if="!attention.length" class="hp-row"><UiIcon name="check" /><b>Everything looks fine</b></p>
+          <p v-if="!attention.length" class="hp-row">
+            <UiIcon name="check" />
+            <b>Everything looks fine</b>
+          </p>
         </div>
       </template>
     </main>
 
     <nav class="hp-dock" aria-label="Panel">
       <DefaultViewButton dock />
-      <button type="button" :aria-pressed="page === 'rooms'" @click="page = 'rooms'"><UiIcon name="home" /><span>Rooms</span></button>
-      <button type="button" :aria-pressed="page === 'status'" @click="page = 'status'"><UiIcon name="gauge" /><span>Status</span></button>
-      <RouterLink :to="{ name: RouteName.GroupDashboard }"><UiIcon name="signOut" /><span>Exit panel</span></RouterLink>
+      <button type="button" :aria-pressed="page === 'rooms'" @click="page = 'rooms'">
+        <UiIcon name="home" />
+        <span>Rooms</span>
+      </button>
+      <button type="button" :aria-pressed="page === 'status'" @click="page = 'status'">
+        <UiIcon name="gauge" />
+        <span>Status</span>
+      </button>
+      <RouterLink :to="{ name: RouteName.GroupDashboard }">
+        <UiIcon name="signOut" />
+        <span>Exit panel</span>
+      </RouterLink>
     </nav>
   </div>
 </template>
@@ -188,10 +311,12 @@
 <style scoped>
   .hp {
     --hp-dock-target: 2.75rem;
-    --hp-dock-padding: .3rem;
-    --hp-dock-bottom-gap: max(.6rem, env(safe-area-inset-bottom));
+    --hp-dock-padding: 0.3rem;
+    --hp-dock-bottom-gap: max(0.6rem, env(safe-area-inset-bottom));
     /* Share dock geometry with notices: no overlap, layout shift or resize observer. */
-    --nh-notice-bottom: calc(var(--hp-dock-target) + var(--hp-dock-padding) * 2 + var(--nh-border-w) * 2 + var(--hp-dock-bottom-gap) + .5rem);
+    --nh-notice-bottom: calc(
+      var(--hp-dock-target) + var(--hp-dock-padding) * 2 + var(--nh-border-w) * 2 + var(--hp-dock-bottom-gap) + 0.5rem
+    );
     --nh-notice-max-height: calc(100dvh - var(--nh-header-h) - var(--nh-notice-bottom) - 1rem);
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -370,7 +495,7 @@
   .hp-dock {
     display: flex;
     justify-content: center;
-    gap: .25rem;
+    gap: 0.25rem;
     padding: var(--hp-dock-padding);
     margin: 0 auto var(--hp-dock-bottom-gap);
     max-width: calc(100% - 1rem);
@@ -384,16 +509,16 @@
     flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: .4rem;
+    gap: 0.4rem;
     min-width: var(--hp-dock-target);
     min-height: var(--hp-dock-target);
-    padding: .4rem .7rem;
+    padding: 0.4rem 0.7rem;
     border-radius: 12px;
     border: 0;
     background: none;
     color: var(--nh-text-muted);
     font: inherit;
-    font-size: .8rem;
+    font-size: 0.8rem;
     white-space: nowrap;
     text-decoration: none;
     cursor: pointer;
@@ -419,8 +544,8 @@
   }
   @media (max-width: 760px) {
     .hp {
-      --hp-dock-padding: .25rem;
-      --hp-dock-bottom-gap: max(.5rem, env(safe-area-inset-bottom));
+      --hp-dock-padding: 0.25rem;
+      --hp-dock-bottom-gap: max(0.5rem, env(safe-area-inset-bottom));
     }
     .hp-strip {
       gap: 0.4rem;
@@ -477,9 +602,9 @@
     }
     .hp-dock button,
     .hp-dock a {
-      gap: .3rem;
-      padding: .35rem .5rem;
-      font-size: .75rem;
+      gap: 0.3rem;
+      padding: 0.35rem 0.5rem;
+      font-size: 0.75rem;
     }
   }
 </style>

@@ -5,7 +5,12 @@
   import UiButton from '@/components/ui/UiButton.vue';
   import UiField from '@/components/ui/UiField.vue';
 
-  const props = defineProps<{ open: boolean; current?: string; validate: (name: string, current?: string) => string | null }>();
+  const props = defineProps<{
+    open: boolean;
+    current?: string;
+    busy?: boolean;
+    validate: (name: string, current?: string) => string | null;
+  }>();
   const emit = defineEmits<{ (e: 'close'): void; (e: 'save', name: string): void }>();
 
   const name = ref('');
@@ -35,15 +40,18 @@
           v-model="name"
           class="nh-input"
           autocomplete="off"
-          maxlength="80"
+          maxlength="60"
+          :disabled="busy"
           autofocus
           :aria-invalid="!!error || undefined"
           :aria-describedby="error ? 'area-name-err' : 'area-name-help'" />
       </UiField>
     </form>
     <template #footer>
-      <UiButton @click="emit('close')">Cancel</UiButton>
-      <UiButton variant="primary" type="submit" form="area-name-form">{{ current ? 'Rename' : 'Create area' }}</UiButton>
+      <UiButton :disabled="busy" @click="emit('close')">Cancel</UiButton>
+      <UiButton variant="primary" type="submit" form="area-name-form" :disabled="busy">
+        {{ current ? 'Rename' : 'Create area' }}
+      </UiButton>
     </template>
   </UiDialog>
 </template>

@@ -6,14 +6,22 @@
    */
   import { computed } from 'vue';
   import { Expose } from '@/types/device';
-  import { binaryOffValue, binaryOnValue, exposeKind, exposeLabel, formatExposeValue, isBinaryOn, stateExposeOf } from '@/domain/exposes';
+  import {
+    binaryOffValue,
+    binaryOnValue,
+    exposeKind,
+    exposeLabel,
+    formatExposeValue,
+    isBinaryOn,
+    stateExposeOf,
+  } from '@/domain/exposes';
   import { exposeIcon } from '@/components/ui/icons';
   import { findDevice, statusOf } from '@/composables/useHub';
   import { useDeviceCommand } from '@/composables/useDeviceCommand';
   import { emitOpenEntityViewDialog } from '@/contracts/dialog-events';
   import UiIcon from '@/components/ui/UiIcon.vue';
 
-  const props = defineProps<{ deviceId: string; expose: string; editing?: boolean }>();
+  const props = defineProps<{ deviceId: string; expose: string; editing?: boolean; busy?: boolean }>();
   const emit = defineEmits<{ (e: 'remove'): void }>();
 
   const { send, isPending, canControl } = useDeviceCommand();
@@ -35,7 +43,9 @@
     if (e.type === 'binary') return isBinaryOn(e);
     return switchExpose.value ? isBinaryOn(switchExpose.value) : false;
   });
-  const isAlert = computed(() => ['smoke', 'alarm', 'water_leak', 'tamper', 'device_fault'].includes(props.expose) && isOn.value);
+  const isAlert = computed(
+    () => ['smoke', 'alarm', 'water_leak', 'tamper', 'device_fault'].includes(props.expose) && isOn.value
+  );
   const pending = computed(() => !!switchExpose.value && isPending(props.deviceId, switchExpose.value.name));
   const toggleable = computed(() => !!switchExpose.value && canControl(device.value) && !props.editing);
 
@@ -55,7 +65,11 @@
 
   function openHistory() {
     if (props.editing || !device.value) return;
-    emitOpenEntityViewDialog(() => {}, { id: props.deviceId, name: props.expose, title: `${exposeLabel(props.expose)} · ${device.value.friendly_name}` });
+    emitOpenEntityViewDialog(() => {}, {
+      id: props.deviceId,
+      name: props.expose,
+      title: `${exposeLabel(props.expose)} · ${device.value.friendly_name}`,
+    });
   }
 </script>
 
@@ -87,7 +101,13 @@
       </span>
       <span class="nh-tile-dev">{{ device?.friendly_name ?? deviceId }}</span>
     </button>
-    <button v-if="editing" type="button" class="nh-tile-del" :aria-label="`Remove ${label} from this area`" @click="emit('remove')">
+    <button
+      v-if="editing"
+      type="button"
+      class="nh-tile-del"
+      :disabled="busy"
+      :aria-label="`Remove ${label} from this area`"
+      @click="emit('remove')">
       <UiIcon name="close" />
     </button>
   </div>
