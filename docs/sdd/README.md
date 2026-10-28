@@ -70,12 +70,14 @@ issues/`TODO.md`.
 ## Tooling and document maintenance
 
 Agent guidance lives under `.agents/`: `rules/` for coding conventions routed by
-root `AGENTS.md`, `skills/` for workflows. Rules do not load automatically.
+root `AGENTS.md`, `skills/` for workflows. Detailed rules require an explicit read;
+Claude Code also has path-scoped routing reminders. See the
+[agent configuration guide](agent-configuration.md) for supported agents and discovery.
 
 For implementation plans, use `$sdd-plan` or its
 [instructions](../../.agents/skills/sdd-plan/SKILL.md). It handles active/missing specs
-and distinguishes planning, review, and implementation. `.agents/skills/` enables
-Codex discovery; templates remain authoritative.
+and distinguishes planning, review, and implementation. Codex and OpenCode discover the
+shared skill; Claude Code's `/sdd-plan` command routes to it. Templates remain authoritative.
 
 Structure/location follow [GitHub Spec Kit](https://github.github.com/spec-kit/) and its
 [constitution template](https://github.com/github/spec-kit/blob/main/templates/constitution-template.md);

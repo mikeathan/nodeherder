@@ -17,17 +17,34 @@ Classify implementation/refactoring/review before loading rules:
 - Frontend → [Vue/TypeScript](.agents/rules/vue-engineer.md).
 - Cross-stack → both plus [integration](.agents/rules/fullstack-engineer.md).
 
-`.agents/rules/` loads through these links; `.agents/skills/` holds discoverable
-workflows. Read only relevant files; constitutions retain policy authority.
+These links do not automatically load rules: read the relevant files when needed.
+Reuse instructions already in context; reread if they may have changed or were lost
+after compaction. Constitutions retain policy authority. See the
+[agent configuration guide](docs/sdd/agent-configuration.md) for discovery and setup.
+
+For code implementation, refactoring, or review, activate `clean-code` (Claude Code:
+`/clean-code`; Codex: `$clean-code`) or read its
+[instructions](.agents/skills/clean-code/SKILL.md) if skill discovery is unavailable.
+This complements, and does not replace, the applicable engineering rules.
 
 ## Planning requests
 
-For new, updated, or reviewed implementation plans, use
-[$sdd-plan](.agents/skills/sdd-plan/SKILL.md). Follow the
+For new, updated, or reviewed implementation plans, activate `sdd-plan` (Claude
+Code: `/sdd-plan`; Codex: `$sdd-plan`) or read its
+[instructions](.agents/skills/sdd-plan/SKILL.md) if skill discovery is unavailable. Follow the
 [branch scope rule](docs/sdd/README.md#branch-scope): update the current branch's one
 spec/plan/tasks set for follow-up changes; new work after completed earlier work gets
 a new spec. Planning-only requests stop at the requested artifacts; do not start
-implementation. If skills are unavailable, read the linked skill as workflow guidance.
+implementation.
+
+## Reusable workflows
+
+When work reveals a demonstrated, recurring repository workflow that benefits from
+reusable instructions, capture it in an existing skill or create a focused project
+skill. Check for an existing owner first; use ordinary documentation for facts or
+one-off findings. Respect the requested scope, including review-only and planning-only
+work. Follow the [agent configuration guide](docs/sdd/agent-configuration.md) for
+skill discovery and verification.
 
 ## Commands
 
@@ -54,5 +71,7 @@ Before adding a test file, identify its source owner and check for an existing c
 Behavior changes need spec → plan → tasks before implementation; templates:
 `.specify/templates/`. Documentation/mechanical changes use NH-01's lightweight path.
 Verify acceptance/rules; report actual checks, failures, and unrun checks.
+For code changes and reviews, inspect the relevant diff and check it against the
+applicable engineering rules before finishing; report unresolved findings.
 Never run routine tests against household devices. Verify contracts in code; README
 examples may lag. Keep guidance concise; link to existing rules rather than repeat them.
