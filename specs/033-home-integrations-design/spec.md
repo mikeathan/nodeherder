@@ -164,3 +164,8 @@ example. Weather/energy remain future capabilities. B's mandatory Household cont
 card-first placement and app implementation are explicitly authorized. The
 [layout contract](contracts/home-layout.md) and [ownership ADR](adr-001-home-layout.md) resolve
 the previously open ownership/privacy/migration decisions before production code.
+
+### CI drag and navigation regressions
+
+- AC-31: In Home edit mode, dropping a card over an unavailable/disabled card control completes one atomic placement save, removes the source placement, and survives reload. A failed write retains the accepted layout and feedback.
+- AC-32: The blocked-browser-storage navigation scenario distinguishes the panel and Home pin controls and verifies navigation before changing the Home preference.

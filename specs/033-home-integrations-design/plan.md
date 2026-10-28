@@ -327,3 +327,9 @@ isolated browser check passed edit-mode area/card dragging, saved ordering, and 
 unit tests passed 479 tests; build, lint and E2E type-check passed (28 existing lint warnings).
 Browser fixtures used alternate local ports while the user's app was running; no household devices
 or providers were used.
+
+### CI follow-up: disabled drop targets and navigation readiness
+
+Chromium suppresses compatibility mouse events over disabled form controls. Sortable's fallback listens for mouseup, so a card dropped over a disabled control can remain in a drag state and never save. Across Home, allow pointer hit testing to pass through disabled buttons while editing; enabled controls and keyboard behavior remain unchanged. Verify the actual drag, one write and reload, including an unavailable control at the release point. This changes no transport, persistence, trust boundary or device command (NH-02–04, FE-01–03/05); failure recovery remains the existing revision-fenced save (NH-06). Verify desktop and mobile interaction and existing frontend checks (NH-01/05, FE-04). The panel test must wait for Home and use exact accessible names; blocked storage remains covered.
+
+Verification: the real disabled tile regression reproduced the stranded drag without the CSS fix; the complete desktop 3/4 shard passed (12 tests), mobile 4/4 passed (29 tests), and mobile card/area drag passed (2 tests). Frontend Jest passed (479 tests), lint passed with 28 existing warnings, production build and E2E type check passed. CI remains the Linux cross-environment check. No household devices were used.

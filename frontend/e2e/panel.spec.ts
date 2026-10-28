@@ -134,9 +134,10 @@ test.describe('browser default view', () => {
     await page.getByRole('button', { name: pinName }).click();
     await expect(page.getByRole('button', { name: unpinName })).toHaveAttribute('aria-pressed', 'true');
     await ui.panel.exit(page).click();
-    await page.getByRole('button', { name: pinName }).click();
-    await expect(page.getByRole('button', { name: unpinName })).toHaveAttribute('aria-pressed', 'true');
-    await page.getByRole('button', { name: unpinName }).click();
+    await expect(page).toHaveURL(/\/groupdashboard$/);
+    await page.getByRole('button', { name: pinName, exact: true }).click();
+    await expect(page.getByRole('button', { name: unpinName, exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await page.getByRole('button', { name: unpinName, exact: true }).click();
     await page.reload();
     await page.goto('/');
     await expect(page).toHaveURL(/\/groupdashboard$/);

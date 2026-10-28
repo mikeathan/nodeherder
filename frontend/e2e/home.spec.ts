@@ -475,7 +475,7 @@ test('a standalone card has a visible handle that reorders and saves its positio
   expect((await (await page.request.get(`${AUTOMATION_HUB_API}/integrations/instances`)).json()).data).toHaveLength(1);
 });
 
-test('dragging a card between groups saves one atomic placement change', async ({ page }) => {
+test('dragging a card between groups saves one atomic placement change', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await signIn(page, ui.home.path);
   await expect(page.getByRole('button', { name: 'Edit layout' })).toBeEnabled();
@@ -501,10 +501,16 @@ test('dragging a card between groups saves one atomic placement change', async (
       { x: from.x + from.width / 2, y: from.y + from.height / 2 },
       { x: to.x + to.width / 2, y: to.y + to.height / 2 },
       20,
-      // Native HTML dragover admission is asynchronous. Release only once the destination
-      // actually owns the dragged DOM node, as a person pausing over the drop target would.
+      // Device tile bodies are disabled during editing. Release over the actual disabled
+      // control: Chromium otherwise suppresses mouseup and strands Sortable's fallback drag.
       async () => {
-        await expect(target.locator(`[data-card-id="${id}"]`)).toHaveCount(1);
+        const ghost = target.locator(`[data-card-id="${id}"].is-ghost`);
+        await expect(ghost).toHaveCount(1);
+        if (testInfo.project.name !== 'desktop') return;
+        const body = ghost.locator('button.nh-tile-body');
+        await expect(body).toBeDisabled();
+        const box = (await body.boundingBox())!;
+        await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
       }
     );
     await expect(target.locator(`[data-card-id="${id}"]`)).toBeVisible();

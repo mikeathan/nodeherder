@@ -194,6 +194,10 @@
 </template>
 
 <style scoped>
+  /* Disabled controls suppress Chromium mouseup; let Home drags finish over them. */
+  .nh-home.is-editing :deep(button:disabled) {
+    pointer-events: none;
+  }
   .nh-home {
     container-type: inline-size;
     --nh-home-heading-height: 2rem;

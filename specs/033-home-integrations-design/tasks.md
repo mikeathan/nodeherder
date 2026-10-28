@@ -73,3 +73,6 @@ Spec: [spec.md](spec.md) | Plan: [plan.md](plan.md)
 
 - [x] T037 — AC-30: align first-row standalone cards without shifting later rows.
 - [x] T038 — AC-30: verify responsive top/lower rows, reordering and frontend checks.
+
+- [x] T039 — AC-31/32: correct disabled drop hit testing and exact navigation test readiness; retain atomic save and rollback coverage.
+- [x] T040 — AC-31/32/NH-05/FE-04: reproduce disabled drop, run affected shards and frontend checks; record actual results and limits.
