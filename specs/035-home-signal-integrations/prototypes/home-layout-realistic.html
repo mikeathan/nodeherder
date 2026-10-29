@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="en" data-mode="dark" data-theme="fleece">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NodeHerder — Home sections: one primitive, cards or list</title>
+<style>
+  :root{
+    --bg:#0e2230; --surface:#14303f; --surface2:#1b3d50; --border:#23495e; --border-strong:#33657f;
+    --text:#eef4f2; --muted:#a4c3d1; --accent:#5cc4ec; --accent-ink:#072030;
+    --ok:#2e9e5b; --warn:#d98a00; --danger:#d93a3a; --info:#2f7fd6;
+    --unit:30px; --ugap:8px; --radius:14px; --radius-l:19px;
+    --shadow:0 1px 2px rgb(0 0 0/.4);
+    --soft:color-mix(in srgb,var(--accent) 16%,transparent);
+    --font:'Figtree','Segoe UI',Roboto,system-ui,-apple-system,sans-serif;
+    --kind-temp:#ef5350; --kind-humidity:#29b6f6; --kind-energy:#43a047; --kind-power:#fb8c00;
+    --kind-light:#f2b01e; --kind-motion:#7e57c2; --kind-contact:#26a69a; --kind-alarm:#e53935;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);line-height:1.4}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.86em;background:var(--surface2);padding:1px 5px;border-radius:5px}
+  .wrap{max-width:1600px;margin:0 auto;padding:22px 20px 80px}
+  header.page{position:sticky;top:0;z-index:30;padding:11px 20px;background:color-mix(in srgb,var(--bg) 90%,transparent);
+    backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+  header.page .line{display:flex;flex-wrap:wrap;gap:10px;align-items:center;max-width:1600px;margin:0 auto}
+  header.page h1{font-size:1rem;margin:0;font-weight:650}
+  header.page .sub{color:var(--muted);font-size:.76rem;margin:1px 0 0}
+  .spacer{flex:1}
+  .seg{display:flex;border:1px solid var(--border);border-radius:999px;overflow:hidden;background:var(--surface)}
+  .seg button{appearance:none;border:0;background:transparent;color:var(--muted);font:inherit;font-size:.76rem;padding:6px 10px;cursor:pointer;min-height:32px}
+  .seg button[aria-pressed="true"]{background:var(--soft);color:var(--text)}
+  .seg button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+  h2{font-size:1.02rem;margin:0 0 4px} h3{font-size:.92rem;margin:0 0 5px} h4{margin:0}
+  p{margin:0 0 9px} .muted{color:var(--muted)} .small{font-size:.8rem} .tiny{font-size:.71rem}
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-l);padding:16px}
+  .lead{display:grid;grid-template-columns:1.15fr 1fr;gap:16px;margin:16px 0 22px}
+  .lead ul{margin:0;padding-left:17px;color:var(--muted);font-size:.82rem} .lead li{margin:4px 0}
+  .hier{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.75rem;color:var(--muted);line-height:1.7;white-space:pre;overflow:auto}
+  .hier b{color:var(--text)}
+  .block{margin:24px 0}
+  .block-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:9px;margin-bottom:9px}
+  .tag{font-size:.64rem;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:999px;border:1px solid var(--border-strong);color:var(--muted)}
+  .tag.rec{border-color:var(--ok);color:#8fe0af;background:color-mix(in srgb,var(--ok) 14%,transparent)}
+  .tag.bad{border-color:var(--danger);color:#ff9d9d;background:color-mix(in srgb,var(--danger) 12%,transparent)}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .canvas{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px;container-type:inline-size}
+  .page-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px}
+  .page-title b{font-size:1.02rem}
+  .page-title .meta{font-size:.72rem;color:var(--muted)}
+  .actions{display:flex;gap:7px}
+  .btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:9px;padding:5px 9px;
+    font:inherit;font-size:.71rem;display:inline-flex;gap:5px;align-items:center;min-height:30px}
+  .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent;font-weight:650}
+
+  .sections{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;align-items:start}
+  .section{min-width:0;align-self:start}
+  .section.is-wide{grid-column:span 2}
+  .sec-head{display:flex;align-items:center;gap:5px;min-height:28px;margin:0 0 7px 2px}
+  .sec-head .chev{width:20px;height:20px;border:0;background:transparent;color:var(--muted);border-radius:5px;cursor:pointer;display:grid;place-items:center;font-size:.65rem;flex:none}
+  .sec-head .chev:focus-visible,.sec-head .viewtog:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  .sec-head h4{margin:0;font-size:.9rem;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sec-head .count{font-size:.66rem;color:var(--muted);border:1px solid var(--border);border-radius:999px;padding:1px 6px;flex:none}
+  .sec-head .grow{flex:1}
+  .sec-head .tools{display:flex;gap:1px}
+  .sec-head .tools span,.sec-head .viewtog{width:22px;height:22px;display:grid;place-items:center;border-radius:5px;font-size:.7rem;border:0;background:transparent;color:var(--muted);cursor:pointer;padding:0;opacity:.65}
+  .sec-head .viewtog[aria-pressed="true"]{background:var(--soft);color:var(--text);opacity:1}
+  .sec-head .tools span{opacity:.45}
+  .section.is-collapsed .cards{display:none}
+  .collapse-sum{display:none;font-size:.72rem;color:var(--muted);padding:0 0 6px 26px}
+  .section.is-collapsed .collapse-sum{display:block}
+
+  /* card view: quantised rows */
+  .cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:var(--unit);gap:var(--ugap);min-width:0}
+  .section.is-wide .cards{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .section.is-single .cards{grid-template-columns:1fr}
+  .card{position:relative;min-width:0;overflow:hidden;background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius);padding:8px 9px;box-shadow:var(--shadow);display:flex;flex-direction:column;justify-content:center}
+  .card.col2{grid-column:span 2}
+  .card.h2{grid-row:span 2}.card.h3{grid-row:span 3}.card.h4{grid-row:span 4}.card.h5{grid-row:span 5}
+  .card.alert{border-color:color-mix(in srgb,var(--danger) 55%,var(--border));background:color-mix(in srgb,var(--danger) 7%,var(--surface))}
+  .card .row{display:flex;gap:8px;align-items:flex-start;min-width:0}
+  .ico{width:28px;height:28px;flex:none;border-radius:50%;display:grid;place-items:center;background:var(--surface2);font-size:.85rem}
+  .ico.temp{background:color-mix(in srgb,var(--kind-temp) 22%,transparent)}
+  .ico.humidity{background:color-mix(in srgb,var(--kind-humidity) 22%,transparent)}
+  .ico.energy{background:color-mix(in srgb,var(--kind-energy) 22%,transparent)}
+  .ico.power{background:color-mix(in srgb,var(--kind-power) 22%,transparent)}
+  .ico.light{background:color-mix(in srgb,var(--kind-light) 22%,transparent)}
+  .ico.motion{background:color-mix(in srgb,var(--kind-motion) 22%,transparent)}
+  .ico.contact{background:color-mix(in srgb,var(--kind-contact) 22%,transparent)}
+  .ico.alarm{background:color-mix(in srgb,var(--kind-alarm) 22%,transparent)}
+  .title{font-size:.76rem;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .value{font-size:.75rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dev{font-size:.65rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .status{display:flex;gap:4px;align-items:center;font-size:.63rem;color:var(--muted);margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--ok);flex:none;display:inline-block}
+  .dot.warn{background:var(--warn)}.dot.err{background:var(--danger)}
+  .rows{list-style:none;margin:5px 0 0;padding:0;display:grid;gap:3px;font-size:.72rem;min-width:0}
+  .rows li{display:flex;justify-content:space-between;gap:8px;min-width:0}
+  .rows li span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rows li span:last-child{font-weight:600;flex:none}
+  .more{font-size:.63rem;color:var(--muted);margin-top:3px}
+  .unit-badge{position:absolute;top:3px;right:4px;font-size:.56rem;letter-spacing:.04em;color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 14%,transparent);border:1px solid color-mix(in srgb,var(--accent) 40%,transparent);
+    border-radius:4px;padding:0 3px;display:none}
+  body.showgrid .unit-badge{display:block}
+  body.showgrid .cards:not(.is-list){background-image:repeating-linear-gradient(to bottom,transparent 0,transparent calc(var(--unit) - 1px),color-mix(in srgb,var(--accent) 18%,transparent) calc(var(--unit) - 1px),color-mix(in srgb,var(--accent) 18%,transparent) var(--unit));background-size:100% calc(var(--unit) + var(--ugap))}
+
+  /* list view: one row per card, compact */
+  .cards.is-list{grid-template-columns:1fr;grid-auto-rows:auto;gap:5px}
+  .section.is-wide .cards.is-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .list-row{display:flex;align-items:center;gap:9px;min-height:42px;padding:5px 9px;background:var(--surface);
+    border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);min-width:0;cursor:pointer}
+  .list-row:hover{border-color:var(--border-strong)}
+  .list-row:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .list-row .ico{width:24px;height:24px;font-size:.72rem}
+  .list-copy{flex:1;min-width:0}
+  .list-name{font-size:.76rem;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .list-sub{font-size:.63rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .list-val{font-size:.74rem;color:var(--text);white-space:nowrap;flex:none;max-width:45%;overflow:hidden;text-overflow:ellipsis}
+  .list-row .dot{margin-left:2px}
+  .list-more{font-size:.66rem;color:var(--accent);padding:3px 9px}
+  @media (max-width:760px){
+    .section.is-wide{grid-column:span 1}
+    .section.is-wide .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .section.is-wide .cards.is-list{grid-template-columns:1fr}
+  }
+  @media (max-width:520px){ .cards,.section.is-wide .cards{grid-template-columns:1fr} .card.col2{grid-column:span 1} .wrap{padding:16px 12px 60px} }
+
+  .rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:12px}
+  .rule{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px}
+  .rule h5{margin:0 0 5px;font-size:.74rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+  .rule p{font-size:.77rem;color:var(--muted);margin:0}
+  .table{width:100%;border-collapse:collapse;font-size:.77rem;margin-top:8px}
+  .table th,.table td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--border);vertical-align:top}
+  .table th{color:var(--muted);font-weight:600;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em}
+  .table td:first-child{color:var(--text);font-weight:600}
+  .metrics{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-top:9px;font-size:.72rem;color:var(--muted)}
+  .metrics b{color:var(--text)}
+  .track{width:180px;height:6px;border-radius:3px;background:var(--surface2);overflow:hidden}
+  .fill{height:100%;background:var(--accent);width:0}
+  .mobile{margin-top:10px;width:375px;max-width:100%;border:1px solid var(--border-strong);border-radius:26px;padding:10px;background:var(--bg)}
+  .qa{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;margin-top:14px}
+  .qa .panel{padding:13px}
+  .qa h4{font-size:.79rem;margin-bottom:5px}
+  .qa p{font-size:.76rem;color:var(--muted);margin:0}
+  @media (max-width:1100px){ .lead,.two{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<header class="page"><div class="line">
+  <div><h1>Home · one section primitive, cards or list</h1><p class="sub">Spec 035 · every section can hold one or many, and switch view</p></div>
+  <div class="spacer"></div>
+  <div class="seg" role="group" aria-label="Services preview">
+    <button data-mode="off" aria-pressed="false">No Services</button>
+    <button data-mode="wide" aria-pressed="true">Services · wide</button>
+    <button data-mode="split" aria-pressed="false">Services · split</button>
+  </div>
+  <div class="seg" role="group" aria-label="Integration count">
+    <button data-count="2" aria-pressed="true">2</button>
+    <button data-count="6" aria-pressed="false">6</button>
+    <button data-count="9" aria-pressed="false">9</button>
+  </div>
+  <button class="btn" id="gridToggle" aria-pressed="false">▦ Row units</button>
+</div></header>
+
+<div class="wrap">
+  <section class="lead">
+    <div class="panel">
+      <h2>One primitive: Section</h2>
+      <p class="small muted">No “Services type” and no “single-card type”. A section has a name, a width, a view and one or more cards. That is the whole model.</p>
+      <div class="hier"><b>Home</b>
+├── <b>Section</b> “Living room”  1 col · cards
+│   ├── Card device 3u
+│   └── Card device 4u
+├── <b>Section</b> “Services”     2 cols · list
+│   ├── Row bins
+│   ├── Row weather
+│   └── Row air quality
+└── <b>Section</b> “Weather”      1 col · cards
+    └── Card weather 4u   ← one card, still has a header</div>
+      <p class="tiny muted" style="margin-top:8px">A single-card section is normal. It gets a name, so it can never be the unlabelled orphan from the screenshot.</p>
+    </div>
+    <div class="panel">
+      <h2>View is per section</h2>
+      <ul>
+        <li><b>Cards</b> — the spatial view. Explicit width (1–2 columns) and bounded height (2–5 units). Best for a few things you scan.</li>
+        <li><b>List</b> — one compact row per card, ~42px. Best for many services or many device values. Ignore width/height, keep them stored for when you switch back.</li>
+        <li><b>One or many</b> — a section with one card and a section with nine use the same header and the same switch.</li>
+        <li><b>No third level</b> — if you want grouping, make another section. “Split by type” just creates sections for you.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="block-head"><span class="tag">your screenshot</span><h2>Current Home, real card heights</h2>
+      <div class="spacer"></div><span class="tiny muted">bins sits in Garden, weather in Kitchen, both without their own header</span></div>
+    <div class="canvas" id="current"></div>
+  </section>
+
+  <section class="block">
+    <div class="block-head"><span class="tag rec">proposed</span><h2>Services section — switch Cards / List on the header</h2>
+      <div class="spacer"></div><span class="tiny muted">the ☰ / ▦ button next to each title toggles that section only</span></div>
+    <div class="canvas" id="proposed"></div>
+    <div class="metrics">
+      <span>Services height</span><span class="track"><span class="fill" id="hfill"></span></span><b id="hval">—</b>
+      <span class="tiny">cards: ~2 rows · list: 3 rows per column</span>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="block-head"><span class="tag">view comparison</span><h2>Same six services, two views</h2></div>
+    <div class="two">
+      <div class="canvas" id="compareCards"></div>
+      <div class="canvas" id="compareList"></div>
+    </div>
+    <div class="rules">
+      <div class="rule"><h5>Cards</h5><p>Spatial, scannable, variable geometry. Six services occupy two rows in a wide section. Good when each service shows a different kind of value.</p></div>
+      <div class="rule"><h5>List</h5><p>Dense and uniform. Six rows in two columns, one line each. Good when you mainly need “what is the value right now”.</p></div>
+      <div class="rule"><h5>Switching</h5><p>Order, card width and height are preserved. List ignores geometry, cards restore it. No data or placement changes.</p></div>
+      <div class="rule"><h5>Single-card section</h5><p>Same header, same views. A one-card list is allowed but cards are the sensible default.</p></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="block-head"><span class="tag">single card</span><h2>A section with exactly one integration</h2></div>
+    <div class="two">
+      <div class="canvas" id="singleCard"></div>
+      <div class="canvas" id="singleList"></div>
+    </div>
+    <p class="tiny muted">This is how you give Weather its own named header without inventing a second card type.</p>
+  </section>
+
+  <section class="block">
+    <div class="block-head"><span class="tag">geometry</span><h2>Cards vary; the spans stay predictable</h2></div>
+    <table class="table">
+      <thead><tr><th>Card</th><th>Width</th><th>Height</th><th>What fits</th></tr></thead>
+      <tbody>
+        <tr><td>Device tile</td><td>1 col</td><td>3u / 4u</td><td>Label, value, device. 4u when the device name wraps.</td></tr>
+        <tr><td>Weather</td><td>1 col</td><td>4u</td><td>Now, high/low, rain, location, status.</td></tr>
+        <tr><td>Air quality</td><td>1 col</td><td>4u</td><td>Index, PM2.5, pollen, status.</td></tr>
+        <tr><td>Bin collections</td><td>2 cols</td><td>5u</td><td>Two next collections, “+1 more”, checked time.</td></tr>
+        <tr><td>List row</td><td>full row</td><td>42px</td><td>Icon, name, one value, status. Geometry ignored.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="block">
+    <div class="block-head"><span class="tag">mobile</span><h2>375px: one column, list stays one line</h2></div>
+    <div class="mobile" id="mobile"></div>
+  </section>
+
+  <section class="block">
+    <div class="qa">
+      <div class="panel"><h4>Can a group have one card?</h4><p>Yes. It has a header, count “1”, add, collapse and view switch. The card does not stretch to fill the group.</p></div>
+      <div class="panel"><h4>Do groups behave like device groups?</h4><p>Exactly: name, order, collapse, width, and now a view. Delete asks what to do with its cards.</p></div>
+      <div class="panel"><h4>Does a big Services section dominate?</h4><p>Switch it to list (3 rows per column at 6 services) or split it. Cards are bounded; the list is dense.</p></div>
+      <div class="panel"><h4>What if I switch back?</h4><p>Widths and heights are preserved per card, so the card view returns exactly as it was.</p></div>
+    </div>
+  </section>
+
+  <p class="tiny muted">Synthetic data mirroring a recorded Home screen. Fleece dark tokens. No device commands.</p>
+</div>
+
+<script>
+const state = { mode:'wide', count:2, grid:false, collapsed:new Set(), views:{} };
+const $ = (s,el=document)=>el.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function dev(label,value,device,kind,height){ return {type:'device',label,value,device,kind,height}; }
+function integ(id,name,icon,o){ return Object.assign({type:'integration',id,name,icon},o); }
+
+const areas = [
+  { name:'Living room', items:[
+    dev('Brightness','76 %','Living Room Light','light',3),
+    dev('Energy today','0.28 kWh','TV power socket','energy',3),
+    dev('Power','116.1 W','TV power socket','power',3),
+    dev('Presence','Clear','Living room presence sensor','motion',4),
+    dev('Illuminance','3 lx','Living room presence sensor','light',4),
+  ]},
+  { name:'Attic room', items:[
+    dev('Temperature','21.4 °C','Attic room temperature sensor','temp',4),
+    dev('Humidity','79.3 %','Attic room temperature sensor','humidity',4),
+    dev('Brightness','100 %','Attic room Light','light',3),
+    dev('State','On','Attic room power socket','power',3),
+    dev('Alarm','Silent','Attic alarm','alarm',3),
+    dev('Smoke','Clear','Attic smoke alarm','alarm',3),
+  ]},
+  { name:'Garden', items:[
+    dev('Humidity','91 %','Garden temperature','humidity',3),
+    dev('Temperature','12.2 °C','Garden temperature','temp',3),
+  ]},
+  { name:'Kitchen', items:[
+    dev('Contact','Closed','Front door sensor','contact',3),
+    dev('Energy','296 kWh','kitchen power socket','energy',3),
+  ]},
+];
+
+const services = [
+  integ('bins','Bin collections','♻',{ col:2, h:5, rows:[['Brown bin','Tue 3 Nov'],['Blue bin','Tue 17 Nov'],['Black bin','No upcoming date']],
+    meta:'Bin collections', listValue:'Tue 3 Nov', status:'Saved schedule · checked 26 Oct 15:37', dot:'' }),
+  integ('weather','Weather','☁',{ col:1, h:4, value:'14° · Cloudy', detail:'H 15° · L 8° · Rain 4%', meta:'Weather · Nether Edge',
+    listValue:'14° Cloudy', status:'Forecast · checked 16:23', dot:'' }),
+  integ('air','Air quality','◌',{ col:1, h:4, value:'32 · Fair', detail:'PM2.5 11 · Grass pollen low', meta:'Air quality · Nether Edge',
+    listValue:'32 Fair', status:'Checked 15:40', dot:'' }),
+  integ('warn','Weather warnings','⚠',{ col:2, h:5, alert:true, value:'Amber · Wind', detail:'Until Thu 09:00 · Yorkshire & Humber',
+    meta:'Alerts · Met Office', listValue:'Amber · Wind', status:'1 active · checked 15:41', dot:'warn' }),
+  integ('fuel','Fuel prices','⛽',{ col:2, h:5, rows:[['Shell Abbeydale','1.2 mi · 143p'],['Tesco Extra','1.6 mi · 140p'],['Sainsbury’s','1.9 mi · 142p']],
+    meta:'Fuel prices · Nether Edge', listValue:'143p · 1.2 mi', status:'Checked 14:02', dot:'' }),
+  integ('transit','Next trains','⛟',{ col:1, h:4, value:'12 min · 27 min', detail:'Dore → Sheffield', meta:'Transit · National Rail',
+    listValue:'12 min', status:'Checked 15:44', dot:'warn' }),
+  integ('energy','Agile prices','⚡',{ col:1, h:4, value:'12.4p now', detail:'Cheapest 01:30 · 5.1p', meta:'Energy · Octopus',
+    listValue:'12.4p', status:'Checked 15:30', dot:'' }),
+  integ('flood','Flood warnings','≈',{ col:1, h:4, value:'No warnings', detail:'River Sheaf · 2 normal', meta:'Flood · Environment Agency',
+    listValue:'None', status:'Checked 15:00', dot:'' }),
+  integ('bins2','Garden waste','♻',{ col:1, h:4, value:'Next Tue 10 Nov', detail:'Every 2 weeks', meta:'Waste · Sheffield',
+    listValue:'Tue 10 Nov', status:'Checked 26 Oct', dot:'' }),
+];
+
+function cardHtml(o){
+  if (o.type==='device'){
+    return `<article class="card h${o.height}"><span class="unit-badge">${o.height}u</span>
+      <div class="row"><span class="ico ${o.kind}">●</span>
+        <div style="min-width:0;flex:1"><div class="title">${esc(o.label)}</div><div class="value">${esc(o.value)}</div>
+        <div class="dev">${esc(o.device)}</div></div></div>
+      <div class="status"><span class="dot"></span>${o.kind==='alarm'?'Clear':'Online'}</div></article>`;
+  }
+  const shown = o.rows ? o.rows.slice(0,2) : [];
+  const extra = o.rows ? Math.max(0,o.rows.length-2) : 0;
+  const rows = shown.length ? `<ul class="rows">${shown.map(([a,b])=>`<li><span>${esc(a)}</span><span>${esc(b)}</span></li>`).join('')}</ul>` : '';
+  const more = extra ? `<div class="more">+${extra} more</div>` : '';
+  const cls = ['card', o.col===2?'col2':'', 'h'+o.h, o.alert?'alert':''].filter(Boolean).join(' ');
+  return `<article class="${cls}"><span class="unit-badge">${o.col===2?'2 cols · ':''}${o.h}u</span>
+    <div class="row"><span class="ico">${o.icon}</span>
+      <div style="min-width:0;flex:1"><div class="title">${esc(o.name)}</div>
+      ${o.value?`<div class="value">${esc(o.value)}</div>`:''}
+      ${o.detail?`<div class="dev">${esc(o.detail)}</div>`:''}
+      <div class="dev">${esc(o.meta)}</div></div></div>
+    ${rows}${more}
+    <div class="status"><span class="dot ${o.dot}"></span>${esc(o.status)}</div></article>`;
+}
+
+function rowHtml(o){
+  const name = o.type==='device' ? o.label : o.name;
+  const sub = o.type==='device' ? o.device : o.meta;
+  const val = o.type==='device' ? o.value : (o.listValue || o.value || '');
+  const dot = o.type==='device' ? '' : o.dot;
+  const icon = o.type==='device' ? `<span class="ico ${o.kind}">●</span>` : `<span class="ico">${o.icon}</span>`;
+  return `<div class="list-row" tabindex="0" role="link" aria-label="${esc(name)} ${esc(val)}">
+    ${icon}
+    <span class="list-copy"><span class="list-name">${esc(name)}</span><span class="list-sub">${esc(sub)}</span></span>
+    <span class="list-val">${esc(val)}</span>
+    <span class="dot ${dot}"></span>
+    <span aria-hidden="true" style="color:var(--muted);font-size:.7rem">›</span>
+  </div>`;
+}
+
+function renderItem(o, view){ return view==='list' ? rowHtml(o) : cardHtml(o); }
+
+function summaryOf(list){
+  const alerts = list.filter(i=>i.alert).length;
+  const stale = list.filter(i=>i.dot==='warn').length;
+  return [`${list.length} ${list.length===1?'item':'items'}`, alerts?`${alerts} alert`:'', stale?`${stale} stale`:''].filter(Boolean).join(' · ');
+}
+
+function viewOf(id){ return state.views[id] || 'cards'; }
+
+function section(name, items, opts={}){
+  const id = opts.id || name;
+  const view = opts.view || viewOf(id);
+  const collapsed = state.collapsed.has(id);
+  const cls = ['section', opts.wide?'is-wide':'', opts.single?'is-single':'', collapsed?'is-collapsed':''].filter(Boolean).join(' ');
+  const cardsCls = ['cards', view==='list'?'is-list':''].filter(Boolean).join(' ');
+  const list = opts.list || items;
+  return `<section class="${cls}" data-section="${esc(id)}" ${opts.attrs||''}>
+    <div class="sec-head">
+      <button class="chev" aria-expanded="${!collapsed}" aria-label="${collapsed?'Expand':'Collapse'} ${esc(name)}" data-collapse="${esc(id)}">${collapsed?'▸':'▾'}</button>
+      <h4>${esc(name)}</h4><span class="count">${opts.count ?? items.length}</span>
+      <span class="grow"></span>
+      <button class="viewtog" aria-pressed="${view==='list'}" aria-label="Show ${esc(name)} as ${view==='list'?'cards':'a list'}" title="Switch to ${view==='list'?'cards':'list'} view" data-view="${esc(id)}">${view==='list'?'▦':'☰'}</button>
+      <span class="tools"><span>＋</span><span>✎</span><span>⋯</span></span>
+    </div>
+    ${opts.summary!==false?`<div class="collapse-sum">${esc(opts.summaryText || summaryOf(list))}</div>`:''}
+    <div class="${cardsCls}">${items.map(o=>renderItem(o,view)).join('')}</div>
+  </section>`;
+}
+
+function selected(){ return services.slice(0, state.count); }
+
+function current(){
+  const bins = services.find(s=>s.id==='bins');
+  const weather = services.find(s=>s.id==='weather');
+  const blocks = areas.map(a=>{
+    const items = [...a.items];
+    if (a.name==='Garden') items.push(bins);
+    if (a.name==='Kitchen') items.push(weather);
+    return section(a.name, items, {count:items.length});
+  });
+  return `<div class="page-title"><b>Home</b><span class="meta">4 areas · 17 tiles</span>
+    <span class="actions"><span class="btn">▣ Panel mode</span><span class="btn primary">✎ Edit layout</span></span></div>
+    <div class="sections">${blocks.join('')}</div>`;
+}
+
+function wideServices(){
+  const list = selected();
+  return section('Services', list, {id:'services', wide:true, count:list.length, attrs:'data-services="1"'});
+}
+function splitServices(){
+  const groups = [['Collections',['bins','bins2']],['Weather',['weather','air','warn']],['Travel & energy',['fuel','transit','energy']],['Safety',['flood']]];
+  return groups.map(([name,ids])=>{
+    const mine = selected().filter(i=>ids.includes(i.id));
+    if (!mine.length) return '';
+    return section(name, mine, {id:'split-'+name, count:mine.length});
+  }).join('');
+}
+
+function proposed(){
+  const block = state.mode==='wide' ? wideServices() : state.mode==='split' ? splitServices() : '';
+  const blocks = areas.map(a=>section(a.name, a.items, {count:a.items.length}));
+  return `<div class="page-title"><b>Home</b><span class="meta">${4+(block?1:0)} sections</span>
+    <span class="actions"><span class="btn">▣ Panel mode</span><span class="btn primary">✎ Edit layout</span></span></div>
+    <div class="sections">${block}${blocks.join('')}</div>`;
+}
+
+function compare(view, id){
+  const list = services.slice(0,6);
+  return `<div class="page-title"><b>${view==='list'?'List view':'Card view'}</b><span class="meta">6 services</span></div>
+    ${section('Services', list, {id, wide:true, view, count:list.length})}`;
+}
+
+function single(view, id){
+  const weather = services.find(s=>s.id==='weather');
+  return `<div class="page-title"><b>Home</b><span class="meta">one section, one card</span></div>
+    ${section('Weather', [weather], {id, single:true, view, count:1})}`;
+}
+
+function mobile(){
+  const list = services.slice(0,3);
+  return `<div class="page-title"><b>Home</b><span class="meta">375px</span></div>
+    <div class="sections" style="grid-template-columns:1fr">
+      ${section('Services', list, {id:'m-services', single:true, view:'list', count:list.length})}
+      ${section('Living room', areas[0].items.slice(0,3), {id:'m-living', single:true, count:3})}
+    </div>`;
+}
+
+function render(){
+  $('#current').innerHTML = current();
+  $('#proposed').innerHTML = proposed();
+  $('#compareCards').innerHTML = compare('cards','cmp-cards');
+  $('#compareList').innerHTML = compare('list','cmp-list');
+  $('#singleCard').innerHTML = single('cards','single-cards');
+  $('#singleList').innerHTML = single('list','single-list');
+  $('#mobile').innerHTML = mobile();
+  document.body.classList.toggle('showgrid', state.grid);
+  wire(); measure();
+}
+
+function wire(){
+  document.querySelectorAll('[data-collapse]').forEach(b=>b.addEventListener('click',()=>{
+    const id=b.dataset.collapse; state.collapsed.has(id)?state.collapsed.delete(id):state.collapsed.add(id); render();
+  }));
+  document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>{
+    const id=b.dataset.view;
+    state.views[id] = (state.views[id]==='list') ? 'cards' : 'list';
+    render();
+  }));
+}
+
+function measure(){
+  const el = document.querySelector('[data-services="1"]');
+  const val = $('#hval'); const fill = $('#hfill');
+  if (!el){ val.textContent='off'; fill.style.width='0'; return; }
+  const h = Math.round(el.getBoundingClientRect().height);
+  val.textContent = h + ' px';
+  fill.style.width = Math.min(100, Math.round(h/4)) + '%';
+}
+
+document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>{
+  state.mode = b.dataset.mode;
+  document.querySelectorAll('[data-mode]').forEach(x=>x.setAttribute('aria-pressed', String(x===b)));
+  render();
+}));
+document.querySelectorAll('[data-count]').forEach(b=>b.addEventListener('click',()=>{
+  state.count = Number(b.dataset.count);
+  document.querySelectorAll('[data-count]').forEach(x=>x.setAttribute('aria-pressed', String(x===b)));
+  render();
+}));
+document.getElementById('gridToggle').addEventListener('click', e=>{
+  state.grid = !state.grid;
+  e.currentTarget.setAttribute('aria-pressed', String(state.grid));
+  render();
+});
+render();
+</script>
+</body>
+</html>
