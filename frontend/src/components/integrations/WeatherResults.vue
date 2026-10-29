@@ -1,14 +1,17 @@
 <script setup lang="ts">
-  import { ref } from 'vue';
+  import { computed, ref } from 'vue';
   import { useForecastView } from '@/integrations/weather/useForecastView';
+  import { weatherHeadline } from '@/integrations/weather/headline';
   import type { WeatherForecast } from '@/types/weather.type';
-  import { weatherValue, weatherLabel } from '@/domain/weather';
+  import { weatherLabel } from '@/domain/weather';
+  import { formatQuantity } from '@/utils/units';
   import { weatherIcon } from '@/components/ui/icons';
   import { formatLocalDateTime } from '@/utils/date.utils';
   import UiButton from '@/components/ui/UiButton.vue';
   const props = defineProps<{ forecast: WeatherForecast }>();
   const hours = ref<HTMLElement>();
   const days = ref<HTMLElement>();
+  const headline = computed(() => weatherHeadline(props.forecast));
   const { page, daily, hourly, pages, firstDay, lastDay, hour, date, outsidePage } = useForecastView(
     () => props.forecast
   );
@@ -18,30 +21,43 @@
 </script>
 <template>
   <div class="weather-results">
-    <section class="weather-panel" aria-label="Weather now">
-      <p class="weather-muted">{{ forecast.location }} · Forecast for now · {{ forecast.timezone }}</p>
+    <section class="weather-panel" aria-label="Weather summary">
+      <p class="weather-muted">
+        {{ forecast.location }} · {{ headline?.label ?? 'Forecast' }} · {{ forecast.timezone }}
+      </p>
       <div class="weather-current">
-        <strong>{{ weatherValue(forecast.current?.temperature, '°C') }}</strong
-        ><span aria-hidden="true">{{ weatherIcon(forecast.current?.condition) }}</span>
+        <strong>{{
+          headline?.temperature != null ? formatQuantity(headline.temperature, 'temperature') : '—'
+        }}</strong
+        ><span aria-hidden="true">{{ weatherIcon(headline?.condition) }}</span>
       </div>
-      <h2>{{ weatherLabel(forecast.current?.condition) }}</h2>
-      <p class="weather-muted">Feels like {{ weatherValue(forecast.current?.feels_like, '°C') }}</p>
-      <div class="weather-stats">
+      <h2>{{ headline ? weatherLabel(headline.condition) : 'No saved forecast' }}</h2>
+      <p v-if="forecast.current" class="weather-muted">
+        Feels like {{ formatQuantity(forecast.current.feels_like, 'temperature') }}
+      </p>
+      <div v-if="forecast.current" class="weather-stats">
         <div>
-          Rain chance<strong>{{ weatherValue(forecast.current?.precipitation_probability, '%') }}</strong>
+          Rain chance<strong>{{ formatQuantity(forecast.current.precipitation_probability, 'percent') }}</strong>
         </div>
         <div>
-          Humidity<strong>{{ weatherValue(forecast.current?.humidity, '%') }}</strong>
+          Humidity<strong>{{ formatQuantity(forecast.current.humidity, 'percent') }}</strong>
         </div>
         <div>
-          Wind<strong>{{ weatherValue(forecast.current?.wind, ' km/h') }}</strong>
+          Wind<strong>{{ formatQuantity(forecast.current.wind, 'speed') }}</strong>
         </div>
         <div>
-          Wind gusts<strong>{{ weatherValue(forecast.current?.gust, ' km/h') }}</strong>
+          Wind gusts<strong>{{ formatQuantity(forecast.current.gust, 'speed') }}</strong>
         </div>
       </div>
-      <p class="weather-muted">Last refreshed {{ formatLocalDateTime(forecast.captured_at) }} · Manual refresh</p>
-      <p v-if="forecast.freshness === 'stale'" role="status">Saved forecast needs refreshing.</p>
+      <p v-else class="weather-muted" role="status">
+        {{
+          headline
+            ? `No current observation. Showing ${headline.label.toLowerCase()}.`
+            : 'No saved forecast. Refresh to retrieve one.'
+        }}
+      </p>
+      <p class="weather-muted">Last refreshed {{ formatLocalDateTime(forecast.captured_at) }}</p>
+      <p v-if="forecast.freshness === 'stale'" role="status">This forecast is out of date.</p>
     </section>
     <section class="weather-panel">
       <header>
@@ -55,8 +71,8 @@
         <article v-for="item in hourly" :key="item.time">
           <span>{{ hour(item.time) }}</span
           ><span aria-hidden="true">{{ weatherIcon(item.condition) }}</span
-          ><strong>{{ weatherValue(item.temperature, '°') }}</strong
-          ><small>{{ weatherValue(item.precipitation_probability, '%') }} rain</small>
+          ><strong>{{ formatQuantity(item.temperature, 'temperature', { short: true }) }}</strong
+          ><small>{{ formatQuantity(item.precipitation_probability, 'percent') }} rain</small>
         </article>
       </div>
       <p v-if="!hourly.length" class="weather-muted">
@@ -75,10 +91,13 @@
         <article v-for="(item, index) in daily" :key="item.date" :class="{ 'outside-page': outsidePage(index) }">
           <strong>{{ date(item.date) }}</strong
           ><span class="day-icon" aria-hidden="true">{{ weatherIcon(item.condition) }}</span
-          ><b>{{ weatherValue(item.high, '°') }} / {{ weatherValue(item.low, '°') }}</b>
+          ><b
+            >{{ formatQuantity(item.high, 'temperature', { short: true }) }} /
+            {{ formatQuantity(item.low, 'temperature', { short: true }) }}</b
+          >
           <p>{{ weatherLabel(item.condition) }}</p>
-          <p>Rain chance {{ weatherValue(item.precipitation_probability, '%') }}</p>
-          <p>Wind {{ weatherValue(item.wind, ' km/h') }}</p>
+          <p>Rain chance {{ formatQuantity(item.precipitation_probability, 'percent') }}</p>
+          <p>Wind {{ formatQuantity(item.wind, 'speed') }}</p>
         </article>
       </div>
       <div v-if="pages > 1" class="weather-pagination">

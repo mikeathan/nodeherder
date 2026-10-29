@@ -17,3 +17,4 @@ backend/data/integrations.db.*
 backend/graphify-out/*
 frontend/graphify-out/*
 graphify-out/*
+.commandcode/*
