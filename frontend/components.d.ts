@@ -98,6 +98,7 @@ declare module 'vue' {
     IntegrationPageHeader: typeof import('./src/components/integrations/IntegrationPageHeader.vue')['default']
     IntegrationSections: typeof import('./src/components/integrations/IntegrationSections.vue')['default']
     IntegrationsHelp: typeof import('./src/components/integrations/IntegrationsHelp.vue')['default']
+    IntegrationStatus: typeof import('./src/components/integrations/IntegrationStatus.vue')['default']
     IntegrationTile: typeof import('./src/components/dashboards/IntegrationTile.vue')['default']
     IssueText: typeof import('./src/components/automations/editor/IssueText.vue')['default']
     LastSeen: typeof import('./src/components/device/LastSeen.vue')['default']
@@ -144,7 +145,6 @@ declare module 'vue' {
     Settings: typeof import('./src/components/hub/settings/Settings.vue')['default']
     SetValuesAction: typeof import('./src/components/automations/editor/actions/SetValuesAction.vue')['default']
     Sidebar: typeof import('primevue/sidebar')['default']
-    Slider: typeof import('primevue/slider')['default']
     StateHistory: typeof import('./src/components/chart/history/StateHistory.vue')['default']
     StateHistoryChart: typeof import('./src/components/chart/history/StateHistoryChart.vue')['default']
     StateHistoryCompact: typeof import('./src/components/chart/history/StateHistoryCompact.vue')['default']
@@ -175,6 +175,7 @@ declare module 'vue' {
     UserBubble: typeof import('./src/components/assistant/chat/UserBubble.vue')['default']
     WasteBinIcon: typeof import('./src/components/integrations/WasteBinIcon.vue')['default']
     WasteScheduleResults: typeof import('./src/components/integrations/WasteScheduleResults.vue')['default']
+    WeatherResults: typeof import('./src/components/integrations/WeatherResults.vue')['default']
   }
   export interface GlobalDirectives {
     Tooltip: typeof import('primevue/tooltip')['default']

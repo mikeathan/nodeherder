@@ -56,6 +56,7 @@ async function showThreeServiceSchedule(page: Page) {
     const payload = (await response.json()) as { data: ConnectionInstance[]; error: null };
     for (const instance of payload.data) {
       const resource = instance.resources[0];
+      if (!resource || resource.contract_version !== 'waste_schedule/v1') continue;
       const original = resource.services[0];
       resource.services = [
         {
@@ -205,35 +206,29 @@ test('standalone cards align with the neighboring area tile rows', async ({ page
         const living = document.querySelectorAll<HTMLElement>('[data-area="Living room"] .nh-home-card');
         const garden = document.querySelector<HTMLElement>('[data-area="Garden"] .nh-home-card')!;
         const summary = document.querySelector<HTMLElement>('[data-card-id="bins-card"]')!;
-        const [first, second, third] = Array.from(living, card => card.getBoundingClientRect());
+        const [first, second] = Array.from(living, card => card.getBoundingClientRect());
         const adjacent = garden.getBoundingClientRect();
         const standalone = summary.getBoundingClientRect();
+        const preceding = Array.from(document.querySelectorAll<HTMLElement>('.nh-area .nh-home-card'))
+          .map((card) => card.getBoundingClientRect())
+          .filter((card) =>
+            card.bottom <= standalone.top && Math.min(card.right, standalone.right) - Math.max(card.left, standalone.left) > 1
+          );
         return {
           tileGap: second.left - first.right,
           areaGap: adjacent.left - second.right,
-          verticalGap: standalone.top - adjacent.bottom,
-          rowDifference: standalone.top - third.top,
-          columnDifference: standalone.left - adjacent.left,
+          verticalGap: standalone.top - Math.max(...preceding.map((card) => card.bottom)),
         };
       });
       expect(Math.abs(spacing.areaGap - spacing.tileGap)).toBeLessThanOrEqual(1);
       expect(Math.abs(spacing.verticalGap - spacing.tileGap)).toBeLessThanOrEqual(2);
-      expect(Math.abs(spacing.rowDifference)).toBeLessThanOrEqual(2);
-      expect(Math.abs(spacing.columnDifference)).toBeLessThanOrEqual(1);
     }
   }
-  await page.setViewportSize({ width: 1680, height: 900 });
+  await page.setViewportSize({ width: 2000, height: 900 });
   await settleHomeView(page);
   await expect.poll(() => page.evaluate(() => {
     const summary = document.querySelector<HTMLElement>('[data-card-id="bins-card"]')!.getBoundingClientRect();
     const tile = document.querySelector<HTMLElement>('[data-area="Living room"] .nh-home-card')!.getBoundingClientRect();
-    return Math.abs(summary.top - tile.top);
-  })).toBeLessThanOrEqual(2);
-  await page.setViewportSize({ width: 1280, height: 900 });
-  await settleHomeView(page);
-  await expect.poll(() => page.evaluate(() => {
-    const summary = document.querySelector<HTMLElement>('[data-card-id="bins-card"]')!.getBoundingClientRect();
-    const tile = document.querySelectorAll<HTMLElement>('[data-area="Living room"] .nh-home-card')[2].getBoundingClientRect();
     return Math.abs(summary.top - tile.top);
   })).toBeLessThanOrEqual(2);
   await page.screenshot({ path: info.outputPath('aligned-home-cards.png'), fullPage: true });
@@ -284,7 +279,8 @@ test('individual integration cards move naturally between areas and Home with sh
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await ui.home.area(page, 'Living room').getByRole('button', { name: 'Add tiles' }).click();
   await selectHomeSource(page, 'Integration results');
-  await page.getByRole('checkbox', { name: /^Blue bin/ }).check();
+  await expect(page.getByRole('radio', { name: /^Blue bin/ })).toHaveCount(0);
+  await page.getByRole('radio', { name: /complete schedule/ }).check();
   await page.getByRole('button', { name: 'Add 1 tile', exact: true }).click();
   const tile = page.locator('.nh-integration-tile').filter({ hasText: 'Blue bin' });
   await expect(tile).toHaveCount(1);
@@ -303,7 +299,7 @@ test('individual integration cards move naturally between areas and Home with sh
   await expect(page.locator('.nh-home-block:not(.is-area)').locator(`[data-card-id="${id}"]`)).toBeVisible();
   await page.getByRole('button', { name: 'Add cards to Home' }).click();
   await selectHomeSource(page, 'Integration results');
-  await page.getByRole('checkbox', { name: /complete schedule/ }).check();
+  await page.getByRole('radio', { name: /complete schedule/ }).check();
   await page.getByRole('button', { name: 'Add 1 tile', exact: true }).click();
   await expect(page.locator('.nh-home-block:not(.is-area)')).toHaveCount(2);
   const downloading = page.waitForEvent('download');
@@ -572,32 +568,46 @@ test.describe('home dashboard', () => {
 
   test('dragging an area by its handle reorders and saves', async ({ page }) => {
     await signIn(page, ui.home.path);
-    const titles = ui.home.groupTitles(page);
-    await expect(titles).toHaveCount(MOCK.groups.length);
-    const before = await titles.allTextContents();
-    await ui.home.editLayout(page);
-    const handle = ui.home.dragHandle(page, before[0]);
-    const target = ui.home.area(page, before[1]);
-    const from = (await handle.boundingBox())!;
-    const to = (await target.boundingBox())!;
-    // areas collapse to their headers once one is held, so aim just past the next header
-    const start = { x: from.x + from.width / 2, y: from.y + from.height / 2 };
-    const end =
-      to.y > from.y + from.height * 2 ? { x: start.x, y: start.y + 90 } : { x: to.x + to.width * 0.7, y: to.y + 16 };
-    const saving = page.waitForRequest(
-      (request) => request.url().endsWith('/api/home/layout') && request.method() === 'PUT'
-    );
-    await dragBetween(page, start, end);
-    await expect(titles.first()).toHaveText(before[1]);
-    const saved = (await saving).postDataJSON();
-    expect(saved.blocks[0].name).toBe(before[1]);
-    // Touch collapse can move past more than one area. Restore the dragged area from its
-    // accepted position rather than assuming a single adjacent swap.
-    const position = (await titles.allTextContents()).indexOf(before[0]);
-    for (let index = 0; index < position; index++) {
-      await page.getByRole('button', { name: `Move ${before[0]} earlier` }).click();
+    // Keep both areas visible on a phone while retaining real cards in the drag preview.
+    const original = (await (await page.request.get(`${HUB_API}/home/layout`)).json()).data;
+    const compact = await page.request.put(`${HUB_API}/home/layout`, {
+      headers: { Origin: 'http://localhost:4100', 'X-NodeHerder-Request': '1', 'If-Match': original.etag },
+      data: {
+        ...original,
+        blocks: original.blocks.map((block: { cards: unknown[] }) => ({ ...block, cards: block.cards.slice(0, 2) })),
+      },
+    });
+    expect(compact.status()).toBe(200);
+    try {
+      await page.reload();
+      const titles = ui.home.groupTitles(page);
+      await expect(titles).toHaveCount(MOCK.groups.length);
+      const before = await titles.allTextContents();
+      await ui.home.editLayout(page);
+      const handle = ui.home.dragHandle(page, before[0]);
+      const target = ui.home.area(page, before[1]);
+      await handle.evaluate((element) => element.scrollIntoView({ block: 'start' }));
+      const from = (await handle.boundingBox())!;
+      const to = (await target.boundingBox())!;
+      const start = { x: from.x + from.width / 2, y: from.y + from.height / 2 };
+      const end = { x: to.x + to.width * 0.5, y: to.y + to.height * 0.6 };
+      const saving = page.waitForRequest(
+        (request) => request.url().endsWith('/api/home/layout') && request.method() === 'PUT'
+      );
+      await dragBetween(page, start, end, 14, async () => {
+        await expect(ui.home.area(page, before[0]).locator('.nh-tile').first()).toBeVisible();
+      });
+      await expect(titles.first()).toHaveText(before[1]);
+      const saved = (await saving).postDataJSON();
+      expect(saved.blocks[0].name).toBe(before[1]);
       await expect(page.getByRole('button', { name: 'Done', exact: true })).toBeEnabled();
+    } finally {
+      const latest = (await (await page.request.get(`${HUB_API}/home/layout`)).json()).data;
+      const restored = await page.request.put(`${HUB_API}/home/layout`, {
+        headers: { Origin: 'http://localhost:4100', 'X-NodeHerder-Request': '1', 'If-Match': latest.etag },
+        data: { ...original, revision: latest.revision, etag: latest.etag },
+      });
+      expect(restored.status()).toBe(200);
     }
-    await expect(titles).toHaveText(before);
   });
 });

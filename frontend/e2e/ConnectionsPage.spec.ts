@@ -68,22 +68,28 @@ test('operations and Help retain header, tabs and cached draft geometry during d
   await addConnection(page);
   await expect(page.locator('.connection-detail')).toHaveAttribute('aria-busy', 'false');
   const tabs = page.getByRole('navigation', { name: 'Integration sections' });
-  const geometry = () => page.locator('.connections .nh-page-head').evaluate((header) => {
-    const bounds = header.getBoundingClientRect();
-    const navigation = document.querySelector('.connection-tabs')!.getBoundingClientRect();
-    return { y: bounds.y, height: bounds.height, tabsY: navigation.y, tabsHeight: navigation.height };
-  });
+  const geometry = () =>
+    page.locator('.connections .nh-page-head').evaluate((header) => {
+      const bounds = header.getBoundingClientRect();
+      const navigation = document.querySelector('.connection-tabs')!.getBoundingClientRect();
+      return { y: bounds.y, height: bounds.height, tabsY: navigation.y, tabsHeight: navigation.height };
+    });
   const detailGeometry = await geometry();
   let release!: () => void;
   let pending = true;
-  const gate = new Promise<void>((resolve) => { release = resolve; });
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
   await page.route('**/api/integrations/definitions/waste_collection/whenisbins', async (route) => {
     if (pending && route.request().method() === 'GET') await gate;
     await route.fallback();
   });
   try {
     await tabs.getByRole('link', { name: 'Configure operations', exact: true }).click();
-    await expect(tabs.getByRole('link', { name: 'Configure operations', exact: true })).toHaveAttribute('aria-current', 'page');
+    await expect(tabs.getByRole('link', { name: 'Configure operations', exact: true })).toHaveAttribute(
+      'aria-current',
+      'page'
+    );
     expect(await geometry()).toEqual(detailGeometry);
     const field = page.getByRole('textbox', { name: 'Display name', exact: true });
     await expect(field).toHaveValue('WhenIsBins');
@@ -112,7 +118,10 @@ test('integration sections persist through operations, Help, reload and history'
   const tabs = page.getByRole('navigation', { name: 'Integration sections' });
   await tabs.getByRole('link', { name: 'Configure operations', exact: true }).click();
   await expect(tabs).toBeVisible();
-  await expect(tabs.getByRole('link', { name: 'Configure operations', exact: true })).toHaveAttribute('aria-current', 'page');
+  await expect(tabs.getByRole('link', { name: 'Configure operations', exact: true })).toHaveAttribute(
+    'aria-current',
+    'page'
+  );
   await expect(tabs.getByRole('link')).toHaveCount(4);
   await page.getByRole('textbox', { name: 'Display name', exact: true }).fill('My provider draft');
   await tabs.getByRole('link', { name: 'Help', exact: true }).click();
@@ -124,9 +133,15 @@ test('integration sections persist through operations, Help, reload and history'
   await tabs.getByRole('link', { name: 'Setup', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Leave provider editor?' })).toBeVisible();
   await page.getByRole('button', { name: 'Cancel', exact: true }).click();
-  await expect(tabs.getByRole('link', { name: 'Configure operations', exact: true })).toHaveAttribute('aria-current', 'page');
+  await expect(tabs.getByRole('link', { name: 'Configure operations', exact: true })).toHaveAttribute(
+    'aria-current',
+    'page'
+  );
   await tabs.getByRole('link', { name: 'Help', exact: true }).click();
-  await page.screenshot({ path: `/private/tmp/nodeherder-032-sections-help-${testInfo.project.name}.png`, fullPage: true });
+  await page.screenshot({
+    path: `/private/tmp/nodeherder-032-sections-help-${testInfo.project.name}.png`,
+    fullPage: true,
+  });
   await page.reload();
   await expect(tabs.getByRole('link')).toHaveCount(4);
   await tabs.getByRole('link', { name: 'Configure operations', exact: true }).click();
@@ -224,7 +239,8 @@ test('signed-out deep links require sign in', async ({ page }) => {
 test('invalid YAML and a feature network failure keep the editable draft', async ({ page }) => {
   await signInConnections(page);
   await page.getByRole('button', { name: 'Add integration', exact: true }).click();
-  await page.getByRole('link', { name: 'Configure operations', exact: true }).click();
+  await page.getByLabel('Bin collections', { exact: true })
+    .getByRole('link', { name: 'Configure operations', exact: true }).click();
   await page.getByRole('button', { name: 'YAML', exact: true }).click();
   const editor = page.getByRole('textbox', { name: 'Provider YAML' });
   const valid = await editor.inputValue();
@@ -271,7 +287,8 @@ test('an expired login during catalog loading returns to sign in', async ({ page
 test('an expired editor session discards private drafts without a leave confirmation', async ({ page }) => {
   await signInConnections(page);
   await page.getByRole('button', { name: 'Add integration', exact: true }).click();
-  await page.getByRole('link', { name: 'Configure operations', exact: true }).click();
+  await page.getByLabel('Bin collections', { exact: true })
+    .getByRole('link', { name: 'Configure operations', exact: true }).click();
   await page.getByRole('textbox', { name: 'Display name', exact: true }).fill('Unsaved editor draft');
   // Expire the session in both the real feature API and the separate shell auth fixture.
   await page.context().clearCookies();
@@ -295,6 +312,7 @@ test('three collection headers and dates align with colour-matched bin illustrat
     const response = await route.fetch({ url: route.request().url().replace(HUB_API, AUTOMATION_HUB_API) });
     const payload = (await response.json()) as { data: ConnectionInstance; error: null };
     const resource = payload.data.resources[0];
+    if (!resource || resource.contract_version !== 'waste_schedule/v1') throw new Error('Expected a bin schedule');
     const original = resource.services[0];
     resource.services = [
       {
@@ -395,7 +413,7 @@ test('board shows saved results and shared bin artwork, with direct card navigat
   await expect(widget.getByText('Blue bin', { exact: true })).toBeVisible();
   await expect(widget.locator('.waste-bin-icon')).toHaveCount(1);
   await expect(widget.locator('header .waste-bin-icon')).toHaveCount(0);
-  await expect(widget.locator('[data-connection-icon="schedule"] .nh-ic')).toBeVisible();
+  await expect(widget.locator('.connection-widget-badge .nh-ic')).toBeVisible();
   await expect(page.getByRole('link', { name: 'Details', exact: true })).toHaveCount(0);
   await expect(page.getByRole('combobox')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Reload providers', exact: true })).toHaveCount(0);
@@ -532,7 +550,7 @@ test('removing an integration requires confirmation and it can be configured aga
   await page.getByRole('link', { name: 'Setup', exact: true }).click();
   await page.getByRole('button', { name: 'Remove integration', exact: true }).click();
   const confirm = page.getByRole('dialog');
-  await expect(confirm).toContainText('deletes the saved address');
+  await expect(confirm).toContainText('saved inputs, credentials and results');
   await confirm.getByRole('button', { name: 'Cancel', exact: true }).click();
   await expect(page.getByRole('textbox', { name: 'Integration name', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Remove integration', exact: true }).click();
@@ -554,6 +572,7 @@ test('three coloured bin summaries fit long names in both themes and restore boa
     const instance = payload.data[0];
     instance.name = 'Collection dates for the property with a longer integration name';
     const resource = instance.resources[0];
+    if (!resource || resource.contract_version !== 'waste_schedule/v1') throw new Error('Expected a bin schedule');
     const original = resource.services[0];
     resource.services = ['black', 'blue', 'brown'].map((colour) => ({
       ...original,
@@ -727,6 +746,7 @@ test('widget and full results show bins in upcoming collection-date order', asyn
     const payload = (await response.json()) as { data: ConnectionInstance | ConnectionInstance[]; error: null };
     for (const item of Array.isArray(payload.data) ? payload.data : [payload.data]) {
       const resource = item.resources[0];
+      if (!resource || resource.contract_version !== 'waste_schedule/v1') continue;
       resource.evaluated_at = '2026-10-26T12:00:00Z';
       const original = resource.services[0];
       resource.services = [
@@ -757,3 +777,47 @@ test('widget and full results show bins in upcoming collection-date order', asyn
     '17 November',
   ]);
 });
+
+test('weather details retain five-day mobile pages and desktop scrolling', async ({ page }) => {
+  await signInConnections(page);
+  await page.getByRole('button', { name: 'Add integration', exact: true }).click();
+  await page.getByRole('combobox', { name: 'Weather provider' }).selectOption('weather/open_meteo');
+  await page.getByRole('button', { name: 'Set up weather', exact: true }).click();
+  await expect(page.getByRole('textbox', { name: 'API key / token' })).toHaveCount(0);
+  await page.getByRole('textbox', { name: 'Town or postcode' }).fill('Bristol');
+  await page.getByRole('button', { name: 'Find location' }).click();
+  await page.getByRole('combobox', { name: 'Choose your location' }).selectOption({ label: 'Bristol' });
+  await page.getByRole('button', { name: 'Save integration', exact: true }).click();
+  await page.getByRole('link', { name: 'Open Weather integration', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Weather', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '15-day forecast' })).toBeVisible();
+  for (const width of [320, 375, 768, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    const days = page.getByRole('region', { name: 'Daily forecast' });
+    if (width <= 700) {
+      await expect(days.locator('article:visible')).toHaveCount(5);
+      await page.getByRole('button', { name: 'Next →', exact: true }).focus();
+      await page.keyboard.press('Enter');
+      await expect(page.getByRole('status').filter({ hasText: 'Days 6–10 of 15' })).toBeVisible();
+      await page.getByRole('button', { name: '← Previous', exact: true }).click();
+    } else await expect(days.locator('article:visible')).toHaveCount(15);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
+    await page.screenshot({ path: `/private/tmp/nodeherder-weather-${width}.png`, fullPage: true });
+  }
+});
+
+for (const provider of ['met_office', 'weatherapi'])
+  test(`weather ${provider} setup offers a provider key link`, async ({ page }) => {
+    await signInConnections(page);
+    await page.getByRole('button', { name: 'Add integration', exact: true }).click();
+    await page.getByRole('combobox', { name: 'Weather provider' }).selectOption(`weather/${provider}`);
+    await page.getByRole('button', { name: 'Set up weather', exact: true }).click();
+    await page.getByText('Provider credential').click();
+    await expect(page.getByRole('textbox', { name: 'API key / token' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Get an API key from the provider' })).toHaveAttribute(
+      'href',
+      provider === 'met_office'
+        ? 'https://datahub.metoffice.gov.uk/docs/getting-started'
+        : 'https://www.weatherapi.com/signup.aspx'
+    );
+  });

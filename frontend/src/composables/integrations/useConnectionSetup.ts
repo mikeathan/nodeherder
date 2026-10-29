@@ -1,4 +1,5 @@
-import { computed, onMounted, onBeforeUnmount, ref } from 'vue';
+import { setupPresentation } from '@/integrations/registry';
+import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useConnections } from '@/composables/useConnections';
 import { confirm } from '@/composables/useConfirm';
@@ -8,11 +9,18 @@ import type { ProviderDefinition } from '@/types/integrations.type';
 /** Owns this page's application actions; the route component only presents its state. */
 export function useConnectionSetup() {
   const route = useRoute();
-  const { api, isActive, state, router, busy, error, perform, commit, observe, signal } = useConnections();
+  const { api, isActive, state, router, busy, error, perform, commit, observe, checkOperation, signal } = useConnections();
   const setup = computed(() => (state.value.setup?.id === route.params.id ? state.value.setup : null));
   const postcode = ref('');
   const property = ref('');
-  const name = ref('Bin collections');
+  const initialName = 'Bin collections';
+  const name = ref(initialName);
+  let nameEdited = false;
+  watch(
+    name,
+    () => { nameEdited = true; },
+    { flush: 'sync' }
+  );
   const token = ref('');
   const definition = ref<ProviderDefinition | null>(null);
   // Only named return intents are accepted; setup never redirects to a supplied URL.
@@ -34,7 +42,10 @@ export function useConnectionSetup() {
     if (!value) return;
     postcode.value = value.postcode ?? '';
     const provider = await perform(() => api.definition(value.provider_key, signal));
-    if (provider) definition.value = provider.document;
+    if (provider) {
+      definition.value = provider.document;
+      if (!nameEdited) name.value = setupPresentation(provider.document).defaultName;
+    }
     if (value.operation_id && value.status === 'searching') observe(value.operation_id, reload);
   });
   signal.addEventListener(
@@ -78,12 +89,7 @@ export function useConnectionSetup() {
   }
   /** Continue an admitted setup operation without starting a duplicate search/lookup. */
   async function check() {
-    const current = setup.value;
-    if (!current) return;
-    const operationId = current.operation_id;
-    if (!operationId) return;
-    const value = await perform(() => api.check(operationId, current.etag));
-    if (value) observe(value.id, reload);
+    await checkOperation(setup.value?.operation_id, reload);
   }
   /** Save the setup token in server-owned custody and immediately clear its plaintext field. */
   async function saveToken() {

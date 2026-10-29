@@ -1,11 +1,12 @@
 <script setup lang="ts">
   import IntegrationPageHeader from './IntegrationPageHeader.vue';
-  import WasteScheduleResults from './WasteScheduleResults.vue';
+  import { resourcePresenter } from '@/integrations/registry';
   import ConnectionSettings from './ConnectionSettings.vue';
   import UiButton from '@/components/ui/UiButton.vue';
   import ConnectionFeedback from './ConnectionFeedback.vue';
   import IntegrationSections from './IntegrationSections.vue';
   import { useConnectionDetail } from '@/composables/integrations/useConnectionDetail';
+  import { formatLocalDateTime } from '@/utils/date.utils';
   import './connections.css';
   const {
     item,
@@ -27,9 +28,7 @@
 </script>
 <template>
   <div class="connections connection-stack connection-detail" :aria-busy="busy">
-    <IntegrationPageHeader
-      :title="item?.name ?? 'Integration'"
-      :subtitle="item?.postcode">
+    <IntegrationPageHeader :title="item?.name ?? 'Integration'" :subtitle="item?.postcode">
       <template #actions>
         <UiButton :disabled="busy || !item?.enabled" icon="refresh" @click="refresh">Refresh</UiButton>
       </template>
@@ -61,7 +60,16 @@
         <p>A lookup is in progress. Check status continues that lookup without submitting a new one.</p>
         <UiButton :disabled="busy || !item.enabled" @click="check">Check status</UiButton>
       </div>
-      <WasteScheduleResults v-if="tab === 'results'" :resources="item.resources" />
+      <template v-if="tab === 'results'">
+        <component
+          v-for="resource in item.resources"
+          :key="resource.resource_id"
+          :is="resourcePresenter(resource)?.results"
+          :resource="resource" />
+        <p v-if="!item.resources.length" class="connection-muted">
+          No information has been saved yet. Use Refresh to retrieve it.
+        </p>
+      </template>
       <ConnectionSettings
         v-else
         v-model:name="name"
@@ -77,7 +85,7 @@
         <summary>Recent checks</summary>
         <ol class="connection-list">
           <li v-for="run in [...item.runs].reverse()" :key="run.operation_id">
-            {{ new Date(run.at).toLocaleString() }} — {{ run.message }}
+            {{ formatLocalDateTime(run.at) }} — {{ run.message }}
           </li>
         </ol>
       </details>

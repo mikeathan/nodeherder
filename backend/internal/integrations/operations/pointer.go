@@ -1,5 +1,7 @@
 package operations
 
+// Validates and evaluates JSON Pointers against provider response data.
+
 import (
 	"strconv"
 	"strings"

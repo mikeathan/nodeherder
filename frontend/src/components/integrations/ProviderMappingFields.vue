@@ -2,8 +2,8 @@
   import { useEditableModel } from '@/composables/integrations/useEditableModel';
   import { humanLabel } from '@/domain/integrations';
   import type { ProviderDefinition } from '@/types/integrations.type';
-  const props = defineProps<{ modelValue: ProviderDefinition['mapping'] }>();
-  const emit = defineEmits<{ 'update:modelValue': [value: ProviderDefinition['mapping']] }>();
+  const props = defineProps<{ modelValue: Extract<ProviderDefinition['mapping'], { collections: unknown }> }>();
+  const emit = defineEmits<{ 'update:modelValue': [value: Extract<ProviderDefinition['mapping'], { collections: unknown }>] }>();
   const fields = useEditableModel(
     () => props.modelValue,
     (value) => emit('update:modelValue', value)

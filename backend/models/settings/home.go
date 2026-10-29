@@ -100,12 +100,10 @@ func (layout HomeLayout) Validate() error {
 				if !device || card.InstanceID != "" || card.ResourceID != "" || card.ServiceID != "" {
 					return invalidHome()
 				}
-			case "waste_service", "waste_summary":
-				if !integration || card.DeviceID != "" || card.Expose != "" || (card.Kind == "waste_service" && !homeIdentifier(card.ServiceID)) || (card.Kind == "waste_summary" && card.ServiceID != "") {
+			default:
+				if !homeIdentifier(card.Kind) || !integration || card.DeviceID != "" || card.Expose != "" || (card.ServiceID != "" && !homeIdentifier(card.ServiceID)) {
 					return invalidHome()
 				}
-			default:
-				return invalidHome()
 			}
 		}
 	}

@@ -1,5 +1,7 @@
 package searchselect
 
+// Interprets provider search choices and lookup status for selection-based setup.
+
 import (
 	"slices"
 
@@ -37,6 +39,9 @@ func Choices(body any, step model.SearchStep) ([]model.Choice, error) {
 		}
 	}
 	value, ok := operations.Pointer(body, step.Options.Items)
+	if value == nil && step.Options.Latitude != "" {
+		return []model.Choice{}, nil
+	}
 	list, isList := value.([]any)
 	if !ok || !isList || len(list) > 2000 {
 		return nil, model.Fail("invalid_response", "The provider returned an invalid selection list.")
@@ -44,6 +49,17 @@ func Choices(body any, step model.SearchStep) ([]model.Choice, error) {
 	choices := make([]model.Choice, 0, len(list))
 	seen := make(map[string]bool, len(list))
 	for _, item := range list {
+		if step.Options.Latitude != "" {
+			choice, err := coordinateChoice(item, step)
+			if err != nil {
+				return nil, err
+			}
+			if !seen[choice.ID] {
+				choices = append(choices, choice)
+				seen[choice.ID] = true
+			}
+			continue
+		}
 		id, _ := operations.Pointer(item, step.Options.Value)
 		label, _ := operations.Pointer(item, step.Options.Label)
 		idText, idOK := id.(string)

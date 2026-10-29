@@ -5,5 +5,5 @@ import "embed"
 
 // Files supplies missing defaults; runtime host definitions are never overwritten.
 //
-//go:embed waste_collection/*.yaml
+//go:embed waste_collection/*.yaml weather/*.yaml
 var Files embed.FS

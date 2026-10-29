@@ -1,0 +1,133 @@
+# Credentials belong in Setup, never in YAML.
+---
+schema_version: nodeherder.integration/v1
+integration_type: weather
+capability: weather_forecast/v1
+policy:
+  poll_min_seconds: 5
+  renewal_min_seconds: 86400
+  idempotency_window_seconds: 0
+errors:
+  code: ''
+  rules: []
+inputs:
+  location:
+    type: text
+    label: Town or postcode
+    required: true
+  coordinates:
+    type: select
+    label: Choose location
+    required: true
+refresh:
+  request: forecast
+id: weatherapi
+name: WeatherAPI.com
+base_url: https://api.weatherapi.com
+auth:
+  mode: apikey_query
+  secret_slot: api_key
+requests:
+  search:
+    method: GET
+    path:
+    - v1
+    - search.json
+    query:
+      q:
+        ref: input.location
+  forecast:
+    method: GET
+    path:
+    - v1
+    - forecast.json
+    query:
+      q:
+        ref: input.coordinates
+      days: 3
+      aqi: 'no'
+      alerts: 'no'
+setup:
+  type: location_select
+  search:
+    input: location
+    request: search
+    options:
+      items: ''
+      value: "/name"
+      label: "/name"
+      context: ["/region", "/country"]
+      latitude: "/lat"
+      longitude: "/lon"
+  select:
+    input: coordinates
+    request: forecast
+  status:
+    request: ''
+    pointer: ''
+    pending: []
+    done: []
+    failed: []
+mapping:
+  location: "/location/name"
+  timezone: "/location/tz_id"
+  default_timezone: Europe/London
+  attribution: >-
+    Weather data by WeatherAPI.com. Forecasts are estimates and may not be accurate for
+    your location or time. Do not rely on this data alone for safety-critical decisions;
+    consult official meteorological services and relevant authorities.
+  conditions:
+    '1000': clear
+    '1003': partly_cloudy
+    '1006': cloudy
+    '1009': cloudy
+    '1030': fog
+    '1135': fog
+    '1183': rain
+    '1186': rain
+    '1189': rain
+    '1192': rain
+    '1195': rain
+    '1063': showers
+    '1087': thunderstorm
+    '1114': snow
+    '1213': snow
+  current:
+    items: "/current"
+    time: "/last_updated_epoch"
+    format: unix
+    fields:
+      temperature: "/temp_c"
+      feels_like: "/feelslike_c"
+      wind: "/wind_kph"
+      gust: "/gust_kph"
+      direction: "/wind_degree"
+      humidity: "/humidity"
+      precipitation: "/precip_mm"
+      condition: "/condition/code"
+  hourly:
+    items: "/hour"
+    time: "/time_epoch"
+    format: unix
+    fields:
+      temperature: "/temp_c"
+      feels_like: "/feelslike_c"
+      wind: "/wind_kph"
+      gust: "/gust_kph"
+      direction: "/wind_degree"
+      humidity: "/humidity"
+      precipitation: "/precip_mm"
+      condition: "/condition/code"
+      precipitation_probability: "/chance_of_rain"
+    parent: "/forecast/forecastday"
+  daily:
+    items: "/forecast/forecastday"
+    time: "/date"
+    format: date
+    fields:
+      high: "/day/maxtemp_c"
+      low: "/day/mintemp_c"
+      condition: "/day/condition/code"
+      wind: "/day/maxwind_kph"
+      precipitation_probability: "/day/daily_chance_of_rain"
+      precipitation: "/day/totalprecip_mm"

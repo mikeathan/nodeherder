@@ -145,6 +145,17 @@ type AuthConfig struct {
 	SecretSlot string `json:"secret_slot,omitempty" yaml:"secret_slot,omitempty"`
 }
 
+// RequiresCredential reports whether provider requests must carry the declared private slot.
+// Public cross-origin setup searches are handled separately by request destination policy.
+func (auth AuthConfig) RequiresCredential() bool {
+	switch auth.Mode {
+	case "bearer", "apikey_header", "apikey_query":
+		return true
+	default:
+		return false
+	}
+}
+
 // Policy bounds explicit status checks, fresh lookup creation and safe submission-key replay.
 // All durations are seconds; the runtime also enforces stricter local ceilings.
 type Policy struct {
@@ -176,6 +187,8 @@ type Input struct {
 // Request describes one named GET/POST operation. Path segments and fields are typed Values;
 // ResponseRoot selects the result object, while Captures read the original response envelope.
 type Request struct {
+	// Combine names at most one additional GET; results are published together under primary/additional.
+	Combine      string             `json:"combine,omitempty" yaml:"combine,omitempty"`
 	Method       string             `json:"method" yaml:"method"`
 	Path         []Value            `json:"path" yaml:"path"`
 	Query        map[string]Value   `json:"query,omitempty" yaml:"query,omitempty"`
@@ -199,9 +212,12 @@ type Capture struct {
 
 // ChoiceMapping locates a selection array and its ID/label fields; child paths are relative to each item.
 type ChoiceMapping struct {
-	Items string `json:"items" yaml:"items"`
-	Value string `json:"value" yaml:"value"`
-	Label string `json:"label" yaml:"label"`
+	Context   []string `json:"context,omitempty" yaml:"context,omitempty"`
+	Latitude  string   `json:"latitude,omitempty" yaml:"latitude,omitempty"`
+	Longitude string   `json:"longitude,omitempty" yaml:"longitude,omitempty"`
+	Items     string   `json:"items" yaml:"items"`
+	Value     string   `json:"value" yaml:"value"`
+	Label     string   `json:"label" yaml:"label"`
 }
 
 // Discriminator requires an exact provider field value before offering the supported setup journey.
@@ -212,10 +228,20 @@ type Discriminator struct {
 
 // SearchStep links a user input to a request and defines how to display its returned choices.
 type SearchStep struct {
-	Input   string         `json:"input" yaml:"input"`
-	Request string         `json:"request" yaml:"request"`
-	Expect  *Discriminator `json:"expect,omitempty" yaml:"expect,omitempty"`
-	Options ChoiceMapping  `json:"options" yaml:"options"`
+	// BaseURL optionally declares a public search service; cross-origin searches never receive credentials.
+	Postcode *PostcodeSearch `json:"postcode,omitempty" yaml:"postcode,omitempty"`
+	BaseURL  string          `json:"base_url,omitempty" yaml:"base_url,omitempty"`
+	Input    string          `json:"input" yaml:"input"`
+	Request  string          `json:"request" yaml:"request"`
+	Expect   *Discriminator  `json:"expect,omitempty" yaml:"expect,omitempty"`
+	Options  ChoiceMapping   `json:"options" yaml:"options"`
+}
+
+// PostcodeSearch declares an alternate public UK postcode lookup.
+type PostcodeSearch struct {
+	BaseURL string        `json:"base_url" yaml:"base_url"`
+	Request string        `json:"request" yaml:"request"`
+	Options ChoiceMapping `json:"options" yaml:"options"`
 }
 
 // SelectionStep links the explicit selected candidate to the first lookup submission.

@@ -1,5 +1,7 @@
 package capabilities
 
+// Defines capability contracts and dispatches resource operations to registered handlers.
+
 import (
 	"fmt"
 	"sort"
@@ -17,6 +19,7 @@ type Descriptor struct {
 // Previous is nil for previews/new bindings. Identity maps are read-only inputs; results must
 // return their own maps. NewIdentity reserves nothing until runtime commits publication.
 type Context struct {
+	SelectedLabel                                       string
 	NewIdentity                                         func(kind string) (string, error)
 	InstanceID, ResourceID, ProviderID, ProviderVersion string
 	ProfileRevision, BindingRevision                    uint64
@@ -57,6 +60,26 @@ type Handler interface {
 // RenewalPolicy is optional domain recovery after failed normalization. The runtime still
 // enforces refresh-only admission, one renewal, last-good data and provider cooldowns.
 type RenewalPolicy interface{ RenewAfter(error) bool }
+
+// SourceProvider exposes valid placement references without giving generic consumers
+// knowledge of a capability's resource schema. Invalid resources return an error.
+type SourceProvider interface {
+	Sources(model.Resource) ([]model.SourceReference, error)
+}
+
+// Sources dispatches reference discovery to the owning capability. Capabilities without
+// presentation sources remain readable but cannot create new Home placements.
+func (r *Registry) Sources(resource model.Resource) ([]model.SourceReference, error) {
+	handler, err := r.Resolve(resource.ContractVersion)
+	if err != nil {
+		return nil, err
+	}
+	provider, ok := handler.(SourceProvider)
+	if !ok {
+		return []model.SourceReference{}, nil
+	}
+	return provider.Sources(resource)
+}
 
 // Registry is an immutable capability lookup. Registration happens once at composition time;
 // workers only read it. Duplicate/invalid registrations fail rather than replace an adapter.

@@ -1,6 +1,8 @@
 // Package capabilities validates provider results into stable application contracts.
 package waste
 
+// Turns verified provider responses into collection schedules with stable service identities.
+
 import (
 	"crypto/sha256"
 	"encoding/hex"
@@ -36,6 +38,7 @@ type WasteResult struct {
 	ServiceIDs map[string]string
 }
 
+// read treats an empty optional selector as absent instead of selecting the whole document.
 func read(root any, p string) (any, bool) {
 	if p == "" {
 		return nil, false
@@ -47,6 +50,8 @@ func text(root any, p string) (string, bool) {
 	s, is := v.(string)
 	return s, ok && is
 }
+
+// nullable reads an optional bounded text field without confusing a missing value with empty text.
 func nullable(root any, p string) (*string, error) {
 	v, ok := read(root, p)
 	if !ok || v == nil {
@@ -67,10 +72,14 @@ func enum(value string, allowed ...string) string {
 	}
 	return "unknown"
 }
+
+// localDate validates a date-only value without converting it to a timezone.
 func localDate(s string) bool {
 	d, e := time.Parse("2006-01-02", s)
 	return e == nil && d.Format("2006-01-02") == s
 }
+
+// timestamp reads an optional provider timestamp and normalizes it to UTC.
 func timestamp(root any, p string) (*time.Time, error) {
 	s, e := nullable(root, p)
 	if e != nil || s == nil {
@@ -82,6 +91,45 @@ func timestamp(root any, p string) (*time.Time, error) {
 	}
 	t = t.UTC()
 	return &t, nil
+}
+
+// Source links are displayed to users, not fetched by the service; their URL policy
+// intentionally permits paths, queries and fragments unlike provider destinations.
+func appendSourceDetails(root any, metadata MetadataMapping, snapshot *model.WasteSchedule) error {
+	if sourceURL, ok := text(root, metadata.SourceURL); ok {
+		parsed, err := url.Parse(sourceURL)
+		if err == nil && parsed.Scheme == "https" && parsed.Hostname() != "" && parsed.User == nil && len(sourceURL) <= 2048 {
+			snapshot.Provenance.SourceURL = &sourceURL
+		} else {
+			snapshot.Notices = append(snapshot.Notices, "The provider supplied an unsupported source link.")
+		}
+	}
+	if notes, ok := read(root, metadata.Notes); ok && notes != nil {
+		switch values := notes.(type) {
+		case string:
+			if len(values) > 2048 {
+				return invalid("Provider notes are too long.")
+			}
+			snapshot.Notices = append(snapshot.Notices, values)
+		case []any:
+			if len(values) > 32 {
+				return invalid("Too many provider notes.")
+			}
+			for _, item := range values {
+				value, ok := item.(string)
+				if !ok || len(value) > 2048 {
+					return invalid("Provider notes are invalid.")
+				}
+				snapshot.Notices = append(snapshot.Notices, value)
+			}
+		default:
+			return invalid("Provider notes are invalid.")
+		}
+	}
+	if len(snapshot.Notices) > 32 {
+		return invalid("Too many provider notices.")
+	}
+	return nil
 }
 
 // NormalizeWaste rejects non-exact/provisional results and never invents coverage or empty evidence.
@@ -170,38 +218,8 @@ func NormalizeWaste(root any, m Mapping, c WasteContext) (WasteResult, error) {
 		Notices:               []string{},
 		Services:              []model.WasteService{},
 	}
-	if u, ok := text(root, m.Metadata.SourceURL); ok {
-		parsed, err := url.Parse(u)
-		if err == nil && parsed.Scheme == "https" && parsed.Hostname() != "" && parsed.User == nil && len(u) <= 2048 {
-			snapshot.Provenance.SourceURL = &u
-		} else {
-			snapshot.Notices = append(snapshot.Notices, "The provider supplied an unsupported source link.")
-		}
-	}
-	if notes, ok := read(root, m.Metadata.Notes); ok && notes != nil {
-		switch n := notes.(type) {
-		case string:
-			if len(n) > 2048 {
-				return out, invalid("Provider notes are too long.")
-			}
-			snapshot.Notices = append(snapshot.Notices, n)
-		case []any:
-			if len(n) > 32 {
-				return out, invalid("Too many provider notes.")
-			}
-			for _, item := range n {
-				s, ok := item.(string)
-				if !ok || len(s) > 2048 {
-					return out, invalid("Provider notes are invalid.")
-				}
-				snapshot.Notices = append(snapshot.Notices, s)
-			}
-		default:
-			return out, invalid("Provider notes are invalid.")
-		}
-	}
-	if len(snapshot.Notices) > 32 {
-		return out, invalid("Too many provider notices.")
+	if err := appendSourceDetails(root, m.Metadata, &snapshot); err != nil {
+		return out, err
 	}
 	items, ok := read(root, m.Collections.Items)
 	list, is := items.([]any)
@@ -242,37 +260,10 @@ func NormalizeWaste(root any, m Mapping, c WasteContext) (WasteResult, error) {
 		if e != nil {
 			return out, e
 		}
-		key := ""
-		if sourceKey != nil && *sourceKey != "" {
-			key = "source:" + *sourceKey
-		} else {
-			// Colour and array order are presentation details, so they cannot define service identity.
-			// Without a provider service key, a changed descriptor deliberately requires a new ID.
-			tuple, _ := json.Marshal([]*string{&name, rawType, container})
-			sum := sha256.Sum256(tuple)
-			key = "descriptor:v1:" + hex.EncodeToString(sum[:])
-		}
-		if seen[key] {
-			return out, model.Fail("reconciliation_required", "The provider returned ambiguous collection services.")
-		}
-		seen[key] = true
-		id := ids[key]
-		if id == "" {
-			for attempt := 0; attempt < 3; attempt++ {
-				candidate, e := newIdentity("service")
-				if e != nil {
-					return out, e
-				}
-				if !usedIDs[candidate] {
-					id = candidate
-					break
-				}
-			}
-			if id == "" {
-				return out, invalid("Could not allocate a service identity.")
-			}
-			ids[key] = id
-			usedIDs[id] = true
+		key := collectionServiceKey(name, rawType, container, sourceKey)
+		id, err := reconcileServiceID(key, ids, usedIDs, seen, newIdentity)
+		if err != nil {
+			return out, err
 		}
 		present[id] = true
 		service := model.WasteService{
@@ -302,46 +293,15 @@ func NormalizeWaste(root any, m Mapping, c WasteContext) (WasteResult, error) {
 				service.Subscription = "not_required"
 			}
 		}
-		value, ok := read(item, f.Dates)
-		dates, is := value.([]any)
-		if !ok || !is || len(dates) > 730 {
-			return out, invalid("Collection dates are missing or invalid.")
+		partial, err := populateServiceDates(item, f, completeness, quality.DateConfidence, &service)
+		if err != nil {
+			return out, err
 		}
-		unique := map[string]bool{}
-		for _, d := range dates {
-			s, ok := d.(string)
-			if !ok || !localDate(s) {
-				return out, invalid("The provider returned an invalid collection date.")
-			}
-			unique[s] = true
-		}
-		for d := range unique {
-			service.Dates = append(service.Dates, d)
-		}
-		sort.Strings(service.Dates)
-		if len(service.Dates) > 0 {
+		if service.DateState == "known" {
 			knownServices++
-			service.DateState = "known"
-			switch completeness {
-			case "limited_horizon":
-				service.Coverage.State = "limited"
-			case "next_only":
-				service.Coverage.State = "next_only"
-			}
-			if quality.DateConfidence == "next_collection_only" {
-				service.Coverage.State = "next_only"
-			}
-		} else {
-			snapshot.Kind = "partial"
 		}
-		if value, ok := read(item, f.DatesComplete); ok && value != nil {
-			complete, ok := value.(bool)
-			if !ok {
-				return out, invalid("Invalid date completeness flag.")
-			}
-			if !complete {
-				snapshot.Kind = "partial"
-			}
+		if partial {
+			snapshot.Kind = "partial"
 		}
 		snapshot.Services = append(snapshot.Services, service)
 	}
@@ -368,4 +328,85 @@ func NormalizeWaste(root any, m Mapping, c WasteContext) (WasteResult, error) {
 	out.Snapshot = snapshot
 	out.ServiceIDs = ids
 	return out, nil
+}
+
+// Colour and provider array order do not establish identity. A changed descriptor
+// without a stable provider key deliberately creates a new service identity.
+func collectionServiceKey(name string, wasteType, container, sourceKey *string) string {
+	if sourceKey != nil && *sourceKey != "" {
+		return "source:" + *sourceKey
+	}
+	tuple, _ := json.Marshal([]*string{&name, wasteType, container})
+	sum := sha256.Sum256(tuple)
+	return "descriptor:v1:" + hex.EncodeToString(sum[:])
+}
+
+// reconcileServiceID mutates only the normalization's private identity maps; the caller
+// persists them atomically with the accepted snapshot.
+func reconcileServiceID(key string, ids map[string]string, usedIDs, seen map[string]bool, newIdentity func(string) (string, error)) (string, error) {
+	if seen[key] {
+		return "", model.Fail("reconciliation_required", "The provider returned ambiguous collection services.")
+	}
+	seen[key] = true
+	if id := ids[key]; id != "" {
+		return id, nil
+	}
+	for attempt := 0; attempt < 3; attempt++ {
+		id, err := newIdentity("service")
+		if err != nil {
+			return "", err
+		}
+		if !usedIDs[id] {
+			if id == "" {
+				return "", invalid("Could not allocate a service identity.")
+			}
+			ids[key] = id
+			usedIDs[id] = true
+			return id, nil
+		}
+	}
+	return "", invalid("Could not allocate a service identity.")
+}
+
+// populateServiceDates validates provider dates and reports whether this service makes the
+// schedule partial. Dates are calendar values, sorted without applying a timezone conversion.
+func populateServiceDates(item any, fields CollectionFields, completeness, confidence string, service *model.WasteService) (bool, error) {
+	value, ok := read(item, fields.Dates)
+	dates, isList := value.([]any)
+	if !ok || !isList || len(dates) > 730 {
+		return false, invalid("Collection dates are missing or invalid.")
+	}
+	unique := map[string]bool{}
+	for _, date := range dates {
+		text, ok := date.(string)
+		if !ok || !localDate(text) {
+			return false, invalid("The provider returned an invalid collection date.")
+		}
+		unique[text] = true
+	}
+	for date := range unique {
+		service.Dates = append(service.Dates, date)
+	}
+	sort.Strings(service.Dates)
+	partial := len(service.Dates) == 0
+	if !partial {
+		service.DateState = "known"
+		switch completeness {
+		case "limited_horizon":
+			service.Coverage.State = "limited"
+		case "next_only":
+			service.Coverage.State = "next_only"
+		}
+		if confidence == "next_collection_only" {
+			service.Coverage.State = "next_only"
+		}
+	}
+	if value, ok := read(item, fields.DatesComplete); ok && value != nil {
+		complete, ok := value.(bool)
+		if !ok {
+			return false, invalid("Invalid date completeness flag.")
+		}
+		partial = partial || !complete
+	}
+	return partial, nil
 }

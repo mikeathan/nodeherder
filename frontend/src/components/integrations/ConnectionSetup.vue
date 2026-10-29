@@ -1,4 +1,6 @@
 <script setup lang="ts">
+  import { computed } from 'vue';
+  import { setupPresentation } from '@/integrations/registry';
   import UiPageHeader from '@/components/ui/UiPageHeader.vue';
   import UiCard from '@/components/ui/UiCard.vue';
   import UiButton from '@/components/ui/UiButton.vue';
@@ -22,22 +24,27 @@
     saveToken,
     cancel,
   } = useConnectionSetup();
+  const presentation = computed(() => (definition.value ? setupPresentation(definition.value) : null));
 </script>
 <template>
   <div class="connections connection-stack">
-    <UiPageHeader title="Set up bin collections" :back="{ name: RouteName.Integrations }" back-label="Integrations" />
+    <UiPageHeader
+      :title="presentation?.title ?? 'Set up integration'"
+      :back="{ name: RouteName.Integrations }"
+      back-label="Integrations" />
     <ConnectionFeedback :error="error ?? setup?.last_error" :busy="busy" />
-    <UiCard v-if="setup" title="Your address"
+    <UiCard v-if="setup" :title="presentation?.sectionTitle ?? 'Your selection'"
       ><div class="connection-form">
-        <p class="connection-muted">
-          The provider receives your postcode and selected address to retrieve collection dates. Refreshes are manual in
-          this release.
-        </p>
+        <p class="connection-muted">{{ presentation?.notice }}</p>
         <details v-if="definition?.auth.mode !== 'none' && definition?.auth.secret_slot">
           <summary>
             Provider credential
             {{
-              setup.credential_configured ? '(saved)' : definition?.auth.mode === 'bearer' ? '(required)' : '(optional)'
+              setup.credential_configured
+                ? '(saved)'
+                : definition?.auth.mode === 'optional_bearer'
+                  ? '(optional)'
+                  : '(required)'
             }}
           </summary>
           <p class="connection-muted">
@@ -45,25 +52,38 @@
             the provider YAML.
           </p>
           <label class="connection-field"
-            ><span>API token</span><input v-model="token" type="password" autocomplete="off" maxlength="8192" /></label
-          ><UiButton :disabled="!token || busy" @click="saveToken">Save token</UiButton>
+            ><span>API key / token</span><input v-model="token" type="password" autocomplete="off" maxlength="8192"
+          /></label>
+          <p v-if="presentation?.keyURL">
+            <a :href="presentation?.keyURL" target="_blank" rel="noopener noreferrer"
+              >Get an API key from the provider ↗</a
+            >
+          </p>
+          <UiButton :disabled="!token || busy" @click="saveToken">Save token</UiButton>
         </details>
         <form class="connection-form" @submit.prevent="search">
           <label class="connection-field"
-            ><span>Postcode</span><input v-model="postcode" autocomplete="postal-code" maxlength="10" required
+            ><span>{{ presentation?.searchLabel }}</span
+            ><input
+              v-model="postcode"
+              :autocomplete="presentation?.autocomplete"
+              :maxlength="presentation?.searchMaxLength"
+              required
           /></label>
-          <div><UiButton type="submit" :disabled="busy || !postcode.trim()">Find address</UiButton></div>
+          <div>
+            <UiButton type="submit" :disabled="busy || !postcode.trim()">{{ presentation?.searchButton }}</UiButton>
+          </div>
         </form>
         <form v-if="setup.status === 'choose'" class="connection-form" @submit.prevent="save">
           <label class="connection-field"
-            ><span>Choose your address</span
+            ><span>{{ presentation?.choiceLabel }}</span
             ><select v-model="property" required>
-              <option disabled value="">Select an address</option>
+              <option disabled value="">{{ presentation?.choicePlaceholder }}</option>
               <option v-for="choice in setup.choices" :key="choice.id" :value="choice.id">{{ choice.label }}</option>
             </select></label
           >
           <p v-if="!setup.choices.length" class="connection-muted">
-            No addresses were found. Check the postcode or try another provider.
+            No results were found. Check the postcode or try another provider.
           </p>
           <label class="connection-field"
             ><span>Integration name</span><input v-model="name" maxlength="120" required

@@ -1,5 +1,7 @@
 package runtime
 
+// Handles manual refresh, status checks, instance changes and credential updates.
+
 import (
 	"encoding/json"
 	"strings"
@@ -312,36 +314,11 @@ func (s *Service) SetCredential(kind, id, slot, value, expected string, remove b
 	var out any
 	e := s.repo.Update(func(tx *repository.IntegrationTx) error {
 		if kind == "setup" {
-			p, e := s.getSetup(tx, id)
-			if e != nil {
-				return e
+			setup, err := s.setSetupCredential(tx, id, slot, value, expected)
+			if err != nil {
+				return err
 			}
-			if p.Status == "completed" {
-				return model.Fail("revision_conflict", "This setup is already saved.")
-			}
-			if e = checkRevision(expected, revisionETag("setup", id, p.Revision)); e != nil {
-				return e
-			}
-			c, e := s.compiler.CompileYAML(p.DefinitionYAML)
-			if e != nil {
-				return e
-			}
-			if c.Definition.Auth.Mode == "none" || slot != c.Definition.Auth.SecretSlot {
-				return model.Fail("invalid_credential", "This provider does not declare that credential slot.")
-			}
-			old := p.Credentials[slot]
-			if e = s.invalidateSetup(tx, &p); e != nil {
-				return e
-			}
-			p.Credentials[slot] = model.Credential{Value: value, Origin: c.Origin, Revision: old.Revision + 1}
-			p.Status = "input"
-			p.Choices = []model.Choice{}
-			p.State = map[string]any{}
-			s.touch(&p)
-			if e = tx.Put("setups", id, p); e != nil {
-				return e
-			}
-			out = s.setupDTO(p)
+			out = setup
 			return nil
 		}
 		var i model.Instance
@@ -382,7 +359,7 @@ func (s *Service) SetCredential(kind, id, slot, value, expected string, remove b
 		i.CacheScope = ""
 		i.UpdatedAt = s.clock.Now()
 		i.LastError = nil
-		if remove && c.Definition.Auth.Mode == "bearer" {
+		if remove && c.Definition.Auth.RequiresCredential() {
 			i.LastError = model.Fail("reconnect_required", "This provider requires a credential.")
 		}
 		if e = tx.Put("instances", id, i); e != nil {
@@ -392,4 +369,38 @@ func (s *Service) SetCredential(kind, id, slot, value, expected string, remove b
 		return nil
 	})
 	return out, e
+}
+
+// setSetupCredential updates a setup credential and invalidates choices tied to the previous value.
+func (s *Service) setSetupCredential(tx *repository.IntegrationTx, id, slot, value, expected string) (SetupDTO, error) {
+	p, err := s.getSetup(tx, id)
+	if err != nil {
+		return SetupDTO{}, err
+	}
+	if p.Status == "completed" {
+		return SetupDTO{}, model.Fail("revision_conflict", "This setup is already saved.")
+	}
+	if err = checkRevision(expected, revisionETag("setup", id, p.Revision)); err != nil {
+		return SetupDTO{}, err
+	}
+	c, err := s.compiler.CompileYAML(p.DefinitionYAML)
+	if err != nil {
+		return SetupDTO{}, err
+	}
+	if c.Definition.Auth.Mode == "none" || slot != c.Definition.Auth.SecretSlot {
+		return SetupDTO{}, model.Fail("invalid_credential", "This provider does not declare that credential slot.")
+	}
+	old := p.Credentials[slot]
+	if err = s.invalidateSetup(tx, &p); err != nil {
+		return SetupDTO{}, err
+	}
+	p.Credentials[slot] = model.Credential{Value: value, Origin: c.Origin, Revision: old.Revision + 1}
+	p.Status = "input"
+	p.Choices = []model.Choice{}
+	p.State = map[string]any{}
+	s.touch(&p)
+	if err = tx.Put("setups", id, p); err != nil {
+		return SetupDTO{}, err
+	}
+	return s.setupDTO(p), nil
 }

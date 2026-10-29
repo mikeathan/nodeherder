@@ -1,0 +1,174 @@
+# Credentials belong in Setup, never in YAML.
+---
+schema_version: nodeherder.integration/v1
+integration_type: weather
+capability: weather_forecast/v1
+policy:
+  poll_min_seconds: 5
+  renewal_min_seconds: 86400
+  idempotency_window_seconds: 0
+errors:
+  code: ''
+  rules: []
+inputs:
+  location:
+    type: text
+    label: Town or postcode
+    required: true
+  coordinates:
+    type: select
+    label: Choose location
+    required: true
+refresh:
+  request: forecast
+id: open_meteo
+name: Open-Meteo
+base_url: https://api.open-meteo.com
+auth:
+  mode: none
+requests:
+  search:
+    method: GET
+    path:
+    - v1
+    - search
+    query:
+      name:
+        ref: input.location
+      count: 10
+      language: en
+  postcode_search:
+    method: GET
+    path:
+    - postcodes
+    query:
+      query:
+        ref: input.location
+      limit: 10
+  forecast:
+    method: GET
+    path:
+    - v1
+    - forecast
+    query:
+      latitude:
+        ref: state.latitude
+      longitude:
+        ref: state.longitude
+      timezone: auto
+      timeformat: unixtime
+      forecast_days: 16
+      current: temperature_2m,apparent_temperature,wind_speed_10m,wind_gusts_10m,wind_direction_10m,relative_humidity_2m,precipitation,weather_code
+      hourly: temperature_2m,apparent_temperature,wind_speed_10m,wind_gusts_10m,wind_direction_10m,relative_humidity_2m,precipitation,weather_code,precipitation_probability
+      daily: temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max,precipitation_sum,wind_speed_10m_max
+      wind_speed_unit: kmh
+      temperature_unit: celsius
+      precipitation_unit: mm
+setup:
+  type: location_select
+  search:
+    input: location
+    request: search
+    options:
+      items: "/results"
+      value: "/name"
+      label: "/name"
+      context: ["/admin2", "/admin1", "/country"]
+      latitude: "/latitude"
+      longitude: "/longitude"
+    base_url: https://geocoding-api.open-meteo.com
+    postcode:
+      base_url: https://api.postcodes.io
+      request: postcode_search
+      options:
+        items: "/result"
+        label: "/postcode"
+        context: ["/admin_district", "/country"]
+        latitude: "/latitude"
+        longitude: "/longitude"
+  select:
+    input: coordinates
+    request: forecast
+  status:
+    request: ''
+    pointer: ''
+    pending: []
+    done: []
+    failed: []
+mapping:
+  location: ''
+  timezone: "/timezone"
+  default_timezone: Europe/London
+  attribution: Weather data by Open-Meteo; location search by GeoNames and Postcodes.io. Free hosted
+    API for non-commercial use.
+  conditions:
+    '0': clear
+    '1': partly_cloudy
+    '2': partly_cloudy
+    '3': cloudy
+    '45': fog
+    '48': fog
+    '51': drizzle
+    '53': drizzle
+    '55': drizzle
+    '56': drizzle
+    '57': drizzle
+    '61': rain
+    '63': rain
+    '65': rain
+    '66': rain
+    '67': rain
+    '71': snow
+    '73': snow
+    '75': snow
+    '77': snow
+    '80': showers
+    '81': showers
+    '82': showers
+    '85': snow
+    '86': snow
+    '95': thunderstorm
+    '96': thunderstorm
+    '97': thunderstorm
+    '99': thunderstorm
+  current:
+    items: "/current"
+    time: "/time"
+    format: unix
+    fields:
+      temperature: "/temperature_2m"
+      feels_like: "/apparent_temperature"
+      wind: "/wind_speed_10m"
+      gust: "/wind_gusts_10m"
+      direction: "/wind_direction_10m"
+      humidity: "/relative_humidity_2m"
+      precipitation: "/precipitation"
+      condition: "/weather_code"
+  hourly:
+    items: "/hourly"
+    time: "/time"
+    format: unix
+    fields:
+      temperature: "/temperature_2m"
+      feels_like: "/apparent_temperature"
+      wind: "/wind_speed_10m"
+      gust: "/wind_gusts_10m"
+      direction: "/wind_direction_10m"
+      humidity: "/relative_humidity_2m"
+      precipitation: "/precipitation"
+      condition: "/weather_code"
+      precipitation_probability: "/precipitation_probability"
+    columns: true
+  daily:
+    offset: /utc_offset_seconds
+    items: "/daily"
+    time: "/time"
+    format: unix
+    fields:
+      high: "/temperature_2m_max"
+      low: "/temperature_2m_min"
+      condition: "/weather_code"
+      wind: "/wind_speed_10m_max"
+      precipitation_probability: "/precipitation_probability_max"
+      precipitation: "/precipitation_sum"
+    columns: true

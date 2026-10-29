@@ -1,5 +1,7 @@
 package runtime
 
+// Loads, reviews and activates provider definitions while protecting existing bindings.
+
 import (
 	"encoding/json"
 	"errors"
@@ -13,6 +15,7 @@ import (
 	"node-herder/repository"
 )
 
+// loadDefinitions reconciles provider files with persisted definition records at startup.
 func (s *Service) loadDefinitions() error {
 	if s.shipped != nil {
 		if e := fs.WalkDir(s.shipped, ".", func(path string, entry fs.DirEntry, err error) error {
@@ -162,6 +165,8 @@ func (s *Service) ValidateDefinition(key, source string, document json.RawMessag
 	defer s.mu.Unlock()
 	return s.validateDefinition(key, source, document)
 }
+
+// validateDefinition checks the candidate and identifies instances affected by destination changes.
 func (s *Service) validateDefinition(key, source string, document json.RawMessage) (ValidationDTO, error) {
 	var out ValidationDTO
 	var c *definitions.Compiled
@@ -394,66 +399,76 @@ func (s *Service) activateDefinition(key, source, hash string, review *Destinati
 			return e
 		}
 		for _, i := range updates {
-			oldRevision := i.Revision
-			oldOperationID := i.OperationID
-			i.Revision++
-			i.Generation++
-			i.ETag = ""
-			i.CacheScope = ""
-			currentCredential := credential(c.Definition, i.Credentials)
-			if i.Origin != c.Origin || currentCredential != nil && currentCredential.Origin != c.Origin {
-				reassociate := false
-				if review != nil {
-					for _, grant := range review.Reassociate {
-						cred := credential(c.Definition, i.Credentials)
-						revision := uint64(0)
-						if cred != nil {
-							revision = cred.Revision
-						}
-						if grant.InstanceID == i.ID && grant.Revision == oldRevision && grant.CredentialRevision == revision && grant.CredentialSlot == c.Definition.Auth.SecretSlot {
-							reassociate = true
-						}
-					}
-				}
-				if reassociate {
-					i.Origin = c.Origin
-					i.LastError = nil
-					if cred := credential(c.Definition, i.Credentials); cred != nil {
-						cred.Origin = c.Origin
-						cred.Revision++
-						i.Credentials[c.Definition.Auth.SecretSlot] = *cred
-					}
-				} else {
-					i.LastError = model.Fail("reconnect_required", "The provider destination changed. Review and reconnect before sending saved inputs.")
-				}
-				if e = s.terminateOperation(tx, i.OperationID, model.Fail("reconnect_required", "The destination changed. Start a reviewed setup.")); e != nil {
-					return e
-				}
-				i.OperationID = ""
-			} else if i.OperationID != "" {
-				var op model.Operation
-				ok, e := tx.Get("operations", i.OperationID, &op)
-				if e != nil {
-					return e
-				}
-				if ok && op.Status != "done" && op.Status != "failed" {
-					op.Generation = i.Generation
-					op.Status = "retry_required"
-					op.RetryAt = s.clock.Now().Add(5 * time.Second)
-					if e = tx.Put("operations", op.ID, op); e != nil {
-						return e
-					}
-				}
-			}
-			if cancel := s.running[oldOperationID]; cancel != nil {
-				cancel()
-			}
-			if e = tx.Put("instances", i.ID, i); e != nil {
+			if e = s.rebindDefinitionInstance(tx, i, c, review); e != nil {
 				return e
 			}
 		}
 		return nil
 	})
+}
+
+// rebindDefinitionInstance fences in-flight work while activating a definition in the
+// same transaction. A changed credential destination requires its matching review.
+func (s *Service) rebindDefinitionInstance(tx *repository.IntegrationTx, instance model.Instance, compiled *definitions.Compiled, review *DestinationReview) error {
+	oldRevision, oldOperationID := instance.Revision, instance.OperationID
+	// Advancing the generation prevents work admitted under the old definition from publishing.
+	instance.Revision++
+	instance.Generation++
+	instance.ETag = ""
+	instance.CacheScope = ""
+	current := credential(compiled.Definition, instance.Credentials)
+	if instance.Origin != compiled.Origin || current != nil && current.Origin != compiled.Origin {
+		var revision uint64
+		if current != nil {
+			revision = current.Revision
+		}
+		if hasCredentialReview(review, instance.ID, oldRevision, revision, compiled.Definition.Auth.SecretSlot) {
+			instance.Origin = compiled.Origin
+			instance.LastError = nil
+			if current != nil {
+				current.Origin = compiled.Origin
+				current.Revision++
+				instance.Credentials[compiled.Definition.Auth.SecretSlot] = *current
+			}
+		} else {
+			instance.LastError = model.Fail("reconnect_required", "The provider destination changed. Review and reconnect before sending saved inputs.")
+		}
+		if err := s.terminateOperation(tx, instance.OperationID, model.Fail("reconnect_required", "The destination changed. Start a reviewed setup.")); err != nil {
+			return err
+		}
+		instance.OperationID = ""
+	} else if instance.OperationID != "" {
+		var operation model.Operation
+		ok, err := tx.Get("operations", instance.OperationID, &operation)
+		if err != nil {
+			return err
+		}
+		if ok && operation.Status != "done" && operation.Status != "failed" {
+			operation.Generation = instance.Generation
+			operation.Status = "retry_required"
+			operation.RetryAt = s.clock.Now().Add(5 * time.Second)
+			if err = tx.Put("operations", operation.ID, operation); err != nil {
+				return err
+			}
+		}
+	}
+	if cancel := s.running[oldOperationID]; cancel != nil {
+		cancel()
+	}
+	return tx.Put("instances", instance.ID, instance)
+}
+
+// hasCredentialReview matches an approval to the exact instance and credential revisions.
+func hasCredentialReview(review *DestinationReview, instanceID string, revision, credentialRevision uint64, slot string) bool {
+	if review == nil {
+		return false
+	}
+	for _, grant := range review.Reassociate {
+		if grant.InstanceID == instanceID && grant.Revision == revision && grant.CredentialRevision == credentialRevision && grant.CredentialSlot == slot {
+			return true
+		}
+	}
+	return false
 }
 
 // ReloadDefinition validates and activates the current host file under an optimistic hash check.
@@ -470,6 +485,8 @@ func (s *Service) ReloadDefinition(key, expected string, review *DestinationRevi
 	}
 	return s.Definition(key)
 }
+
+// reloadDefinition activates the host file after revision and destination review checks.
 func (s *Service) reloadDefinition(key, expected string, review *DestinationReview, startup bool) error {
 	source, hash, e := s.files.Read(key)
 	if e != nil {

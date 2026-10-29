@@ -1,5 +1,7 @@
 package runtime
 
+// Allocates and reserves integration resource identities within repository transactions.
+
 import (
 	"github.com/google/uuid"
 

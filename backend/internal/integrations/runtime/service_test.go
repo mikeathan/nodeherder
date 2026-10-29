@@ -1,5 +1,7 @@
 package runtime
 
+// Checks integration runtime service behavior using isolated fixtures.
+
 import (
 	"bytes"
 	"context"
@@ -17,6 +19,7 @@ import (
 	defaults "node-herder/configs/integrations"
 	"node-herder/internal/integrations/capabilities"
 	"node-herder/internal/integrations/capabilities/waste"
+	"node-herder/internal/integrations/capabilities/weather"
 	"node-herder/internal/integrations/definitions"
 	"node-herder/internal/integrations/operations"
 	"node-herder/mocks"
@@ -681,4 +684,99 @@ func seed(t *testing.T) string {
 		t.Fatal(err)
 	}
 	return string(b)
+}
+
+func TestWeatherSetupManualRefresh(t *testing.T) {
+	calls := 0
+	failed := false
+	s, _ := serviceFixture(t, providerFunc(func(r *http.Request) (*http.Response, error) {
+		calls++
+		if r.URL.Host == "api.postcodes.io" {
+			if r.Header.Get("apikey") != "" {
+				t.Fatal("postcode search leaked key")
+			}
+			if r.URL.Query().Get("query") != "S8 9ED" {
+				t.Fatalf("postcode was not normalized: %s", r.URL.RawQuery)
+			}
+			return reply(200, `{"result":[{"postcode":"S8 9ED","admin_district":"Sheffield","country":"England","latitude":53.3,"longitude":-1.4}]}`), nil
+		}
+		if r.URL.Host == "geocoding-api.open-meteo.com" {
+			if r.Header.Get("apikey") != "" {
+				t.Fatal("search leaked key")
+			}
+			return reply(200, `{"results":[{"name":"Bristol","latitude":51.45,"longitude":-2.59}]}`), nil
+		}
+		if failed {
+			return reply(503, `{}`), nil
+		}
+		if r.Header.Get("apikey") != "test-key" {
+			t.Fatal("missing weather key")
+		}
+		if strings.HasSuffix(r.URL.Path, "daily") {
+			return reply(200, `{"features":[{"properties":{"timeSeries":[{"time":"2026-10-23T00:00:00Z","dayMaxScreenTemperature":16,"nightMinScreenTemperature":9,"daySignificantWeatherCode":3}]}}]}`), nil
+		}
+		return reply(200, `{"features":[{"properties":{"location":{"name":"Bristol"},"timeSeries":[{"time":"2026-10-23T13:00:00Z","screenTemperature":14,"significantWeatherCode":3}]}}]}`), nil
+	}))
+	registry, e := capabilities.NewRegistry(waste.Adapter{}, weather.Adapter{})
+	if e != nil {
+		t.Fatal(e)
+	}
+	s.capabilities = registry
+	s.compiler = definitions.NewCompiler(registry)
+	if e = s.loadDefinitions(); e != nil {
+		t.Fatal(e)
+	}
+	p, e := s.CreateSetup("weather/met_office", "", "")
+	if e != nil {
+		t.Fatal(e)
+	}
+	// Credential changes are exercised through the same private Setup boundary as bins.
+	_, e = s.SetCredential("setup", p.ID, "api_key", "test-key", p.ETag, false)
+	if e != nil {
+		t.Fatal(e)
+	}
+	p, e = s.Setup(p.ID)
+	if e != nil {
+		t.Fatal(e)
+	}
+	p, e = s.SearchSetup(p.ID, "s89ed", p.ETag)
+	if e != nil {
+		t.Fatal(e)
+	}
+	runQueued(t, s)
+	p, e = s.Setup(p.ID)
+	if e != nil || len(p.Choices) != 1 {
+		t.Fatal(p, e)
+	}
+	if p.Choices[0].Label != "S8 9ED, Sheffield, England" {
+		t.Fatal(p.Choices)
+	}
+	p, e = s.SaveSetup(p.ID, p.Choices[0].ID, "Weather", p.ETag)
+	if e != nil {
+		t.Fatal(e)
+	}
+	runQueued(t, s)
+	i, e := s.Instance(p.InstanceID)
+	if e != nil || len(i.Resources) != 1 {
+		t.Fatal(i, e)
+	}
+	id := i.Resources[0].ResourceID
+	if calls != 3 {
+		t.Fatal("expected search plus two forecast calls", calls)
+	}
+	_, _ = s.Instance(i.ID)
+	_, _ = s.Instances()
+	if calls != 3 {
+		t.Fatal("reads triggered provider work")
+	}
+	failed = true
+	_, e = s.Refresh(i.ID, i.ETag)
+	if e != nil {
+		t.Fatal(e)
+	}
+	runQueued(t, s)
+	i, e = s.Instance(i.ID)
+	if e != nil || i.Error == nil || len(i.Resources) != 1 || i.Resources[0].ResourceID != id {
+		t.Fatal("failed refresh lost last-good data", i, e)
+	}
 }

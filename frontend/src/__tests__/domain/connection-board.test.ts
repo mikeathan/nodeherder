@@ -1,14 +1,14 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { connectionWidget, moveBoardEntry, reconcileBoard } from '@/domain/connection-board';
-import type { ConnectionInstance } from '@/types/integrations.type';
+import type { ConnectionInstance, WasteSchedule } from '@/types/integrations.type';
 const examples = JSON.parse(
   readFileSync(
     resolve(__dirname, '../../../../specs/032-external-integrations/contracts/waste_schedule.v1.examples.json'),
     'utf8'
   )
 );
-function instance(): ConnectionInstance {
+function instance(): Omit<ConnectionInstance, 'resources'> & { resources: WasteSchedule[] } {
   return {
     id: 'one',
     name: 'Bins',
@@ -76,7 +76,7 @@ test('errors, disabled and pending are distinct, and unknown types have generic 
   item.operation_id = undefined;
   item.last_error = null;
   item.provider_key = 'future/example';
-  expect(connectionWidget(item)).toMatchObject({ isWaste: false, status: 'Waiting for information', rows: [] });
+  expect(connectionWidget(item)).toMatchObject({ status: 'Waiting for information', rows: [] });
 });
 
 test('widget orders all resources chronologically before limiting to three services', () => {

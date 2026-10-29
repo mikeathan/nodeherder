@@ -1,13 +1,13 @@
 package definitions
 
+// Parses provider documents and validates their requests, setup journeys and capabilities.
+
 import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"io"
-	"net"
-	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -16,6 +16,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"node-herder/internal/integrations/capabilities"
+	"node-herder/internal/integrations/destination"
 	"node-herder/internal/integrations/flows/searchselect"
 	"node-herder/internal/integrations/operations"
 	model "node-herder/models/integrations"
@@ -90,9 +91,11 @@ func (c *Compiler) CompileYAML(source string) (*Compiled, error) {
 	if err := c.validateDefinition(&d); err != nil {
 		return nil, err
 	}
-	u, _ := url.Parse(d.BaseURL)
-	return &Compiled{Definition: d, YAML: source, Hash: ContentHash([]byte(source)), Origin: Origin(u), Revision: 1}, nil
+	u, _ := destination.Parse(d.BaseURL) // validateDefinition has already checked the URL.
+	return &Compiled{Definition: d, YAML: source, Hash: ContentHash([]byte(source)), Origin: destination.Origin(u), Revision: 1}, nil
 }
+
+// checkYAML bounds document structure and rejects aliases, duplicate keys and unsupported scalars.
 func checkYAML(n *yaml.Node, depth int, count *int) error {
 	*count++
 	if depth > 32 || *count > 8192 {
@@ -148,17 +151,6 @@ func (c *Compiler) CompileDocument(raw json.RawMessage) (*Compiled, error) {
 	return c.CompileYAML(string(b))
 }
 
-// Origin canonicalizes the credential destination without including a path.
-func Origin(u *url.URL) string {
-	host := strings.ToLower(u.Hostname())
-	port := u.Port()
-	if port != "" && port != "443" {
-		host = net.JoinHostPort(host, port)
-	} else if strings.Contains(host, ":") {
-		host = "[" + host + "]"
-	}
-	return strings.ToLower(u.Scheme) + "://" + host
-}
 func validPointer(p string) bool { return operations.ValidPointer(p) }
 func requirePointer(path, p string) error {
 	if p == "" || !validPointer(p) {
@@ -205,8 +197,7 @@ func validateProviderMetadata(d *model.Definition) error {
 	if !identifier.MatchString(d.ID) || strings.TrimSpace(d.Name) == "" || len(d.Name) > 120 {
 		return configError("id", "Use a lowercase identifier and a provider name.")
 	}
-	u, err := url.Parse(d.BaseURL)
-	if err != nil || u.Scheme != "https" || (u.Hostname() == "" || u.Port() != "" && u.Port() != "443") || u.User != nil || u.RawQuery != "" || u.Fragment != "" || len(d.BaseURL) > 2048 {
+	if _, err := destination.Parse(d.BaseURL); err != nil {
 		return configError("base_url", "Use an HTTPS address on port 443 without credentials, query or fragment.")
 	}
 	if d.Auth.Mode == "" {
@@ -214,12 +205,12 @@ func validateProviderMetadata(d *model.Definition) error {
 	}
 	switch d.Auth.Mode {
 	case "none":
-	case "bearer", "optional_bearer":
+	case "bearer", "optional_bearer", "apikey_header", "apikey_query":
 		if !identifier.MatchString(d.Auth.SecretSlot) {
 			return configError("auth.secret_slot", "Choose a named credential slot.")
 		}
 	default:
-		return configError("auth.mode", "Supported modes are none, bearer and optional_bearer.")
+		return configError("auth.mode", "Supported modes are none, bearer, optional_bearer, apikey_header and apikey_query.")
 	}
 	if d.Policy.PollMinSeconds == 0 {
 		d.Policy.PollMinSeconds = 5
@@ -258,6 +249,9 @@ func validateRequestDeclarations(d *model.Definition) error {
 	count := 0
 	for id, q := range d.Requests {
 		path := "requests." + id
+		if err := operations.ValidateCombination(*d, id); err != nil {
+			return err
+		}
 		if !identifier.MatchString(id) || (q.Method != "GET" && q.Method != "POST") || len(q.Path) == 0 || len(q.Path) > 32 || len(q.Query) > 32 || len(q.Body) > 32 || (q.Method == "GET" && len(q.Body) > 0) || (bool(q.Idempotency) && q.Method != "POST") || (bool(q.Conditional) && q.Method != "GET") {
 			return configError(path, "Use a named GET or POST request with bounded path, query and body.")
 		}

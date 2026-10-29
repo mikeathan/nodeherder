@@ -1,4 +1,5 @@
 import type { WasteSchedule } from '@/types/integrations.type';
+import { calendarDateInZone, formatShortCalendarDate } from '@/utils/date.utils';
 
 /** Date-only collection labels; null means that no upcoming date was supplied. */
 export interface CollectionDatePresentation {
@@ -17,40 +18,10 @@ const longDateFormat = new Intl.DateTimeFormat('en-GB', {
   month: 'long',
   timeZone: 'UTC',
 });
-const shortDateFormat = new Intl.DateTimeFormat('en-GB', {
-  weekday: 'short',
-  day: 'numeric',
-  month: 'short',
-  timeZone: 'UTC',
-});
 
-// Ingress limits this cache to the zones supported by the versioned waste contract.
-const calendarFormats = new Map<WasteSchedule['timezone'], Intl.DateTimeFormat>();
-
-/**
- * Resolve a UTC evaluation instant to its calendar date in the resource's declared zone.
- * @param evaluatedAt Validated operational timestamp, not a collection date.
- * @param timezone Source calendar from the resource, independent of browser/process settings.
- * @returns Canonical YYYY-MM-DD for filtering and comparing collection dates.
- */
+/** Resolve a UTC instant to the collection's calendar date in its declared timezone. */
 export function collectionCalendarDate(evaluatedAt: string, timezone: WasteSchedule['timezone']): string {
-  let formatter = calendarFormats.get(timezone);
-  if (!formatter) {
-    formatter = new Intl.DateTimeFormat('en-CA', {
-      timeZone: timezone,
-      calendar: 'gregory',
-      numberingSystem: 'latn',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    });
-    calendarFormats.set(timezone, formatter);
-  }
-  // Build ISO explicitly: locale punctuation/order is not a reliable comparison key.
-  const parts = Object.fromEntries(
-    formatter.formatToParts(new Date(evaluatedAt)).map((part) => [part.type, part.value])
-  );
-  return `${parts.year}-${parts.month}-${parts.day}`;
+  return calendarDateInZone(evaluatedAt, timezone);
 }
 
 /**
@@ -85,7 +56,7 @@ export function presentCollectionDates(dates: readonly string[], today: string):
   return {
     nextDateISO,
     nextDate: collectionLabel(nextDateISO, longDateFormat),
-    nextDateShort: collectionLabel(nextDateISO, shortDateFormat),
+    nextDateShort: formatShortCalendarDate(nextDateISO),
     laterDates: upcoming.slice(1, MAX_LATER_DATES + 1).map((date) => collectionLabel(date, longDateFormat)),
   };
 }

@@ -1,5 +1,7 @@
 package waste
 
+// Checks bin normalization, evidence, dates and stable service identity.
+
 import (
 	"encoding/json"
 	"testing"
@@ -49,5 +51,27 @@ func TestNormalizeWaste(t *testing.T) {
 				t.Fatalf("accepted %s", b)
 			}
 		})
+	}
+}
+
+func TestNormalizeWasteSourceDetailsAndPartialCoverage(t *testing.T) {
+	fixture := wasteFixture()
+	fixture["source"] = "https://council.example/calendar?area=1#dates"
+	fixture["notes"] = []any{"Published dates"}
+	fixture["collections"].([]any)[0].(map[string]any)["dates_complete"] = false
+	mapping := wasteMapping()
+	mapping.Metadata.SourceURL = "/source"
+	mapping.Metadata.Notes = "/notes"
+	context := WasteContext{InstanceID: "instance", SelectedProperty: "p:test", Now: time.Date(2026, 10, 23, 13, 0, 0, 0, time.UTC)}
+	result, err := NormalizeWaste(fixture, mapping, context)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Snapshot.Kind != "partial" || result.Snapshot.Provenance.SourceURL == nil || *result.Snapshot.Provenance.SourceURL != fixture["source"] || len(result.Snapshot.Notices) != 1 {
+		t.Fatalf("unexpected source details or coverage: %+v", result.Snapshot)
+	}
+	fixture["notes"] = []any{false}
+	if _, err = NormalizeWaste(fixture, mapping, context); err == nil {
+		t.Fatal("accepted a non-text provider note")
 	}
 }

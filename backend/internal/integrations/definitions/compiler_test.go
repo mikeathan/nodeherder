@@ -1,5 +1,7 @@
 package definitions_test
 
+// Checks provider definition parsing and validation.
+
 import (
 	"encoding/json"
 	"strings"

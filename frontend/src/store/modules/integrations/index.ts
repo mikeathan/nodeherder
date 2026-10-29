@@ -13,6 +13,7 @@ export interface ConnectionsState {
   board: ConnectionBoard | null;
   boardReturn: { id: string; scrollTop: number } | null;
   instanceReads: number;
+  instanceRemovals: number;
   catalog: ConnectionCatalog | null;
   instances: ConnectionInstance[];
   current: ConnectionInstance | null;
@@ -27,6 +28,7 @@ export const IntegrationsModule: Module<ConnectionsState, RootState> = {
     board: null,
     boardReturn: null,
     instanceReads: 0,
+    instanceRemovals: 0,
     catalog: null,
     instances: [],
     current: null,
@@ -62,6 +64,13 @@ export const IntegrationsModule: Module<ConnectionsState, RootState> = {
     },
     instances(state, value: ConnectionInstance[]) {
       state.instances = value;
+    },
+    /** Remove deleted private data and fence any earlier instance-list response. */
+    forgetInstance(state, id: string) {
+      state.instanceReads++;
+      state.instanceRemovals++;
+      state.instances = state.instances.filter((instance) => instance.id !== id);
+      if (state.current?.id === id) state.current = null;
     },
     current(state, value: ConnectionInstance | null) {
       state.current = value;
@@ -119,6 +128,8 @@ export const IntegrationsModule: Module<ConnectionsState, RootState> = {
     // Transport/auth feedback belongs to the page scope. Store actions only own accepted data.
     async load({ state, commit }, signal?: AbortSignal) {
       const generation = state.generation;
+      commit('beginInstanceRead');
+      const read = state.instanceReads;
       const [catalog, instances] = await Promise.all([
         connectionsApi.catalog(signal),
         connectionsApi.instances(signal).catch((error) => {
@@ -128,13 +139,15 @@ export const IntegrationsModule: Module<ConnectionsState, RootState> = {
       ]);
       if (generation === state.generation && !signal?.aborted) {
         commit('catalog', catalog);
-        commit('instances', instances);
+        if (read === state.instanceReads) commit('instances', instances);
       }
     },
     async loadInstance({ state, commit }, { id, signal }: { id: string; signal?: AbortSignal }) {
       const generation = state.generation;
+      const removals = state.instanceRemovals;
       const value = await connectionsApi.instance(id, signal);
-      if (generation === state.generation && !signal?.aborted) commit('current', value);
+      if (generation === state.generation && removals === state.instanceRemovals && !signal?.aborted)
+        commit('current', value);
       return value;
     },
   },

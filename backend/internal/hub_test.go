@@ -263,6 +263,47 @@ type browserProvider struct{}
 func (browserProvider) Do(r *http.Request) (*http.Response, error) {
 	var body string
 	switch {
+	case r.URL.Host == "geocoding-api.open-meteo.com":
+		body = `{"results":[{"name":"Bristol","latitude":51.45,"longitude":-2.59}]}`
+	case r.URL.Host == "api.open-meteo.com":
+		now := time.Now().UTC().Truncate(time.Second)
+		result := map[string]any{"timezone": "Europe/London", "utc_offset_seconds": 0}
+		current := map[string]any{"time": now.Unix()}
+		for _, key := range strings.Split(r.URL.Query().Get("current"), ",") {
+			current[key] = 14.0
+		}
+		current["weather_code"] = 2
+		result["current"] = current
+		for _, kind := range []string{"hourly", "daily"} {
+			count, step := 24, time.Hour
+			if kind == "daily" {
+				count = 15
+				step = 24 * time.Hour
+			}
+			columns := map[string]any{}
+			times := []int64{}
+			for n := 0; n < count; n++ {
+				times = append(times, now.Add(time.Duration(n)*step).Unix())
+			}
+			columns["time"] = times
+			for _, key := range strings.Split(r.URL.Query().Get(kind), ",") {
+				values := []float64{}
+				for n := 0; n < count; n++ {
+					v := 14.0
+					if key == "weather_code" {
+						v = 2
+					}
+					if key == "temperature_2m_min" {
+						v = 9
+					}
+					values = append(values, v)
+				}
+				columns[key] = values
+			}
+			result[kind] = columns
+		}
+		raw, _ := json.Marshal(result)
+		body = string(raw)
 	case strings.HasSuffix(r.URL.Path, "/addresses"):
 		body = `{"required_input":"property_id","candidates":[{"id":"p:synthetic","label":"1 Synthetic Street, Test Town"}]}`
 	case strings.HasSuffix(r.URL.Path, "/lookups"), strings.Contains(r.URL.Path, "/schedules/"):

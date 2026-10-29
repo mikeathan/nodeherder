@@ -1,5 +1,7 @@
 package searchselect
 
+// Checks that selection-based recipes have valid steps, references and saved values.
+
 import (
 	"encoding/json"
 	"math"
@@ -13,6 +15,12 @@ import (
 // ValidateLinks checks the named search/select/status journey and disjoint progress states.
 func ValidateLinks(d *model.Definition) error {
 	s := d.Setup
+	if s.Type == "location_select" {
+		return validateLocation(d)
+	}
+	if s.Search.BaseURL != "" || s.Search.Postcode != nil {
+		return configError("setup.search.base_url", "Separate search services require location_select.")
+	}
 	if s.Type != "search_select" || s.Search.Input == s.Select.Input {
 		return configError("setup", "Use a search_select recipe with two different inputs.")
 	}
@@ -68,6 +76,9 @@ func ValidateLinks(d *model.Definition) error {
 // ValidateAvailability proves saved values exist on immediate and polled completion paths.
 func ValidateAvailability(d *model.Definition) error {
 	s := d.Setup
+	if s.Type == "location_select" {
+		return validateLocation(d)
+	}
 	if s.Search.Request == s.Select.Request || s.Search.Request == s.Status.Request || s.Select.Request == s.Status.Request || d.Refresh.Request == s.Search.Request || d.Refresh.Request == s.Select.Request || d.Refresh.Request == s.Status.Request {
 		return configError("setup", "Search, selection, status and refresh need distinct requests.")
 	}
@@ -118,6 +129,7 @@ func ValidateAvailability(d *model.Definition) error {
 	return nil
 }
 
+// captureNames returns the required state fields available at a particular completion phase.
 func captureNames(q model.Request, complete bool) map[string]bool {
 	m := map[string]bool{}
 	for k, c := range q.Captures {
@@ -134,6 +146,8 @@ func copyNames(m map[string]bool) map[string]bool {
 	}
 	return n
 }
+
+// validateRequestRefs ensures a request uses only inputs and state available at its step.
 func validateRequestRefs(id string, q model.Request, inputs, states map[string]bool) error {
 	check := func(v model.Value, path bool) error {
 		if v.Ref != "" {

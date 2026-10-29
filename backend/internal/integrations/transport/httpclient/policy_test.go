@@ -1,5 +1,7 @@
 package httpclient
 
+// Checks DNS and network address restrictions for provider connections.
+
 import (
 	"context"
 	"net"

@@ -83,6 +83,22 @@ export function useConnections() {
     observer.start(id);
   }
 
-  return { store, router, state, api, busy, error, perform, commit, observe, isActive, signal: controller.signal };
+  /** Continue an admitted operation only if its refreshed owner still references it. */
+  async function checkOperation(id: string | undefined, reload: (signal?: AbortSignal) => Promise<{ operation_id?: string; etag: string }>) {
+    if (!id) return;
+    const operation = await perform(async () => {
+      const current = await reload();
+      if (current.operation_id !== id) return;
+      try {
+        return await api.check(id, current.etag);
+      } catch (cause) {
+        if (!(cause instanceof ConnectionError) || cause.failure.code !== 'revision_conflict') throw cause;
+        await reload();
+      }
+    });
+    if (operation) observe(operation.id, reload);
+  }
+
+  return { store, router, state, api, busy, error, perform, commit, observe, checkOperation, isActive, signal: controller.signal };
 }
 export type ConnectionScope = ReturnType<typeof useConnections>;

@@ -17,6 +17,7 @@ import type {
   ConnectionInstance,
   DestinationReview,
   ProviderDefinition,
+  ProviderTestMode,
   ConnectionBoardEntry,
 } from '@/types/integrations.type';
 /** Sanitized API/session failure exposed to UI feedback; never contains a raw provider response. */
@@ -169,7 +170,7 @@ export function createConnectionsApi(defaultSignal?: AbortSignal) {
       key: string,
       yaml: string,
       instance: string,
-      mode: 'offline' | 'live',
+      mode: ProviderTestMode,
       sample?: unknown,
       review?: DestinationReview
     ) =>

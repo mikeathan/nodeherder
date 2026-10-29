@@ -139,8 +139,8 @@
   .nh-tile-ic {
     display: grid;
     place-items: center;
-    width: 2.5rem;
-    height: 2.5rem;
+    width: 2.25rem;
+    height: 2.25rem;
     border-radius: 50%;
     flex: none;
     border: 0;
@@ -182,9 +182,7 @@
     font-weight: 600;
     font-size: 0.875rem;
     max-width: 100%;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
   }
   .nh-tile-value {
     display: inline-flex;
@@ -205,9 +203,7 @@
     font-size: 0.7rem;
     color: var(--nh-text-muted);
     max-width: 100%;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
   }
   .nh-tile.is-on {
     background: color-mix(in srgb, var(--nh-kc, var(--nh-accent)) 9%, var(--nh-surface));

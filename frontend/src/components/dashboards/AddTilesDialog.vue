@@ -64,11 +64,23 @@
       placeholder="Choose a source"
       :disabled="busy" />
     <p v-if="source === 'integrations' && sourceError" class="nh-alert is-warning" role="status">{{ sourceError }}</p>
+    <p v-if="source === 'integrations' && choices.length" class="nh-muted">Choose one result to add as a card.</p>
     <fieldset v-if="choices.length" class="nh-checks-wrap">
       <legend class="nh-label">Values to show</legend>
-      <div class="nh-checks">
-        <label v-for="choice in choices" :key="choice.key" class="nh-check">
-          <input v-model="picked" type="checkbox" :value="choice.key" :disabled="busy || choice.alreadyShown" />
+      <div class="nh-checks" :class="{ 'is-integration': source === 'integrations' }">
+        <label
+          v-for="choice in choices"
+          :key="choice.key"
+          class="nh-check"
+          :class="{ 'is-selected': source === 'integrations' && picked[0] === choice.key, 'is-disabled': busy || choice.alreadyShown }">
+          <input
+            v-if="source === 'integrations'"
+            type="radio"
+            name="integration-result"
+            :checked="picked[0] === choice.key"
+            :disabled="busy || choice.alreadyShown"
+            @change="picked = [choice.key]" />
+          <input v-else v-model="picked" type="checkbox" :value="choice.key" :disabled="busy || choice.alreadyShown" />
           <span>
             {{ choice.label }}
             <small>{{ choice.alreadyShown ? 'Already shown here' : choice.detail }}</small>
@@ -108,6 +120,60 @@
     accent-color: var(--nh-accent);
     width: 1.1rem;
     height: 1.1rem;
+  }
+  .nh-checks.is-integration {
+    gap: 0.65rem;
+  }
+  .is-integration .nh-check {
+    min-height: 4.5rem;
+    padding: 0.75rem;
+    border: var(--nh-border-w) solid var(--nh-border);
+    border-radius: var(--nh-radius-l);
+    background: var(--nh-surface-2);
+    transition: border-color var(--nh-motion), background var(--nh-motion);
+  }
+  .is-integration .nh-check:hover:not(.is-disabled) {
+    border-color: var(--nh-border-strong);
+  }
+  .is-integration .nh-check.is-selected {
+    border-color: var(--nh-accent);
+    background: var(--nh-accent-soft);
+  }
+  .is-integration .nh-check:focus-within {
+    outline: 2px solid var(--nh-accent);
+    outline-offset: 2px;
+  }
+  .is-integration .nh-check.is-disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+  .is-integration .nh-check input {
+    appearance: none;
+    display: grid;
+    place-content: center;
+    flex: none;
+    margin: 0;
+    border: 2px solid var(--nh-border-strong);
+    border-radius: 50%;
+    background: var(--nh-surface);
+  }
+  .is-integration .nh-check input:checked {
+    border-color: var(--nh-accent);
+  }
+  .is-integration .nh-check input:checked::before {
+    content: '';
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--nh-accent);
+  }
+  @media (forced-colors: active) {
+    .is-integration .nh-check input {
+      appearance: auto;
+    }
+    .is-integration .nh-check input::before {
+      display: none;
+    }
   }
   .nh-check small {
     display: block;

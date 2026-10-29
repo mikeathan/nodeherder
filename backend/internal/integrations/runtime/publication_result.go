@@ -1,12 +1,14 @@
 package runtime
 
+// Publishes accepted integration snapshots and their identity reservations atomically.
+
 import (
-	"node-herder/internal/integrations/definitions"
 	"time"
 
 	"github.com/google/uuid"
 
 	"node-herder/internal/integrations/capabilities"
+	"node-herder/internal/integrations/definitions"
 	model "node-herder/models/integrations"
 	"node-herder/repository"
 )

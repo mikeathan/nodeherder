@@ -35,6 +35,7 @@ test('summary and individual service remain distinct choices with independent pl
   const item: HomeSourcePresentation = {
     reference: { kind: 'waste_summary', instance_id: 'bins', resource_id: 'calendar' },
     title: 'Bins',
+    pickerLabel: 'Bins · complete schedule',
     value: 'Schedule',
     origin: 'Bins',
     status: 'Saved schedule',

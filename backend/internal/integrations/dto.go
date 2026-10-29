@@ -1,5 +1,7 @@
 package integrations
 
+// Defines the application-facing aliases for integration data transferred to callers.
+
 import (
 	"node-herder/internal/integrations/definitions"
 	"node-herder/internal/integrations/runtime"

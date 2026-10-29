@@ -1,3 +1,4 @@
+import type { ProviderEditorMode } from '@/types/integrations.type';
 import { nextTick, onBeforeUnmount, ref, shallowRef, watch, type Ref } from 'vue';
 import { onBeforeRouteLeave } from 'vue-router';
 import { confirm } from '@/composables/useConfirm';
@@ -17,7 +18,7 @@ export function useProviderDraft(scope: ConnectionScope, key: Ref<string>) {
   const provider = shallowRef<ConnectionDefinition | null>(null);
   const yaml = ref('');
   const documentValue = shallowRef<ProviderDefinition | null>(null);
-  const mode = ref<'form' | 'yaml'>('form');
+  const mode = ref<ProviderEditorMode>('form');
   const dirty = ref(false);
   const etag = ref('');
   const validation = shallowRef<DefinitionValidation | null>(null);

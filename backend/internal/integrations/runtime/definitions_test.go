@@ -1,5 +1,7 @@
 package runtime
 
+// Checks definition changes, destination reviews and recovery.
+
 import (
 	"bytes"
 	"context"

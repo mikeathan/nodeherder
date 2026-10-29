@@ -1,5 +1,7 @@
 package runtime
 
+// Stores and removes provider-origin backoff deadlines shared by integration instances.
+
 import (
 	"time"
 
@@ -15,6 +17,7 @@ type providerLimit struct {
 	Deadline time.Time `json:"deadline"`
 }
 
+// saveProviderLimit indexes backoff by a hash so the persisted key need not expose the origin.
 func saveProviderLimit(tx *repository.IntegrationTx, origin string, deadline time.Time) error {
 	return tx.Put("limits", definitions.ContentHash([]byte(origin)), providerLimit{Origin: origin, Deadline: deadline})
 }

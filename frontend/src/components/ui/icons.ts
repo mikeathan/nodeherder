@@ -136,3 +136,20 @@ export function deviceIcon(device: Device): string {
 
 export const protocolIcon = (connectionType: string): string =>
   connectionType === 'mqtt' ? mdiZigbee : connectionType === 'http' ? mdiWifi : mdiHelpCircleOutline;
+
+/** Decorative symbols for normalized weather conditions; absent or unknown data stays explicit. */
+export function weatherIcon(condition: string | undefined): string {
+  return WEATHER_ICONS[condition ?? ''] ?? '—';
+}
+
+const WEATHER_ICONS: Readonly<Record<string, string>> = {
+  clear: '☀️',
+  partly_cloudy: '⛅',
+  cloudy: '☁️',
+  fog: '🌫️',
+  drizzle: '🌦️',
+  rain: '🌧️',
+  snow: '🌨️',
+  showers: '🌦️',
+  thunderstorm: '⛈️',
+};

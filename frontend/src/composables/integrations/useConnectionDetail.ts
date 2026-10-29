@@ -10,7 +10,7 @@ import { integrationDetailSection, type IntegrationNavigationContext } from '@/d
 /** Owns this page's application actions; the route component only presents its state. */
 export function useConnectionDetail() {
   const route = useRoute();
-  const { api, isActive, state, store, router, busy, error, perform, observe, signal, commit } = useConnections();
+  const { api, isActive, state, store, router, busy, error, perform, observe, checkOperation, signal, commit } = useConnections();
   const missing = ref(false);
   const instanceId = computed(() => String(route.params.id));
   // The board already holds validated private DTOs. Keep the selected identity/snapshot
@@ -43,11 +43,7 @@ export function useConnectionDetail() {
       // Cached presentation must not resurrect a connection deleted in another session.
       if (isActive() && !requestSignal.aborted && cause instanceof ConnectionError && cause.status === 404) {
         missing.value = true;
-        if (state.value.current?.id === instanceId.value) commit('current', null);
-        commit(
-          'instances',
-          state.value.instances.filter((entry) => entry.id !== instanceId.value)
-        );
+        commit('forgetInstance', instanceId.value);
       }
       throw cause;
     }
@@ -93,12 +89,7 @@ export function useConnectionDetail() {
   }
   /** Continue the current admitted operation without creating a second lookup. */
   async function check() {
-    const current = item.value;
-    if (!current) return;
-    const operationId = current.operation_id;
-    if (!operationId) return;
-    const operation = await perform(() => api.check(operationId, current.etag));
-    if (operation) observe(operation.id, reload);
+    await checkOperation(item.value?.operation_id, reload);
   }
   /** Save name/enabled state with revision fencing, then reload the accepted resource view. */
   async function update(enabled: boolean) {
@@ -125,7 +116,7 @@ export function useConnectionDetail() {
       !(await confirm({
         title: 'Remove provider token?',
         message:
-          'Future requests will use anonymous access if the provider allows it. Collection dates already saved remain available.',
+          'Future requests will use anonymous access if the provider allows it. Saved integration results remain available.',
         confirmLabel: 'Remove token',
         danger: true,
       }))
@@ -145,7 +136,7 @@ export function useConnectionDetail() {
       !(await confirm({
         title: 'Remove integration?',
         message:
-          'This deletes the saved address, credentials and collection data from NodeHerder. The shared provider configuration is kept. A lookup already submitted to the provider cannot be recalled.',
+          'This removes this integration’s saved inputs, credentials and results from NodeHerder. Its Home cards will show as unavailable until you remove them. The shared provider definition stays available. A request already sent to the provider cannot be recalled.',
         confirmLabel: 'Remove integration',
         danger: true,
       }))
@@ -153,7 +144,7 @@ export function useConnectionDetail() {
       return;
     const result = await perform(() => api.remove(current.id, current.etag));
     if (result) {
-      commit('current', null);
+      commit('forgetInstance', current.id);
       await router.replace({ name: RouteName.Integrations });
     }
   }

@@ -1,7 +1,7 @@
 import { onBeforeUnmount, ref, shallowRef, type Ref } from 'vue';
 import { confirm } from '@/composables/useConfirm';
 import type { ConnectionScope } from '@/composables/useConnections';
-import type { ConnectionSetup, DefinitionValidation, DestinationReview } from '@/types/integrations.type';
+import type { ConnectionSetup, DefinitionValidation, DestinationReview, ProviderTestMode } from '@/types/integrations.type';
 
 /** Owns ephemeral sample/preview data; tests cannot replace saved schedules or provider files. */
 export function useProviderPreview(
@@ -18,7 +18,7 @@ export function useProviderPreview(
     preview.value = null;
   });
   /** Validate a sample or explicitly confirmed live request in transient state; saved resources are untouched. */
-  async function test(mode: 'offline' | 'live') {
+  async function test(mode: ProviderTestMode) {
     const v = await validate();
     if (!v) return;
     let input: unknown;

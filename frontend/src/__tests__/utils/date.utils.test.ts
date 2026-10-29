@@ -1,6 +1,11 @@
 import 'jest';
 import { describe, expect, it } from '@jest/globals';
-import { formatTimestamp as formatUnixTimestamp } from '../../utils/date.utils';
+import {
+  calendarDateInZone,
+  createZonedTimeFormatter,
+  formatShortCalendarDate,
+  formatTimestamp as formatUnixTimestamp,
+} from '../../utils/date.utils';
 
 it('expect formatTimestamp to return correct formatted date', () => {
   const timestamp = 1729335171422;
@@ -31,4 +36,10 @@ it('expect formatTimestamp to return correct formatted date', () => {
     `^${expectedDay}/${expectedMonth}/${expectedYear},?\\s*${expectedHours}:${expectedMinutes}:${expectedSeconds}\\.${expectedMs}$`
   );
   expect(date).toMatch(dateRegex);
+});
+
+test('calendar formatting preserves the requested timezone and date-only values across midnight', () => {
+  expect(calendarDateInZone('2026-03-29T23:30:00Z', 'Europe/London')).toBe('2026-03-30');
+  expect(createZonedTimeFormatter('Europe/London').format(new Date('2026-03-29T23:30:00Z'))).toBe('00:30');
+  expect(formatShortCalendarDate('2026-03-29')).toMatch(/^Sun,? 29 Mar$/);
 });

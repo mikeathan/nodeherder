@@ -14,3 +14,6 @@ frontend/coverage/*
 # Private Connections keys/runtime backups; provider YAML remains shareable.
 **/integration-keyring*.json
 backend/data/integrations.db.*
+backend/graphify-out/*
+frontend/graphify-out/*
+graphify-out/*

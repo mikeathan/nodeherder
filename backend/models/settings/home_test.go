@@ -85,3 +85,14 @@ func TestHomeValidationRejectsAmbiguityAndAliasing(t *testing.T) {
 		t.Fatal("presentation choices changed source identity")
 	}
 }
+
+func TestWeatherHomeLayoutReferences(t *testing.T) {
+	layout := settings.HomeLayout{Version: 1, Blocks: []settings.HomeBlock{{ID: "block", Kind: "card", Cards: []settings.HomeCard{{ID: "weather", Kind: "weather", InstanceID: "connection", ResourceID: "forecast", Panel: true}}}}}
+	if err := layout.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	layout.Blocks[0].Cards[0].DeviceID = "device"
+	if layout.Validate() == nil {
+		t.Fatal("mixed weather/service identity accepted")
+	}
+}

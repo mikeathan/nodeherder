@@ -1,5 +1,7 @@
 package runtime
 
+// Recovers interrupted operations and schedules bounded cleanup of expired runtime records.
+
 import (
 	"time"
 
@@ -8,6 +10,7 @@ import (
 	"node-herder/utils"
 )
 
+// recoverOperations marks interrupted work for explicit recovery after service startup.
 func (s *Service) recoverOperations() error {
 	var deadlines map[string]time.Time
 	err := s.repo.Update(func(tx *repository.IntegrationTx) error {
@@ -39,11 +42,14 @@ func (s *Service) recoverOperations() error {
 		}
 		return nil
 	})
+	// Do not expose deadlines from a transaction that failed to commit.
 	if err == nil {
 		s.providerDeadlines = deadlines
 	}
 	return err
 }
+
+// scheduleCleanup owns the periodic cleanup timer until service shutdown.
 func (s *Service) scheduleCleanup() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -56,6 +62,7 @@ func (s *Service) scheduleCleanup() {
 			s.mu.Unlock()
 			return
 		}
+		// Register the callback while holding the lock so Close can wait for it safely.
 		s.wg.Add(1)
 		s.mu.Unlock()
 		defer s.wg.Done()
@@ -80,121 +87,17 @@ func (s *Service) Cleanup() error {
 		if err != nil {
 			return err
 		}
-		expiredSetups := []model.Setup{}
-		if e := tx.Each("setups", func(_ string, b []byte) error {
-			var p model.Setup
-			if e := repository.DecodeIntegrationRecord(b, &p); e != nil {
-				return e
-			}
-			if !s.clock.Now().Before(p.ExpiresAt) {
-				expiredSetups = append(expiredSetups, p)
-			}
-			return nil
-		}); e != nil {
-			return e
+		if err := s.expireSetups(tx); err != nil {
+			return err
 		}
-		for _, p := range expiredSetups {
-			if p.Status == "expired" || p.Status == "completed" {
-				if e := tx.Delete("setups", p.ID); e != nil {
-					return e
-				}
-				continue
-			}
-			if cancel := s.running[p.OperationID]; cancel != nil {
-				cancel()
-			}
-			if p.OperationID != "" {
-				if e := tx.Delete("operations", p.OperationID); e != nil {
-					return e
-				}
-			}
-			p = model.Setup{
-				ID:            p.ID,
-				DefinitionKey: p.DefinitionKey,
-				Status:        "expired",
-				Revision:      p.Revision + 1,
-				Generation:    p.Generation + 1,
-				Choices:       []model.Choice{},
-				ExpiresAt:     s.clock.Now().Add(24 * time.Hour),
-			}
-			if e := tx.Put("setups", p.ID, p); e != nil {
-				return e
-			}
+		if err := s.expireOperations(tx); err != nil {
+			return err
 		}
-		expiredOps := []model.Operation{}
-		if e := tx.Each("operations", func(_ string, b []byte) error {
-			var o model.Operation
-			if e := repository.DecodeIntegrationRecord(b, &o); e != nil {
-				return e
-			}
-			if !s.clock.Now().Before(o.ExpiresAt) {
-				expiredOps = append(expiredOps, o)
-			}
-			return nil
-		}); e != nil {
-			return e
+		if err := s.pruneRunHistories(tx); err != nil {
+			return err
 		}
-		for _, o := range expiredOps {
-			if cancel := s.running[o.ID]; cancel != nil {
-				cancel()
-			}
-			if o.InstanceID != "" {
-				var i model.Instance
-				ok, e := tx.Get("instances", o.InstanceID, &i)
-				if e != nil {
-					return e
-				}
-				if ok && i.OperationID == o.ID {
-					i.OperationID = ""
-					i.LastError = model.Fail("operation_expired", "The pending lookup expired. Repeat Setup to reconnect this integration.")
-					i.Revision++
-					if e = tx.Put("instances", i.ID, i); e != nil {
-						return e
-					}
-				}
-			}
-			if e := tx.Delete("operations", o.ID); e != nil {
-				return e
-			}
-		}
-		histories := []model.Instance{}
-		if e := tx.Each("instances", func(_ string, b []byte) error {
-			var i model.Instance
-			if e := repository.DecodeIntegrationRecord(b, &i); e != nil {
-				return e
-			}
-			pruned := recentRuns(i.Runs, s.clock.Now())
-			if len(pruned) != len(i.Runs) {
-				i.Runs = pruned
-				histories = append(histories, i)
-			}
-			return nil
-		}); e != nil {
-			return e
-		}
-		for _, i := range histories {
-			if e := tx.Put("instances", i.ID, i); e != nil {
-				return e
-			}
-		}
-		previous := []model.DefinitionRecord{}
-		if e := tx.Each("definitions", func(_ string, b []byte) error {
-			var d model.DefinitionRecord
-			if e := repository.DecodeIntegrationRecord(b, &d); e != nil {
-				return e
-			}
-			if d.PreviousYAML != "" && !s.clock.Now().Before(d.PreviousExpiresAt) {
-				d.PreviousYAML = ""
-				previous = append(previous, d)
-			}
-			return nil
-		}); e != nil {
-			return e
-		}
-		for _, d := range previous {
-			if e := tx.Put("definitions", d.Key, d); e != nil {
-				return e
-			}
+		if err := s.prunePreviousDefinitions(tx); err != nil {
+			return err
 		}
 		return nil
 	})

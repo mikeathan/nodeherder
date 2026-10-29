@@ -1,108 +1,16 @@
-import type { HomeCard, HomeCardSource, HomeIntegrationCard } from '@/types/home.type';
+import type { HomeCard, HomeIntegrationCard } from '@/types/home.type';
 import type { ConnectionInstance } from '@/types/integrations.type';
-import {
-  presentWasteSchedule,
-  wasteServiceDateLabel,
-  type WasteSchedulePresentation,
-  type WasteServiceCard,
-} from './waste-schedule';
-import { connectionStatus } from './connection-board';
+import type { IntegrationSourcePresentation } from '@/integrations/types';
+import { integrationSources, integrationSourceTitle, integrationSourceIcon } from '@/integrations/registry';
 import { homeSourceKey } from './home-layout';
 import { exposeLabel } from './exposes';
-
-export interface HomeCollectionRow {
-  id: string;
-  title: string;
-  value: string;
-  colour: string | null;
-}
-
-/** Derived source presentation shared by Home, panel and picker; it owns no placement or transport. */
-export interface HomeSourcePresentation {
-  reference: HomeCardSource;
-  title: string;
-  value: string;
-  origin: string;
-  status: string;
-  checked: string;
-  colour: string | null;
-  warning: boolean;
-  rows: HomeCollectionRow[];
-}
-
-type ResourceContext = Pick<HomeSourcePresentation, 'origin' | 'status' | 'checked' | 'warning'>;
-
-function resourceContext(instance: ConnectionInstance, schedule: WasteSchedulePresentation): ResourceContext {
-  return {
-    origin: instance.name,
-    status: connectionStatus(instance, [schedule], true),
-    checked: schedule.checkedLabel,
-    warning: !instance.enabled || Boolean(instance.last_error) || schedule.freshness !== 'fresh',
-  };
-}
-
-function collectionRow(service: WasteServiceCard): HomeCollectionRow {
-  return {
-    id: service.service_id,
-    title: service.title,
-    value: wasteServiceDateLabel(service),
-    colour: service.bin_colour,
-  };
-}
-
-function summaryPresentation(
-  instanceId: string,
-  schedule: WasteSchedulePresentation,
-  context: ResourceContext
-): HomeSourcePresentation {
-  return {
-    ...context,
-    reference: { kind: 'waste_summary', instance_id: instanceId, resource_id: schedule.resource_id },
-    title: context.origin,
-    value: 'Collection schedule',
-    colour: null,
-    rows: schedule.cards.map(collectionRow),
-  };
-}
-
-function servicePresentation(
-  instanceId: string,
-  resourceId: string,
-  service: WasteServiceCard,
-  context: ResourceContext
-): HomeSourcePresentation {
-  return {
-    ...context,
-    reference: {
-      kind: 'waste_service',
-      instance_id: instanceId,
-      resource_id: resourceId,
-      service_id: service.service_id,
-    },
-    title: service.title,
-    value: wasteServiceDateLabel(service),
-    colour: service.bin_colour,
-    rows: [],
-  };
-}
-
-/** Index each accepted resource once. Summary/services reuse the existing calendar and lifecycle
- * projections; this function neither changes sources nor stores current values in placements. */
+/** Shared source presentation is supplied by the owning integration capability. */
+export type HomeSourcePresentation = IntegrationSourcePresentation;
+/** Index accepted capability sources without decoding their resources or owning transport. */
 export function homeIntegrationSources(instances: readonly ConnectionInstance[]): Map<string, HomeSourcePresentation> {
   const sources = new Map<string, HomeSourcePresentation>();
-  for (const instance of instances) {
-    for (const resource of instance.resources) {
-      if (resource.contract_version !== 'waste_schedule/v1') continue;
-      const schedule = presentWasteSchedule(resource);
-      const context = resourceContext(instance, schedule);
-      const summary = summaryPresentation(instance.id, schedule, context);
-      sources.set(homeSourceKey(summary.reference), summary);
-      for (const service of schedule.cards) {
-        const item = servicePresentation(instance.id, schedule.resource_id, service, context);
-        sources.set(homeSourceKey(item.reference), item);
-      }
-    }
-  }
+  for (const instance of instances)
+    for (const source of integrationSources(instance)) sources.set(homeSourceKey(source.reference), source);
   return sources;
 }
 
@@ -116,10 +24,11 @@ export function homeIntegrationCard(
   if (accepted) return accepted;
   return {
     reference: card,
-    title: card.kind === 'waste_summary' ? 'Bin collections' : 'Collection date',
+    icon: integrationSourceIcon(card.kind, null),
+    title: integrationSourceTitle(card.kind),
     value: 'Unavailable',
     origin: 'Integration result unavailable',
-    status: 'The source or service is no longer available.',
+    status: 'The integration or its saved result is unavailable. Remove this card from Home if it is no longer needed.',
     checked: '',
     colour: null,
     warning: true,

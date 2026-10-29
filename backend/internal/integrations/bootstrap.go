@@ -1,5 +1,7 @@
 package integrations
 
+// Opens integration storage and configuration, or reports a safe degraded startup.
+
 import (
 	"context"
 	"errors"

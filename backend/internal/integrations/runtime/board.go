@@ -1,5 +1,7 @@
 package runtime
 
+// Reads and updates integration board placement and presentation preferences.
+
 import (
 	"encoding/json"
 	"sort"
@@ -38,6 +40,7 @@ func readBoardInstances(tx *repository.IntegrationTx) ([]model.Instance, error) 
 	return instances, err
 }
 
+// boardDTO derives the board order and revision from the current instance preferences.
 func boardDTO(instances []model.Instance) BoardDTO {
 	// Hash canonical IDs/revisions, not list-read timing, names or resource revisions.
 	sort.Slice(instances, func(a, b int) bool { return instances[a].ID < instances[b].ID })

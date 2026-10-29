@@ -18,7 +18,7 @@ export function homeSourceKey(card: HomeCardSource): string {
     card.kind,
     card.instance_id,
     card.resource_id,
-    card.kind === 'waste_service' ? card.service_id : '',
+    'service_id' in card ? card.service_id : '',
   ]);
 }
 

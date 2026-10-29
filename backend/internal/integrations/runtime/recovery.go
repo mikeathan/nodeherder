@@ -1,15 +1,18 @@
 package runtime
 
+// Handles bounded lookup renewal and termination of obsolete operations.
+
 import (
-	"node-herder/internal/integrations/definitions"
 	"time"
 
 	"node-herder/internal/integrations/capabilities"
+	"node-herder/internal/integrations/definitions"
 	"node-herder/internal/integrations/operations"
 	model "node-herder/models/integrations"
 	"node-herder/repository"
 )
 
+// renewOperation replaces an attempt with one bounded renewal while retaining operation identity.
 func (s *Service) renewOperation(tx *repository.IntegrationTx, o *model.Operation, owner operationOwner, c *definitions.Compiled) error {
 	i := owner.instance
 	now := s.clock.Now()
@@ -37,6 +40,7 @@ func (s *Service) renewOperation(tx *repository.IntegrationTx, o *model.Operatio
 	return tx.Put("operations", o.ID, o)
 }
 
+// classifiedFailure applies declared provider error actions before falling back to HTTP status.
 func classifiedFailure(d model.Definition, r operations.Response) *model.Failure {
 	if r.Status == 401 || r.Status == 403 || r.Status == 429 || r.Status == 503 {
 		return providerFailure(r)
@@ -57,6 +61,7 @@ func classifiedFailure(d model.Definition, r operations.Response) *model.Failure
 	return providerFailure(r)
 }
 
+// terminateOperation cancels active work and records a terminal failure in the transaction.
 func (s *Service) terminateOperation(tx *repository.IntegrationTx, id string, f *model.Failure) error {
 	if id == "" {
 		return nil

@@ -40,8 +40,8 @@ function integrationChoices(
 ): HomePickerChoice[] {
   const choices: HomePickerChoice[] = [];
   for (const item of sources.values()) {
-    let label = item.title;
-    if (item.reference.kind === 'waste_summary') label = `${label} · complete schedule`;
+    if (item.selectable === false) continue;
+    const label = item.pickerLabel ?? item.title;
     choices.push(choice(item.reference, label, item.origin, existing));
   }
   return choices;

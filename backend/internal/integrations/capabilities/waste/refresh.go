@@ -1,5 +1,7 @@
 package waste
 
+// Determines whether collection data has exhausted its usable date horizon.
+
 import (
 	"time"
 

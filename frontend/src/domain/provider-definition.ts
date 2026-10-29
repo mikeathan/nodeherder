@@ -16,11 +16,14 @@ export function renameProviderRequest(
   return {
     ...definition,
     requests: Object.fromEntries(
-      Object.entries(definition.requests).map(([key, value]) => [key === oldName ? name : key, value])
+      Object.entries(definition.requests).map(([key, value]) => [key === oldName ? name : key, { ...value, combine: value.combine === oldName ? name : value.combine }])
     ),
     setup: {
       ...definition.setup,
-      search: link(definition.setup.search),
+      search: {
+        ...link(definition.setup.search),
+        ...(definition.setup.search.postcode && { postcode: link(definition.setup.search.postcode) }),
+      },
       select: link(definition.setup.select),
       status: link(definition.setup.status),
     },

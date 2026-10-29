@@ -1,5 +1,7 @@
 package httpclient
 
+// Checks provider HTTP client behavior and destination restrictions.
+
 import (
 	"net/http"
 	"net/url"

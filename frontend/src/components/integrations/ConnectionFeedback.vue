@@ -1,6 +1,7 @@
 <script setup lang="ts">
   import { focusConnectionField } from './field-focus';
   import type { ConnectionFailure } from '@/types/integrations.type';
+  import { formatLocalDateTime } from '@/utils/date.utils';
   function hasField(path: string) {
     return Boolean(document.getElementById(path));
   }
@@ -10,7 +11,7 @@
   <div v-if="error" class="connection-notice connection-error" role="alert">
     <p>{{ error.message }}</p>
     <p v-if="error.retry_at" class="connection-muted">
-      Try again after {{ new Date(error.retry_at).toLocaleString() }}.
+      Try again after {{ formatLocalDateTime(error.retry_at) }}.
     </p>
     <ul v-if="error.field_errors?.length" class="connection-list">
       <li v-for="field in error.field_errors" :key="field.path">

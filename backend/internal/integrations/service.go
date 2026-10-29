@@ -1,5 +1,7 @@
 package integrations
 
+// Composes the integration runtime with the shipped capability implementations.
+
 import (
 	"context"
 	"encoding/json"
@@ -7,6 +9,7 @@ import (
 	defaults "node-herder/configs/integrations"
 	"node-herder/internal/integrations/capabilities"
 	"node-herder/internal/integrations/capabilities/waste"
+	"node-herder/internal/integrations/capabilities/weather"
 	"node-herder/internal/integrations/definitions"
 	"node-herder/internal/integrations/runtime"
 )
@@ -57,5 +60,5 @@ func CompileDocument(raw json.RawMessage) (*definitions.Compiled, error) {
 
 // shippedCapabilities is the single registration point used by runtime and standalone editors.
 func shippedCapabilities() (*capabilities.Registry, error) {
-	return capabilities.NewRegistry(waste.Adapter{})
+	return capabilities.NewRegistry(waste.Adapter{}, weather.Adapter{})
 }

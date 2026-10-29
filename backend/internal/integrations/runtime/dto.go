@@ -1,5 +1,7 @@
 package runtime
 
+// Defines sanitized integration data returned to API and application callers.
+
 import (
 	"time"
 
@@ -54,15 +56,16 @@ type SetupDTO struct {
 // InstanceDTO exposes saved connection status and validated resources. CredentialSlots
 // contains names only so obsolete slots can be explicitly removed without revealing token values.
 type InstanceDTO struct {
-	CredentialSlots []string           `json:"credential_slots"`
-	Runs            []model.RunSummary `json:"runs"`
-	ID              string             `json:"id"`
-	Name            string             `json:"name"`
-	ProviderKey     string             `json:"provider_key"`
-	Revision        uint64             `json:"revision"`
-	ETag            string             `json:"etag"`
-	Enabled         bool               `json:"enabled"`
-	Status          string             `json:"status"`
+	Sources         []model.SourceReference `json:"sources"`
+	CredentialSlots []string                `json:"credential_slots"`
+	Runs            []model.RunSummary      `json:"runs"`
+	ID              string                  `json:"id"`
+	Name            string                  `json:"name"`
+	ProviderKey     string                  `json:"provider_key"`
+	Revision        uint64                  `json:"revision"`
+	ETag            string                  `json:"etag"`
+	Enabled         bool                    `json:"enabled"`
+	Status          string                  `json:"status"`
 	// Postcode retains the v1 wire name for the saved search value; interpretation belongs to the flow.
 	Postcode             string           `json:"postcode"`
 	OperationID          string           `json:"operation_id,omitempty"`
