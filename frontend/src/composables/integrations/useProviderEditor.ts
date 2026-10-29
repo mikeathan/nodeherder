@@ -3,7 +3,7 @@ import { useRoute } from 'vue-router';
 import { useConnections } from '@/composables/useConnections';
 import { confirm } from '@/composables/useConfirm';
 import { RouteName } from '@/types/router';
-import type { DestinationReview } from '@/types/integrations.type';
+import type { DestinationReview, ProviderEditorMode } from '@/types/integrations.type';
 import { useProviderDraft } from './useProviderDraft';
 import { useProviderPreview } from './useProviderPreview';
 import { cloneDefinitionValue } from './useEditableModel';
@@ -91,7 +91,7 @@ export function useProviderEditor() {
     remember();
     return result;
   }
-  async function switchMode(next: 'form' | 'yaml') {
+  async function switchMode(next: ProviderEditorMode) {
     if (next === mode.value) return;
     const result = await validate();
     if (result) {
@@ -203,7 +203,7 @@ export function useProviderEditor() {
       !(await confirm({
         title: 'Remove provider definition?',
         message:
-          'This removes the host YAML file. Integrations and setups using it must be removed first. No provider account is deleted.',
+          'This removes the shared provider YAML, not a configured integration. Remove integrations and setups using this provider first; saved operations may also need to expire. No provider account is deleted.',
         confirmLabel: 'Remove definition',
         danger: true,
       }))

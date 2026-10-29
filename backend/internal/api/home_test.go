@@ -29,8 +29,7 @@ type homeIntegrationFixture struct {
 
 func (f *homeIntegrationFixture) Instances() ([]integrations.InstanceDTO, error) {
 	f.reads++
-	resource, err := model.NewResource(model.WasteSchedule{ContractVersion: "waste_schedule/v1", ResourceID: "calendar", InstanceID: "bins", Revision: 1, Services: []model.WasteService{{ServiceID: "black"}}})
-	return []integrations.InstanceDTO{{ID: "bins", Resources: []model.Resource{resource}}}, err
+	return []integrations.InstanceDTO{{ID: "bins", Sources: []model.SourceReference{{Kind: "waste_summary", ResourceID: "calendar"}, {Kind: "waste_service", ResourceID: "calendar", ServiceID: "black"}}}}, nil
 }
 
 func homeAPIFixture(t *testing.T) (*Router, *settings.AppConfigCache, string, *homeIntegrationFixture) {
@@ -134,5 +133,22 @@ func TestHomeAPIMalformedBodiesAndAcceptedMissingSources(t *testing.T) {
 	got := integrationRequest(router, "PUT", "/api/home/layout", token, false, string(body), map[string]string{"If-Match": current.ETag})
 	if got.Code != 200 {
 		t.Fatal("accepted missing ref cannot be retained", got.Code, got.Body.String())
+	}
+}
+
+func TestHomeIntegrationSourceIdentity(t *testing.T) {
+	instances := []integrations.InstanceDTO{{ID: "external", Sources: []model.SourceReference{{Kind: "sample_capability", ResourceID: "reading", ServiceID: "channel"}}}}
+	card := settings.HomeCard{Kind: "sample_capability", InstanceID: "external", ResourceID: "reading", ServiceID: "channel"}
+	if !homeIntegrationExists(card, instances) {
+		t.Fatal("opaque capability source unavailable")
+	}
+	card.ServiceID = "other"
+	if homeIntegrationExists(card, instances) {
+		t.Fatal("wrong source identity accepted")
+	}
+	card.ServiceID = "channel"
+	card.Kind = "other_capability"
+	if homeIntegrationExists(card, instances) {
+		t.Fatal("wrong capability source accepted")
 	}
 }

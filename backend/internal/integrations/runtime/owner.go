@@ -1,9 +1,11 @@
 package runtime
 
+// Checks operation ownership and claims work under generation and credential fences.
+
 import (
 	"context"
-	"node-herder/internal/integrations/definitions"
 
+	"node-herder/internal/integrations/definitions"
 	model "node-herder/models/integrations"
 	"node-herder/repository"
 )
@@ -17,6 +19,7 @@ type operationOwner struct {
 	credentials map[string]model.Credential
 }
 
+// owner verifies the current setup or instance still owns the operation generation.
 func (s *Service) owner(tx *repository.IntegrationTx, o model.Operation) (operationOwner, error) {
 	var owner operationOwner
 	if o.Kind == "search" {

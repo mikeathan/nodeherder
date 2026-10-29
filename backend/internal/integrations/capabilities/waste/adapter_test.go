@@ -1,5 +1,7 @@
 package waste
 
+// Checks the bin collection adapter and its resource boundaries.
+
 import (
 	"encoding/json"
 	"testing"

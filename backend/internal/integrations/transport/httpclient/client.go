@@ -1,5 +1,7 @@
 package httpclient
 
+// Constructs the restricted HTTP client used for provider requests.
+
 import (
 	"crypto/tls"
 	"net"

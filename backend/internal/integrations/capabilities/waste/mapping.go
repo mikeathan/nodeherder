@@ -1,5 +1,7 @@
 package waste
 
+// Validates provider field mappings used to interpret bin collection responses.
+
 import (
 	"bytes"
 	"encoding/json"
@@ -75,6 +77,8 @@ func decodeMapping(raw map[string]any) (Mapping, error) {
 	}
 	return mapping, nil
 }
+
+// validateSelectors rejects non-pointer values in the nested mapping tree.
 func validateSelectors(value any, path string) error {
 	switch item := value.(type) {
 	case string:

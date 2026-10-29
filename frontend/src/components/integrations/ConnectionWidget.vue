@@ -6,7 +6,7 @@
   import { connectionWidget } from '@/domain/connection-board';
   import UiButton from '@/components/ui/UiButton.vue';
   import UiIcon from '@/components/ui/UiIcon.vue';
-  import WasteBinIcon from './WasteBinIcon.vue';
+  import IntegrationStatus from './IntegrationStatus.vue';
 
   const props = defineProps<{
     item: ConnectionInstance;
@@ -31,8 +31,9 @@
     :aria-label="item.name"
     :data-instance-id="item.id">
     <header class="connection-widget-head">
-      <span class="connection-widget-badge" :data-connection-icon="summary.isWaste ? 'schedule' : 'connections'">
-        <UiIcon :name="summary.isWaste ? 'schedule' : 'connections'" />
+      <span class="connection-widget-badge">
+        <component v-if="summary.icon" :is="summary.icon.component" v-bind="summary.icon.props" />
+        <UiIcon v-else name="connections" />
       </span>
       <div class="connection-widget-title">
         <h2>
@@ -61,17 +62,16 @@
     <ul v-if="summary.rows.length" class="connection-widget-collections">
       <li v-for="row in summary.rows" :key="row.id">
         <span class="connection-widget-service"
-          ><span class="connection-widget-bin"><WasteBinIcon :colour="row.colour" /></span
+          ><span v-if="row.icon" class="connection-widget-row-icon"
+            ><component :is="row.icon.component" v-bind="row.icon.props" /></span
           ><span>{{ row.name }}</span></span
         >
         <span class="connection-widget-date">{{ row.date }}</span>
       </li>
     </ul>
-    <p v-if="summary.remaining" class="connection-widget-meta">+{{ summary.remaining }} more collections</p>
-    <div class="connection-widget-meta" :class="{ 'has-error': !!item.last_error }">
-      <p>{{ summary.status }}</p>
-      <p v-if="summary.checked">Checked {{ summary.checked }}</p>
-    </div>
+    <p v-if="summary.remaining" class="connection-widget-meta">+{{ summary.remaining }} {{ summary.remainingLabel }}</p>
+    <IntegrationStatus class="connection-widget-meta" :status="summary.status" :checked="summary.checked"
+      :error="!!item.last_error" stacked />
     <div v-if="editing" class="connection-widget-layout">
       <UiButton
         variant="ghost"
@@ -124,7 +124,7 @@
     margin-bottom: 1rem;
   }
   .connection-widget-badge,
-  .connection-widget-bin {
+  .connection-widget-row-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -202,11 +202,11 @@
     min-width: 0;
     overflow-wrap: anywhere;
   }
-  .connection-widget-bin {
+  .connection-widget-row-icon {
     width: 2rem;
     height: 2rem;
   }
-  .connection-widget-bin :deep(.waste-bin-icon) {
+  .connection-widget-row-icon :deep(svg) {
     width: 1.25rem;
     height: 1.65rem;
   }
@@ -221,12 +221,6 @@
     font-size: 0.8rem;
     margin: 1rem 0 0;
     overflow-wrap: anywhere;
-  }
-  .connection-widget-meta p {
-    margin: 0.15rem 0 0;
-  }
-  .connection-widget-meta.has-error {
-    color: var(--nh-danger);
   }
   .connection-widget-layout {
     position: relative;

@@ -1,5 +1,7 @@
 package runtime
 
+// Publishes search choices and persists progress for selection-based lookups.
+
 import (
 	"node-herder/internal/integrations/definitions"
 	"node-herder/internal/integrations/flows/searchselect"
@@ -8,8 +10,13 @@ import (
 	"node-herder/repository"
 )
 
+// finishSearch saves validated choices and captured search state with operation completion.
 func (s *Service) finishSearch(tx *repository.IntegrationTx, o *model.Operation, owner operationOwner, c *definitions.Compiled, r operations.Response) error {
-	choices, e := searchselect.Choices(r.Body, c.Definition.Setup.Search)
+	step := c.Definition.Setup.Search
+	if step.Postcode != nil && o.RequestID == step.Postcode.Request {
+		step.Options = step.Postcode.Options
+	}
+	choices, e := searchselect.Choices(r.Body, step)
 	if e != nil {
 		return s.failOperation(tx, o, owner, failure(e))
 	}
@@ -35,7 +42,7 @@ func (s *Service) finishSearch(tx *repository.IntegrationTx, o *model.Operation,
 // acceptLookupProgress saves only the lookup checkpoint for pending statuses. Completion
 // permits normalization; failed/unknown statuses become sanitized durable failures.
 func (s *Service) acceptLookupProgress(tx *repository.IntegrationTx, op *model.Operation, owner operationOwner, c *definitions.Compiled, response operations.Response) (bool, error) {
-	if op.Kind == "refresh" || owner.test {
+	if op.Kind == "refresh" || owner.test || c.Definition.Setup.Type == "location_select" {
 		return true, nil
 	}
 

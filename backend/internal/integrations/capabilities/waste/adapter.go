@@ -1,5 +1,7 @@
 package waste
 
+// Connects the bin collection contract to generic integration normalization and projection.
+
 import (
 	"errors"
 	"time"

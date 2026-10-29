@@ -1,5 +1,7 @@
 package operations
 
+// Checks JSON Pointer validation and traversal.
+
 import "testing"
 
 func TestPointerJSONLocations(t *testing.T) {

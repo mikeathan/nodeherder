@@ -1,5 +1,7 @@
 package runtime
 
+// Records publication failures without exposing uncommitted provider data.
+
 import (
 	"time"
 

@@ -1,5 +1,7 @@
 package runtime
 
+// Runs isolated provider-definition previews without changing saved integration results.
+
 import (
 	"bytes"
 	"encoding/json"
@@ -58,48 +60,12 @@ func (s *Service) TestDefinition(key, source, instanceID, mode string, sample js
 		if mode == "live" && !i.Enabled {
 			return model.Fail("disabled", "Enable the integration before testing a live request.")
 		}
-		credentials := map[string]model.Credential{}
-		for slot, cred := range i.Credentials {
-			credentials[slot] = cred
-		}
-		activeCredential := credential(c.Definition, i.Credentials)
-		if c.Origin != i.Origin || activeCredential != nil && activeCredential.Origin != c.Origin {
-			approved := false
-			if review != nil && review.Origin == c.Origin {
-				for _, given := range review.Reassociate {
-					cred := credential(c.Definition, i.Credentials)
-					revision := uint64(0)
-					if cred != nil {
-						revision = cred.Revision
-					}
-					if given.InstanceID == i.ID && given.Revision == i.Revision && given.CredentialRevision == revision && given.CredentialSlot == c.Definition.Auth.SecretSlot {
-						approved = true
-					}
-				}
-			}
-			if mode == "live" && !approved {
-				return model.Fail("destination_review_required", "Approve sending this integration's saved inputs and token to the test destination.")
-			}
-			if cred := credential(c.Definition, credentials); cred != nil {
-				cred.Origin = c.Origin
-				credentials[c.Definition.Auth.SecretSlot] = *cred
-			}
-		}
-		count := 0
-		if e = tx.Each("setups", func(_ string, b []byte) error {
-			var p model.Setup
-			if e := repository.DecodeIntegrationRecord(b, &p); e != nil {
-				return e
-			}
-			if p.TestOnly || p.Status != "completed" {
-				count++
-			}
-			return nil
-		}); e != nil {
+		credentials, e := prepareTestCredentials(i, c, mode, review)
+		if e != nil {
 			return e
 		}
-		if count >= 32 {
-			return model.Fail("busy", "Cancel or wait for an existing setup or test to expire.")
+		if e = ensureTestCapacity(tx); e != nil {
+			return e
 		}
 		now := s.clock.Now()
 		setupID, e := allocateRecordID(tx, "setups", uuid.NewRandom)

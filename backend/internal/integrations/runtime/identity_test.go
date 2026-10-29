@@ -1,5 +1,7 @@
 package runtime
 
+// Checks allocation and reservation of integration identities.
+
 import (
 	"testing"
 

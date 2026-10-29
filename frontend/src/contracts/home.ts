@@ -1,3 +1,4 @@
+import { parseIntegrationReference } from '@/integrations/registry';
 import type { HomeBlock, HomeCard, HomeLayout } from '@/types/home.type';
 import type { DashboardGroup, DashboardGroups } from '@/types/settings.type';
 import { HOME_LAYOUT_LIMITS } from '@/domain/home-layout';
@@ -42,27 +43,13 @@ function readHomeCard(value: unknown): HomeCard {
     case 'device':
       rejectMixedReferences(raw, ['instance_id', 'resource_id', 'service_id']);
       return { id, panel, kind: 'device', device_id: readReference(raw.device_id), expose: readReference(raw.expose) };
-    case 'waste_service':
+    default: {
       rejectMixedReferences(raw, ['device_id', 'expose']);
-      return {
-        id,
-        panel,
-        kind: 'waste_service',
-        instance_id: readReference(raw.instance_id),
-        resource_id: readReference(raw.resource_id),
-        service_id: readReference(raw.service_id),
-      };
-    case 'waste_summary':
-      rejectMixedReferences(raw, ['device_id', 'expose', 'service_id']);
-      return {
-        id,
-        panel,
-        kind: 'waste_summary',
-        instance_id: readReference(raw.instance_id),
-        resource_id: readReference(raw.resource_id),
-      };
-    default:
-      throw new Error('Unsupported Home card');
+      readReference(raw.instance_id);
+      readReference(raw.resource_id);
+      if (raw.service_id) readReference(raw.service_id);
+      return { id, panel, ...parseIntegrationReference(raw) };
+    }
   }
 }
 

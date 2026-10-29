@@ -1,0 +1,174 @@
+# Credentials belong in Setup, never in YAML.
+---
+schema_version: nodeherder.integration/v1
+integration_type: weather
+capability: weather_forecast/v1
+policy:
+  poll_min_seconds: 5
+  renewal_min_seconds: 86400
+  idempotency_window_seconds: 0
+errors:
+  code: ''
+  rules: []
+inputs:
+  location:
+    type: text
+    label: Town or postcode
+    required: true
+  coordinates:
+    type: select
+    label: Choose location
+    required: true
+refresh:
+  request: forecast
+id: met_office
+name: Met Office (UK)
+base_url: https://data.hub.api.metoffice.gov.uk
+auth:
+  mode: apikey_header
+  secret_slot: api_key
+requests:
+  search:
+    method: GET
+    path:
+    - v1
+    - search
+    query:
+      name:
+        ref: input.location
+      countryCode: GB
+      count: 10
+      language: en
+  postcode_search:
+    method: GET
+    path:
+    - postcodes
+    query:
+      query:
+        ref: input.location
+      limit: 10
+  forecast:
+    method: GET
+    path:
+    - sitespecific
+    - v0
+    - point
+    - hourly
+    query:
+      latitude:
+        ref: state.latitude
+      longitude:
+        ref: state.longitude
+      excludeParameterMetadata: true
+      includeLocationName: true
+    combine: daily
+  daily:
+    method: GET
+    path:
+    - sitespecific
+    - v0
+    - point
+    - daily
+    query:
+      latitude:
+        ref: state.latitude
+      longitude:
+        ref: state.longitude
+      excludeParameterMetadata: true
+      includeLocationName: true
+setup:
+  type: location_select
+  search:
+    input: location
+    request: search
+    options:
+      items: "/results"
+      value: "/name"
+      label: "/name"
+      context: ["/admin2", "/admin1", "/country"]
+      latitude: "/latitude"
+      longitude: "/longitude"
+    base_url: https://geocoding-api.open-meteo.com
+    postcode:
+      base_url: https://api.postcodes.io
+      request: postcode_search
+      options:
+        items: "/result"
+        label: "/postcode"
+        context: ["/admin_district", "/country"]
+        latitude: "/latitude"
+        longitude: "/longitude"
+  select:
+    input: coordinates
+    request: forecast
+  status:
+    request: ''
+    pointer: ''
+    pending: []
+    done: []
+    failed: []
+mapping:
+  location: "/primary/features/0/properties/location/name"
+  timezone: ''
+  default_timezone: Europe/London
+  attribution: Powered by Met Office data; location search by Open-Meteo / GeoNames and Postcodes.io.
+  conditions:
+    '0': clear
+    '1': clear
+    '2': partly_cloudy
+    '3': partly_cloudy
+    '5': fog
+    '6': fog
+    '7': cloudy
+    '8': cloudy
+    '9': showers
+    '10': showers
+    '11': drizzle
+    '12': rain
+    '13': showers
+    '14': showers
+    '15': rain
+    '16': snow
+    '17': snow
+    '18': snow
+    '19': snow
+    '20': snow
+    '21': snow
+    '22': snow
+    '23': snow
+    '24': snow
+    '25': snow
+    '26': snow
+    '27': snow
+    '28': thunderstorm
+    '29': thunderstorm
+    '30': thunderstorm
+  hourly:
+    items: "/primary/features/0/properties/timeSeries"
+    time: "/time"
+    format: rfc3339
+    fields:
+      temperature: "/screenTemperature"
+      feels_like: "/feelsLikeTemperature"
+      wind: "/windSpeed10m"
+      gust: "/windGustSpeed10m"
+      direction: "/windDirectionFrom10m"
+      humidity: "/screenRelativeHumidity"
+      precipitation_probability: "/probOfPrecipitation"
+      precipitation: "/totalPrecipAmount"
+      condition: "/significantWeatherCode"
+    scales:
+      wind: 3.6
+      gust: 3.6
+  daily:
+    items: "/additional/features/0/properties/timeSeries"
+    time: "/time"
+    format: rfc3339
+    fields:
+      high: "/dayMaxScreenTemperature"
+      low: "/nightMinScreenTemperature"
+      condition: "/daySignificantWeatherCode"
+      wind: "/dayMax10mWindSpeed"
+      precipitation_probability: "/dayProbabilityOfPrecipitation"
+    scales:
+      wind: 3.6

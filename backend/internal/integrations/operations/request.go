@@ -1,5 +1,7 @@
 package operations
 
+// Builds provider requests, decodes bounded responses and captures declared state.
+
 import (
 	"bytes"
 	"context"
@@ -49,6 +51,7 @@ type Response struct {
 	RetryAt *time.Time
 }
 
+// resolve reads a declared literal or a saved input/state reference without evaluating templates.
 func resolve(v model.Value, inputs map[string]string, state map[string]any) (any, error) {
 	if v.Ref == "" {
 		return v.Literal, nil
@@ -70,6 +73,8 @@ func resolve(v model.Value, inputs map[string]string, state map[string]any) (any
 	}
 	return value, nil
 }
+
+// scalar converts supported request values to bounded text for URLs and headers.
 func scalar(v any) (string, error) {
 	switch x := v.(type) {
 	case string:
@@ -96,115 +101,137 @@ func scalar(v any) (string, error) {
 		return "", model.Fail("invalid_input", "Expected a simple request value.")
 	}
 }
-func origin(u *url.URL) string {
-	port := u.Port()
-	host := strings.ToLower(u.Hostname())
-	if strings.Contains(host, ":") {
-		host = "[" + host + "]"
-	}
-	if port != "" && port != "443" {
-		host += ":" + port
-	}
-	return strings.ToLower(u.Scheme) + "://" + host
-}
 
-// Build constructs a request once; persist its returned body and key before any provider I/O.
-func Build(ctx context.Context, a Attempt) (*http.Request, []byte, error) {
-	q, ok := a.Definition.Requests[a.RequestID]
+// Build constructs a request without changing the pinned attempt or definition. The
+// returned body is persisted by the caller before I/O so POST retries retain exact bytes.
+func Build(ctx context.Context, attempt Attempt) (*http.Request, []byte, error) {
+	definition, ok := attempt.Definition.Requests[attempt.RequestID]
 	if !ok {
 		return nil, nil, model.Fail("reconfigure_needed", "The configured request no longer exists.")
 	}
-	u, e := url.Parse(a.Definition.BaseURL)
-	if e != nil || u.Scheme != "https" || u.Hostname() == "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" || u.Port() != "" && u.Port() != "443" {
-		return nil, nil, model.Fail("destination_blocked", "Use a public HTTPS provider on port 443.")
+	destination, forwardCredentials, err := requestDestination(attempt)
+	if err != nil {
+		return nil, nil, err
 	}
-	if origin(u) != a.ApprovedOrigin {
-		return nil, nil, model.Fail("reconnect_required", "Review the provider destination before sending saved inputs.")
+	if err = configureRequestURL(destination, definition, attempt); err != nil {
+		return nil, nil, err
 	}
-	path := strings.TrimRight(u.Path, "/")
-	escaped := strings.TrimRight(u.EscapedPath(), "/")
-	for _, v := range q.Path {
-		raw, e := resolve(v, a.Inputs, a.State)
-		if e != nil {
-			return nil, nil, e
-		}
-		s, e := scalar(raw)
-		if e != nil {
-			return nil, nil, e
-		}
-		if s == "" || s == "." || s == ".." {
-			return nil, nil, model.Fail("invalid_input", "A request path value is missing or invalid.")
-		}
-		path += "/" + s
-		escaped += "/" + url.PathEscape(s)
+	body, err := requestBody(definition, attempt)
+	if err != nil {
+		return nil, nil, err
 	}
-	u.Path = path
-	u.RawPath = escaped
-	query := url.Values{}
-	for name, v := range q.Query {
-		raw, e := resolve(v, a.Inputs, a.State)
-		if e != nil {
-			return nil, nil, e
-		}
-		s, e := scalar(raw)
-		if e != nil {
-			return nil, nil, e
-		}
-		query.Set(name, s)
-	}
-	u.RawQuery = query.Encode()
-	body := a.Body
-	if body == nil && q.Method == http.MethodPost {
-		values := map[string]any{}
-		for name, v := range q.Body {
-			values[name], e = resolve(v, a.Inputs, a.State)
-			if e != nil {
-				return nil, nil, e
-			}
-		}
-		body, e = json.Marshal(values)
-		if e != nil {
-			return nil, nil, model.Fail("invalid_input", "Invalid request body.")
-		}
-	}
-	if len(body) > 64<<10 {
-		return nil, nil, model.Fail("invalid_input", "Request body is too large.")
-	}
-	request, e := http.NewRequestWithContext(ctx, q.Method, u.String(), bytes.NewReader(body))
-	if e != nil {
+	request, err := http.NewRequestWithContext(ctx, definition.Method, destination.String(), bytes.NewReader(body))
+	if err != nil {
 		return nil, nil, model.Fail("invalid_input", "Could not construct the provider request.")
 	}
-	request.Header.Set("Accept", "application/json")
-	if q.Method == "POST" {
-		request.Header.Set("Content-Type", "application/json")
+	if err = setRequestHeaders(request, definition, attempt); err != nil {
+		return nil, nil, err
 	}
-	if q.Idempotency {
-		if a.IdempotencyKey == "" {
-			return nil, nil, model.Fail("invalid_operation", "An idempotency key is required.")
-		}
-		request.Header.Set("Idempotency-Key", a.IdempotencyKey)
-	}
-	if q.Conditional && a.ETag != "" {
-		request.Header.Set("If-None-Match", a.ETag)
-	}
-	mode := a.Definition.Auth.Mode
-	if mode == "bearer" && a.Credential == nil {
-		return nil, nil, model.Fail("credential_required", "Add the provider credential in Setup.")
-	}
-	if mode != "none" && a.Credential != nil {
-		if a.Credential.Origin != a.ApprovedOrigin {
-			return nil, nil, model.Fail("reconnect_required", "The credential belongs to another provider destination.")
-		}
-		if a.Credential.Value == "" || len(a.Credential.Value) > 8192 || strings.ContainsAny(a.Credential.Value, "\r\n") {
-			return nil, nil, model.Fail("invalid_credential", "Enter a valid provider token.")
-		}
-		request.Header.Set("Authorization", "Bearer "+a.Credential.Value)
+	if err = authenticateRequest(request, attempt, forwardCredentials); err != nil {
+		return nil, nil, err
 	}
 	return request, body, nil
 }
 
-// Execute retains status/selected headers independently from JSON. No automatic retry or polling.
-func Execute(ctx context.Context, client Doer, a Attempt, now time.Time) (Response, error) {
+// configureRequestURL mutates only the newly parsed destination owned by Build.
+func configureRequestURL(destination *url.URL, definition model.Request, attempt Attempt) error {
+	path := strings.TrimRight(destination.Path, "/")
+	escaped := strings.TrimRight(destination.EscapedPath(), "/")
+	for _, value := range definition.Path {
+		segment, err := resolveScalar(value, attempt)
+		if err != nil {
+			return err
+		}
+		if segment == "" || segment == "." || segment == ".." {
+			return model.Fail("invalid_input", "A request path value is missing or invalid.")
+		}
+		path += "/" + segment
+		escaped += "/" + url.PathEscape(segment)
+	}
+	query := url.Values{}
+	for name, value := range definition.Query {
+		resolved, err := resolveScalar(value, attempt)
+		if err != nil {
+			return err
+		}
+		query.Set(name, resolved)
+	}
+	destination.Path = path
+	destination.RawPath = escaped
+	destination.RawQuery = query.Encode()
+	return nil
+}
+
+// resolveScalar resolves a request value and checks that it is a supported scalar.
+func resolveScalar(value model.Value, attempt Attempt) (string, error) {
+	resolved, err := resolve(value, attempt.Inputs, attempt.State)
+	if err != nil {
+		return "", err
+	}
+	return scalar(resolved)
+}
+
+// requestBody constructs a bounded POST body or reuses the exact persisted retry body.
+func requestBody(definition model.Request, attempt Attempt) ([]byte, error) {
+	body := attempt.Body
+	if body == nil && definition.Method == http.MethodPost {
+		values := make(map[string]any, len(definition.Body))
+		for name, value := range definition.Body {
+			resolved, err := resolve(value, attempt.Inputs, attempt.State)
+			if err != nil {
+				return nil, err
+			}
+			values[name] = resolved
+		}
+		encoded, err := json.Marshal(values)
+		if err != nil {
+			return nil, model.Fail("invalid_input", "Invalid request body.")
+		}
+		body = encoded
+	}
+	if len(body) > 64<<10 {
+		return nil, model.Fail("invalid_input", "Request body is too large.")
+	}
+	return body, nil
+}
+
+// setRequestHeaders applies content, idempotency and conditional request headers.
+func setRequestHeaders(request *http.Request, definition model.Request, attempt Attempt) error {
+	request.Header.Set("Accept", "application/json")
+	if definition.Method == http.MethodPost {
+		request.Header.Set("Content-Type", "application/json")
+	}
+	if definition.Idempotency {
+		if attempt.IdempotencyKey == "" {
+			return model.Fail("invalid_operation", "An idempotency key is required.")
+		}
+		request.Header.Set("Idempotency-Key", attempt.IdempotencyKey)
+	}
+	if definition.Conditional && attempt.ETag != "" {
+		request.Header.Set("If-None-Match", attempt.ETag)
+	}
+	return nil
+}
+
+// Execute performs one admitted request and its optional validated companion. The caller
+// owns publication, failure persistence and retry policy; no request is retried here.
+func Execute(ctx context.Context, client Doer, attempt Attempt, now time.Time) (Response, error) {
+	if err := ValidateCombination(attempt.Definition, attempt.RequestID); err != nil {
+		return Response{}, err
+	}
+	primary, err := executeSingle(ctx, client, attempt, now)
+	if err != nil {
+		return primary, err
+	}
+	request := attempt.Definition.Requests[attempt.RequestID]
+	if request.Combine == "" || !successful(primary) {
+		return primary, nil
+	}
+	return combineResponse(ctx, client, attempt, primary, now)
+}
+
+// executeSingle sends one request and retains status and headers separately from JSON.
+func executeSingle(ctx context.Context, client Doer, a Attempt, now time.Time) (Response, error) {
 	var out Response
 	request, _, e := Build(ctx, a)
 	if e != nil {
@@ -230,24 +257,9 @@ func Execute(ctx context.Context, client Doer, a Attempt, now time.Time) (Respon
 	if out.Status == 304 {
 		return out, nil
 	}
-	b, e := io.ReadAll(io.LimitReader(response.Body, MaxResponseBytes+1))
-	if e != nil || len(b) > MaxResponseBytes {
-		return out, model.Fail("invalid_response", "The provider response exceeded its size or time limit.")
-	}
-	if !utf8.Valid(b) {
-		return out, model.Fail("invalid_response", "The provider response is not valid UTF-8.")
-	}
-	if len(b) == 0 {
-		return out, model.Fail("invalid_response", "The provider response was empty.")
-	}
-	decoder := json.NewDecoder(bytes.NewReader(b))
-	decoder.UseNumber()
-	if e = decoder.Decode(&out.Body); e != nil {
-		return out, model.Fail("invalid_response", "The provider did not return valid JSON.")
-	}
-	var extra any
-	if decoder.Decode(&extra) != io.EOF {
-		return out, model.Fail("invalid_response", "The provider returned more than one JSON value.")
+	out.Body, e = decodeProviderJSON(response.Body)
+	if e != nil {
+		return out, e
 	}
 	out.Root = out.Body
 	if out.Status >= 200 && out.Status < 300 {
@@ -257,6 +269,31 @@ func Execute(ctx context.Context, client Doer, a Attempt, now time.Time) (Respon
 		}
 	}
 	return out, nil
+}
+
+// decodeProviderJSON enforces body size, UTF-8 and single-value JSON constraints.
+func decodeProviderJSON(body io.Reader) (any, error) {
+	b, e := io.ReadAll(io.LimitReader(body, MaxResponseBytes+1))
+	if e != nil || len(b) > MaxResponseBytes {
+		return nil, model.Fail("invalid_response", "The provider response exceeded its size or time limit.")
+	}
+	if !utf8.Valid(b) {
+		return nil, model.Fail("invalid_response", "The provider response is not valid UTF-8.")
+	}
+	if len(b) == 0 {
+		return nil, model.Fail("invalid_response", "The provider response was empty.")
+	}
+	decoder := json.NewDecoder(bytes.NewReader(b))
+	decoder.UseNumber()
+	var decoded any
+	if e = decoder.Decode(&decoded); e != nil {
+		return nil, model.Fail("invalid_response", "The provider did not return valid JSON.")
+	}
+	var extra any
+	if decoder.Decode(&extra) != io.EOF {
+		return nil, model.Fail("invalid_response", "The provider returned more than one JSON value.")
+	}
+	return decoded, nil
 }
 
 // RetryAfter interprets either Retry-After seconds or an HTTP-date relative to now.
@@ -298,38 +335,9 @@ func Capture(body any, request model.Request, state map[string]any, complete boo
 			}
 			return nil, model.Fail("invalid_response", "The provider omitted a required saved value.")
 		}
-		valid := false
-		switch c.Type {
-		case "string":
-			s, ok := v.(string)
-			valid = ok && len(s) > 0 && len(s) <= 2048
-			if valid && c.StripPrefix != "" {
-				if !strings.HasPrefix(s, c.StripPrefix) {
-					return nil, model.Fail("invalid_response", "A provider identifier has an unexpected format.")
-				}
-				v = strings.TrimPrefix(s, c.StripPrefix)
-				valid = v != ""
-			}
-		case "boolean":
-			_, valid = v.(bool)
-		case "number":
-			n, ok := v.(json.Number)
-			valid = ok && len(n.String()) <= 128
-		case "local-date":
-			s, ok := v.(string)
-			if ok {
-				t, e := time.Parse("2006-01-02", s)
-				valid = e == nil && t.Format("2006-01-02") == s
-			}
-		case "utc-timestamp":
-			s, ok := v.(string)
-			if ok {
-				t, e := time.Parse(time.RFC3339Nano, s)
-				valid = e == nil
-				if valid {
-					v = t.UTC().Format(time.RFC3339Nano)
-				}
-			}
+		v, valid, err := normalizeCapture(v, c)
+		if err != nil {
+			return nil, err
 		}
 		if !valid {
 			return nil, model.Fail("invalid_response", fmt.Sprintf("The provider returned an invalid saved value (%s).", name))
@@ -337,4 +345,53 @@ func Capture(body any, request model.Request, state map[string]any, complete boo
 		next[name] = v
 	}
 	return next, nil
+}
+
+// normalizeCapture validates and normalizes one declared value without changing saved state.
+func normalizeCapture(value any, capture model.Capture) (any, bool, error) {
+	switch capture.Type {
+	case "string":
+		return captureString(value, capture.StripPrefix)
+	case "boolean":
+		_, valid := value.(bool)
+		return value, valid, nil
+	case "number":
+		number, valid := value.(json.Number)
+		return value, valid && len(number.String()) <= 128, nil
+	case "local-date":
+		text, valid := value.(string)
+		if !valid {
+			return value, false, nil
+		}
+		date, err := time.Parse("2006-01-02", text)
+		return value, err == nil && date.Format("2006-01-02") == text, nil
+	case "utc-timestamp":
+		text, valid := value.(string)
+		if !valid {
+			return value, false, nil
+		}
+		instant, err := time.Parse(time.RFC3339Nano, text)
+		if err != nil {
+			return value, false, nil
+		}
+		return instant.UTC().Format(time.RFC3339Nano), true, nil
+	default:
+		return value, false, nil
+	}
+}
+
+// captureString validates a bounded text value and removes its declared identifier prefix.
+func captureString(value any, prefix string) (any, bool, error) {
+	text, valid := value.(string)
+	if !valid || len(text) == 0 || len(text) > 2048 {
+		return value, false, nil
+	}
+	if prefix == "" {
+		return value, true, nil
+	}
+	if !strings.HasPrefix(text, prefix) {
+		return nil, false, model.Fail("invalid_response", "A provider identifier has an unexpected format.")
+	}
+	text = strings.TrimPrefix(text, prefix)
+	return text, text != "", nil
 }

@@ -1,3 +1,4 @@
+import { parseWeatherForecast } from './weather';
 import { WASTE_SCHEDULE_TIMEZONE } from '@/config/integrations';
 import type {
   ConnectionBoard,
@@ -8,6 +9,7 @@ import type {
   ConnectionOperation,
   ConnectionSetup,
   DefinitionValidation,
+  IntegrationResource,
   ProviderDefinition,
   WasteSchedule,
 } from '@/types/integrations.type';
@@ -164,7 +166,7 @@ export function parseSetup(value: unknown): ConnectionSetup {
   text(v.provider_key);
   text(v.status);
   timestamp(v.expires_at);
-  if (v.preview !== undefined) parseWasteSchedule(v.preview);
+  if (v.preview !== undefined) parseResource(v.preview);
   flag(v.credential_configured);
   parseFailure(v.last_error);
   list(v.choices, (x) => {
@@ -190,7 +192,7 @@ export function parseInstance(value: unknown): ConnectionInstance {
   flag(v.credential_configured);
   timestamp(v.updated_at);
   parseFailure(v.last_error);
-  list(v.resources, parseWasteSchedule);
+  list(v.resources, parseResource);
   list(v.runs, (r) => {
     const run = object(r);
     text(run.operation_id);
@@ -251,8 +253,8 @@ function parseValue(value: unknown): void {
 export function parseProviderDefinition(value: unknown): ProviderDefinition {
   const v = object(value);
   member(v.schema_version, ['nodeherder.integration/v1']);
-  member(v.capability, ['waste_schedule/v1']);
-  member(v.integration_type, ['waste_collection']);
+  member(v.capability, ['waste_schedule/v1', 'weather_forecast/v1']);
+  member(v.integration_type, ['waste_collection', 'weather']);
   text(v.id);
   text(v.name);
   text(v.base_url);
@@ -264,7 +266,7 @@ export function parseProviderDefinition(value: unknown): ProviderDefinition {
     flag(x.required);
   });
   const auth = object(v.auth);
-  member(auth.mode, ['none', 'bearer', 'optional_bearer']);
+  member(auth.mode, ['none', 'bearer', 'optional_bearer', 'apikey_header', 'apikey_query']);
   optionalText(auth.secret_slot);
   const policy = object(v.policy);
   number(policy.poll_min_seconds);
@@ -302,7 +304,7 @@ export function parseProviderDefinition(value: unknown): ProviderDefinition {
       });
   });
   const setup = object(v.setup);
-  member(setup.type, ['search_select']);
+  member(setup.type, ['search_select', 'location_select']);
   const search = object(setup.search);
   text(search.input);
   text(search.request);
@@ -326,6 +328,12 @@ export function parseProviderDefinition(value: unknown): ProviderDefinition {
   text(refresh.request);
   optionalText(refresh.renewal_request);
   const mapping = object(v.mapping);
+  if (v.capability === 'weather_forecast/v1') {
+    text(mapping.attribution);
+    object(mapping.hourly);
+    object(mapping.daily);
+    return value as ProviderDefinition;
+  }
   Object.values(object(mapping.metadata)).forEach(text);
   const collections = object(mapping.collections);
   text(collections.items);
@@ -367,4 +375,10 @@ export function parseValidation(value: unknown): DefinitionValidation {
     return r;
   });
   return value as DefinitionValidation;
+}
+
+/** Dispatch validated resources by contract version before entering the shared store. */
+export function parseResource(value: unknown): IntegrationResource {
+  if (object(value).contract_version === 'weather_forecast/v1') return parseWeatherForecast(value);
+  return parseWasteSchedule(value);
 }

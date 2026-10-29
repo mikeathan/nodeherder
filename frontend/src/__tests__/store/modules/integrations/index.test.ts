@@ -152,3 +152,31 @@ test('a superseded local projection read cannot replace the newer result', async
   await first;
   expect((store.state as { integrations: ConnectionsState }).integrations.instances[0].id).toBe('newer');
 });
+
+test('removing an integration evicts its cached results and fences an older list read', async () => {
+  const { store } = fixture();
+  const removed = { id: 'removed' } as ConnectionInstance;
+  const retained = { id: 'retained' } as ConnectionInstance;
+  store.commit('integrations/instances', [removed, retained]);
+  store.commit('integrations/current', removed);
+  let finish!: (items: ConnectionInstance[]) => void;
+  jest.spyOn(connectionsApi, 'instances').mockImplementation(() => new Promise((resolve) => { finish = resolve; }));
+  const pending = store.dispatch('integrations/readInstances');
+  store.commit('integrations/forgetInstance', removed.id);
+  finish([removed, retained]);
+  await pending;
+  const state = (store.state as { integrations: ConnectionsState }).integrations;
+  expect(state.instances.map((item) => item.id)).toEqual(['retained']);
+  expect(state.current).toBeNull();
+});
+
+test('an old detail response cannot restore a removed integration', async () => {
+  const { store } = fixture();
+  let finish!: (item: ConnectionInstance) => void;
+  jest.spyOn(connectionsApi, 'instance').mockImplementation(() => new Promise((resolve) => { finish = resolve; }));
+  const pending = store.dispatch('integrations/loadInstance', { id: 'removed' });
+  store.commit('integrations/forgetInstance', 'removed');
+  finish({ id: 'removed' } as ConnectionInstance);
+  await pending;
+  expect((store.state as { integrations: ConnectionsState }).integrations.current).toBeNull();
+});

@@ -1,5 +1,7 @@
 package runtime
 
+// Owns integration service dependencies, worker lifecycle, reads and shared state.
+
 import (
 	"context"
 	"errors"
@@ -122,6 +124,8 @@ func DegradedService(code string) *Service {
 	}
 	return &Service{availability: model.Fail(code, message)}
 }
+
+// ready rejects actions when startup failed or the service has already closed.
 func (s *Service) ready() error {
 	if s.availability != nil {
 		return s.availability
@@ -217,6 +221,8 @@ func (s *Service) Catalog() (CatalogDTO, error) {
 	})
 	return result, err
 }
+
+// definition reads and compiles the active stored provider definition for the transaction.
 func (s *Service) definition(tx *repository.IntegrationTx, key string) (model.DefinitionRecord, *definitions.Compiled, error) {
 	var r model.DefinitionRecord
 	ok, e := tx.Get("definitions", key, &r)
@@ -232,9 +238,13 @@ func (s *Service) definition(tx *repository.IntegrationTx, key string) (model.De
 	}
 	return r, c, e
 }
+
+// revisionETag identifies a particular setup or instance revision for conditional updates.
 func revisionETag(kind, id string, revision uint64) string {
 	return fmt.Sprintf(`"%s:%s:%d"`, kind, id, revision)
 }
+
+// checkRevision rejects a missing or stale revision before applying a change.
 func checkRevision(expected, actual string) error {
 	if expected == "" {
 		return model.Fail("precondition_required", "Reload this page before saving changes.")
@@ -244,6 +254,8 @@ func checkRevision(expected, actual string) error {
 	}
 	return nil
 }
+
+// instanceDTO builds a sanitized instance view without exposing private credential values.
 func (s *Service) instanceDTO(i model.Instance) InstanceDTO {
 	status := "ready"
 	if i.Snapshot == nil {
@@ -260,10 +272,16 @@ func (s *Service) instanceDTO(i model.Instance) InstanceDTO {
 		status = "save_failed"
 	}
 	resources := []model.Resource{}
+	sources := []model.SourceReference{}
 	if i.Snapshot != nil {
 		projected, err := s.projectResource(*i.Snapshot, s.clock.Now())
 		if err == nil {
-			resources = append(resources, projected)
+			var references []model.SourceReference
+			references, err = s.capabilities.Sources(projected)
+			if err == nil {
+				resources = append(resources, projected)
+				sources = append(sources, references...)
+			}
 		}
 		if err != nil {
 			i.LastError = failure(err)
@@ -276,6 +294,7 @@ func (s *Service) instanceDTO(i model.Instance) InstanceDTO {
 	}
 	sort.Strings(slots)
 	return InstanceDTO{
+		Sources:              sources,
 		CredentialSlots:      slots,
 		Runs:                 recentRuns(i.Runs, s.clock.Now()),
 		ID:                   i.ID,
@@ -293,6 +312,8 @@ func (s *Service) instanceDTO(i model.Instance) InstanceDTO {
 		UpdatedAt:            i.UpdatedAt,
 	}
 }
+
+// setupDTO builds a sanitized setup view and projects any saved preview.
 func (s *Service) setupDTO(p model.Setup) SetupDTO {
 	postcode := ""
 	configured := false
@@ -327,6 +348,8 @@ func (s *Service) setupDTO(p model.Setup) SetupDTO {
 		Preview:              p.Preview,
 	}
 }
+
+// operationDTO removes private attempt details from the returned operation view.
 func operationDTO(o model.Operation) OperationDTO {
 	return OperationDTO{
 		ID:         o.ID,
@@ -411,6 +434,7 @@ func (s *Service) Operation(id string) (OperationDTO, error) {
 	return out, e
 }
 func (s *Service) enqueue(id string) { delete(s.publicationFailures, id); s.queue <- id } // callers hold admission lock and check capacity before durable admission
+// hasCapacity checks worker queue capacity before admitting durable work.
 func (s *Service) hasCapacity() error {
 	if len(s.queue) >= cap(s.queue) {
 		return model.Fail("busy", "Integrations are busy. Try again shortly.")
@@ -418,6 +442,7 @@ func (s *Service) hasCapacity() error {
 	return nil
 }
 
+// recentRuns bounds retained run history by age and count.
 func recentRuns(runs []model.RunSummary, now time.Time) []model.RunSummary {
 	out := []model.RunSummary{}
 	for _, r := range runs {
@@ -430,6 +455,8 @@ func recentRuns(runs []model.RunSummary, now time.Time) []model.RunSummary {
 	}
 	return out
 }
+
+// recordRun adds a sanitized operation outcome to an instance history.
 func (s *Service) recordRun(i *model.Instance, o model.Operation, outcome, message string) {
 	runs := []model.RunSummary{}
 	for _, r := range i.Runs {

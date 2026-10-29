@@ -56,6 +56,7 @@ async function showThreeServiceSchedule(page: Page) {
     const payload = (await response.json()) as { data: ConnectionInstance[]; error: null };
     for (const instance of payload.data) {
       const resource = instance.resources[0];
+      if (!resource || resource.contract_version !== 'waste_schedule/v1') continue;
       const original = resource.services[0];
       resource.services = [
         {
@@ -284,7 +285,8 @@ test('individual integration cards move naturally between areas and Home with sh
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await ui.home.area(page, 'Living room').getByRole('button', { name: 'Add tiles' }).click();
   await selectHomeSource(page, 'Integration results');
-  await page.getByRole('checkbox', { name: /^Blue bin/ }).check();
+  await expect(page.getByRole('radio', { name: /^Blue bin/ })).toHaveCount(0);
+  await page.getByRole('radio', { name: /complete schedule/ }).check();
   await page.getByRole('button', { name: 'Add 1 tile', exact: true }).click();
   const tile = page.locator('.nh-integration-tile').filter({ hasText: 'Blue bin' });
   await expect(tile).toHaveCount(1);
@@ -303,7 +305,7 @@ test('individual integration cards move naturally between areas and Home with sh
   await expect(page.locator('.nh-home-block:not(.is-area)').locator(`[data-card-id="${id}"]`)).toBeVisible();
   await page.getByRole('button', { name: 'Add cards to Home' }).click();
   await selectHomeSource(page, 'Integration results');
-  await page.getByRole('checkbox', { name: /complete schedule/ }).check();
+  await page.getByRole('radio', { name: /complete schedule/ }).check();
   await page.getByRole('button', { name: 'Add 1 tile', exact: true }).click();
   await expect(page.locator('.nh-home-block:not(.is-area)')).toHaveCount(2);
   const downloading = page.waitForEvent('download');
@@ -580,19 +582,18 @@ test.describe('home dashboard', () => {
     const target = ui.home.area(page, before[1]);
     const from = (await handle.boundingBox())!;
     const to = (await target.boundingBox())!;
-    // areas collapse to their headers once one is held, so aim just past the next header
     const start = { x: from.x + from.width / 2, y: from.y + from.height / 2 };
-    const end =
-      to.y > from.y + from.height * 2 ? { x: start.x, y: start.y + 90 } : { x: to.x + to.width * 0.7, y: to.y + 16 };
+    const end = { x: to.x + to.width * 0.7, y: to.y + 16 };
     const saving = page.waitForRequest(
       (request) => request.url().endsWith('/api/home/layout') && request.method() === 'PUT'
     );
-    await dragBetween(page, start, end);
+    await dragBetween(page, start, end, 14, async () => {
+      await expect(ui.home.area(page, before[0]).locator('.nh-tile').first()).toBeVisible();
+    });
     await expect(titles.first()).toHaveText(before[1]);
     const saved = (await saving).postDataJSON();
     expect(saved.blocks[0].name).toBe(before[1]);
-    // Touch collapse can move past more than one area. Restore the dragged area from its
-    // accepted position rather than assuming a single adjacent swap.
+    // Restore from the accepted position rather than assuming a single adjacent swap.
     const position = (await titles.allTextContents()).indexOf(before[0]);
     for (let index = 0; index < position; index++) {
       await page.getByRole('button', { name: `Move ${before[0]} earlier` }).click();

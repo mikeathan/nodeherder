@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { homeIntegrationCard, homeIntegrationSources } from '@/domain/home-cards';
 import { homeSourceKey } from '@/domain/home-layout';
-import type { ConnectionInstance } from '@/types/integrations.type';
+import { homePickerChoices } from '@/domain/home-picker';
+import type { ConnectionInstance, WasteSchedule } from '@/types/integrations.type';
 import type { HomeCard } from '@/types/home.type';
 
 const example = JSON.parse(
@@ -11,7 +12,7 @@ const example = JSON.parse(
     'utf8'
   )
 ).exact;
-const instance = (): ConnectionInstance => ({
+const instance = (): Omit<ConnectionInstance, 'resources'> & { resources: WasteSchedule[] } => ({
   id: 'one',
   name: 'Bins',
   provider_key: 'waste_collection/whenisbins',
@@ -63,4 +64,35 @@ test('missing/empty/unavailable states cannot silently become another service or
   });
   item.enabled = false;
   expect(homeIntegrationCard(reference, homeIntegrationSources([item])).status).toBe('Disabled');
+});
+
+test('weather sources keep resource identity and explicit unavailable placements', () => {
+  const weather = JSON.parse(
+    readFileSync(resolve(__dirname, '../fixtures/weather.json'), 'utf8')
+  );
+  const bins = instance();
+  const item: ConnectionInstance = { ...bins, provider_key: 'weather/open_meteo', resources: [weather] };
+  const sources = homeIntegrationSources([item]);
+  expect(sources.size).toBe(1);
+  const entry = [...sources.values()][0];
+  expect(entry.reference.kind).toBe('weather');
+  expect(entry.value).toContain('14°');
+  expect(entry.icon?.props.condition).toBe(weather.current.condition);
+  const card: HomeCard = { ...entry.reference, id: 'weather-card', panel: true };
+  expect(homeIntegrationCard(card, new Map()).value).toBe('Unavailable');
+  item.last_error = { code: 'credential_required', message: 'This provider requires a credential.' };
+  expect([...homeIntegrationSources([item]).values()][0]).toMatchObject({
+    error: true,
+    status: 'This provider requires a credential.',
+  });
+});
+
+
+test('bin picker offers the full schedule while existing service cards remain available', () => {
+  const sources = homeIntegrationSources([instance()]);
+  const choices = homePickerChoices('integrations', [], sources, []);
+  expect(choices.map((choice) => choice.reference.kind)).toEqual(['waste_summary']);
+  const service = [...sources.values()].find((source) => source.reference.kind === 'waste_service')!;
+  const card: HomeCard = { ...service.reference, id: 'existing', panel: true };
+  expect(homeIntegrationCard(card, sources).title).toBe(service.title);
 });

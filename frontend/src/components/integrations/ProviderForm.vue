@@ -68,12 +68,13 @@
         @remove="removeRequest(String(id))" />
     </details>
     <div><UiButton @click="addRequest">Add request</UiButton></div>
-    <ProviderRecipeFields
+    <p v-if="modelValue.integration_type === 'weather'" class="connection-muted">Edit weather selectors and location recipe in YAML mode.</p>
+    <ProviderRecipeFields v-if="modelValue.integration_type !== 'weather'"
       :model-value="recipe"
       :request-names="requestNames"
       :inputs="modelValue.inputs"
       @update:model-value="patch" />
-    <ProviderMappingFields :model-value="modelValue.mapping" @update:model-value="patch({ mapping: $event })" />
+    <ProviderMappingFields v-if="'collections' in modelValue.mapping" :model-value="modelValue.mapping" @update:model-value="patch({ mapping: $event })" />
     <ProviderPolicyFields
       :model-value="{ policy: modelValue.policy, errors: modelValue.errors }"
       @update:model-value="patch" />

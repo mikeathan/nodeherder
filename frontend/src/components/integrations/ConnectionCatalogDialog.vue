@@ -1,5 +1,6 @@
 <script setup lang="ts">
   // Discovery/configuration is deliberately separate from the everyday results board.
+  import { ref } from 'vue';
   import type { RouteLocationRaw } from 'vue-router';
   import type { ConnectionCatalog, ConnectionInstance } from '@/types/integrations.type';
   import UiDialog from '@/components/ui/UiDialog.vue';
@@ -12,6 +13,7 @@
     busy: boolean;
     providerRoute: (key: string) => RouteLocationRaw;
   }>();
+  const weatherProvider = ref('weather/met_office');
   defineEmits<{ close: []; add: [key: string]; restore: [id: string]; reload: [] }>();
 </script>
 <template>
@@ -30,8 +32,26 @@
       <section v-for="type in catalog?.types" :key="type.id" :aria-label="type.name">
         <h2>{{ type.name }}</h2>
         <p>{{ type.description }}</p>
+        <div v-if="type.id === 'weather'" class="connection-catalog-row">
+          <label
+            >Weather provider
+            <select v-model="weatherProvider">
+              <option
+                v-for="provider in catalog?.providers.filter((p) => p.integration_type === 'weather')"
+                :key="provider.key"
+                :value="provider.key"
+                :disabled="!provider.available">
+                {{ provider.name }}
+              </option>
+            </select></label
+          >
+          <UiButton variant="primary" :disabled="busy" @click="$emit('add', weatherProvider)">Set up weather</UiButton>
+          <UiButton :to="providerRoute(weatherProvider)">Configure operations</UiButton>
+        </div>
         <div
-          v-for="provider in catalog?.providers.filter((item) => item.integration_type === type.id)"
+          v-for="provider in catalog?.providers.filter(
+            (item) => item.integration_type === type.id && type.id !== 'weather'
+          )"
           :key="provider.key"
           class="connection-catalog-row">
           <span class="connection-catalog-icon"><UiIcon name="connections" /></span>

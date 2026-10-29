@@ -1,5 +1,7 @@
 package runtime
 
+// Checks execution, publication and recovery of provider operations.
+
 import (
 	"net/http"
 	"testing"

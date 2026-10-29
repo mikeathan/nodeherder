@@ -1,5 +1,7 @@
 package runtime
 
+// Checks cleanup and recovery of expired integration records.
+
 import (
 	"net/http"
 	"testing"

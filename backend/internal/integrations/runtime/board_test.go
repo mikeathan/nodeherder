@@ -1,5 +1,7 @@
 package runtime
 
+// Checks integration board ordering and persistence.
+
 import (
 	"bytes"
 	"encoding/base64"

@@ -1,12 +1,16 @@
 package runtime
 
+// Projects saved resources and prepares normalized operation results for publication.
+
 import (
+	"time"
+
 	"node-herder/internal/integrations/capabilities"
 	"node-herder/internal/integrations/definitions"
+	"node-herder/internal/integrations/flows/searchselect"
 	"node-herder/internal/integrations/operations"
 	model "node-herder/models/integrations"
 	"node-herder/repository"
-	"time"
 )
 
 // projectResource is the shared read boundary for saved resources and setup previews. A removed
@@ -76,6 +80,7 @@ func (s *Service) normalizeOperationResult(tx *repository.IntegrationTx, op mode
 		ProfileRevision: op.ProfileRevision,
 		BindingRevision: bindingRevision,
 		SelectedValue:   selected,
+		SelectedLabel:   searchselect.SelectionLabel(op.State),
 		Now:             s.clock.Now(),
 		Previous:        prior,
 		Identities:      ids,

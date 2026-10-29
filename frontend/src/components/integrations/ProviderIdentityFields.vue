@@ -32,6 +32,8 @@
             <option value="none">No token</option>
             <option value="optional_bearer">Optional API token</option>
             <option value="bearer">Required API token</option>
+            <option value="apikey_header">Required API key header</option>
+            <option value="apikey_query">Required API key query parameter</option>
           </select></label
         ><label v-if="fields.auth.mode !== 'none'" class="connection-field"
           ><span>Credential slot name</span><input v-model="fields.auth.secret_slot"

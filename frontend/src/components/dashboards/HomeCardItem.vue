@@ -16,7 +16,10 @@
 </script>
 
 <template>
-  <div class="nh-home-card" :class="{ 'is-summary': card.kind === 'waste_summary' }" :data-card-id="card.id">
+  <div
+    class="nh-home-card"
+    :class="{ 'is-integration': card.kind !== 'device' }"
+    :data-card-id="card.id">
     <EntityTile
       v-if="card.kind === 'device'"
       :device-id="card.device_id"
@@ -44,7 +47,13 @@
     min-width: 0;
     position: relative;
   }
-  .nh-home-card.is-summary {
+  .nh-home-card:not(.is-integration) {
+    display: flex;
+  }
+  .nh-home-card:not(.is-integration) :deep(.nh-tile) {
+    flex: 1;
+  }
+  .nh-home-card.is-integration {
     grid-column: 1 / -1;
   }
   .nh-card-layout-tools {

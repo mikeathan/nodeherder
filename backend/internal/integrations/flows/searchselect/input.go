@@ -1,5 +1,7 @@
 package searchselect
 
+// Normalizes search input and recognizes supported UK postcode queries.
+
 import (
 	"regexp"
 	"strings"
@@ -28,4 +30,9 @@ func NormalizeInput(value string, input model.Input) (string, error) {
 	default:
 		return "", model.Fail("invalid_definition", "The search step requires a text or postcode input.")
 	}
+}
+
+// IsUKPostcode identifies full UK postcodes without changing place-name searches.
+func IsUKPostcode(value string) bool {
+	return ukPostcode.MatchString(strings.ToUpper(strings.Join(strings.Fields(value), "")))
 }

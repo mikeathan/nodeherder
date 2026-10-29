@@ -1,5 +1,7 @@
 package httpclient
 
+// Resolves and connects only to permitted public network addresses for provider requests.
+
 import (
 	"context"
 	"errors"
@@ -41,6 +43,7 @@ var forbiddenNetworks = []netip.Prefix{
 	netip.MustParsePrefix("fe80::/10"),
 }
 
+// publicAddress rejects special-purpose ranges, including IPv4-mapped IPv6 addresses.
 func publicAddress(a netip.Addr) bool {
 	a = a.Unmap()
 	if !a.IsValid() || !a.IsGlobalUnicast() {

@@ -157,3 +157,44 @@ export function formatSmartDate(dateInput: Date | number): string {
   });
   return `${dateStr} ${timeStr}`;
 }
+
+let calendarFormatter: { timezone: string; value: Intl.DateTimeFormat } | undefined;
+
+/** Resolve an instant to a Gregorian calendar date in the specified IANA timezone. */
+export function calendarDateInZone(instant: string, timezone: string): string {
+  if (calendarFormatter?.timezone !== timezone) {
+    calendarFormatter = {
+      timezone,
+      value: new Intl.DateTimeFormat('en-CA', {
+        timeZone: timezone, calendar: 'gregory', numberingSystem: 'latn',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+      }),
+    };
+  }
+  const parts = Object.fromEntries(calendarFormatter.value.formatToParts(new Date(instant)).map((part) => [part.type, part.value]));
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+/** Create a clock formatter for UTC instants displayed in the selected timezone. */
+export function createZonedTimeFormatter(timezone: string): Intl.DateTimeFormat {
+  return new Intl.DateTimeFormat('en-GB', { timeZone: timezone, hour: '2-digit', minute: '2-digit' });
+}
+
+const shortCalendarFormatter = new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'short',
+});
+
+/** Format a YYYY-MM-DD calendar date without shifting it into the browser timezone. */
+export function formatShortCalendarDate(date: string): string {
+  return shortCalendarFormatter.format(new Date(`${date}T12:00:00Z`));
+}
+
+/** Format a saved instant using the viewer's locale and timezone. */
+export function formatLocalDateTime(instant: string): string {
+  return new Date(instant).toLocaleString();
+}
+
+/** Format an instant with a caller-owned formatter for the desired timezone. */
+export function formatInstant(instant: string, formatter: Intl.DateTimeFormat): string {
+  return formatter.format(new Date(instant));
+}

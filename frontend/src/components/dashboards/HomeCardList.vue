@@ -66,15 +66,15 @@
 <style scoped>
   .nh-tiles {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 11rem), 1fr));
     gap: var(--nh-gap);
     min-width: 0;
     min-height: 0.5rem;
   }
-  .nh-tiles :deep(.is-ghost) {
+  .nh-tiles :deep(.nh-home-card.is-ghost) {
     opacity: 0.4;
   }
-  .nh-tiles :deep(.is-summary) {
+  .nh-tiles :deep(.is-integration) {
     grid-column: 1 / -1;
   }
 </style>

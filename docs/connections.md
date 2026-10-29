@@ -115,7 +115,7 @@ Save changes writes the host file and applies it; it does not commit or push Git
 constants/comments for private values before committing a definition. Tokens and selected addresses
 belong in Setup, never in shareable YAML. Form edits can normalize YAML formatting. Reload reads
 host changes, Restore previous creates a new revision, and stale edits return conflicts. Avoid
-simultaneous host-editor/Git checkout and UI writes. Upgrades never overwrite an existing host file.
+simultaneous host-editor/Git checkout and UI writes. Upgrades never overwrite an existing host file. To receive updated shipped provider definitions, review and apply the shipped version in Configure operations; existing setups retain their saved definition until reconfigured.
 A new provider for the supported recipe can be copied through the UI or added as a matching host
 YAML file and loaded with Reload providers in Integrations (or on restart). Invalid files retain
 the last active revision and show a repair error.
@@ -176,3 +176,40 @@ mount permissions remain operational checks on your installation, not claims mad
 Deletion removes live records. Encrypted bytes may remain in bbolt free pages and retained backups;
 this is logical deletion, not a secure-erasure guarantee. Apply your backup-retention policy and
 protect all associated keys accordingly.
+
+## Weather
+
+Choose **Weather** in Add integration, select Open-Meteo, Met Office (UK), or
+WeatherAPI.com, and search for a town or postcode. Confirm a returned location and
+save the integration. Refresh retrieves a new forecast manually; loading pages does
+not contact the provider. Saved data remains visible after a failed refresh and is
+labelled stale after one hour. The view omits unavailable quantities and expired
+current conditions rather than displaying zero.
+
+Open-Meteo's free hosted service requires no key and is for non-commercial use.
+Met Office and WeatherAPI.com require their own account/key; Setup links to the
+provider. Save the credential before searching; changing it resets unfinished
+selection. Tokens remain in the existing private integration store, outside YAML.
+Met Office currently supports UK locations and combines hourly and daily requests.
+Met Office and Open-Meteo use Open-Meteo/GeoNames for place names and Postcodes.io for full UK postcodes; these recipients are shown in Setup.
+WeatherAPI.com uses its own location search and the free three-day forecast. Its terms limit
+forecast data retention to 24 hours; the current persistent snapshot and backups do not yet enforce
+that limit, so the WeatherAPI.com provider should not be used until compliant retention is implemented.
+Forecast length depends on the provider. Values are forecasts, not home sensor readings.
+
+Provider seeds are in `backend/configs/integrations/weather/`. They follow the same
+host-file ownership, validation, reload and recovery pattern as WhenIsBins. Edit
+weather-specific selectors/recipes in YAML mode. `location_select` uses explicit
+coordinate choices; `setup.search.base_url` may declare a separate HTTPS search
+service that receives no cross-origin credentials. `apikey_header` sends the key in
+`apikey`; `apikey_query` sends it in `key`. A forecast GET may `combine` one named
+same-origin GET; neither can use conditional caching, and both must succeed before
+publication. Weather mappings declare row/column selectors, time formats, condition
+codes and bounded unit scales; no executable templates are supported.
+
+Add the weather result through Home's existing edit/picker flow; it also supports
+Panel placement. Open the card for hourly weather and daily forecasts. Mobile shows
+five daily rows per page; desktop uses scrollable cards. Before rolling back to a
+binary predating weather, back up the private Home layout and restore a pre-weather
+layout if needed: older binaries reject the new weather reference kind. Existing bin
+configurations and saved results do not require migration.

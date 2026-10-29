@@ -1,5 +1,7 @@
 package runtime
 
+// Classifies provider failures and persists operation progress or failure states.
+
 import (
 	"errors"
 	"time"
@@ -9,6 +11,7 @@ import (
 	"node-herder/repository"
 )
 
+// failure converts unexpected errors to a safe storage failure without exposing internal details.
 func failure(e error) *model.Failure {
 	var f *model.Failure
 	if errors.As(e, &f) {
@@ -16,6 +19,8 @@ func failure(e error) *model.Failure {
 	}
 	return model.Fail("storage_error", "The integration change could not be saved. Check persistent storage and try again.")
 }
+
+// providerFailure maps HTTP status and retry metadata to user-facing failure codes.
 func providerFailure(r operations.Response) *model.Failure {
 	if r.Status >= 500 {
 		return &model.Failure{Code: "provider_unavailable", Message: "The provider is temporarily unavailable.", RetryAt: r.RetryAt}
@@ -27,14 +32,13 @@ func providerFailure(r operations.Response) *model.Failure {
 	case 429:
 		f = model.Fail("rate_limited", "The provider's request limit was reached. Try again after the indicated time.")
 		f.RetryAt = r.RetryAt
-	case 503:
-		f = model.Fail("provider_unavailable", "The provider is temporarily unavailable.")
-		f.RetryAt = r.RetryAt
 	case 404:
 		f = model.Fail("provider_not_found", "The provider did not find the configured request or saved lookup. Check the configuration.")
 	}
 	return f
 }
+
+// canRenew checks whether a provider response matches a declared renewal rule.
 func canRenew(d model.Definition, r operations.Response) bool {
 	code, _ := operations.Pointer(r.Body, d.Errors.Code)
 	for _, rule := range d.Errors.Rules {
@@ -44,6 +48,8 @@ func canRenew(d model.Definition, r operations.Response) bool {
 	}
 	return false
 }
+
+// nextCheck applies the provider polling minimum and any later retry deadline.
 func (s *Service) nextCheck(d model.Definition, retry *time.Time) time.Time {
 	t := s.clock.Now().Add(time.Duration(d.Policy.PollMinSeconds) * time.Second)
 	if retry != nil && retry.After(t) {
@@ -51,6 +57,8 @@ func (s *Service) nextCheck(d model.Definition, retry *time.Time) time.Time {
 	}
 	return t
 }
+
+// clearAttempt discards saved request material after an operation is finished.
 func clearAttempt(o *model.Operation) {
 	o.Body = nil
 	o.Inputs = nil
@@ -59,6 +67,8 @@ func clearAttempt(o *model.Operation) {
 	o.ETag = ""
 	o.DefinitionYAML = ""
 }
+
+// failOperation stores failure and retry state with the owning setup or instance.
 func (s *Service) failOperation(tx *repository.IntegrationTx, o *model.Operation, owner operationOwner, f *model.Failure) error {
 	o.LastError = f
 	o.Status = "failed"
@@ -96,6 +106,8 @@ func (s *Service) failOperation(tx *repository.IntegrationTx, o *model.Operation
 	}
 	return tx.Put("operations", o.ID, o)
 }
+
+// savePending checkpoints the lookup state without submitting another provider request.
 func (s *Service) savePending(tx *repository.IntegrationTx, o model.Operation, owner operationOwner) error {
 	if owner.candidate {
 		p := owner.setup

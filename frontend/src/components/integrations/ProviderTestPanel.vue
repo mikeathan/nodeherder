@@ -1,10 +1,10 @@
 <script setup lang="ts">
   import UiButton from '@/components/ui/UiButton.vue';
-  import type { ConnectionInstance, ConnectionSetup } from '@/types/integrations.type';
+  import type { ConnectionInstance, ConnectionSetup, ProviderTestMode } from '@/types/integrations.type';
   defineProps<{ instances: ConnectionInstance[]; preview: ConnectionSetup | null; busy: boolean }>();
   const instance = defineModel<string>('instance', { required: true });
   const sample = defineModel<string>('sample', { required: true });
-  const emit = defineEmits<{ test: [mode: 'offline' | 'live'] }>();
+  const emit = defineEmits<{ test: [mode: ProviderTestMode] }>();
 </script>
 <template>
   <details>
@@ -36,7 +36,7 @@
         }}
       </p>
       <ul v-if="preview?.preview" class="connection-list">
-        <li v-for="service in preview.preview.services" :key="service.service_id">
+        <li v-for="service in ('services' in preview.preview ? preview.preview.services : [])" :key="service.service_id">
           {{ service.name }}: {{ service.dates.join(', ') || 'dates unavailable' }}
         </li>
       </ul>

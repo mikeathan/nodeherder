@@ -116,7 +116,6 @@
         v-model="blocks"
         item-key="id"
         class="nh-areas"
-        :class="{ 'is-dragging': dragging }"
         handle=".nh-area-handle"
         :disabled="!editing || busy"
         :animation="160"
@@ -127,7 +126,7 @@
         <template #item="{ element, index }">
           <div
             class="nh-home-block"
-            :class="{ 'is-area': element.kind === 'group', 'is-summary': element.cards[0]?.kind === 'waste_summary' }"
+            :class="{ 'is-area': element.kind === 'group', 'is-integration': element.kind === 'card' && element.cards[0]?.kind !== 'device' }"
             :data-home-block="element.id">
             <div class="nh-home-block-content">
               <AreaCard
@@ -205,7 +204,7 @@
   }
   .nh-areas {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 9rem), 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 11rem), 1fr));
     grid-auto-rows: 2px;
     gap: 0 var(--nh-gap);
     align-items: start;
@@ -232,7 +231,7 @@
     background: color-mix(in srgb, var(--nh-surface) 40%, transparent);
   }
   .nh-home-block.is-area,
-  .nh-home-block.is-summary {
+  .nh-home-block.is-integration {
     grid-column: span 2;
   }
   .nh-home-block:not(.is-area) :deep(.nh-tiles) {
@@ -244,11 +243,11 @@
   .nh-home-add-card {
     margin-top: 1.5rem;
   }
-  .nh-areas.is-dragging :deep(.nh-tiles) {
-    display: none;
-  }
-  .nh-areas :deep(.is-ghost) {
-    opacity: 0.4;
+  .nh-areas :deep(.nh-home-block.is-ghost) {
+    opacity: 0.55;
+    outline: 2px dashed var(--nh-accent);
+    outline-offset: -2px;
+    border-radius: var(--nh-radius-l);
   }
   .nh-alert {
     margin-bottom: 1rem;

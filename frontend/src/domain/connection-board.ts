@@ -1,29 +1,10 @@
 import { moveItem } from './dashboard';
-import { compareCollectionDates } from './waste-calendar';
-import { presentWasteSchedule, wasteServiceDateLabel } from './waste-schedule';
-import type { WasteSchedulePresentation, WasteServiceCard } from './waste-schedule';
 import type { ConnectionBoardEntry, ConnectionInstance } from '@/types/integrations.type';
-
-/** One display row, identified by resource/service IDs rather than its chronological position. */
-export interface ConnectionWidgetRow {
-  id: string;
-  name: string;
-  colour: string | null;
-  nextDateISO: string | null;
-  date: string;
-}
-
-/** Compact connection view model; it contains display data and no transport/lifecycle ownership. */
-export interface ConnectionWidgetSummary {
-  rows: ConnectionWidgetRow[];
-  remaining: number;
-  status: string;
-  checked: string | null;
-  isWaste: boolean;
-}
-
-const MAX_WIDGET_ROWS = 3;
-
+import { connectionPresentation } from '@/integrations/registry';
+export type {
+  IntegrationWidget as ConnectionWidgetSummary,
+  IntegrationWidgetRow as ConnectionWidgetRow,
+} from '@/integrations/types';
 /**
  * Reconcile layout membership without losing saved order or hiding new connections.
  * @param entries Accepted placements, possibly read just before an instance was added/deleted.
@@ -66,52 +47,7 @@ export function moveBoardEntry(
   return entries.map((entry) => ({ ...(entry.hidden ? entry : reordered[index++]) }));
 }
 
-/** Map one card without allowing date/order changes to become a new widget identity. */
-function presentCollectionRow(card: WasteServiceCard, resourceId: string): ConnectionWidgetRow {
-  return {
-    id: `${resourceId}/${card.service_id}`,
-    name: card.title,
-    colour: card.bin_colour,
-    nextDateISO: card.nextDateISO,
-    date: wasteServiceDateLabel(card),
-  };
-}
-
-/** Merging already-ordered resources still requires one overall order before row limiting. */
-function collectionRows(resources: readonly WasteSchedulePresentation[]): ConnectionWidgetRow[] {
-  return resources
-    .flatMap((resource) => resource.cards.map((card) => presentCollectionRow(card, resource.resource_id)))
-    .sort((left, right) => compareCollectionDates(left.nextDateISO, right.nextDateISO));
-}
-
-/** Project lifecycle/freshness precedence for already-presented resources, without transport or mutation. */
-export function connectionStatus(
-  instance: ConnectionInstance,
-  resources: readonly WasteSchedulePresentation[],
-  isWaste: boolean
-): string {
-  if (!instance.enabled) return 'Disabled';
-  if (instance.last_error) return instance.last_error.message;
-  if (instance.operation_id) return 'Checking for updates';
-  if (resources.some((resource) => resource.freshness === 'stale')) return 'Needs refreshing';
-  if (resources.length) return resources[0].statusLabel;
-  return isWaste ? 'Waiting for collection dates' : 'Waiting for information';
-}
-
-/**
- * Compose a compact widget from accepted connection/resource state.
- * @returns At most three chronological rows plus lifecycle feedback; never starts provider work
- * or infers recurring dates. Saved objects and the user's connection layout remain untouched.
- */
-export function connectionWidget(instance: ConnectionInstance): ConnectionWidgetSummary {
-  const isWaste = instance.provider_key.startsWith('waste_collection/');
-  const resources = instance.resources.map(presentWasteSchedule);
-  const rows = collectionRows(resources);
-  return {
-    rows: rows.slice(0, MAX_WIDGET_ROWS),
-    remaining: Math.max(0, rows.length - MAX_WIDGET_ROWS),
-    status: connectionStatus(instance, resources, isWaste),
-    checked: resources[0]?.checkedLabel ?? null,
-    isWaste,
-  };
+/** Project a widget through its registered capability without inspecting resource payloads. */
+export function connectionWidget(instance: ConnectionInstance) {
+  return connectionPresentation(instance);
 }

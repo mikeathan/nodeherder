@@ -1,5 +1,7 @@
 package waste
 
+// Checks collection horizon and refresh decisions.
+
 import (
 	model "node-herder/models/integrations"
 	"testing"

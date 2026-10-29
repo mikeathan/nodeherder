@@ -1,5 +1,7 @@
 package searchselect
 
+// Checks lookup progress and provider search choice handling.
+
 import (
 	"testing"
 

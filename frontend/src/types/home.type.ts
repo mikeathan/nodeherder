@@ -1,17 +1,26 @@
-/** Source identity only. Selection/presentation does not invent a placement ID or panel preference. */
-export type HomeCardSource =
-  | { kind: 'device'; device_id: string; expose: string }
-  | { kind: 'waste_service'; instance_id: string; resource_id: string; service_id: string }
-  | { kind: 'waste_summary'; instance_id: string; resource_id: string };
+import type { IntegrationSourceReference } from '@/integrations/types';
+
+/** Source identity only; integrations own their reference vocabulary. */
+export interface HomeDeviceSource {
+  kind: 'device';
+  device_id: string;
+  expose: string;
+}
+export type HomeCardSource = HomeDeviceSource | IntegrationSourceReference;
+export type HomeBlockKind = 'group' | 'card';
 
 /** An accepted or proposed placement; source readings remain in their existing stores. */
-export type HomeCard = HomeCardSource & { id: string; panel: boolean };
-export type HomeIntegrationCard = Exclude<HomeCard, { kind: 'device' }>;
+export interface HomeCardPlacement {
+  id: string;
+  panel: boolean;
+}
+export type HomeCard = HomeCardSource & HomeCardPlacement;
+export type HomeIntegrationCard = IntegrationSourceReference & HomeCardPlacement;
 
 /** Ordered named area, or a standalone block containing exactly one placement. */
 export interface HomeBlock {
   id: string;
-  kind: 'group' | 'card';
+  kind: HomeBlockKind;
   name: string;
   cards: HomeCard[];
 }

@@ -9,7 +9,6 @@ import (
 	"node-herder/internal/auth"
 	"node-herder/internal/integrations"
 	"node-herder/models/devices"
-	model "node-herder/models/integrations"
 	"node-herder/models/settings"
 )
 
@@ -188,21 +187,9 @@ func homeIntegrationExists(card settings.HomeCard, instances []integrations.Inst
 		if instance.ID != card.InstanceID {
 			continue
 		}
-		for _, resource := range instance.Resources {
-			if resource.ResourceID != card.ResourceID || resource.ContractVersion != "waste_schedule/v1" {
-				continue
-			}
-			if card.Kind == "waste_summary" {
+		for _, source := range instance.Sources {
+			if source.ResourceID == card.ResourceID && source.Kind == card.Kind && source.ServiceID == card.ServiceID {
 				return true
-			}
-			var schedule model.WasteSchedule
-			if resource.Decode(&schedule) != nil {
-				return false
-			}
-			for _, service := range schedule.Services {
-				if service.ServiceID == card.ServiceID {
-					return true
-				}
 			}
 		}
 	}

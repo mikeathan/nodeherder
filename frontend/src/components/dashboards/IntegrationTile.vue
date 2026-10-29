@@ -4,8 +4,8 @@
   import type { HomeSourcePresentation } from '@/domain/home-cards';
   import { homeIntegrationCard } from '@/domain/home-cards';
   import { RouteName } from '@/types/router';
-  import WasteBinIcon from '@/components/integrations/WasteBinIcon.vue';
   import UiIcon from '@/components/ui/UiIcon.vue';
+  import IntegrationStatus from '@/components/integrations/IntegrationStatus.vue';
 
   const props = defineProps<{
     card: HomeIntegrationCard;
@@ -30,7 +30,7 @@
   <article
     class="nh-integration-tile"
     :class="{
-      'is-summary': card.kind === 'waste_summary',
+      'is-summary': item.rows.length > 0,
       'is-panel': panel,
       'has-warning': item.warning || sourceError,
     }"
@@ -38,31 +38,30 @@
     :aria-label="item.title">
     <div class="nh-integration-body">
       <span class="nh-integration-badge">
-        <WasteBinIcon v-if="card.kind === 'waste_service'" :colour="item.colour" />
-        <UiIcon v-else name="schedule" />
+        <component v-if="item.icon" :is="item.icon.component" v-bind="item.icon.props" />
+        <UiIcon v-else name="connections" />
       </span>
       <div class="nh-integration-copy">
         <strong v-if="editing" class="nh-integration-name">{{ item.title }}</strong>
         <RouterLink v-else class="nh-integration-name nh-integration-link" :to="destination">
           {{ item.title }}
         </RouterLink>
-        <span v-if="card.kind !== 'waste_summary'" class="nh-integration-value">{{ item.value }}</span>
+        <span v-if="!item.rows.length" class="nh-integration-value">{{ item.value }}</span>
+        <span v-if="item.detail" class="nh-integration-value">{{ item.detail }}</span>
         <span class="nh-integration-origin">{{ item.origin }}</span>
       </div>
     </div>
     <ul v-if="item.rows.length" class="nh-integration-rows">
       <li v-for="row in item.rows" :key="row.id">
         <span>
-          <WasteBinIcon :colour="row.colour" />
+          <component v-if="row.icon" :is="row.icon.component" v-bind="row.icon.props" />
           {{ row.title }}
         </span>
         <span>{{ row.value }}</span>
       </li>
     </ul>
-    <p class="nh-integration-status">
-      {{ status }}
-      <span v-if="item.checked">· Checked {{ item.checked }}</span>
-    </p>
+    <IntegrationStatus class="nh-integration-status" :status="status" :checked="item.checked"
+      :error="item.error || !!sourceError" :warning="item.warning" />
     <button
       v-if="editing"
       class="nh-tile-del"
@@ -88,7 +87,7 @@
   }
   .nh-integration-body {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 0.65rem;
   }
   .nh-integration-badge {
@@ -101,7 +100,7 @@
     background: var(--nh-surface-2);
     color: var(--nh-accent);
   }
-  .nh-integration-badge .waste-bin-icon {
+  .nh-integration-badge :deep(svg) {
     width: 1.5rem;
     height: 2rem;
   }
@@ -148,9 +147,6 @@
     margin: 0.5rem 0 0;
     overflow-wrap: anywhere;
   }
-  .has-warning .nh-integration-status {
-    color: var(--nh-warning, var(--nh-text-muted));
-  }
   .nh-integration-rows {
     list-style: none;
     padding: 0;
@@ -169,7 +165,7 @@
   .nh-integration-rows li {
     justify-content: space-between;
   }
-  .nh-integration-rows .waste-bin-icon {
+  .nh-integration-rows :deep(svg) {
     width: 1.1rem;
     height: 1.5rem;
   }
@@ -195,8 +191,6 @@
   }
   .is-panel {
     padding: 1.1rem;
-  }
-  .is-panel.is-summary {
     grid-column: 1 / -1;
     inline-size: 100%;
     max-inline-size: 24rem;

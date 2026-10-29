@@ -1,5 +1,7 @@
 package searchselect
 
+// Checks search input normalization and postcode recognition.
+
 import (
 	"testing"
 
