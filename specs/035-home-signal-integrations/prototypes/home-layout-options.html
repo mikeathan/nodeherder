@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en" data-mode="dark" data-theme="fleece">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NodeHerder — Home layout decision samples (v2)</title>
+<style>
+  :root {
+    --bg:#0e2230; --surface:#14303f; --surface2:#1b3d50; --border:#23495e; --border-strong:#33657f;
+    --text:#eef4f2; --muted:#a4c3d1; --accent:#5cc4ec; --accent-ink:#072030;
+    --ok:#2e9e5b; --warn:#d98a00; --danger:#d93a3a; --info:#2f7fd6;
+    --radius:14px; --radius-l:19px; --gap:12px;
+    --shadow:0 1px 2px rgb(0 0 0/.4);
+    --soft:color-mix(in srgb, var(--accent) 16%, transparent);
+    --font:'Figtree','Segoe UI',Roboto,system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);line-height:1.45}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.86em;background:var(--surface2);padding:1px 5px;border-radius:5px}
+  .wrap{max-width:1540px;margin:0 auto;padding:24px 20px 80px}
+  header.page{position:sticky;top:0;z-index:30;padding:12px 20px;background:color-mix(in srgb,var(--bg) 90%,transparent);
+    backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+  header.page .line{display:flex;flex-wrap:wrap;gap:12px;align-items:center;max-width:1540px;margin:0 auto}
+  header.page h1{font-size:1rem;margin:0;font-weight:650}
+  header.page .sub{color:var(--muted);font-size:.78rem;margin:2px 0 0}
+  .spacer{flex:1}
+  .seg{display:flex;border:1px solid var(--border);border-radius:999px;overflow:hidden;background:var(--surface)}
+  .seg button{appearance:none;border:0;background:transparent;color:var(--muted);font:inherit;font-size:.78rem;padding:7px 11px;cursor:pointer;min-height:34px}
+  .seg button[aria-pressed="true"]{background:var(--soft);color:var(--text)}
+  .seg button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+  h2{font-size:1.05rem;margin:0 0 4px} h3{font-size:.95rem;margin:0 0 6px} h4{margin:0}
+  p{margin:0 0 10px} .muted{color:var(--muted)} .small{font-size:.82rem} .tiny{font-size:.72rem}
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-l);padding:18px}
+  .lead{display:grid;grid-template-columns:1.35fr 1fr;gap:18px;margin:18px 0 24px}
+  .lead ul{margin:0;padding-left:18px;color:var(--muted);font-size:.85rem} .lead li{margin:4px 0}
+  .problem{border-left:3px solid var(--warn);padding-left:14px}
+  .options{display:grid;gap:22px}
+  .option{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-l);overflow:hidden}
+  .option-head{display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;padding:15px 18px;border-bottom:1px solid var(--border)}
+  .option-head .tag{font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:999px;border:1px solid var(--border-strong);color:var(--muted)}
+  .tag.rec{border-color:var(--ok);color:#8fe0af;background:color-mix(in srgb,var(--ok) 14%,transparent)}
+  .tag.bad{border-color:var(--danger);color:#ff9d9d;background:color-mix(in srgb,var(--danger) 12%,transparent)}
+  .option-body{padding:18px;display:grid;grid-template-columns:1fr 300px;gap:20px}
+  .notes{font-size:.78rem;color:var(--muted)}
+  .notes h4{margin:0 0 6px;font-size:.74rem;text-transform:uppercase;letter-spacing:.07em;color:var(--text)}
+  .notes ul{margin:0 0 14px;padding-left:16px} .notes li{margin:3px 0}
+  .verdict{border-radius:10px;padding:9px 11px;font-size:.77rem;background:var(--surface2);border:1px solid var(--border)}
+  .modes{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px}
+  .modes button{border:1px solid var(--border);background:var(--surface);color:var(--muted);border-radius:9px;
+    padding:6px 10px;font:inherit;font-size:.74rem;cursor:pointer;min-height:32px}
+  .modes button[aria-pressed="true"]{border-color:var(--accent);color:var(--text);background:var(--soft)}
+  .modes button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  /* dashboard canvas */
+  .canvas{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px;min-height:260px;container-type:inline-size}
+  .page-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px}
+  .page-title b{font-size:1.02rem}
+  .actions{display:flex;gap:8px}
+  .btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:10px;padding:6px 10px;
+    font:inherit;font-size:.73rem;display:inline-flex;gap:5px;align-items:center;min-height:32px}
+  .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent;font-weight:650}
+  .sections{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:var(--gap);align-items:start}
+  .section{min-width:0;align-self:start;background:transparent;border-radius:var(--radius);transition:background .15s}
+  .section.is-wide{grid-column:span 2}
+  .section.is-collapsed{background:color-mix(in srgb,var(--surface) 55%,transparent);outline:1px solid var(--border)}
+  .sec-head{display:flex;align-items:center;gap:6px;min-height:30px;margin:0 0 8px 2px}
+  .sec-head .chev{width:22px;height:22px;border:0;background:transparent;color:var(--muted);border-radius:6px;cursor:pointer;
+    display:grid;place-items:center;font-size:.7rem;flex:none}
+  .sec-head .chev:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  .sec-head h4{margin:0;font-size:.93rem;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sec-head .count{font-size:.68rem;color:var(--muted);border:1px solid var(--border);border-radius:999px;padding:1px 7px;flex:none}
+  .sec-head .grow{flex:1}
+  .sec-head .tools{display:flex;gap:1px;opacity:.55}
+  .sec-head .tools span{width:22px;height:22px;display:grid;place-items:center;border-radius:6px;font-size:.7rem}
+  .collapse-sum{display:none;font-size:.74rem;color:var(--muted);padding:0 4px 8px 28px}
+  .section.is-collapsed .collapse-sum{display:block}
+  .section.is-collapsed .cards{display:none}
+  .cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .section.is-wide .cards{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+  .section.is-single .cards{grid-template-columns:1fr}
+  .card{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    padding:9px 10px;min-width:0;box-shadow:var(--shadow)}
+  .card.large{grid-column:1 / -1}
+  .card.alert{border-color:color-mix(in srgb,var(--danger) 55%,var(--border));background:color-mix(in srgb,var(--danger) 7%,var(--surface))}
+  .card .row{display:flex;gap:7px;align-items:flex-start}
+  .badge{width:28px;height:28px;flex:none;border-radius:50%;display:grid;place-items:center;background:var(--surface2);font-size:.8rem}
+  .badge.ok{background:color-mix(in srgb,var(--ok) 20%,transparent)}
+  .badge.warn{background:color-mix(in srgb,var(--warn) 20%,transparent)}
+  .badge.info{background:color-mix(in srgb,var(--info) 20%,transparent)}
+  .card .title{font-size:.78rem;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card .value{font-size:.76rem;color:var(--muted);overflow-wrap:anywhere}
+  .card .dev{font-size:.66rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card .status{display:flex;gap:4px;align-items:center;font-size:.64rem;color:var(--muted);margin-top:6px}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--ok);flex:none;display:inline-block}
+  .dot.warn{background:var(--warn)} .dot.err{background:var(--danger)}
+  .rows{list-style:none;margin:7px 0 0;padding:0;display:grid;gap:4px;font-size:.74rem}
+  .rows li{display:flex;justify-content:space-between;gap:8px}
+  .rows li span:last-child{font-weight:600;white-space:nowrap}
+  .more{font-size:.66rem;color:var(--muted);margin-top:5px}
+  .orphan-note{grid-column:1/-1;border:1px dashed var(--danger);border-radius:9px;padding:6px 8px;font-size:.68rem;color:#ffb3b3;background:color-mix(in srgb,var(--danger) 8%,transparent)}
+  .heightbar{display:flex;align-items:center;gap:8px;margin:10px 0 0;font-size:.72rem;color:var(--muted)}
+  .heightbar b{color:var(--text)}
+  .heightbar .track{flex:1;height:6px;border-radius:3px;background:var(--surface2);overflow:hidden}
+  .heightbar .fill{height:100%;background:var(--accent);width:0;transition:width .2s}
+
+  .rec{background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 9%,var(--surface)),var(--surface));
+    border:1px solid color-mix(in srgb,var(--accent) 40%,var(--border));border-radius:var(--radius-l);padding:20px;margin-top:26px}
+  .rec ol{margin:8px 0 0;padding-left:20px;font-size:.85rem;color:var(--muted)} .rec li{margin:7px 0} .rec b{color:var(--text)}
+  .qa{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:16px}
+  .qa .panel{padding:14px}
+  .qa h4{font-size:.82rem;margin-bottom:6px}
+  .qa p{font-size:.78rem;color:var(--muted);margin:0}
+  @media (max-width:1100px){ .lead{grid-template-columns:1fr} .option-body{grid-template-columns:1fr} }
+  @media (max-width:760px){ .section.is-wide{grid-column:span 1} }
+  @media (max-width:520px){ .cards,.section.is-wide .cards{grid-template-columns:1fr} .wrap{padding:16px 12px 60px} }
+</style>
+</head>
+<body>
+<header class="page"><div class="line">
+  <div><h1>Home layout · decision samples v2</h1><p class="sub">Spec 035 · services grouping, height cost and collapse</p></div>
+  <div class="spacer"></div>
+  <div class="seg" role="group" aria-label="Number of integrations to preview">
+    <button data-count="2" aria-pressed="true">2 services</button>
+    <button data-count="6" aria-pressed="false">6 services</button>
+    <button data-count="9" aria-pressed="false">9 services</button>
+  </div>
+</div></header>
+
+<div class="wrap">
+  <section class="lead">
+    <div class="panel problem">
+      <h2>The problem with “one Services box”</h2>
+      <p class="small muted">If Services is a narrow section with one card per row, six integrations become six stacked cards (~700px). It does not overlap other sections — grid items never overlay — but it forces a tall row and leaves a gap beside it.</p>
+      <ul>
+        <li><b>Height is the cost, not overlap.</b> A tall section sets the row height; shorter neighbours keep their top alignment and leave whitespace below.</li>
+        <li><b>Narrow + full card bodies</b> is the worst combination: one column, 2–3 rows per card.</li>
+        <li><b>Three-level hierarchy</b> (page → section → type subgroup → card) adds headings without solving height.</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h2>What actually controls the space</h2>
+      <ul>
+        <li><b>Section width</b> — Services can span two page columns.</li>
+        <li><b>Inner columns</b> — 2, 3 or 4 cards per row inside that width.</li>
+        <li><b>Compact card bodies</b> — max 2 rows, then “+N more”.</li>
+        <li><b>Collapse</b> — one row header with count and worst status.</li>
+        <li><b>Split</b> — user creates several service sections instead of one giant one.</li>
+      </ul>
+      <p class="tiny muted" style="margin-top:10px">Use the mode buttons in option B and watch the measured height.</p>
+    </div>
+  </section>
+
+  <div class="options" id="options"></div>
+
+  <section class="rec">
+    <h2>Revised recommendation</h2>
+    <ol>
+      <li><b>Every card belongs to a section, but Services is a wide section, not a narrow one.</b> On desktop it spans two page columns and lays cards out in 3–4 inner columns. Six compact cards become two rows, roughly the height of one area with six device tiles.</li>
+      <li><b>No internal type headings.</b> A section is the only grouping unit. Grouping inside a section would be a third level and would not reduce height. Card icon, title and colour carry the type.</li>
+      <li><b>Compact card bodies by default.</b> Bins shows the next 2 collections, fuel the cheapest 2, weather now + high/low, alerts headline + expiry. “+3 more” is a hint, and the detail page has everything. Full lists belong in results, not Home.</li>
+      <li><b>Collapse per section.</b> The header keeps name, count and worst status (for example “1 alert · 2 stale”) and can collapse the body to one row. Collapse state persists. This is the safety valve for a large Services section and also works for areas.</li>
+      <li><b>Split on demand, never automatically.</b> A section overflow action offers “Split into sections by type”, creating Weather / Collections / Travel / Safety sections once. After that they are ordinary sections: reorder, rename, collapse, drag cards between them. No hidden regrouping later.</li>
+      <li><b>Order inside Services is manual, with a sensible default.</b> Active alerts first, then weather, air quality, collections, fuel, transport, energy. A user drag overrides it. Severity never silently reorders cards, so spatial memory holds; an active warning is surfaced by the section header status and the card itself.</li>
+      <li><b>A tall section never covers another.</b> Sections are top-aligned grid items. The remaining gap is honest whitespace. Dense placement (filling gaps) stays an optional toggle, off by default, because it sacrifices predictable order.</li>
+      <li><b>One item:</b> header stays, card does not stretch. <b>Empty:</b> header plus add-card state. Neither is auto-hidden or auto-deleted.</li>
+    </ol>
+    <div class="qa">
+      <div class="panel"><h4>Will Services cover device areas?</h4><p>No. It is a grid item, not an overlay. It can only make the row taller. With a wide section plus compact cards the height is comparable to a normal area.</p></div>
+      <div class="panel"><h4>Will services be grouped internally?</h4><p>Not with headings. Types are visible on each card. If you want real grouping, split Services into several sections; that is the Home Assistant model and keeps one hierarchy.</p></div>
+      <div class="panel"><h4>What about 9+ services?</h4><p>Collapse the section, split it, or set it to the compact density. There is no hard cap, but the section header reports the count so growth is visible.</p></div>
+    </div>
+  </section>
+  <p class="tiny muted" style="margin-top:16px">Synthetic data only. Fleece dark tokens. No device commands, no provider calls.</p>
+</div>
+
+<script>
+const devices = {
+  'Living room': [
+    ['Brightness','76 %','Living room light','info'],['Energy today','0.28 kWh','TV power socket','ok'],
+    ['Power','116.1 W','TV power socket','warn'],['Presence','Clear','Living room presence sensor','info'],
+    ['Illuminance','3 lx','Living room presence sensor','info'],
+  ],
+  'Attic room': [
+    ['Temperature','19.9 °C','Attic room temperature sensor','warn'],['Humidity','78.1 %','Attic room temperature sensor','info'],
+    ['Brightness','100 %','Attic room light','info'],['State','On','Attic room power socket','ok'],
+    ['Alarm','Silent','Attic alarm','ok'],['Smoke','Offline','Attic smoke alarm','err',true],
+  ],
+  'Garden': [['Humidity','88 %','Garden temperature','info'],['Temperature','12.8 °C','Garden temperature','warn']],
+  'Kitchen': [['Contact','Offline','Front door sensor','err',true],['Energy','296 kWh','kitchen power socket','ok']],
+};
+
+const integrations = [
+  { id:'warn', name:'Weather warnings', icon:'⚠', tone:'warn', alert:true, group:'Weather',
+    value:'Amber · Wind', detail:'Until Thu 09:00 · 1 active', meta:'Alerts · Met Office', status:'Checked 15:41', dot:'warn' },
+  { id:'weather', name:'Weather', icon:'☁', tone:'info', group:'Weather',
+    value:'14° · Cloudy', detail:'H 15° · L 8° · Rain 4%', meta:'Weather · Nether Edge', status:'Checked 16:23', dot:'' },
+  { id:'air', name:'Air quality', icon:'◌', tone:'ok', group:'Weather',
+    value:'32 · Fair', detail:'PM2.5 11 · Grass pollen low', meta:'Air quality · Nether Edge', status:'Checked 15:40', dot:'' },
+  { id:'bins', name:'Bin collections', icon:'♻', tone:'info', group:'Collections',
+    rows:[['Brown bin','Tue 3 Nov'],['Blue bin','Tue 17 Nov'],['Black bin','No upcoming date']],
+    meta:'Bin collections', status:'Checked 26 Oct', dot:'' },
+  { id:'bins2', name:'Garden waste', icon:'♻', tone:'info', group:'Collections',
+    value:'Next Tue 10 Nov', detail:'Every 2 weeks', meta:'Waste · Sheffield', status:'Checked 26 Oct', dot:'' },
+  { id:'fuel', name:'Fuel prices', icon:'⛽', tone:'ok', group:'Travel',
+    rows:[['Shell Abbeydale','1.2 mi · 143p'],['Tesco Extra','1.6 mi · 140p'],['Sainsbury’s','1.9 mi · 142p']],
+    meta:'Fuel prices · Nether Edge', status:'Checked 14:02', dot:'' },
+  { id:'transit', name:'Next trains', icon:'⛟', tone:'info', group:'Travel',
+    value:'12 min · 27 min', detail:'Dore → Sheffield', meta:'Transit · National Rail', status:'Checked 15:44', dot:'warn' },
+  { id:'energy', name:'Agile prices', icon:'⚡', tone:'ok', group:'Energy',
+    value:'12.4p now', detail:'Cheapest 01:30–02:00 · 5.1p', meta:'Energy · Octopus', status:'Checked 15:30', dot:'' },
+  { id:'flood', name:'Flood warnings', icon:'≈', tone:'info', group:'Safety',
+    value:'No warnings', detail:'River Sheaf · 2 gauges normal', meta:'Flood · Environment Agency', status:'Checked 15:00', dot:'' },
+];
+
+const state = { count:2, mode:'wide', collapsed:new Set() };
+const $ = (s,el=document)=>el.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const chosen = () => integrations.slice(0,state.count);
+
+function deviceCard(d){
+  const [label,value,dev,tone,offline]=d;
+  return `<article class="card"><div class="row"><span class="badge ${tone==='err'?'warn':tone}">●</span>
+    <div style="min-width:0"><div class="title">${esc(label)}</div><div class="value">${esc(value)}</div>
+    <div class="dev">${esc(dev)}</div></div></div>
+    <div class="status"><span class="dot ${offline?'err':''}"></span>${offline?'Offline':'Online'}</div></article>`;
+}
+
+function integrationCard(i, compact=true){
+  const max = compact ? 2 : 99;
+  const shown = i.rows ? i.rows.slice(0,max) : [];
+  const extra = i.rows && i.rows.length>max ? i.rows.length-max : 0;
+  const rows = shown.length ? `<ul class="rows">${shown.map(([a,b])=>`<li><span>${esc(a)}</span><span>${esc(b)}</span></li>`).join('')}</ul>` : '';
+  const more = extra ? `<div class="more">+${extra} more</div>` : '';
+  return `<article class="card ${i.alert?'alert':''}">
+    <div class="row"><span class="badge ${i.tone}">${i.icon}</span>
+      <div style="min-width:0;flex:1"><div class="title">${esc(i.name)}</div>
+      ${i.value?`<div class="value">${esc(i.value)}</div>`:''}
+      ${i.detail?`<div class="dev">${esc(i.detail)}</div>`:''}
+      <div class="dev">${esc(i.meta)}</div></div></div>
+    ${rows}${more}
+    <div class="status"><span class="dot ${i.dot}"></span>${esc(i.status)}</div></article>`;
+}
+
+function summaryOf(cards){
+  const alerts = cards.filter(c=>c.alert).length;
+  const stale = cards.filter(c=>c.dot==='warn').length;
+  const parts = [`${cards.length} services`];
+  if (alerts) parts.push(`${alerts} alert`);
+  if (stale) parts.push(`${stale} stale`);
+  return parts.join(' · ');
+}
+
+function section(name, cardsHtml, opts={}){
+  const id = opts.id || name;
+  const collapsed = state.collapsed.has(id);
+  const cls = ['section', opts.wide?'is-wide':'', opts.single?'is-single':'', collapsed?'is-collapsed':''].filter(Boolean).join(' ');
+  const count = opts.count ?? (opts.countText || '');
+  return `<section class="${cls}" data-section="${esc(id)}" ${opts.data||''}>
+    <div class="sec-head">
+      <button class="chev" aria-expanded="${!collapsed}" aria-label="${collapsed?'Expand':'Collapse'} ${esc(name)}" data-collapse="${esc(id)}">${collapsed?'▸':'▾'}</button>
+      <h4>${esc(name)}</h4><span class="count">${esc(String(count))}</span>
+      <span class="grow"></span><span class="tools"><span>＋</span><span>✎</span><span>⋯</span></span>
+    </div>
+    <div class="collapse-sum">${esc(opts.summary||'')}</div>
+    <div class="cards">${cardsHtml}</div>
+  </section>`;
+}
+
+function areaSection(name, ds){ return section(name, ds.map(deviceCard).join(''), {count:ds.length}); }
+
+function pageChrome(){ return `<div class="page-title"><b>Home</b><span class="actions"><span class="btn">▣ Panel</span><span class="btn primary">✎ Edit layout</span></span></div>`; }
+
+function deviceAreas(){ return Object.entries(devices).map(([n,ds])=>areaSection(n,ds)).join(''); }
+
+function servicesWide(){
+  const cards = chosen();
+  return section('Services', cards.map(i=>integrationCard(i,true)).join(''), {
+    id:'services', wide:true, count:cards.length, summary:summaryOf(cards), data:'data-services="1"'
+  });
+}
+function servicesNarrow(){
+  const cards = chosen();
+  return section('Services', cards.map(i=>integrationCard(i,false)).join(''), {
+    id:'services', single:true, count:cards.length, summary:summaryOf(cards), data:'data-services="1"'
+  });
+}
+function servicesSplit(){
+  const groups = ['Weather','Collections','Travel','Safety'];
+  const cards = chosen();
+  return groups.map(g=>{
+    const mine = cards.filter(c=>c.group===g);
+    if (!mine.length) return '';
+    return section(g, mine.map(i=>integrationCard(i,true)).join(''), {id:'split-'+g, count:mine.length, summary:summaryOf(mine)});
+  }).join('');
+}
+
+function servicesForMode(){
+  if (state.mode==='narrow') return servicesNarrow();
+  if (state.mode==='split') return servicesSplit();
+  return servicesWide();
+}
+
+const options = [
+  {
+    key:'A', tag:'current', tagClass:'bad', title:'Bare integration blocks at the top level',
+    canvas:()=> pageChrome() + chosen().map(i=>`<section class="section"><div class="sec-head" style="visibility:hidden"><h4>—</h4></div>
+      <div class="cards"><div class="orphan-note">No group title · top-level block</div>${integrationCard(i,false)}</div></section>`).join('') + deviceAreas(),
+    notes:['No group title or context.','Wider card breaks the row rhythm.','No place to add a second service.'],
+    verdict:'Keep only as evidence of the problem.'
+  },
+  {
+    key:'B', tag:'recommended', tagClass:'rec', title:'Services as a wide section with compact cards',
+    modes:true,
+    canvas:()=> pageChrome() + servicesForMode() + deviceAreas(),
+    notes:[
+      'Wide section: 3–4 inner columns on desktop; compact bodies cap each card at 2 rows.',
+      'Six services ≈ two rows, close to one area of device tiles.',
+      'No internal type headings; the card carries its type.',
+      'Section can collapse to one header row; count and worst status stay visible.',
+      'Split by type is an explicit action, creating ordinary sections.',
+    ],
+    verdict:'Recommended default. Height stays comparable to an area instead of a stacked column.'
+  },
+  {
+    key:'C', tag:'alternative', tagClass:'', title:'Integrations folded into existing areas',
+    canvas:()=> {
+      const buckets = Object.fromEntries(Object.entries(devices).map(([n,ds])=>[n,ds.map(deviceCard)]));
+      chosen().forEach((i,idx)=>{ const target = idx%2===0?'Garden':'Kitchen'; buckets[target].push(integrationCard(i,true)); });
+      return pageChrome()+Object.entries(buckets).map(([n,cs])=>section(n,cs.join(''),{count:cs.length})).join('');
+    },
+    notes:['No extra section, but house-level data is scattered by room.','Only works for genuinely room-scoped integrations.'],
+    verdict:'Allow as an option, not the default.'
+  },
+  {
+    key:'D', tag:'avoid', tagClass:'bad', title:'One section per integration type by default',
+    canvas:()=> {
+      const groups = {};
+      chosen().forEach(i=>(groups[i.group] ||= []).push(i));
+      return pageChrome() + Object.entries(groups).map(([g,cs])=>section(g,cs.map(i=>integrationCard(i,true)).join(''),{count:cs.length,id:'type-'+g})).join('') + deviceAreas();
+    },
+    notes:['Headers multiply with every capability.','Pushes device areas down the first screen.','Repeats the catalog grouping on the dashboard.'],
+    verdict:'Avoid as default; explicit Split is the controlled version.'
+  },
+];
+
+function render(){
+  $('#options').innerHTML = options.map(o=>`
+    <section class="option">
+      <div class="option-head"><span class="tag ${o.tagClass}">${o.tag}</span><h3>${o.key} · ${esc(o.title)}</h3>
+        <div class="spacer"></div><span class="tiny muted">${state.count} services</span></div>
+      <div class="option-body">
+        <div>
+          ${o.modes?`<div class="modes" role="group" aria-label="Services layout mode">
+            <button data-mode="wide" aria-pressed="${state.mode==='wide'}">Wide section</button>
+            <button data-mode="narrow" aria-pressed="${state.mode==='narrow'}">Narrow, full cards</button>
+            <button data-mode="split" aria-pressed="${state.mode==='split'}">Split by type</button>
+          </div>`:''}
+          <div class="canvas" data-canvas="${o.key}">${o.canvas()}</div>
+          ${o.modes?`<div class="heightbar"><span>Services height</span><span class="track"><span class="fill" id="hfill"></span></span><b id="hval">—</b><span class="tiny">target ≈ one area</span></div>`:''}
+        </div>
+        <div class="notes"><h4>Considerations</h4><ul>${o.notes.map(n=>`<li>${esc(n)}</li>`).join('')}</ul>
+          <div class="verdict">${esc(o.verdict)}</div></div>
+      </div>
+    </section>`).join('');
+  wire();
+  measure();
+}
+
+function wire(){
+  document.querySelectorAll('[data-collapse]').forEach(b=>b.addEventListener('click',()=>{
+    const id=b.dataset.collapse; state.collapsed.has(id)?state.collapsed.delete(id):state.collapsed.add(id); render();
+  }));
+  document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>{ state.mode=b.dataset.mode; render(); }));
+}
+
+function measure(){
+  const el = document.querySelector('[data-services="1"]');
+  const val = document.getElementById('hval');
+  if (!el || !val) return;
+  const h = Math.round(el.getBoundingClientRect().height);
+  val.textContent = h + ' px';
+  const fill = document.getElementById('hfill');
+  if (fill) fill.style.width = Math.min(100, Math.round(h/7)) + '%';
+}
+
+document.querySelectorAll('.seg button').forEach(btn=>btn.addEventListener('click',()=>{
+  state.count=Number(btn.dataset.count);
+  document.querySelectorAll('.seg button').forEach(b=>b.setAttribute('aria-pressed',String(b===btn)));
+  render();
+}));
+render();
+</script>
+</body>
+</html>

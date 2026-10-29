@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="en" data-mode="dark" data-theme="fleece">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NodeHerder — Integrations page decision samples</title>
+<style>
+  :root{
+    --bg:#0e2230; --surface:#14303f; --surface2:#1b3d50; --border:#23495e; --border-strong:#33657f;
+    --text:#eef4f2; --muted:#a4c3d1; --accent:#5cc4ec; --accent-ink:#072030;
+    --ok:#2e9e5b; --warn:#d98a00; --danger:#d93a3a; --info:#2f7fd6;
+    --radius:14px; --radius-l:19px; --gap:12px; --shadow:0 1px 2px rgb(0 0 0/.4);
+    --soft:color-mix(in srgb,var(--accent) 16%,transparent);
+    --font:'Figtree','Segoe UI',Roboto,system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);line-height:1.45}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.86em;background:var(--surface2);padding:1px 5px;border-radius:5px}
+  .wrap{max-width:1500px;margin:0 auto;padding:24px 20px 80px}
+  header.page{position:sticky;top:0;z-index:20;display:flex;gap:16px;align-items:center;padding:14px 20px;
+    background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+  header.page h1{font-size:1rem;margin:0;font-weight:650}
+  header.page .sub{color:var(--muted);font-size:.8rem;margin:2px 0 0}
+  .spacer{flex:1}
+  .seg{display:flex;border:1px solid var(--border);border-radius:999px;overflow:hidden;background:var(--surface)}
+  .seg button{appearance:none;border:0;background:transparent;color:var(--muted);font:inherit;font-size:.8rem;padding:8px 12px;cursor:pointer;min-height:36px}
+  .seg button[aria-pressed="true"]{background:var(--soft);color:var(--text)}
+  .seg button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+  h2{font-size:1.05rem;margin:0 0 4px} h3{font-size:.95rem;margin:0 0 6px} h4{margin:0}
+  p{margin:0 0 10px} .muted{color:var(--muted)} .small{font-size:.82rem} .tiny{font-size:.72rem}
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-l);padding:18px}
+  .lead{display:grid;grid-template-columns:1.3fr 1fr;gap:18px;margin:18px 0 24px}
+  .lead ul{margin:0;padding-left:18px;color:var(--muted);font-size:.86rem} .lead li{margin:4px 0}
+  .problem{border-left:3px solid var(--warn);padding-left:14px}
+  .block{margin:24px 0}
+  .block-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;margin-bottom:10px}
+  .tag{font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:999px;border:1px solid var(--border-strong);color:var(--muted)}
+  .tag.rec{border-color:var(--ok);color:#8fe0af;background:color-mix(in srgb,var(--ok) 14%,transparent)}
+  .tag.bad{border-color:var(--danger);color:#ff9d9d;background:color-mix(in srgb,var(--danger) 12%,transparent)}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .canvas{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+  .btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:10px;padding:7px 11px;
+    font:inherit;font-size:.76rem;display:inline-flex;gap:6px;align-items:center;min-height:34px;cursor:pointer}
+  .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent;font-weight:650}
+  .btn.ghost{background:transparent;border-color:transparent;color:var(--muted);padding:5px 7px;min-height:30px}
+  .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .page-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .page-head b{font-size:1.05rem}
+  .page-head .actions{display:flex;gap:8px;margin-left:auto}
+  .searchrow{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .search{flex:1;min-width:200px;display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);
+    border-radius:10px;padding:0 10px}
+  .search input{flex:1;background:transparent;border:0;color:var(--text);font:inherit;font-size:.84rem;padding:10px 0;min-height:42px}
+  .search input:focus{outline:none}
+  .search:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .chip{border:1px solid var(--border);background:var(--surface);color:var(--muted);border-radius:999px;
+    padding:6px 10px;font:inherit;font-size:.75rem;cursor:pointer;min-height:32px}
+  .chip[aria-pressed="true"]{border-color:var(--accent);color:var(--text);background:var(--soft)}
+
+  /* current flat catalog */
+  .flatrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--border);font-size:.82rem}
+  .flatrow:first-of-type{border-top:0}
+  .flatrow .grow{flex:1;min-width:0}
+  .flatrow .name{font-weight:600}
+  .flatrow .desc{color:var(--muted);font-size:.75rem}
+  .flatrow select{background:var(--surface2);border:1px solid var(--border);color:var(--text);font:inherit;font-size:.78rem;
+    border-radius:8px;padding:6px 8px;min-height:34px}
+  .flatrow .warnline{grid-column:1/-1;border:1px dashed var(--danger);border-radius:9px;padding:7px 9px;font-size:.72rem;color:#ffb3b3}
+  .typegroup{border-top:1px solid var(--border);padding:10px 0}
+  .typegroup:first-of-type{border-top:0}
+  .typegroup .tname{font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:6px}
+
+  /* proposed type cards */
+  .types{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:10px;margin-bottom:18px}
+  .typecard{text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;cursor:pointer;
+    display:flex;flex-direction:column;gap:6px;color:inherit;font:inherit;min-height:118px}
+  .typecard:hover{border-color:var(--border-strong)}
+  .typecard[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 6%,var(--surface))}
+  .typecard:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .typecard .top{display:flex;align-items:center;gap:8px}
+  .typecard .ico{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:var(--surface2);font-size:1rem;flex:none}
+  .typecard .nm{font-weight:650;font-size:.88rem}
+  .typecard .ds{color:var(--muted);font-size:.74rem;flex:1}
+  .typecard .ft{display:flex;align-items:center;gap:6px;font-size:.7rem;color:var(--muted)}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);flex:none;display:inline-block}
+  .dot.warn{background:var(--warn)} .dot.err{background:var(--danger)} .dot.off{background:var(--muted)}
+
+  .entries{display:grid;gap:8px}
+  .ehead{display:flex;align-items:center;gap:8px;margin:6px 0 2px}
+  .ehead h4{font-size:.74rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+  .ehead .line{flex:1;height:1px;background:var(--border)}
+  .entry{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);
+    border-radius:12px;padding:10px 12px;min-height:64px}
+  .entry:hover{border-color:var(--border-strong)}
+  .entry .ico{width:38px;height:38px;border-radius:10px;background:var(--surface2);display:grid;place-items:center;font-size:1.05rem;flex:none}
+  .entry .info{flex:1;min-width:0}
+  .entry .nm{font-weight:650;font-size:.86rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .entry .meta{color:var(--muted);font-size:.74rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .entry .state{display:flex;align-items:center;gap:6px;font-size:.72rem;color:var(--muted);white-space:nowrap}
+  .entry .state.err{color:#ff9d9d} .entry .state.warn{color:#f0c070}
+  .entry .when{font-size:.68rem;color:var(--muted);text-align:right;min-width:92px}
+  .entry .acts{display:flex;gap:4px}
+  .empty{grid-column:1/-1;text-align:center;padding:26px 10px;color:var(--muted);border:1px dashed var(--border);border-radius:12px;font-size:.84rem}
+
+  /* dialog */
+  .dialog{background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius-l);
+    box-shadow:0 24px 60px rgb(0 0 0/.45);overflow:hidden}
+  .dialog .dh{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border)}
+  .dialog .dh b{font-size.95rem;font-size:.95rem}
+  .dialog .db{padding:14px 16px}
+  .dialog .df{padding:12px 16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+  .provrow{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px}
+  .provrow .ico{width:30px;height:30px;border-radius:8px;background:var(--surface2);display:grid;place-items:center;flex:none}
+  .provrow .grow{flex:1;min-width:0}
+  .provrow .nm{font-size:.84rem;font-weight:600}
+  .provrow .ds{font-size:.72rem;color:var(--muted)}
+  .keybadge{font-size:.65rem;border:1px solid var(--border-strong);border-radius:999px;padding:2px 7px;color:var(--muted);white-space:nowrap}
+  .keybadge.free{border-color:var(--ok);color:#8fe0af}
+  .keybadge.oauth{border-color:var(--info);color:#9ec9ff}
+
+  /* detail */
+  .detail .dbig{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+  .detail .dbig .ico{width:48px;height:48px;border-radius:12px;background:var(--surface2);display:grid;place-items:center;font-size:1.3rem}
+  .detail .dbig .nm{font-size:1.05rem;font-weight:650}
+  .detail .dbig .meta{font-size:.76rem;color:var(--muted)}
+  .tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:14px;overflow:auto}
+  .tabs button{border:0;background:transparent;color:var(--muted);font:inherit;font-size:.8rem;padding:9px 12px;
+    border-bottom:2px solid transparent;cursor:pointer;min-height:40px;white-space:nowrap}
+  .tabs button[aria-selected="true"]{color:var(--text);border-bottom-color:var(--accent)}
+  .tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+  .tabpane{min-height:150px}
+  .statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
+  .stat{background:var(--surface2);border-radius:10px;padding:10px}
+  .stat .k{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+  .stat .v{font-size:1.05rem;font-weight:650}
+  .note{border-left:3px solid var(--accent);padding-left:12px;font-size:.8rem;color:var(--muted)}
+  .notesgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-top:14px}
+  .note-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px}
+  .note-card h4{font-size:.8rem;margin-bottom:6px}
+  .note-card ul{margin:0;padding-left:16px;color:var(--muted);font-size:.78rem}
+  .note-card li{margin:3px 0}
+  @media (max-width:1000px){ .two{grid-template-columns:1fr} .lead{grid-template-columns:1fr} }
+  @media (max-width:560px){ .entry .when{display:none} .page-head .actions .label{display:none} .wrap{padding:16px 12px 60px} }
+</style>
+</head>
+<body>
+<header class="page">
+  <div><h1>Integrations · decision samples</h1><p class="sub">Spec 035 · catalog by type, entries grouped and searchable</p></div>
+  <div class="spacer"></div>
+  <div class="seg" role="group" aria-label="Configured integration count">
+    <button data-count="2" aria-pressed="false">2 configured</button>
+    <button data-count="5" aria-pressed="true">5 configured</button>
+    <button data-count="8" aria-pressed="false">8 configured</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <section class="lead">
+    <div class="panel problem">
+      <h2>Why this page needs to change with more providers</h2>
+      <p class="small muted">Today the catalog mixes <em>integration types</em> and <em>providers</em>. Weather needs a special case because four providers would otherwise appear as four unrelated rows.</p>
+      <ul>
+        <li><b>Observed:</b> <code>ConnectionCatalogDialog.vue</code> hard-codes <code>type.id === 'weather'</code> and renders a provider <code>&lt;select&gt;</code>.</li>
+        <li><b>Observed:</b> catalog already returns <code>types[]</code> and <code>providers[]</code>; the UI does not use that relationship.</li>
+        <li><b>Observed:</b> the board is an ungrouped grid of widgets; there is no search or status grouping.</li>
+        <li><b>Consequence:</b> every new capability adds another flat row and another special case.</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h2>The rule</h2>
+      <ul>
+        <li><b>Type is the unit users think in</b> (“Weather”), provider is an implementation detail (“Open-Meteo”).</li>
+        <li><b>Providers only appear</b> when choosing or configuring one.</li>
+        <li><b>Configured entries</b> are grouped by type, searchable, and status-led.</li>
+        <li><b>No provider-specific branches</b> in generic components.</li>
+      </ul>
+      <p class="small muted" style="margin-top:10px">Try the search and the type filter in the proposed canvas.</p>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="block-head"><span class="tag bad">current</span><h2>Flat catalog with a weather special case</h2></div>
+    <div class="canvas">
+      <div class="page-head"><b>Integrations</b><span class="actions"><span class="btn">✎ Edit layout</span><span class="btn primary">＋ Add integration</span></span></div>
+      <div class="flatrow">
+        <div class="grow"><div class="name">Weather</div><div class="desc">Local conditions and forecasts. Refresh manually.</div></div>
+        <select aria-label="Weather provider"><option>Met Office</option><option>Open-Meteo</option><option>WeatherAPI.com</option></select>
+        <span class="btn primary">Set up weather</span><span class="btn">Configure operations</span>
+      </div>
+      <div class="flatrow"><div class="grow"><div class="name">WhenIsBins</div><div class="desc">Waste collection schedule</div></div><span class="btn primary">Set up</span></div>
+      <div class="flatrow"><div class="grow"><div class="name">Met Office</div><div class="desc">Local conditions and forecasts. Refresh manually.</div></div><span class="btn primary">Set up</span></div>
+      <div class="flatrow"><div class="grow"><div class="name">Open-Meteo</div><div class="desc">Local conditions and forecasts. Refresh manually.</div></div><span class="btn primary">Set up</span></div>
+      <div class="flatrow"><div class="grow"><div class="name">WeatherAPI.com</div><div class="desc">Local conditions and forecasts. Refresh manually.</div></div><span class="btn primary">Set up</span></div>
+      <div class="flatrow"><div class="grow"><div class="name">Open-Meteo Air Quality</div><div class="desc">Pollutants, AQI and pollen</div></div><span class="btn primary">Set up</span></div>
+      <div class="flatrow"><div class="grow"><div class="name">Met Office NSWWS</div><div class="desc">Severe weather warnings</div></div><span class="btn primary">Set up</span></div>
+      <div class="flatrow"><div class="grow"><div class="name">UK Fuel Finder</div><div class="desc">Nearby forecourt prices</div></div><span class="btn primary">Set up</span></div>
+      <div class="flatrow"><div class="grow"><div class="name">NWS</div><div class="desc">US weather alerts</div></div><span class="btn primary">Set up</span></div>
+      <p class="tiny muted" style="margin-top:12px">Four of nine rows are the same product. Three more would be added by this spec alone.</p>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="block-head"><span class="tag rec">recommended</span><h2>Type-first catalog and grouped entries</h2></div>
+    <div class="canvas" id="proposed">
+      <div class="page-head">
+        <b>Integrations</b>
+        <span class="actions"><span class="btn">✎ Edit layout</span><span class="btn primary">＋ Add integration</span></span>
+      </div>
+      <div class="searchrow">
+        <label class="search">⌕<input id="q" type="search" placeholder="Search integrations, providers or locations" aria-label="Search integrations" /></label>
+        <div class="chips" id="chips" role="group" aria-label="Filter by type"></div>
+      </div>
+      <div class="types" id="types"></div>
+      <div class="entries" id="entries"></div>
+    </div>
+    <div class="notesgrid">
+      <div class="note-card"><h4>Catalog</h4><ul>
+        <li>Type card shows name, one-line purpose, configured count and worst status.</li>
+        <li>Choosing a type reveals only its providers.</li>
+        <li>Unavailable provider or disk error stays visible, other types still usable.</li>
+      </ul></div>
+      <div class="note-card"><h4>Entries</h4><ul>
+        <li>Grouped by type, one row per configured instance.</li>
+        <li>Status uses dot <em>and</em> words: OK / Stale / Error / Disabled.</li>
+        <li>Subtitle carries provider and location; last refresh is separate.</li>
+        <li>Search matches name, type, provider and location.</li>
+      </ul></div>
+      <div class="note-card"><h4>Scale</h4><ul>
+        <li>Eight entries still scan in two groups.</li>
+        <li>Adding a provider never adds a top-level row.</li>
+        <li>Type sections appear only when at least one entry exists.</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="block-head"><span class="tag">add flow</span><h2>Two steps: type, then provider</h2></div>
+    <div class="two">
+      <div class="canvas">
+        <div class="dialog">
+          <div class="dh"><b>Add integration</b><span class="spacer"></span><span class="btn ghost">✕</span></div>
+          <div class="db">
+            <p class="tiny muted" style="margin-bottom:10px">Step 1 · choose a type</p>
+            <div class="types" style="grid-template-columns:1fr 1fr;margin-bottom:0">
+              <span class="typecard" aria-pressed="true"><span class="top"><span class="ico">☁</span><span class="nm">Weather</span></span><span class="ds">Conditions and forecast</span><span class="ft"><span class="dot"></span>1 configured</span></span>
+              <span class="typecard"><span class="top"><span class="ico">◌</span><span class="nm">Air quality</span></span><span class="ds">AQI, pollutants, pollen</span><span class="ft"><span class="dot"></span>1 configured</span></span>
+              <span class="typecard"><span class="top"><span class="ico">⚠</span><span class="nm">Alerts</span></span><span class="ds">Official weather warnings</span><span class="ft"><span class="dot off"></span>Not set up</span></span>
+              <span class="typecard"><span class="top"><span class="ico">⛽</span><span class="nm">Fuel prices</span></span><span class="ds">Nearby forecourts</span><span class="ft"><span class="dot warn"></span>Needs attention</span></span>
+              <span class="typecard"><span class="top"><span class="ico">♻</span><span class="nm">Waste</span></span><span class="ds">Bin collections</span><span class="ft"><span class="dot"></span>1 configured</span></span>
+            </div>
+          </div>
+          <div class="df"><span class="btn">Cancel</span></div>
+        </div>
+      </div>
+      <div class="canvas">
+        <div class="dialog">
+          <div class="dh"><span class="btn ghost">←</span><b>Weather · choose a provider</b><span class="spacer"></span><span class="btn ghost">✕</span></div>
+          <div class="db">
+            <div class="provrow"><span class="ico">☁</span><span class="grow"><span class="nm">Open-Meteo</span><span class="ds">Free, no key. Non-commercial use; attribution required.</span></span><span class="keybadge free">No key</span><span class="btn primary">Set up</span></div>
+            <div class="provrow"><span class="ico">☁</span><span class="grow"><span class="nm">Met Office</span><span class="ds">UK only. 360 calls/day on the free tier.</span></span><span class="keybadge">API key</span><span class="btn primary">Set up</span></div>
+            <div class="provrow"><span class="ico">☁</span><span class="grow"><span class="nm">WeatherAPI.com</span><span class="ds">3-day free forecast. Retention terms unresolved.</span></span><span class="keybadge">API key</span><span class="btn" aria-disabled="true">Unavailable</span></div>
+            <p class="tiny muted" style="margin-top:10px">Provider row explains cost, credential type and limits before the wizard asks for anything.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="block-head"><span class="tag">detail</span><h2>Entry detail uses tabs, not a long page</h2></div>
+    <div class="canvas detail" id="detail"></div>
+    <div class="notesgrid">
+      <div class="note-card"><h4>Layout</h4><ul>
+        <li>Tabs at ≥768px: Results, Settings, Configuration, Help.</li>
+        <li>Below 768px the same content becomes labelled stacked sections.</li>
+        <li>Refresh and Configure stay in the header on both.</li>
+      </ul></div>
+      <div class="note-card"><h4>Status</h4><ul>
+        <li>Status is server-computed freshness, not a client timer.</li>
+        <li>Error, stale, disabled and offline are distinct words plus icons.</li>
+        <li>Last successful refresh and last check are separate timestamps.</li>
+      </ul></div>
+      <div class="note-card"><h4>Safety</h4><ul>
+        <li>Credentials never appear in Results or Help.</li>
+        <li>Configuration changes still require destination review.</li>
+        <li>Provider text renders as plain text, never markup.</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <p class="tiny muted">Synthetic data only. Fleece dark tokens. No provider calls.</p>
+</div>
+
+<script>
+const types = [
+  { id:'weather', name:'Weather', icon:'☁', desc:'Conditions and forecast', providers:['Open-Meteo','Met Office','WeatherAPI.com'] },
+  { id:'air', name:'Air quality', icon:'◌', desc:'AQI, pollutants and pollen', providers:['Open-Meteo Air Quality'] },
+  { id:'alerts', name:'Alerts', icon:'⚠', desc:'Official weather warnings', providers:['Met Office NSWWS','NWS (US)'] },
+  { id:'fuel', name:'Fuel prices', icon:'⛽', desc:'Nearby forecourts and prices', providers:['UK Fuel Finder'] },
+  { id:'waste', name:'Waste', icon:'♻', desc:'Bin collection schedules', providers:['WhenIsBins'] },
+];
+
+const entries = [
+  { type:'weather', name:'Weather', provider:'Open-Meteo', place:'Nether Edge', state:'OK', tone:'', when:'16:23' },
+  { type:'waste',   name:'Bin collections', provider:'WhenIsBins', place:'S11 8', state:'OK', tone:'', when:'26 Oct 15:37' },
+  { type:'air',     name:'Air quality', provider:'Open-Meteo AQ', place:'Nether Edge', state:'OK', tone:'', when:'15:40' },
+  { type:'fuel',    name:'Fuel prices', provider:'Fuel Finder', place:'Sheffield', state:'Error', tone:'err', when:'14:02' },
+  { type:'alerts',  name:'Weather warnings', provider:'Met Office NSWWS', place:'Yorkshire', state:'Stale', tone:'warn', when:'Yesterday' },
+  { type:'weather', name:'Weather (work)', provider:'Met Office', place:'Leeds', state:'OK', tone:'', when:'15:55' },
+  { type:'air',     name:'Pollen', provider:'Open-Meteo AQ', place:'Nether Edge', state:'OK', tone:'', when:'15:40' },
+  { type:'waste',   name:'Garden waste', provider:'WhenIsBins', place:'S11 8', state:'Disabled', tone:'off', when:'20 Oct' },
+];
+
+const state = { count:5, q:'', type:'all' };
+
+function visibleEntries(){
+  return entries.slice(0, state.count).filter(e => {
+    if (state.type !== 'all' && e.type !== state.type) return false;
+    const hay = (e.name+' '+e.provider+' '+e.place+' '+types.find(t=>t.id===e.type).name).toLowerCase();
+    return !state.q || hay.includes(state.q.toLowerCase());
+  });
+}
+
+function renderChips(){
+  const ids = ['all', ...new Set(entries.slice(0,state.count).map(e=>e.type))];
+  document.getElementById('chips').innerHTML = ids.map(id => {
+    const label = id === 'all' ? 'All' : types.find(t=>t.id===id).name;
+    return `<button class="chip" data-type="${id}" aria-pressed="${state.type===id}">${label}</button>`;
+  }).join('');
+  document.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => { state.type = c.dataset.type; render(); }));
+}
+
+function renderTypes(){
+  document.getElementById('types').innerHTML = types.map(t => {
+    const mine = entries.slice(0,state.count).filter(e=>e.type===t.id);
+    const bad = mine.some(e=>e.tone==='err'), warn = mine.some(e=>e.tone==='warn');
+    const status = mine.length ? (bad ? '<span class="dot err"></span>Needs attention' : warn ? '<span class="dot warn"></span>Partly stale' : '<span class="dot"></span>OK') : '<span class="dot off"></span>Not set up';
+    return `<button class="typecard" data-type="${t.id}" aria-pressed="${state.type===t.id}">
+      <span class="top"><span class="ico">${t.icon}</span><span class="nm">${t.name}</span></span>
+      <span class="ds">${t.desc}</span>
+      <span class="ft">${status}<span>·</span><span>${mine.length} configured</span></span>
+    </button>`;
+  }).join('');
+  document.querySelectorAll('.typecard[data-type]').forEach(b => b.addEventListener('click', () => {
+    state.type = state.type === b.dataset.type ? 'all' : b.dataset.type; render();
+  }));
+}
+
+function renderEntries(){
+  const list = visibleEntries();
+  const root = document.getElementById('entries');
+  if (!list.length) { root.innerHTML = `<div class="empty">No integrations match “${state.q || state.type}”. Clear the search or add an integration.</div>`; return; }
+  let html = '', last = null;
+  for (const e of list) {
+    if (e.type !== last) {
+      html += `<div class="ehead"><h4>${types.find(t=>t.id===e.type).name}</h4><span class="line"></span></div>`;
+      last = e.type;
+    }
+    html += `<article class="entry">
+      <span class="ico">${types.find(t=>t.id===e.type).icon}</span>
+      <div class="info"><div class="nm">${e.name}</div><div class="meta">${e.provider} · ${e.place}</div></div>
+      <span class="state ${e.tone}"><span class="dot ${e.tone}"></span>${e.state}</span>
+      <span class="when">Checked ${e.when}</span>
+      <span class="acts"><button class="btn ghost" aria-label="Refresh ${e.name}">⟳</button><button class="btn ghost" aria-label="More actions for ${e.name}">⋯</button></span>
+    </article>`;
+  }
+  root.innerHTML = html;
+}
+
+function renderDetail(){
+  document.getElementById('detail').innerHTML = `
+    <div class="dbig"><span class="ico">☁</span><div><div class="nm">Weather</div>
+      <div class="meta">Open-Meteo · Nether Edge · <span class="dot"></span> OK · checked 16:23</div></div>
+      <span class="spacer"></span><span class="btn">⟳ Refresh</span><span class="btn">⚙ Configure</span></div>
+    <div class="tabs" role="tablist">
+      ${['Results','Settings','Configuration','Help'].map((t,i)=>`<button role="tab" aria-selected="${i===0}" data-tab="${i}">${t}</button>`).join('')}
+    </div>
+    <div class="tabpane" id="pane"></div>`;
+  const panes = [
+    `<div class="statgrid">
+      <div class="stat"><div class="k">Now</div><div class="v">14° Cloudy</div></div>
+      <div class="stat"><div class="k">High / low</div><div class="v">15° / 8°</div></div>
+      <div class="stat"><div class="k">Rain chance</div><div class="v">4%</div></div>
+      <div class="stat"><div class="k">Sunset</div><div class="v">16:41</div></div>
+      <div class="stat"><div class="k">UV max</div><div class="v">1.3</div></div>
+    </div>
+    <p class="tiny muted" style="margin-top:10px">Forecast data, not a household measurement. Provider attribution shown below.</p>`,
+    `<p class="small muted">Location, provider, credential state and refresh policy.</p>
+     <div class="statgrid"><div class="stat"><div class="k">Provider</div><div class="v">Open-Meteo</div></div>
+     <div class="stat"><div class="k">Location</div><div class="v">Nether Edge</div></div>
+     <div class="stat"><div class="k">Credential</div><div class="v">Not required</div></div></div>`,
+    `<p class="small muted">Form / YAML / Help parity for the host-editable provider definition, unchanged by the redesign.</p>`,
+    `<p class="small muted">Provider limits, attribution and the plain-text warning that this is forecast data.</p>`
+  ];
+  const pane = document.getElementById('pane');
+  pane.innerHTML = panes[0];
+  document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('[data-tab]').forEach(x => x.setAttribute('aria-selected', String(x===b)));
+    pane.innerHTML = panes[Number(b.dataset.tab)];
+  }));
+}
+
+function render(){ renderChips(); renderTypes(); renderEntries(); }
+
+document.getElementById('q').addEventListener('input', e => { state.q = e.target.value; render(); });
+document.querySelectorAll('.seg button').forEach(btn => btn.addEventListener('click', () => {
+  state.count = Number(btn.dataset.count);
+  state.type = 'all';
+  document.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-pressed', String(b===btn)));
+  render();
+}));
+render(); renderDetail();
+</script>
+</body>
+</html>

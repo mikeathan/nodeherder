@@ -24,6 +24,11 @@ Code paths below are relative to `frontend/`.
 - Keep functions and components focused on one responsibility. Separate calendar/domain rules,
   formatting, view-model mapping, transport and persistence using cohesive modules and named helpers.
   Avoid nested ternaries and large inline mapping callbacks; prefer guard clauses or typed label maps.
+- Format numeric values that carry a unit through `src/utils/units.ts`:
+  `formatQuantity(value, kind, options)` for known quantities and `formatWithUnit(value, unit)`
+  when the unit comes from data. Do not pass unit strings at call sites or concatenate them
+  manually. The formatter owns rounding, spacing, unit symbols and the missing-value placeholder;
+  callers must not invent a second placeholder or render two sentinels together.
 - Add JSDoc to every new or changed exported/public frontend function and composable, including
   methods returned as its public API. Explain purpose, inputs/output, nullable values, units/timezones,
   side effects and ownership where relevant; do not merely repeat the function name or TypeScript type.

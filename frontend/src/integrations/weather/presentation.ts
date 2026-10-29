@@ -4,26 +4,30 @@ const SourceIcon = defineAsyncComponent(() => import('./SourceIcon.vue'));
 import type { IntegrationPresenter, IntegrationResource, IntegrationSourcePresentation } from '../types';
 import type { WeatherForecast } from '@/types/weather.type';
 import type { ConnectionInstance, ProviderDefinition } from '@/types/integrations.type';
-import { weatherValue, weatherLabel } from '@/domain/weather';
+import { weatherLabel } from '@/domain/weather';
+import { formatQuantity } from '@/utils/units';
+import { weatherHeadline, weatherHeadlineValue } from './headline';
 import { calendarDateInZone, formatLocalDateTime } from '@/utils/date.utils';
 function sources(instance: ConnectionInstance, resource: IntegrationResource): IntegrationSourcePresentation[] {
   if (resource.contract_version !== 'weather_forecast/v1') return [];
+  const headline = weatherHeadline(resource);
   let status = 'Forecast';
-  if (resource.freshness === 'stale') status = 'Needs refreshing';
+  if (!headline) status = 'No saved forecast';
+  else if (resource.freshness === 'stale') status = 'Needs refreshing';
   if (!instance.enabled) status = 'Disabled';
   if (instance.last_error) status = instance.last_error.message;
   return [
     {
       reference: { kind: 'weather', instance_id: instance.id, resource_id: resource.resource_id },
       title: 'Weather',
-      icon: { component: markRaw(SourceIcon), props: { condition: resource.current?.condition } },
+      icon: { component: markRaw(SourceIcon), props: { condition: headline?.condition } },
       detail: forecastSummary(resource),
-      value: weatherValue(resource.current?.temperature, '°') + ' · ' + weatherLabel(resource.current?.condition),
+      value: weatherHeadlineValue(headline),
       origin: instance.name + ' · ' + resource.location,
       status,
       checked: formatLocalDateTime(resource.captured_at),
       colour: null,
-      warning: !instance.enabled || !!instance.last_error || resource.freshness === 'stale',
+      warning: !instance.enabled || !!instance.last_error || resource.freshness === 'stale' || !headline,
       error: !!instance.last_error,
       rows: [],
     },
@@ -92,13 +96,13 @@ function forecastSummary(forecast: WeatherForecast): string {
   const today = calendarDateInZone(forecast.evaluated_at, forecast.timezone);
   const day = forecast.daily.find((value) => value.date === today);
   const details: string[] = [];
-  if (day?.high != null) details.push(`H ${weatherValue(day.high, '°')}`);
-  if (day?.low != null) details.push(`L ${weatherValue(day.low, '°')}`);
+  if (day?.high != null) details.push(`H ${formatQuantity(day.high, 'temperature', { short: true })}`);
+  if (day?.low != null) details.push(`L ${formatQuantity(day.low, 'temperature', { short: true })}`);
   const now = Date.parse(forecast.evaluated_at);
   const upcoming = forecast.hourly.find(
     (point) => Date.parse(point.time) > now && Date.parse(point.time) <= now + 3600000
   );
   if (upcoming?.precipitation_probability != null)
-    details.push(`Rain chance ${weatherValue(upcoming.precipitation_probability, '%')}`);
+    details.push(`Rain chance ${formatQuantity(upcoming.precipitation_probability, 'percent')}`);
   return details.join(' · ');
 }

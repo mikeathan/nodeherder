@@ -7,6 +7,7 @@
 import { Device, Expose } from '@/types/device';
 import { ExposeAccessModes, ExposeCategories, ExposeTypes } from '@/types/device.type';
 import { getSensorName } from '@/modules/formatters/sensor-formatter';
+import { formatQuantity, formatWithUnit } from '@/utils/units';
 import { displayNumber, exposeRange } from './controls';
 export { exposeRange, type NumericRange } from './controls';
 
@@ -242,9 +243,6 @@ export function controlOf(e: Expose): ExposeControl {
   return 'none';
 }
 
-const numberText = (v: number): string =>
-  Number.isInteger(v) ? String(v) : String(parseFloat(v.toFixed(Math.abs(v) < 10 ? 2 : 1)));
-
 /**
  * Display text for an expose value (defaults to its current data). Uses expose metadata when
  * present: brightness becomes a percentage of its maximum; binary values become words.
@@ -266,10 +264,12 @@ function binaryText(e: Expose, value: unknown): string {
 }
 function numericText(e: Expose, value: number): string {
   if (!Number.isFinite(value)) return '—';
-  if (e.name === 'brightness') return `${Math.round(displayNumber(e, value))} %`;
-  if (e.name === 'color_temp') return value > 0 ? `${Math.round(displayNumber(e, value))} K` : '—';
+  if (e.name === 'brightness')
+    return formatQuantity(Math.round(displayNumber(e, value)), 'percent', { spaced: true });
+  if (e.name === 'color_temp')
+    return value > 0 ? formatWithUnit(Math.round(displayNumber(e, value)), 'K', { spaced: true }) : '—';
   const unit = e.unit && e.unit !== 'lqi' ? e.unit : '';
-  return unit ? `${numberText(value)} ${unit}` : numberText(value);
+  return formatWithUnit(value, unit, { spaced: true, digits: Math.abs(value) < 10 ? 2 : 1 });
 }
 function stringText(value: string): string {
   if (value === 'ON') return 'On';
