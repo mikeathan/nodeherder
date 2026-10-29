@@ -112,3 +112,7 @@ Retention applies to independently expiring data categories where required; a pr
 ### Integration code cleanup
 
 Audit all backend integration production packages and newly added frontend composables. Share provider destination URL validation and credential-origin canonicalization at an integration-owned boundary, keeping transport DNS/address checks separate and retaining existing validation behavior. Use the shared UI icon registry and date utilities for weather, retaining timezone/calendar-date semantics and existing public behavior. Extract focused helpers only where responsibilities or measured complexity justify them; preserve transactional fencing, request security, lifecycle ownership and source compatibility. Remove dead code only with verified references. Review the full diff and run frontend tests/lint/build and backend integration tests/build/vet, with focused race tests as applicable. Record complexity evidence and any remaining limits.
+
+### CI browser regression follow-up
+
+Reproduce the failing Home layout and area-drag cases against owned mock servers, preserving the full drag preview, touch support and persisted ordering. Fix layout geometry where it is incorrect and update selectors/assertions that assumed only one integration provider or obsolete confirmation text. Run the affected desktop and mobile cases and the applicable frontend checks; verify the new GitHub checks after pushing.

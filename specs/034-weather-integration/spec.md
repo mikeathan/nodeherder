@@ -84,3 +84,7 @@ Integration errors use consistent, accessible status styling on Home and the Int
 ### Integration code cleanup
 
 Weather icons use the established icon registry, date and time formatting use shared utilities with explicit timezone semantics, and integration composables and backend integration packages remain cohesive and readable without behavior regressions. Review all integration production sources for complexity, duplication and demonstrably dead code, including shared network and URL logic. Preserve destination validation, credential-origin binding, DNS protections and provider compatibility.
+
+### Browser regression follow-up
+
+The Home layout must keep content readable without excessive empty space as device cards grow, and area dragging must preserve the full preview and persist the intended order on desktop and touch devices. Integration browser tests must select the intended provider and verify current removal and card presentation semantics when multiple providers are available.

@@ -239,7 +239,8 @@ test('signed-out deep links require sign in', async ({ page }) => {
 test('invalid YAML and a feature network failure keep the editable draft', async ({ page }) => {
   await signInConnections(page);
   await page.getByRole('button', { name: 'Add integration', exact: true }).click();
-  await page.getByRole('link', { name: 'Configure operations', exact: true }).click();
+  await page.getByLabel('Bin collections', { exact: true })
+    .getByRole('link', { name: 'Configure operations', exact: true }).click();
   await page.getByRole('button', { name: 'YAML', exact: true }).click();
   const editor = page.getByRole('textbox', { name: 'Provider YAML' });
   const valid = await editor.inputValue();
@@ -286,7 +287,8 @@ test('an expired login during catalog loading returns to sign in', async ({ page
 test('an expired editor session discards private drafts without a leave confirmation', async ({ page }) => {
   await signInConnections(page);
   await page.getByRole('button', { name: 'Add integration', exact: true }).click();
-  await page.getByRole('link', { name: 'Configure operations', exact: true }).click();
+  await page.getByLabel('Bin collections', { exact: true })
+    .getByRole('link', { name: 'Configure operations', exact: true }).click();
   await page.getByRole('textbox', { name: 'Display name', exact: true }).fill('Unsaved editor draft');
   // Expire the session in both the real feature API and the separate shell auth fixture.
   await page.context().clearCookies();
@@ -411,7 +413,7 @@ test('board shows saved results and shared bin artwork, with direct card navigat
   await expect(widget.getByText('Blue bin', { exact: true })).toBeVisible();
   await expect(widget.locator('.waste-bin-icon')).toHaveCount(1);
   await expect(widget.locator('header .waste-bin-icon')).toHaveCount(0);
-  await expect(widget.locator('[data-connection-icon="schedule"] .nh-ic')).toBeVisible();
+  await expect(widget.locator('.connection-widget-badge .nh-ic')).toBeVisible();
   await expect(page.getByRole('link', { name: 'Details', exact: true })).toHaveCount(0);
   await expect(page.getByRole('combobox')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Reload providers', exact: true })).toHaveCount(0);
@@ -548,7 +550,7 @@ test('removing an integration requires confirmation and it can be configured aga
   await page.getByRole('link', { name: 'Setup', exact: true }).click();
   await page.getByRole('button', { name: 'Remove integration', exact: true }).click();
   const confirm = page.getByRole('dialog');
-  await expect(confirm).toContainText('deletes the saved address');
+  await expect(confirm).toContainText('saved inputs, credentials and results');
   await confirm.getByRole('button', { name: 'Cancel', exact: true }).click();
   await expect(page.getByRole('textbox', { name: 'Integration name', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Remove integration', exact: true }).click();

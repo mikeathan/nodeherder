@@ -69,5 +69,8 @@ Second review: WeatherAPI retention is not yet enforced; provider remains availa
 - [ ] Audit all runtime and operations sources; refactor justified complexity and remove verified dead code.
 - [ ] Audit remaining integration packages and consolidate shared URL and network rules without weakening destination security.
 - [ ] Review diff and run frontend and backend checks.
+- [x] Fix CI browser regressions for integration navigation, Home layout and touch dragging; rerun affected desktop and mobile cases.
+
+CI follow-up: all 12 affected cases passed on desktop and mobile against isolated mock servers. The area-drag case uses a compact fixture so both full card previews fit on screen and restores the original layout afterward. CI verification of the pushed changes remains pending.
 
 Cleanup progress: shared status-check recovery, forecast date/icon formatting, provider response decoding, test credential preparation, publication and cleanup phases were separated. Provider URL validation and origin canonicalization now have a shared owner, with network address enforcement retained in transport. Definition activation delegates instance rebinding; waste normalization separates source details, service identity and date coverage. A complete source-by-source review and remaining complexity analysis are still open. Browser acceptance remains blocked by the occupied fixture port. The WeatherAPI retention limitation remains deferred to the shared scheduling work above.
