@@ -7,6 +7,7 @@ import type {
   ConnectionFailure,
   ConnectionInstance,
   ConnectionOperation,
+  ConnectionSchedule,
   ConnectionSetup,
   DefinitionValidation,
   IntegrationResource,
@@ -177,6 +178,19 @@ export function parseSetup(value: unknown): ConnectionSetup {
   });
   return value as ConnectionSetup;
 }
+/** Validate automatic-refresh state before it can drive settings controls. */
+export function parseSchedule(value: unknown): ConnectionSchedule {
+  const v = object(value);
+  return {
+    enabled: flag(v.enabled),
+    interval_seconds: number(v.interval_seconds),
+    next_due_at: nullableTime(v.next_due_at),
+    last_attempt_at: nullableTime(v.last_attempt_at),
+    last_success_at: nullableTime(v.last_success_at),
+    last_failure_at: nullableTime(v.last_failure_at),
+    consecutive_failures: number(v.consecutive_failures),
+  };
+}
 /** Validate a redacted saved instance, including every resource, before consumers use it. */
 export function parseInstance(value: unknown): ConnectionInstance {
   const v = object(value);
@@ -197,12 +211,14 @@ export function parseInstance(value: unknown): ConnectionInstance {
     const run = object(r);
     text(run.operation_id);
     text(run.kind);
+    optionalText(run.trigger);
     text(run.outcome);
     text(run.message);
     timestamp(run.at);
     return run;
   });
-  return value as ConnectionInstance;
+  const schedule = v.schedule === null || v.schedule === undefined ? null : parseSchedule(v.schedule);
+  return { ...(value as ConnectionInstance), schedule };
 }
 /** Validate each instance in a shared installation listing; one malformed item rejects the reply. */
 export function parseInstances(value: unknown): ConnectionInstance[] {
@@ -272,6 +288,8 @@ export function parseProviderDefinition(value: unknown): ProviderDefinition {
   number(policy.poll_min_seconds);
   number(policy.renewal_min_seconds);
   number(policy.idempotency_window_seconds);
+  number(policy.refresh_default_seconds);
+  number(policy.refresh_min_seconds);
   const errors = object(v.errors);
   text(errors.code);
   list(errors.rules, (r) => {

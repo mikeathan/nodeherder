@@ -75,6 +75,45 @@ func TestCompileRejectsUnreachableState(t *testing.T) {
 	}
 }
 
+func TestRefreshPolicyDefaultsAndBounds(t *testing.T) {
+	source := seed(t)
+	c, e := compiler(t).CompileYAML(source)
+	if e != nil {
+		t.Fatal(e)
+	}
+	if c.Definition.Policy.RefreshDefaultSeconds != 432000 || c.Definition.Policy.RefreshMinSeconds != 3600 {
+		t.Fatal(c.Definition.Policy)
+	}
+	missing := strings.Replace(source, ", refresh_default_seconds: 432000, refresh_min_seconds: 3600", "", 1)
+	c, e = compiler(t).CompileYAML(missing)
+	if e != nil {
+		t.Fatal(e)
+	}
+	if c.Definition.Policy.RefreshDefaultSeconds != 0 || c.Definition.Policy.RefreshMinSeconds != 60 {
+		t.Fatal("missing refresh policy did not receive safe defaults", c.Definition.Policy)
+	}
+	for name, invalid := range map[string]string{
+		"default below minimum": strings.Replace(source, "refresh_default_seconds: 432000", "refresh_default_seconds: 60", 1),
+		"minimum below floor":   strings.Replace(source, "refresh_min_seconds: 3600", "refresh_min_seconds: 59", 1),
+		"default above ceiling": strings.Replace(source, "refresh_default_seconds: 432000", "refresh_default_seconds: 2592001", 1),
+		"negative default":      strings.Replace(source, "refresh_default_seconds: 432000", "refresh_default_seconds: -1", 1),
+	} {
+		t.Run(name, func(t *testing.T) {
+			if _, err := compiler(t).CompileYAML(invalid); err == nil {
+				t.Fatal("accepted invalid refresh policy")
+			}
+		})
+	}
+	raw, _ := json.Marshal(c.Definition)
+	again, e := compiler(t).CompileDocument(raw)
+	if e != nil {
+		t.Fatal(e)
+	}
+	if again.Definition.Policy.RefreshDefaultSeconds != 0 || again.Definition.Policy.RefreshMinSeconds != 60 {
+		t.Fatal("Form and YAML refresh policy disagree", again.Definition.Policy)
+	}
+}
+
 func compiler(t *testing.T) *definitions.Compiler {
 	r, err := capabilities.NewRegistry(waste.Adapter{})
 	if err != nil {

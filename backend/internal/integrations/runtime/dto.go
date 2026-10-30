@@ -53,12 +53,25 @@ type SetupDTO struct {
 	Error                *model.Failure `json:"last_error"`
 }
 
+// ScheduleDTO exposes automatic-refresh state without private inputs. Nil NextDueAt means the
+// schedule is off or has not been initialised; nil Last* values mean the event has not occurred.
+type ScheduleDTO struct {
+	Enabled             bool       `json:"enabled"`
+	IntervalSeconds     int64      `json:"interval_seconds"`
+	NextDueAt           *time.Time `json:"next_due_at"`
+	LastAttemptAt       *time.Time `json:"last_attempt_at"`
+	LastSuccessAt       *time.Time `json:"last_success_at"`
+	LastFailureAt       *time.Time `json:"last_failure_at"`
+	ConsecutiveFailures int        `json:"consecutive_failures"`
+}
+
 // InstanceDTO exposes saved connection status and validated resources. CredentialSlots
 // contains names only so obsolete slots can be explicitly removed without revealing token values.
 type InstanceDTO struct {
 	Sources         []model.SourceReference `json:"sources"`
 	CredentialSlots []string                `json:"credential_slots"`
 	Runs            []model.RunSummary      `json:"runs"`
+	Schedule        *ScheduleDTO            `json:"schedule"`
 	ID              string                  `json:"id"`
 	Name            string                  `json:"name"`
 	ProviderKey     string                  `json:"provider_key"`

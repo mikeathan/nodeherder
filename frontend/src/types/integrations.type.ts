@@ -52,6 +52,8 @@ export interface ProviderPolicy {
   poll_min_seconds: number;
   renewal_min_seconds: number;
   idempotency_window_seconds: number;
+  refresh_default_seconds: number;
+  refresh_min_seconds: number;
 }
 export interface ProviderErrorRule {
   status: number;
@@ -228,9 +230,20 @@ export interface ConnectionChoice {
 export interface ConnectionRun {
   operation_id: string;
   kind: string;
+  trigger?: string;
   outcome: string;
   message: string;
   at: string;
+}
+/** Automatic-refresh state returned with an instance; null means a legacy manual-only record. */
+export interface ConnectionSchedule {
+  enabled: boolean;
+  interval_seconds: number;
+  next_due_at: string | null;
+  last_attempt_at: string | null;
+  last_success_at: string | null;
+  last_failure_at: string | null;
+  consecutive_failures: number;
 }
 export interface ConnectionSetup {
   preview?: IntegrationResource;
@@ -261,6 +274,7 @@ export interface ConnectionInstance {
   operation_id?: string;
   credential_configured: boolean;
   resources: IntegrationResource[];
+  schedule: ConnectionSchedule | null;
   last_error: ConnectionFailure | null;
   updated_at: string;
 }

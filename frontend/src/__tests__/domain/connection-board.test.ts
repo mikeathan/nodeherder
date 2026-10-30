@@ -21,6 +21,7 @@ function instance(): Omit<ConnectionInstance, 'resources'> & { resources: WasteS
     credential_slots: [],
     credential_configured: false,
     runs: [],
+    schedule: null,
     resources: [structuredClone(examples.exact)],
     last_error: null,
     updated_at: '2026-10-23T12:00:00Z',

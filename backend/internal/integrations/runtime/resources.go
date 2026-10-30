@@ -42,8 +42,7 @@ func (s *Service) finishUnchanged(tx *repository.IntegrationTx, op *model.Operat
 	s.recordRun(&i, *op, "done", "The saved data is unchanged; source verification time was preserved.")
 	i.OperationID = ""
 	i.LastError = nil
-	i.Revision++
-	i.UpdatedAt = s.clock.Now()
+	s.finishInstanceSuccess(&i)
 	op.Status = "done"
 	clearAttempt(op)
 	if e := tx.Put("instances", i.ID, i); e != nil {

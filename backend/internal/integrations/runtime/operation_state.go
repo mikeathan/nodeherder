@@ -92,6 +92,7 @@ func (s *Service) failOperation(tx *repository.IntegrationTx, o *model.Operation
 		i := owner.instance
 		i.LastError = f
 		s.recordRun(&i, *o, o.Status, f.Message)
+		s.applyScheduleFailure(&i, now, o.Status == "retry_required", f.RetryAt)
 		i.Revision++
 		i.UpdatedAt = now
 		if o.Status == "failed" {
@@ -121,6 +122,7 @@ func (s *Service) savePending(tx *repository.IntegrationTx, o model.Operation, o
 		i := owner.instance
 		i.State = o.State
 		i.LastError = nil
+		applySchedulePending(&i, o.RetryAt)
 		i.Revision++
 		i.UpdatedAt = s.clock.Now()
 		if e := tx.Put("instances", i.ID, i); e != nil {

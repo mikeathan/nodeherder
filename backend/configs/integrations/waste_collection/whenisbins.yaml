@@ -6,7 +6,7 @@ name: WhenIsBins
 capability: waste_schedule/v1
 base_url: https://whenisbins.com
 auth: {mode: optional_bearer, secret_slot: api_token}
-policy: {poll_min_seconds: 5, renewal_min_seconds: 86400, idempotency_window_seconds: 2592000}
+policy: {poll_min_seconds: 5, renewal_min_seconds: 86400, idempotency_window_seconds: 2592000, refresh_default_seconds: 432000, refresh_min_seconds: 3600}
 errors:
   code: /problem
   rules:

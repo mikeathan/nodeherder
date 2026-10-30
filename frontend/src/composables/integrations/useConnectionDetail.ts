@@ -4,6 +4,7 @@ import { useConnections } from '@/composables/useConnections';
 import { confirm } from '@/composables/useConfirm';
 import { RouteName } from '@/types/router';
 import { ConnectionError } from '@/services/integrations.service';
+import { matchesScheduleEditor, sameScheduleConfig, scheduleEditor, toIntervalSeconds, type ScheduleUnit } from '@/domain/schedule';
 import type { ConnectionInstance, ProviderDefinition } from '@/types/integrations.type';
 import { integrationDetailSection, type IntegrationNavigationContext } from '@/domain/integration-navigation';
 
@@ -25,6 +26,14 @@ export function useConnectionDetail() {
   const initialName = item.value?.name ?? '';
   const name = ref(initialName);
   const token = ref('');
+  const initialSchedule = item.value?.schedule ?? null;
+  const initialEditor = scheduleEditor(initialSchedule);
+  const scheduleEnabled = ref(initialEditor.enabled);
+  const scheduleValue = ref(initialEditor.value);
+  const scheduleUnit = ref<ScheduleUnit>(initialEditor.unit);
+  let confirmedSchedule = initialSchedule;
+  let scheduleBaseConfig = initialSchedule;
+  const scheduleBaseETag = ref(item.value?.etag ?? '');
   const definition = ref<ProviderDefinition | null>(null);
   const sectionContext = computed<IntegrationNavigationContext>(() => ({
     providerKey: item.value?.provider_key ?? '',
@@ -49,10 +58,52 @@ export function useConnectionDetail() {
     }
   }
   /** Retry the private instance read without submitting a fresh provider lookup. */
-  const reloadPage = () => perform(() => reload());
+  const reloadPage = () => perform(() => reloadInstance(signal, true));
+  /** Copy confirmed schedule state into the editor. */
+  const applySchedule = (schedule: ConnectionInstance['schedule']): void => {
+    const editor = scheduleEditor(schedule);
+    scheduleEnabled.value = editor.enabled;
+    scheduleValue.value = editor.value;
+    scheduleUnit.value = editor.unit;
+  };
+  /**
+   * Apply a fresh confirmed instance without replacing unsaved editor values. The schedule draft
+   * keeps the ETag of the confirmed schedule it was based on; a real schedule change in another
+   * session therefore produces a revision conflict instead of a silent overwrite. Unrelated
+   * instance revisions may advance the base while the confirmed cadence is unchanged.
+   */
+  const acceptInstance = (current: ConnectionInstance, forceSchedule = false): void => {
+    if (name.value === initialName) name.value = current.name;
+    const pristine = matchesScheduleEditor(
+      confirmedSchedule,
+      scheduleEnabled.value,
+      scheduleValue.value,
+      scheduleUnit.value
+    );
+    const sameConfig = sameScheduleConfig(scheduleBaseConfig, current.schedule);
+    confirmedSchedule = current.schedule;
+    if (pristine || forceSchedule) {
+      applySchedule(current.schedule);
+      scheduleBaseConfig = current.schedule;
+      scheduleBaseETag.value = current.etag;
+      return;
+    }
+    if (sameConfig || !scheduleBaseETag.value) {
+      scheduleBaseETag.value = current.etag;
+    }
+  };
+  /**
+   * Reload the private instance and reconcile the editor after every successful read. A caller
+   * reload explicitly discards an unsaved schedule draft; background reads preserve it.
+   */
+  async function reloadInstance(requestSignal = signal, forceSchedule = false): Promise<ConnectionInstance> {
+    const current = await reload(requestSignal);
+    if (isActive() && !requestSignal.aborted) acceptInstance(current, forceSchedule);
+    return current;
+  }
   let projection: ReturnType<typeof setInterval> | undefined;
   const onFocus = () => {
-    if (isActive() && !busy.value && !document.hidden) void perform(() => reload());
+    if (isActive() && !busy.value && !document.hidden) void perform(() => reloadInstance());
   };
   onMounted(async () => {
     projection = setInterval(onFocus, 60_000);
@@ -60,17 +111,15 @@ export function useConnectionDetail() {
     // One owned loading interval covers both reads; a failed instance read must not be
     // followed by a provider read that clears its error or uses a stale binding.
     await perform(async () => {
-      const current = await reload();
+      const current = await reloadInstance();
       if (!isActive()) return;
-      // Setup is usable from cache; revalidation must not replace a name the user has typed.
-      if (name.value === initialName) name.value = current.name;
       const provider = await api.definition(current.provider_key, signal);
       if (isActive()) {
         definition.value = provider.document;
         commit('definition', provider);
       }
     });
-    if (isActive() && item.value?.operation_id) observe(item.value.operation_id, reload);
+    if (isActive() && item.value?.operation_id) observe(item.value.operation_id, reloadInstance);
   });
   function stopProjection() {
     if (projection) clearInterval(projection);
@@ -85,18 +134,33 @@ export function useConnectionDetail() {
     const current = item.value;
     if (!current) return;
     const operation = await perform(() => api.refresh(current.id, current.etag));
-    if (operation) observe(operation.id, reload);
+    if (operation) observe(operation.id, reloadInstance);
   }
   /** Continue the current admitted operation without creating a second lookup. */
   async function check() {
-    await checkOperation(item.value?.operation_id, reload);
+    await checkOperation(item.value?.operation_id, reloadInstance);
   }
   /** Save name/enabled state with revision fencing, then reload the accepted resource view. */
   async function update(enabled: boolean) {
     const current = item.value;
     if (!current) return;
     const result = await perform(() => api.update(current.id, current.etag, name.value || current.name, enabled));
-    if (result) await perform(() => reload());
+    if (result) await perform(() => reloadInstance());
+  }
+  /** Save the automatic-refresh choice; the server validates it and starts no provider request. */
+  async function saveSchedule() {
+    const current = item.value;
+    if (!current) return;
+    const seconds = toIntervalSeconds(scheduleValue.value, scheduleUnit.value);
+    const result = await perform(() =>
+      api.updateSchedule(current.id, scheduleBaseETag.value || current.etag, scheduleEnabled.value, seconds)
+    );
+    if (result) {
+      confirmedSchedule = result.schedule;
+      scheduleBaseConfig = result.schedule;
+      scheduleBaseETag.value = result.etag;
+      await perform(() => reloadInstance());
+    }
   }
   /** Start isolated address setup; existing dates remain available until replacement is verified. */
   async function editAddress() {
@@ -126,7 +190,7 @@ export function useConnectionDetail() {
       api.credential('instances', current.id, slot, current.etag, token.value, remove)
     );
     token.value = '';
-    if (result) await perform(() => reload());
+    if (result) await perform(() => reloadInstance());
   }
   /** Confirm destructive deletion, clear the current private DTO and return to the board. */
   async function remove() {
@@ -154,12 +218,16 @@ export function useConnectionDetail() {
     name,
     token,
     definition,
+    scheduleEnabled,
+    scheduleValue,
+    scheduleUnit,
     sectionContext,
     busy,
     error,
     refresh,
     check,
     update,
+    saveSchedule,
     editAddress,
     credential,
     remove,

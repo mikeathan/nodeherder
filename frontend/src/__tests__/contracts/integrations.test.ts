@@ -1,7 +1,7 @@
 import { WASTE_SCHEDULE_TIMEZONE } from '@/config/integrations';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { parseWasteSchedule, parseSetup, parseBoard } from '@/contracts/integrations';
+import { parseWasteSchedule, parseSetup, parseBoard, parseSchedule } from '@/contracts/integrations';
 const examples = JSON.parse(
   readFileSync(
     resolve(__dirname, '../../../../specs/032-external-integrations/contracts/waste_schedule.v1.examples.json'),
@@ -44,4 +44,29 @@ test('waste source timezone stays explicit and cannot become an arbitrary app ti
   expect(parseWasteSchedule(schedule).timezone).toBe(WASTE_SCHEDULE_TIMEZONE);
   schedule.timezone = 'America/New_York';
   expect(() => parseWasteSchedule(schedule)).toThrow('Unsupported Integrations value');
+});
+
+test('schedule ingress keeps timing nullable and rejects malformed values', () => {
+  expect(
+    parseSchedule({
+      enabled: true,
+      interval_seconds: 432000,
+      next_due_at: '2026-11-03T13:00:00Z',
+      last_attempt_at: null,
+      last_success_at: null,
+      last_failure_at: null,
+      consecutive_failures: 0,
+    })
+  ).toEqual({
+    enabled: true,
+    interval_seconds: 432000,
+    next_due_at: '2026-11-03T13:00:00Z',
+    last_attempt_at: null,
+    last_success_at: null,
+    last_failure_at: null,
+    consecutive_failures: 0,
+  });
+  expect(() => parseSchedule({ enabled: true, interval_seconds: -1 })).toThrow();
+  expect(() => parseSchedule({ enabled: 'yes', interval_seconds: 60 })).toThrow();
+  expect(() => parseSchedule({ enabled: false, interval_seconds: 60, next_due_at: 'soon' })).toThrow();
 });

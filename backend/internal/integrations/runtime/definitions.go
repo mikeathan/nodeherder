@@ -369,6 +369,7 @@ func (s *Service) activateDefinition(key, source, hash string, review *Destinati
 			}
 		}
 		oldHash := record.Hash
+		oldDiskError := record.DiskError
 		if oldHash != hash {
 			record.PreviousYAML = record.YAML
 			record.PreviousExpiresAt = s.clock.Now().Add(7 * 24 * time.Hour)
@@ -382,7 +383,8 @@ func (s *Service) activateDefinition(key, source, hash string, review *Destinati
 		if e = tx.Put("definitions", key, record); e != nil {
 			return e
 		}
-		if oldHash == hash && review == nil {
+		// A disk-error repair must rebind instances so scheduler-visible definition failures clear.
+		if oldHash == hash && review == nil && oldDiskError == "" {
 			return nil
 		}
 		updates := []model.Instance{}
@@ -431,24 +433,29 @@ func (s *Service) rebindDefinitionInstance(tx *repository.IntegrationTx, instanc
 				instance.Credentials[compiled.Definition.Auth.SecretSlot] = *current
 			}
 		} else {
-			instance.LastError = model.Fail("reconnect_required", "The provider destination changed. Review and reconnect before sending saved inputs.")
+			instance.LastError = destinationReviewFailure("The provider destination changed. Review and reconnect before sending saved inputs.")
 		}
-		if err := s.terminateOperation(tx, instance.OperationID, model.Fail("reconnect_required", "The destination changed. Start a reviewed setup.")); err != nil {
+		if err := s.terminateOperation(tx, instance.OperationID, destinationReviewFailure("The destination changed. Start a reviewed setup.")); err != nil {
 			return err
 		}
 		instance.OperationID = ""
-	} else if instance.OperationID != "" {
-		var operation model.Operation
-		ok, err := tx.Get("operations", instance.OperationID, &operation)
-		if err != nil {
-			return err
+	} else {
+		if instance.LastError != nil && schedulerDefinitionFailure(instance.LastError) {
+			instance.LastError = nil
 		}
-		if ok && operation.Status != "done" && operation.Status != "failed" {
-			operation.Generation = instance.Generation
-			operation.Status = "retry_required"
-			operation.RetryAt = s.clock.Now().Add(5 * time.Second)
-			if err = tx.Put("operations", operation.ID, operation); err != nil {
+		if instance.OperationID != "" {
+			var operation model.Operation
+			ok, err := tx.Get("operations", instance.OperationID, &operation)
+			if err != nil {
 				return err
+			}
+			if ok && operation.Status != "done" && operation.Status != "failed" {
+				operation.Generation = instance.Generation
+				operation.Status = "retry_required"
+				operation.RetryAt = s.clock.Now().Add(5 * time.Second)
+				if err = tx.Put("operations", operation.ID, operation); err != nil {
+					return err
+				}
 			}
 		}
 	}

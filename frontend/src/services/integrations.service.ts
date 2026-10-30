@@ -139,6 +139,15 @@ export function createConnectionsApi(defaultSignal?: AbortSignal) {
     /** Save name/enabled state without changing provider configuration. */
     update: (id: string, etag: string, name: string, enabled: boolean) =>
       request(`/instances/${segment(id)}`, parseInstance, 'PUT', { name, enabled }, etag),
+    /** Save automatic-refresh state; the server validates the interval and never starts a request. */
+    updateSchedule: (id: string, etag: string, enabled: boolean, intervalSeconds: number) =>
+      request(
+        `/instances/${segment(id)}/schedule`,
+        parseInstance,
+        'PUT',
+        { schedule_enabled: enabled, schedule_interval_seconds: intervalSeconds },
+        etag
+      ),
     /** Delete a configured connection and private data; keep its shared provider definition. */
     remove: (id: string, etag: string) => request(`/instances/${segment(id)}`, object, 'DELETE', undefined, etag),
     /** Write/remove a secret slot; returned DTOs expose only configured status, never its value. */

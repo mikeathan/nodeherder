@@ -71,6 +71,8 @@ type connectionInput struct {
 	YAML              string                          `json:"yaml"`
 	Document          json.RawMessage                 `json:"document"`
 	DestinationReview *integrations.DestinationReview `json:"destination_review"`
+	ScheduleEnabled   *bool                           `json:"schedule_enabled"`
+	ScheduleInterval  *int64                          `json:"schedule_interval_seconds"`
 }
 
 // Hidden is a pointer only at ingress so omitted/null differs from an explicit false.
@@ -97,7 +99,7 @@ func decodeConnectionInput(r *http.Request) (connectionInput, error) {
 func RegisterIntegrationRoutes(router *Router, service *integrations.Service) {
 	routes := []struct{ method, path, action string }{
 		{"GET", "/board", "board"}, {"PUT", "/board", "board_save"},
-		{"GET", "/catalog", "catalog"}, {"POST", "/definitions/reload", "reload_all"}, {"GET", "/instances", "instances"}, {"GET", "/instances/:id", "instance"}, {"GET", "/instances/:id/resources", "resources"}, {"PUT", "/instances/:id", "update"}, {"DELETE", "/instances/:id", "delete"}, {"POST", "/instances/:id/refresh", "refresh"}, {"POST", "/instances/:id/check-status", "check_instance"},
+		{"GET", "/catalog", "catalog"}, {"POST", "/definitions/reload", "reload_all"}, {"GET", "/instances", "instances"}, {"GET", "/instances/:id", "instance"}, {"GET", "/instances/:id/resources", "resources"}, {"PUT", "/instances/:id", "update"}, {"PUT", "/instances/:id/schedule", "schedule"}, {"DELETE", "/instances/:id", "delete"}, {"POST", "/instances/:id/refresh", "refresh"}, {"POST", "/instances/:id/check-status", "check_instance"},
 		{"POST", "/setup", "setup_create"}, {"GET", "/setup/:id", "setup"}, {"POST", "/setup/:id/step", "step"}, {"DELETE", "/setup/:id", "cancel"},
 		{"GET", "/operations/:id", "operation"}, {"POST", "/operations/:id/check-status", "check"},
 		{"PUT", "/setup/:id/credentials/:slot", "setup_credential"}, {"PUT", "/instances/:id/credentials/:slot", "credential"}, {"DELETE", "/instances/:id/credentials/:slot", "credential_delete"},
@@ -185,6 +187,12 @@ func NewIntegrationHandler(service *integrations.Service, action string) http.Ha
 			data = i.Resources
 		case "update":
 			data, err = service.UpdateInstance(id, input.Name, input.Enabled, expected)
+		case "schedule":
+			if input.ScheduleEnabled == nil || input.ScheduleInterval == nil {
+				err = model.Fail("invalid_input", "Send schedule_enabled and schedule_interval_seconds.")
+				break
+			}
+			data, err = service.UpdateSchedule(id, *input.ScheduleEnabled, *input.ScheduleInterval, expected)
 		case "delete":
 			err = service.DeleteInstance(id, expected)
 			data = map[string]bool{"deleted": err == nil}

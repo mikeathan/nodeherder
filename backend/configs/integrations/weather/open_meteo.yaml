@@ -7,6 +7,8 @@ policy:
   poll_min_seconds: 5
   renewal_min_seconds: 86400
   idempotency_window_seconds: 0
+  refresh_default_seconds: 3600
+  refresh_min_seconds: 300
 errors:
   code: ''
   rules: []

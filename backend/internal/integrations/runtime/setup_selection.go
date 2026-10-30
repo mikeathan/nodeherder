@@ -142,6 +142,13 @@ func (s *Service) selectionInstance(tx *repository.IntegrationTx, setup *model.S
 		CreatedAt:       now,
 		UpdatedAt:       now,
 	}
+	if seconds := compiled.Definition.Policy.RefreshDefaultSeconds; seconds > 0 {
+		instance.Schedule = &model.RefreshSchedule{
+			Enabled:         true,
+			IntervalSeconds: int64(seconds),
+			NextDueAt:       s.nextRefreshDue(now, int64(seconds), id),
+		}
+	}
 	setup.InstanceID = id
 	setup.Status = "completed"
 	return instance, nil
