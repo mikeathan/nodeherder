@@ -24,6 +24,7 @@ const instance = (): Omit<ConnectionInstance, 'resources'> & { resources: WasteS
   credential_slots: [],
   credential_configured: false,
   runs: [],
+  schedule: null,
   resources: [structuredClone(example)],
   last_error: null,
   updated_at: '2026-10-26T08:00:00Z',

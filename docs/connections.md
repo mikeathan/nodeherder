@@ -1,9 +1,10 @@
 # Integrations: local and personal Docker setup
 
 Integrations adds external information independently of Devices. The first release supports UK
-bin collections through a supplied WhenIsBins definition. Updates are manual: Refresh retrieves a
-schedule, and Check status continues a pending lookup. No provider work runs on a recurring timer.
-All signed-in users have the same controls. Nothing is added to Home, Overview, Devices or Panel.
+bin collections through a supplied WhenIsBins definition. Refresh retrieves data immediately, and
+each saved integration can also opt into automatic refresh at a provider-suggested or
+household-chosen interval. Check status continues a pending lookup. All signed-in users share the
+same controls. Nothing is added to Home, Overview, Devices or Panel.
 
 ## Local run: automatic first-time setup
 
@@ -177,14 +178,40 @@ Deletion removes live records. Encrypted bytes may remain in bbolt free pages an
 this is logical deletion, not a secure-erasure guarantee. Apply your backup-retention policy and
 protect all associated keys accordingly.
 
+## Automatic refresh
+
+Open an integration's settings tab to choose **Automatic refresh**. New integrations start with the
+provider's declared default when it has one: weather seeds use one hour and the shipped bin provider
+uses five days. Choosing manual-only, or changing the interval, saves immediately and does not
+contact the provider. Disabling the whole integration also pauses automatic work.
+
+The server validates the interval against a hard 60-second floor, a 30-day ceiling and the active
+provider definition's advisory minimum. Editable YAML is configuration, not an immutable provider
+limit; persisted provider backoff still applies. Automatic work is admitted by one backend
+coordinator within about a minute of its due time, uses the same request recipe and publication path
+as **Refresh**, and is bounded by the existing four workers and queue. Scheduled and manual work
+coalesce: there is never a second operation for the same integration while one is queued or running.
+
+Automatic refresh only maintains an integration that already has validated saved data. A failed
+automatic attempt remains visible, retryable failures back off, and failures that need user action
+(reconnect, repeat setup, changed destination, disabled definition) stop automatic admission until
+the integration is repaired. Restart recovery resumes enabled due work without duplicating a
+committed operation. Read-only page loads, catalog/Home reads and the cleanup janitor never contact
+a provider.
+
+Before rolling back to a binary that predates this setting, note that the older binary ignores and
+will drop the stored schedule on its next write. Automatic refresh then stays off; re-enable it
+after upgrading again. The schedule is additive data and does not change the integration database
+schema or keyring.
+
 ## Weather
 
 Choose **Weather** in Add integration, select Open-Meteo, Met Office (UK), or
 WeatherAPI.com, and search for a town or postcode. Confirm a returned location and
-save the integration. Refresh retrieves a new forecast manually; loading pages does
-not contact the provider. Saved data remains visible after a failed refresh and is
-labelled stale after one hour. The view omits unavailable quantities and expired
-current conditions rather than displaying zero.
+save the integration. Refresh retrieves a new forecast immediately, or the automatic schedule
+retrieves it at the chosen interval. Loading pages does not contact the provider. Saved data remains
+visible after a failed refresh and is labelled stale after one hour. The view omits unavailable
+quantities and expired current conditions rather than displaying zero.
 
 Open-Meteo's free hosted service requires no key and is for non-commercial use.
 Met Office and WeatherAPI.com require their own account/key; Setup links to the

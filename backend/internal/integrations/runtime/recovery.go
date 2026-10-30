@@ -30,6 +30,7 @@ func (s *Service) renewOperation(tx *repository.IntegrationTx, o *model.Operatio
 	next.InstanceID = i.ID
 	next.ExpiresAt = o.ExpiresAt
 	next.Renewed = true
+	next.Trigger = o.Trigger
 	next.Status = "running"
 	i.LastRenewal = &now
 	i.OperationID = next.ID

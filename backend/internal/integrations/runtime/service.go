@@ -65,6 +65,7 @@ type Service struct {
 	availability        *model.Failure
 	providerDeadlines   map[string]time.Time
 	janitor             utils.Timer
+	refreshTimer        utils.Timer
 }
 
 // NewService loads local state and starts owned workers; it performs no provider request.
@@ -108,6 +109,7 @@ func NewService(parent context.Context, o Options) (*Service, error) {
 		go s.worker()
 	}
 	s.scheduleCleanup()
+	s.scheduleRefresh()
 	return s, nil
 }
 
@@ -148,6 +150,9 @@ func (s *Service) Close(ctx context.Context) error {
 		s.cancel()
 		if s.janitor != nil {
 			s.janitor.Stop()
+		}
+		if s.refreshTimer != nil {
+			s.refreshTimer.Stop()
 		}
 		for _, cancel := range s.running {
 			cancel()
@@ -293,10 +298,26 @@ func (s *Service) instanceDTO(i model.Instance) InstanceDTO {
 		slots = append(slots, slot)
 	}
 	sort.Strings(slots)
+	var schedule *ScheduleDTO
+	if i.Schedule != nil {
+		schedule = &ScheduleDTO{
+			Enabled:             i.Schedule.Enabled,
+			IntervalSeconds:     i.Schedule.IntervalSeconds,
+			LastAttemptAt:       i.Schedule.LastAttemptAt,
+			LastSuccessAt:       i.Schedule.LastSuccessAt,
+			LastFailureAt:       i.Schedule.LastFailureAt,
+			ConsecutiveFailures: i.Schedule.ConsecutiveFailures,
+		}
+		if i.Schedule.Enabled && !i.Schedule.NextDueAt.IsZero() {
+			due := i.Schedule.NextDueAt
+			schedule.NextDueAt = &due
+		}
+	}
 	return InstanceDTO{
 		Sources:              sources,
 		CredentialSlots:      slots,
 		Runs:                 recentRuns(i.Runs, s.clock.Now()),
+		Schedule:             schedule,
 		ID:                   i.ID,
 		Name:                 i.Name,
 		ProviderKey:          i.DefinitionKey,
@@ -433,7 +454,19 @@ func (s *Service) Operation(id string) (OperationDTO, error) {
 	})
 	return out, e
 }
-func (s *Service) enqueue(id string) { delete(s.publicationFailures, id); s.queue <- id } // callers hold admission lock and check capacity before durable admission
+func (s *Service) enqueue(id string) {
+	delete(s.publicationFailures, id)
+	if s.ctx == nil {
+		return
+	}
+	// A shutdown may cancel the context while accepted work is still durable. Do not wedge the
+	// caller on a full queue; restart recovery marks the unclaimed operation retryable.
+	select {
+	case s.queue <- id:
+	case <-s.ctx.Done():
+	}
+}
+
 // hasCapacity checks worker queue capacity before admitting durable work.
 func (s *Service) hasCapacity() error {
 	if len(s.queue) >= cap(s.queue) {
@@ -464,6 +497,6 @@ func (s *Service) recordRun(i *model.Instance, o model.Operation, outcome, messa
 			runs = append(runs, r)
 		}
 	}
-	runs = append(runs, model.RunSummary{OperationID: o.ID, Kind: o.Kind, Outcome: outcome, Message: message, At: s.clock.Now().UTC()})
+	runs = append(runs, model.RunSummary{OperationID: o.ID, Kind: o.Kind, Trigger: o.Trigger, Outcome: outcome, Message: message, At: s.clock.Now().UTC()})
 	i.Runs = recentRuns(runs, s.clock.Now())
 }

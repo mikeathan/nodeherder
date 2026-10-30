@@ -24,6 +24,12 @@
           ><span>Provider's documented submission-key lifetime in seconds</span
           ><input v-model.number="fields.policy.idempotency_window_seconds" type="number" min="0" /></label
         ><label class="connection-field"
+          ><span>Default automatic refresh in seconds (0 = manual only)</span
+          ><input v-model.number="fields.policy.refresh_default_seconds" type="number" min="0" /></label
+        ><label class="connection-field"
+          ><span>Minimum automatic refresh in seconds</span
+          ><input v-model.number="fields.policy.refresh_min_seconds" type="number" min="60" /></label
+        ><label class="connection-field"
           ><span>Provider error code location</span><input v-model="fields.errors.code"
         /></label>
         <div v-for="(rule, i) in fields.errors.rules" :key="i" class="connection-form">

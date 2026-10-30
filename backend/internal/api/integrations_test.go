@@ -109,6 +109,27 @@ func TestIntegrationAuthorizationAndRevisions(t *testing.T) {
 		t.Fatal(w.Code, w.Body.String())
 	}
 }
+func TestIntegrationScheduleAuthorizationAndInput(t *testing.T) {
+	router, one, _ := integrationAPIFixture(t)
+	const path = "/api/integrations/instances/missing/schedule"
+	body := `{"schedule_enabled":true,"schedule_interval_seconds":3600}`
+	if w := integrationRequest(router, "PUT", path, "", false, body, nil); w.Code != 401 {
+		t.Fatal("unauthenticated schedule update", w.Code)
+	}
+	if w := integrationRequest(router, "PUT", path, one, true, body, nil); w.Code != 403 {
+		t.Fatal("cookie schedule update without origin/request headers", w.Code)
+	}
+	if w := integrationRequest(router, "PUT", path, one, false, `{"schedule_enabled":true}`, map[string]string{"If-Match": `"x"`}); w.Code != 400 {
+		t.Fatal("accepted incomplete schedule body", w.Code)
+	}
+	if w := integrationRequest(router, "PUT", path, one, false, `{"schedule_enabled":true,"schedule_interval_seconds":3600,"extra":true}`, map[string]string{"If-Match": `"x"`}); w.Code != 400 {
+		t.Fatal("accepted unknown schedule field", w.Code)
+	}
+	if w := integrationRequest(router, "PUT", path, one, false, body, map[string]string{"If-Match": `"x"`}); w.Code != 404 {
+		t.Fatal("missing instance was not reported", w.Code)
+	}
+}
+
 func TestIntegrationCORSAndDirectHandler(t *testing.T) {
 	r, one, _ := integrationAPIFixture(t)
 	w := integrationRequest(r, "OPTIONS", "/api/integrations/definitions/waste_collection/whenisbins", one, false, "", map[string]string{"Origin": "https://ui.example.test"})

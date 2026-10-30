@@ -12,6 +12,13 @@ import (
 // FormatVersion identifies the supported shareable provider-definition grammar.
 const FormatVersion = "nodeherder.integration/v1"
 
+// Automatic-refresh bounds are shared by provider validation and runtime admission. They are
+// seconds, matching the policy grammar and the persisted schedule.
+const (
+	MinimumRefreshSeconds = 60
+	MaximumRefreshSeconds = 30 * 24 * 60 * 60
+)
+
 // WasteCapability identifies the provider-independent waste schedule output contract.
 const WasteCapability = "waste_schedule/v1"
 
@@ -158,10 +165,14 @@ func (auth AuthConfig) RequiresCredential() bool {
 
 // Policy bounds explicit status checks, fresh lookup creation and safe submission-key replay.
 // All durations are seconds; the runtime also enforces stricter local ceilings.
+// RefreshDefaultSeconds seeds a new instance's automatic schedule (0 keeps it manual-only).
+// RefreshMinSeconds is the editor/API floor; it is configuration, not a trusted provider limit.
 type Policy struct {
 	PollMinSeconds           int `json:"poll_min_seconds" yaml:"poll_min_seconds"`
 	RenewalMinSeconds        int `json:"renewal_min_seconds" yaml:"renewal_min_seconds"`
 	IdempotencyWindowSeconds int `json:"idempotency_window_seconds" yaml:"idempotency_window_seconds"`
+	RefreshDefaultSeconds    int `json:"refresh_default_seconds" yaml:"refresh_default_seconds"`
+	RefreshMinSeconds        int `json:"refresh_min_seconds" yaml:"refresh_min_seconds"`
 }
 
 // ErrorRules locates the provider problem code and lists exact status/code recovery matches.

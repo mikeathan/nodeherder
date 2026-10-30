@@ -14,12 +14,16 @@
     name,
     token,
     definition,
+    scheduleEnabled,
+    scheduleValue,
+    scheduleUnit,
     sectionContext,
     busy,
     error,
     refresh,
     check,
     update,
+    saveSchedule,
     editAddress,
     credential,
     remove,
@@ -74,12 +78,16 @@
         v-else
         v-model:name="name"
         v-model:token="token"
+        v-model:schedule-enabled="scheduleEnabled"
+        v-model:schedule-value="scheduleValue"
+        v-model:schedule-unit="scheduleUnit"
         :item="item"
         :definition="definition"
         :busy="busy"
         @update="update"
         @edit-address="editAddress"
         @credential="credential"
+        @save-schedule="saveSchedule"
         @remove="remove" />
       <details v-if="item.runs.length">
         <summary>Recent checks</summary>

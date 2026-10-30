@@ -218,8 +218,17 @@ func validateProviderMetadata(d *model.Definition) error {
 	if d.Policy.RenewalMinSeconds == 0 {
 		d.Policy.RenewalMinSeconds = 86400
 	}
+	if d.Policy.RefreshMinSeconds == 0 {
+		d.Policy.RefreshMinSeconds = model.MinimumRefreshSeconds
+	}
 	if d.Policy.PollMinSeconds < 5 || d.Policy.PollMinSeconds > 86400 || d.Policy.RenewalMinSeconds < 86400 || d.Policy.RenewalMinSeconds > 2592000 || d.Policy.IdempotencyWindowSeconds < 0 || d.Policy.IdempotencyWindowSeconds > 2592000 {
 		return configError("policy", "Polling must be at least 5 seconds; renewal at least 24 hours; windows at most 30 days.")
+	}
+	if d.Policy.RefreshMinSeconds < model.MinimumRefreshSeconds || d.Policy.RefreshMinSeconds > model.MaximumRefreshSeconds || d.Policy.RefreshDefaultSeconds < 0 || d.Policy.RefreshDefaultSeconds > model.MaximumRefreshSeconds {
+		return configError("policy", "Automatic refresh must be between 60 seconds and 30 days; use 0 to keep new instances manual.")
+	}
+	if d.Policy.RefreshDefaultSeconds != 0 && d.Policy.RefreshDefaultSeconds < d.Policy.RefreshMinSeconds {
+		return configError("policy", "The default automatic refresh must not be shorter than its minimum.")
 	}
 	return nil
 }

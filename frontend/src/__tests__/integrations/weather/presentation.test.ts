@@ -61,6 +61,7 @@ function instance(overrides: Partial<ConnectionInstance> = {}): ConnectionInstan
     postcode: '',
     credential_configured: false,
     resources: [],
+    schedule: null,
     last_error: null,
     updated_at: '2026-10-28T17:59:48Z',
     ...overrides,

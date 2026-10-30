@@ -58,12 +58,30 @@ type DefinitionRecord struct {
 }
 
 // RunSummary is a bounded, sanitized check history entry; it contains no provider response body.
+// Trigger distinguishes manual work from scheduler-admitted work for older and newer records.
 type RunSummary struct {
 	OperationID string    `json:"operation_id"`
 	Kind        string    `json:"kind"`
+	Trigger     string    `json:"trigger,omitempty"`
 	Outcome     string    `json:"outcome"`
 	Message     string    `json:"message"`
 	At          time.Time `json:"at"`
+}
+
+// RefreshSchedule is private automatic-refresh configuration and state for one instance.
+// IntervalSeconds is the household-selected cadence; NextDueAt is the coordinator's persisted
+// wake target. BackoffUntil is only a retryable failure's retry deadline, distinct from the regular
+// cadence; it is cleared when a new attempt is admitted or a pending/successful attempt replaces it.
+// Last* timestamps are observability only and must not authorize work.
+type RefreshSchedule struct {
+	Enabled             bool       `json:"enabled"`
+	IntervalSeconds     int64      `json:"interval_seconds"`
+	NextDueAt           time.Time  `json:"next_due_at"`
+	BackoffUntil        *time.Time `json:"backoff_until,omitempty"`
+	LastAttemptAt       *time.Time `json:"last_attempt_at,omitempty"`
+	LastSuccessAt       *time.Time `json:"last_success_at,omitempty"`
+	LastFailureAt       *time.Time `json:"last_failure_at,omitempty"`
+	ConsecutiveFailures int        `json:"consecutive_failures"`
 }
 
 // Instance is the encrypted aggregate for a saved connection and its last validated snapshot.
@@ -81,6 +99,7 @@ type Instance struct {
 	BindingRevision uint64                `json:"binding_revision"`
 	ResourceID      string                `json:"resource_id"`
 	Enabled         bool                  `json:"enabled"`
+	Schedule        *RefreshSchedule      `json:"schedule,omitempty"`
 	SearchInput     string                `json:"search_input"`
 	Inputs          map[string]string     `json:"inputs"`
 	State           map[string]any        `json:"state"`
@@ -151,6 +170,7 @@ type Operation struct {
 	Origin             string            `json:"origin"`
 	RequestID          string            `json:"request_id"`
 	Kind               string            `json:"kind"`
+	Trigger            string            `json:"trigger,omitempty"`
 	Status             string            `json:"status"`
 	Body               []byte            `json:"body,omitempty"`
 	IdempotencyKey     string            `json:"idempotency_key,omitempty"`
