@@ -53,6 +53,7 @@ func DefaultDeviceConfig() *DeviceConfig {
 }
 
 type DeviceConfig struct {
+	Spatial *SpatialConfig `json:"spatial,omitempty"`
 	// Live intervals quiet numeric observations; legacy debounce maps sample history.
 	LiveIntervalByCategory       map[bridge.ExposeCategory]*utils.TimeInterval `json:"liveIntervalByCategory"`
 	LiveIntervalOverrides        map[string]*utils.TimeInterval                `json:"liveIntervalOverrides,omitempty"`
@@ -64,6 +65,23 @@ type DeviceConfig struct {
 	MetricsEnabled               bool                                          `json:"metricsEnabled"`
 	DefaultDebounceByCategory    map[bridge.ExposeCategory]*utils.TimeInterval `json:"defaultDebounceByCategory,omitempty"`
 	DebounceOverrides            map[string]*utils.TimeInterval                `json:"debounceOverrides,omitempty"`
+}
+
+// SpatialConfig describes user-selected generic coordinate entities and display options.
+type SpatialConfig struct {
+	// Workspace is optional visual room/zone configuration; nil keeps existing records valid.
+	Workspace   *SpatialWorkspace `json:"workspace,omitempty"`
+	Mappings    []SpatialMapping  `json:"mappings"`
+	Scale       int               `json:"scale"`
+	Orientation int               `json:"orientation"`
+}
+
+// SpatialMapping names independent X/Y coordinates and the confirmed active flag.
+// Empty identifiers leave a target unmapped.
+type SpatialMapping struct {
+	X      string `json:"x"`
+	Y      string `json:"y"`
+	Active string `json:"active"`
 }
 
 func NewDeviceConfig(id string) *DeviceConfig {

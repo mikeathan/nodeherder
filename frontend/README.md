@@ -201,3 +201,27 @@ When contributing to the frontend:
 4. Run tests if applicable: `npm test`
 
 Resource limits, session cleanup and MCP compatibility: [runtime behavior](../docs/runtime-reliability.md).
+
+### Spatial workspace
+
+Provider devices with readable X/Y length coordinates and active flags offer Spatial
+view within Controls. Map each target explicitly; live coordinates expire after five
+seconds. The workspace includes Live dashboard, Zone editor, Room builder, Entry /
+exit and Heatmap & analytics, each with contextual help.
+
+Room layouts, sensor placement and detection/exclusion/entry overlays are stored in
+existing per-device NodeHerder settings. Zone coordinates are sensor-relative mm;
+room items are room-relative mm and rotation is degrees. Displayed distances use metres, with
+millimetre precision. Spatial saves wait for a matching backend persistence reply;
+failures and unknown-outcome timeouts preserve the draft and Undo. Changes made
+while saving remain editable. Saving settings does not
+configure firmware. Rectangles can explicitly map four distinct readable/writable
+coordinate entities and apply exact values through normal device commands. These
+writes are non-atomic; reports, not submission, confirm values. Polygon firmware
+writes require the manufacturer's configurator. Entry controls use explicitly mapped
+discovered entities and never infer people counts or crossing events.
+
+Heatmaps and trails sample only this open Spatial tab, once a second, retaining at
+most one hour / 3600 frames in memory. There is no historical backfill or browser
+position persistence. Observation windows are 5/15/60 minutes; activity hours use the
+browser's timezone. Offline/missing coordinates do not establish a clear room.

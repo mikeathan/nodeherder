@@ -9,6 +9,7 @@
   import {
     binaryOffValue,
     binaryOnValue,
+    exposeDisplayLabel,
     exposeKind,
     exposeLabel,
     formatExposeValue,
@@ -49,7 +50,7 @@
   const pending = computed(() => !!switchExpose.value && isPending(props.deviceId, switchExpose.value.name));
   const toggleable = computed(() => !!switchExpose.value && canControl(device.value) && !props.editing);
 
-  const label = computed(() => exposeLabel(props.expose));
+  const label = computed(() => (entity.value ? exposeDisplayLabel(entity.value) : exposeLabel(props.expose)));
   const value = computed(() => {
     if (status.value === 'missing') return 'Device removed';
     if (status.value === 'offline') return 'Offline';
@@ -68,7 +69,7 @@
     emitOpenEntityViewDialog(() => {}, {
       id: props.deviceId,
       name: props.expose,
-      title: `${exposeLabel(props.expose)} · ${device.value.friendly_name}`,
+      title: `${label.value} · ${device.value.friendly_name}`,
     });
   }
 </script>

@@ -31,6 +31,23 @@ func TestValidateReportingSettings(t *testing.T) {
 	}
 }
 
+func TestSpatialSettingsValidation(t *testing.T) {
+	config := settings.NewDeviceConfig("sensor")
+	config.Spatial = &settings.SpatialConfig{Scale: 6000, Mappings: []settings.SpatialMapping{{X: "x", Y: "y", Active: "active"}}}
+	if err := config.ValidateReportingSettings(); err != nil {
+		t.Fatal(err)
+	}
+	config.Spatial.Scale = 0
+	if config.ValidateReportingSettings() == nil {
+		t.Fatal("accepted invalid scale")
+	}
+	config.Spatial.Scale = 6000
+	config.Spatial.Mappings = make([]settings.SpatialMapping, 4)
+	if config.ValidateReportingSettings() == nil {
+		t.Fatal("accepted excessive mappings")
+	}
+}
+
 func TestConfirmationTimeoutValidation(t *testing.T) {
 	for _, value := range []int{0, -1, int(math.MaxInt32) + 1} {
 		cfg := settings.NewDeviceConfig("sensor")

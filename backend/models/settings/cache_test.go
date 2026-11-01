@@ -16,6 +16,16 @@ import (
 	"time"
 )
 
+func TestDeviceConfigSpatialClone(t *testing.T) {
+	original := settings.NewDeviceConfig("sensor")
+	original.Spatial = &settings.SpatialConfig{Scale: 6000, Mappings: []settings.SpatialMapping{{X: "original"}}}
+	clone := settings.NewDeviceConfigFrom(original)
+	clone.Spatial.Mappings[0].X = "changed"
+	if original.Spatial.Mappings[0].X != "original" {
+		t.Fatal("spatial mappings were shared")
+	}
+}
+
 // This repository intentionally retains pointers, like the file repository's
 // memory cache. All access below goes through AppConfigCache's lock.
 type bridgeSnapshotRepo struct {

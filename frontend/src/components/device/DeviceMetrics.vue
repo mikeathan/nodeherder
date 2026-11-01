@@ -8,12 +8,14 @@
   import { historyCSV, historyExportUnavailable, type HistoryMode } from '@/domain/history/export';
   import { coveredHistoryWindow, statisticsDisplaySeries } from '@/domain/history/stats';
   import { isEnergyCounter } from '@/domain/history/energy';
+  import { historyEntityOptions } from '@/domain/history/entities';
   import HistoryView from '@/components/chart/history/HistoryView.vue';
   import HistoryToolbar from '@/components/chart/history/HistoryToolbar.vue';
   const props = defineProps<{ id: string }>();
   const route = useRoute();
   const device = computed(() => findDevice(props.id));
-  const names = computed(() => Object.values(device.value?.exposes ?? {}).filter((e) => ['numeric', 'binary', 'enum'].includes(String(e.type))).map((e) => e.name).sort());
+  const options = computed(() => historyEntityOptions(device.value));
+  const names = computed(() => options.value.map((option) => option.value));
   const selected = ref('');
   const hours = ref('24');
   const mode = ref<HistoryMode>('history');
@@ -73,7 +75,7 @@
 </script>
 <template>
   <section class="device-history" aria-label="Device history">
-    <HistoryToolbar :names="names" :selected="selected" :preset="hours" :mode="mode" :statistics="statistics"
+    <HistoryToolbar :options="options" :selected="selected" :preset="hours" :mode="mode" :statistics="statistics"
       :zone="Intl.DateTimeFormat().resolvedOptions().timeZone" :range-label="selectedRangeLabel"
       :loading="entry?.status === 'loading'" :export-reason="exportReason" @select="selected = $event" @preset="preset"
       @mode="mode = $event" @refresh="reload" @export="download" />

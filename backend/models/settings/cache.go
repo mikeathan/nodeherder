@@ -111,6 +111,29 @@ func (d *DeviceConfigCache) Get(id string) (*DeviceConfig, error) {
 	return defaultConfig, nil
 }
 
+// SpatialCoordinates returns the currently configured coordinate entity names.
+func (d *DeviceConfigCache) SpatialCoordinates(id string) map[string]struct{} {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+	result := make(map[string]struct{})
+	config := d.appConfig.Hub.Devices.Overrides[id]
+	if config == nil {
+		config = d.appConfig.Hub.Devices.Defaults
+	}
+	if config == nil || config.Spatial == nil {
+		return result
+	}
+	for _, mapping := range config.Spatial.Mappings {
+		if mapping.X != "" {
+			result[mapping.X] = struct{}{}
+		}
+		if mapping.Y != "" {
+			result[mapping.Y] = struct{}{}
+		}
+	}
+	return result
+}
+
 func (d *DeviceConfigCache) Set(deviceConfig *DeviceConfig) error {
 	if err := deviceConfig.ValidateReportingSettings(); err != nil {
 		return err
@@ -298,6 +321,12 @@ func cloneDeviceConfig(config *DeviceConfig) *DeviceConfig {
 		return nil
 	}
 	copy := *config
+	if config.Spatial != nil {
+		spatial := *config.Spatial
+		spatial.Workspace = cloneSpatialWorkspace(config.Spatial.Workspace)
+		spatial.Mappings = append([]SpatialMapping(nil), config.Spatial.Mappings...)
+		copy.Spatial = &spatial
+	}
 	copy.LiveIntervalByCategory = cloneIntervals(config.LiveIntervalByCategory)
 	copy.LiveIntervalOverrides = cloneIntervals(config.LiveIntervalOverrides)
 	copy.CommandConfirmationTimeoutMs = clonePointer(config.CommandConfirmationTimeoutMs)

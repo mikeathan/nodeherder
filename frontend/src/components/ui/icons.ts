@@ -18,7 +18,9 @@ import {
   mdiWaterPercent, mdiWeatherNight, mdiWhiteBalanceSunny, mdiWifi, mdiZigbee,
 } from '@mdi/js';
 import { Device } from '@/types/device';
+import { ConnectionTypes } from '@/types/device.type';
 import { exposeKind } from '@/domain/exposes';
+import { DeviceIconKinds, deviceIconKind, type DeviceIconKind } from '@/domain/devices/icon';
 
 export const ICONS = {
   // navigation
@@ -119,23 +121,30 @@ export function exposeIcon(name: string, on = false): string {
   return EXPOSE_ICONS[name] ?? KIND_ICONS[exposeKind(name)] ?? mdiCubeOutline;
 }
 
-/** Icon that says what a device is, from what it exposes (no model lookups). */
+/** Glyphs for the semantic device families resolved in the device domain. */
+const DEVICE_ICONS: Readonly<Record<DeviceIconKind, string>> = {
+  [DeviceIconKinds.Motion]: mdiMotionSensor,
+  [DeviceIconKinds.Smoke]: mdiSmokeDetectorVariant,
+  [DeviceIconKinds.Contact]: mdiDoorOpen,
+  [DeviceIconKinds.Light]: mdiLightbulbOutline,
+  [DeviceIconKinds.Power]: mdiPowerPlugOutline,
+  [DeviceIconKinds.Remote]: mdiRemote,
+  [DeviceIconKinds.Climate]: mdiThermometer,
+  [DeviceIconKinds.Air]: mdiAirFilter,
+  [DeviceIconKinds.Generic]: mdiCubeOutline,
+};
+
+/** Chooses a device glyph from discovered capabilities; the semantic choice lives in the domain. */
 export function deviceIcon(device: Device): string {
-  const has = (name: string) => name in (device.exposes ?? {});
-  if (has('brightness') || has('color_temp')) return mdiLightbulbOutline;
-  if (has('state') && (has('power') || has('energy'))) return mdiPowerPlugOutline;
-  if (has('state')) return mdiPowerPlugOutline;
-  if (has('smoke') || has('alarm')) return mdiSmokeDetectorVariant;
-  if (has('contact')) return mdiDoorOpen;
-  if (has('presence') || has('occupancy')) return mdiMotionSensor;
-  if (Object.keys(device.exposes ?? {}).some((n) => n.startsWith('action'))) return mdiRemote;
-  if (has('temperature') || has('humidity')) return mdiThermometer;
-  if (has('pm25') || has('voc') || has('co2')) return mdiAirFilter;
-  return mdiCubeOutline;
+  return DEVICE_ICONS[deviceIconKind(device)];
 }
 
 export const protocolIcon = (connectionType: string): string =>
-  connectionType === 'mqtt' ? mdiZigbee : connectionType === 'http' ? mdiWifi : mdiHelpCircleOutline;
+  connectionType === ConnectionTypes.Mqtt
+    ? mdiZigbee
+    : connectionType === ConnectionTypes.Http || connectionType === ConnectionTypes.ESPHome
+      ? mdiWifi
+      : mdiHelpCircleOutline;
 
 /** Decorative symbols for normalized weather conditions; absent or unknown data stays explicit. */
 export function weatherIcon(condition: string | undefined): string {

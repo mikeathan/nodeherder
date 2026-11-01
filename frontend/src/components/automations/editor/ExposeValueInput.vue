@@ -23,7 +23,8 @@
 </script>
 
 <template>
-  <UiSelect v-if="expose?.type === ExposeTypes.Binary" :id="id" v-model="value" :options="binaryOptions" :label="label" :invalid="invalid" :disabled="disabled" placeholder="Choose a value" />
+  <span v-if="allowCommands && expose?.type === 'button'" role="status">Run action (no value)</span>
+  <UiSelect v-else-if="expose?.type === ExposeTypes.Binary" :id="id" v-model="value" :options="binaryOptions" :label="label" :invalid="invalid" :disabled="disabled" placeholder="Choose a value" />
   <UiSelect
     v-else-if="expose?.type === ExposeTypes.Enum"
     :id="id"

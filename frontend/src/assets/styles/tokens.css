@@ -30,6 +30,11 @@
   --nh-danger: #d93a3a;
   --nh-info: #2f7fd6;
 
+  /* Spatial zone types share the semantic palette and remain theme-overridable. */
+  --nh-spatial-detection: var(--nh-info);
+  --nh-spatial-exclusion: var(--nh-danger);
+  --nh-spatial-entry: var(--nh-ok);
+
   /* sensor kind colours (see domain/exposes.ts ExposeKind) */
   --nh-kind-temp: #ef5350;
   --nh-kind-humidity: #29b6f6;

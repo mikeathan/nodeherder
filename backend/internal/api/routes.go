@@ -17,6 +17,7 @@ import (
 	"node-herder/internal/ws"
 	"node-herder/models/assistant"
 	"node-herder/models/automations"
+	"node-herder/models/hub"
 	"node-herder/models/logging"
 	"node-herder/store"
 	"node-herder/utils"
@@ -472,13 +473,16 @@ func (h *HubStateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // Device Context Handler
+type deviceContextStore interface{ LoadHubState() (*hub.HubState, error) }
+
 type DeviceContextHandler struct {
-	store     store.AppStore
+	store     deviceContextStore
 	limiter   *ratelimiter.DeviceRateLimiter
 	rateLimit time.Duration
 }
 
-func NewDeviceContextHandler(store store.AppStore, rateLimit time.Duration) *DeviceContextHandler {
+// NewDeviceContextHandler exposes the supplied device projection, with the given request interval.
+func NewDeviceContextHandler(store deviceContextStore, rateLimit time.Duration) *DeviceContextHandler {
 	return &DeviceContextHandler{
 		store:     store,
 		limiter:   ratelimiter.NewDeviceRateLimiter(),

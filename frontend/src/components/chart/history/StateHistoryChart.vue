@@ -3,7 +3,7 @@
   import type { Expose } from '@/types/device';
   import type { StateSegment } from '@/domain/history/state';
   import { RENDER_LIMIT } from '@/domain/history/types';
-  import { binaryOnValue, binaryOffValue, exposeLabel, formatExposeValue } from '@/domain/exposes';
+  import { binaryOnValue, binaryOffValue, exposeDisplayLabel, formatExposeValue } from '@/domain/exposes';
   import {
     formatHistoryCoverage,
     formatHistoryMoment,
@@ -37,7 +37,7 @@
 
   const activeLabel = computed(() => formatExposeValue(props.expose, binaryOnValue(props.expose)));
   const inactiveLabel = computed(() => formatExposeValue(props.expose, binaryOffValue(props.expose)));
-  const chartName = computed(() => `${exposeLabel(props.expose.name)} history`);
+  const chartName = computed(() => `${exposeDisplayLabel(props.expose)} history`);
 
   const host = ref<HTMLDivElement | null>(null);
   const tooltip = ref<HTMLDivElement | null>(null);

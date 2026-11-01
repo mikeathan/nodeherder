@@ -12,6 +12,9 @@ import {
 import { sendMessage, sendOperationSuccess, sendOperationFailed, currentTime } from './utils.mjs';
 import { getAllMetricsForDevice, getMetricsForDevice } from './metrics-mock.mjs';
 
+/** Correlated reply used by the real backend; the dev server acknowledges the same way. */
+const DEVICE_CONFIG_SAVE_RESULT = 'deviceConfigSaveResult';
+
 export function registerWebsocket(app, server) {
   expressWs(app, server);
 
@@ -163,8 +166,13 @@ export function registerWebsocket(app, server) {
           if (!(deviceId in appConfig.hub.devices.overrides)) {
             appConfig.hub.devices.overrides[deviceId] = {};
           }
-          appConfig.hub.devices.overrides[deviceId] = obj.payload;
-          sendOperationSuccess(ws);
+          const { requestId, ...config } = obj.payload;
+          appConfig.hub.devices.overrides[deviceId] = config;
+          if (requestId) {
+            sendMessage(ws, DEVICE_CONFIG_SAVE_RESULT, { requestId, deviceId, success: true });
+          } else {
+            sendOperationSuccess(ws);
+          }
           break;
         }
         case 'deleteDeviceConfigOverride':

@@ -4,7 +4,7 @@
  * "http" (POST /api/collect, e.g. Wi-Fi devices). Unknown values get a generic entry.
  */
 import { Device } from '@/types/device';
-import { DeviceAvailabilityTypes } from '@/types/device.type';
+import { ConnectionTypes, DeviceAvailabilityTypes } from '@/types/device.type';
 
 export type Diagnostic = 'lqi' | 'rssi' | 'battery';
 
@@ -17,8 +17,9 @@ export type ProtocolDescriptor = {
 };
 
 const PROTOCOLS: Record<string, ProtocolDescriptor> = {
-  mqtt: { id: 'mqtt', label: 'Zigbee', supports: { rename: true, interview: true, remove: true }, generic: false },
-  http: { id: 'http', label: 'Wi-Fi · HTTP', supports: { rename: false, interview: false, remove: false }, generic: false },
+  [ConnectionTypes.Mqtt]: { id: ConnectionTypes.Mqtt, label: 'Zigbee', supports: { rename: true, interview: true, remove: true }, generic: false },
+  [ConnectionTypes.Http]: { id: ConnectionTypes.Http, label: 'Wi-Fi · HTTP', supports: { rename: false, interview: false, remove: false }, generic: false },
+  [ConnectionTypes.ESPHome]: { id: ConnectionTypes.ESPHome, label: 'ESPHome', supports: { rename: false, interview: false, remove: false }, generic: false },
 };
 
 export function resolveProtocol(connectionType: string | undefined | null): ProtocolDescriptor {
@@ -65,4 +66,10 @@ export function deviceStatus(d: Device, disabled: boolean): DeviceStatus {
 
 export function compareByName(a: Device, b: Device): number {
   return a.friendly_name.localeCompare(b.friendly_name, undefined, { sensitivity: 'base' });
+}
+
+/** Whether a device is produced by the ESPHome provider, including legacy records. */
+export function isESPHomeDevice(device: Device | undefined): boolean {
+  if (!device) return false;
+  return device.provider === ConnectionTypes.ESPHome || (!device.provider && device.connection_type === ConnectionTypes.ESPHome);
 }

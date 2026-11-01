@@ -1,3 +1,4 @@
+import type { SpatialMapping, SpatialWorkspace } from './spatial';
 import { KeyValuePair, TimeInterval, ValueOf } from './types.type';
 
 export type AppConfig = {
@@ -52,7 +53,19 @@ export type DeviceSettings = {
   overrides: DeviceConfigMap;
 };
 
+/** Per-device spatial view settings persisted with the hub configuration. */
+export type SpatialSettings = {
+  /** Optional visual room/zone layout; absent for legacy records. */
+  workspace?: SpatialWorkspace;
+  mappings: SpatialMapping[];
+  /** Display range in millimetres. */
+  scale: number;
+  /** View rotation in degrees. */
+  orientation: number;
+};
+
 export type DeviceConfig = {
+  spatial?: SpatialSettings;
   liveIntervalByCategory?: DeviceDebounce;
   liveIntervalOverrides?: DeviceDebounce;
   reportingThresholds?: Record<string, number>;

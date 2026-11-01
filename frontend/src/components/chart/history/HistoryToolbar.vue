@@ -1,11 +1,12 @@
 <script setup lang="ts">
-  import { ref } from 'vue';
+  import { computed, ref } from 'vue';
   import { HISTORY_PRESETS } from '@/domain/history/range';
-  import { exposeLabel } from '@/domain/exposes';
+  import type { HistoryEntityOption } from '@/domain/history/entities';
   import type { HistoryMode } from '@/domain/history/export';
   import UiButton from '@/components/ui/UiButton.vue';
   import UiDialog from '@/components/ui/UiDialog.vue';
-  defineProps<{ names: string[]; selected: string; preset: string; mode: HistoryMode; statistics: boolean; loading: boolean; exportReason: string; zone: string; rangeLabel: string }>();
+  const props = defineProps<{ options: HistoryEntityOption[]; selected: string; preset: string; mode: HistoryMode; statistics: boolean; loading: boolean; exportReason: string; zone: string; rangeLabel: string }>();
+  const selectedLabel = computed(() => props.options.find((option) => option.value === props.selected)?.label ?? props.selected);
   const emit = defineEmits<{ select: [name: string]; preset: [value: string]; mode: [value: HistoryMode]; refresh: []; export: [] }>();
   const optionsOpen = ref(false);
   function changeMode(event: Event) {
@@ -23,7 +24,7 @@
         <span class="history-field-label" aria-hidden="true">Entity</span>
         <select class="nh-select history-picker" aria-label="Entity" :value="selected"
           @change="$emit('select', ($event.target as HTMLSelectElement).value)">
-          <option v-for="name in names" :key="name" :value="name">{{ exposeLabel(name) }}</option>
+          <option v-for="option in options" :key="option.value" :value="option.value">{{ option.label }}</option>
         </select>
       </div>
       <div class="history-chips" role="group" aria-label="Period">
@@ -51,7 +52,7 @@
   </div>
   <UiDialog :open="optionsOpen" title="History options" @close="optionsOpen = false">
     <div class="history-settings">
-      <p>{{ exposeLabel(selected) }}</p>
+      <p>{{ selectedLabel }}</p>
       <label v-if="statistics">View
         <select class="nh-select" :value="mode" @change="changeMode">
           <option value="history">History</option><option value="statistics">Statistics</option>

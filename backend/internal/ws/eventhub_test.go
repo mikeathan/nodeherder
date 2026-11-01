@@ -22,6 +22,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -2019,4 +2020,80 @@ func TestWebSocketConcurrentClientLifecycle(t *testing.T) {
 	}
 	unblock()
 	wg.Wait()
+}
+
+func TestCorrelatedDeviceConfigSaveResult(t *testing.T) {
+	for _, fail := range []bool{false, true} {
+		t.Run(fmt.Sprint(fail), func(t *testing.T) {
+			hub := ws.NewWsHub()
+			var called atomic.Bool
+			hub.OnSaveDeviceConfigOverride(func(payload interface{}) error {
+				called.Store(true)
+				fields, ok := payload.(map[string]interface{})
+				if !ok {
+					t.Fatal("configuration payload type")
+				}
+				if _, exists := fields["requestId"]; exists {
+					t.Fatal("transport metadata reached settings callback")
+				}
+				if fields["id"] != "radar" {
+					t.Fatal("wrong device")
+				}
+				if fail {
+					return errors.New("private storage path /household/config")
+				}
+				return nil
+			})
+			hub.Start()
+			server, conn := NewTestWsServer(t, api.NewWsHandler(hub))
+			defer server.Close()
+			defer conn.Close()
+			defer hub.Close()
+			if err := conn.SetReadDeadline(time.Now().Add(3 * time.Second)); err != nil {
+				t.Fatal(err)
+			}
+			payload := map[string]interface{}{"requestId": "00000000-0000-0000-0000-000000000001", "id": "radar", "disabled": false}
+			message, err := json.Marshal(ws.EventMessage{Type: ws.SaveDeviceConfigOverride, Payload: payload})
+			if err != nil {
+				t.Fatal(err)
+			}
+			SendMessage(t, conn, message)
+			reply := receiveWSMessage(t, conn)
+			if !called.Load() || reply["type"] != ws.DeviceConfigSaveResult {
+				t.Fatal(reply)
+			}
+			result := reply["payload"].(map[string]interface{})
+			if result["requestId"] != payload["requestId"] || result["deviceId"] != "radar" || result["success"] != !fail {
+				t.Fatal(result)
+			}
+			if fail {
+				if text, ok := result["error"].(string); !ok || text == "" || strings.Contains(text, "/household") {
+					t.Fatal("storage internals exposed", result)
+				}
+			}
+		})
+	}
+}
+
+func TestInvalidCorrelatedDeviceConfigSaveDoesNotPersist(t *testing.T) {
+	hub := ws.NewWsHub()
+	var called atomic.Bool
+	hub.OnSaveDeviceConfigOverride(func(interface{}) error { called.Store(true); return nil })
+	hub.Start()
+	server, conn := NewTestWsServer(t, api.NewWsHandler(hub))
+	defer server.Close()
+	defer conn.Close()
+	defer hub.Close()
+	if err := conn.SetReadDeadline(time.Now().Add(3 * time.Second)); err != nil {
+		t.Fatal(err)
+	}
+	message, err := json.Marshal(ws.EventMessage{Type: ws.SaveDeviceConfigOverride, Payload: map[string]interface{}{"requestId": "invalid", "id": "radar"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	SendMessage(t, conn, message)
+	reply := receiveWSMessage(t, conn)
+	if called.Load() || reply["type"] != ws.OperationFailed {
+		t.Fatal("invalid request persisted", reply)
+	}
 }

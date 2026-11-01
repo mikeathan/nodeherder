@@ -1,11 +1,28 @@
 package ws
 
+// This file registers the hub WebSocket protocol, dispatches browser actions and
+// broadcasts authoritative updates. Correlated settings saves are acknowledged
+// separately so a browser can distinguish submission from persistence.
+
 import (
 	"encoding/json"
 	"net/http"
 	"node-herder/models/hub"
 	"node-herder/models/settings"
 	"node-herder/utils"
+	"strings"
+
+	"github.com/google/uuid"
+)
+
+const (
+	settingsRequestIDKey = "requestId"
+	settingsDeviceIDKey  = "id"
+	maxSettingsDeviceID  = 256
+
+	settingsSaveFailure     = "Device settings could not be saved. Previous settings remain active."
+	invalidSettingsRequest  = "Invalid settings save request identifier."
+	invalidSettingsDeviceID = "Invalid settings device identifier."
 )
 
 const (
@@ -45,14 +62,16 @@ const (
 	StartMCP      = "startMCP"
 
 	// response
-	Automations       = "automations"
-	DeviceList        = "deviceList"
-	Device            = "device"
-	DeviceAdded       = "deviceAdded"
-	DeviceUpdated     = "deviceUpdated" // returns back updated properties of type DeviceUpdated
-	OperationFailed   = "operationFailed"
-	OperationSuccess  = "operationSuccess"
-	AutomationUpdated = "automationUpdated" // returns back upated automation
+	Automations      = "automations"
+	DeviceList       = "deviceList"
+	Device           = "device"
+	DeviceAdded      = "deviceAdded"
+	DeviceUpdated    = "deviceUpdated" // returns back updated properties of type DeviceUpdated
+	OperationFailed  = "operationFailed"
+	OperationSuccess = "operationSuccess"
+	// DeviceConfigSaveResult carries correlated persistence results for opt-in settings saves.
+	DeviceConfigSaveResult = "deviceConfigSaveResult"
+	AutomationUpdated      = "automationUpdated" // returns back upated automation
 
 	Metrics         = "metrics"
 	AppConfig       = "appConfig"
@@ -363,7 +382,7 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 		c.execute(eventExecutorOptionsWithResult(nil, wrapNoPayload(c.onLoadAppConfig), AppConfig))
 
 	case SaveDeviceConfigOverride:
-		c.execute(eventExecutorOptionsWithSuccess(eventMsg.Payload, wrapPayloadNoResult(c.onSaveDeviceConfigOverride)))
+		c.saveDeviceConfigOverride(eventMsg.Payload)
 
 	case DeleteDeviceConfigOverride:
 		c.execute(eventExecutorOptionsWithSuccess(eventMsg.Payload, wrapPayloadNoResult(c.onDeleteDeviceConfigOverride)))
@@ -503,6 +522,62 @@ func (c *eventHubImpl) execute(opts *eventExecutorOptions) {
 	err = c.Broadcast(successEvent, reportResult)
 	if err != nil {
 		utils.LogErrorf("Failed to broadcast successEvent %s. Error: %s", successEvent, err.Error())
+	}
+}
+
+// validSettingsRequestID accepts a canonical UUID correlation token. Tokens
+// identify one pending browser request; they never authorize the underlying save.
+func validSettingsRequestID(id string) bool {
+	parsed, err := uuid.Parse(id)
+	return err == nil && parsed.String() == id
+}
+
+type deviceConfigSaveResult struct {
+	RequestID string `json:"requestId"`
+	DeviceID  string `json:"deviceId"`
+	Success   bool   `json:"success"`
+	Error     string `json:"error,omitempty"`
+}
+
+func (c *eventHubImpl) saveDeviceConfigOverride(payload interface{}) {
+	fields, _ := payload.(map[string]interface{})
+	token, correlated := fields[settingsRequestIDKey]
+	if !correlated {
+		c.execute(eventExecutorOptionsWithSuccess(payload, wrapPayloadNoResult(c.onSaveDeviceConfigOverride)))
+		return
+	}
+	requestID, ok := token.(string)
+	if !ok || !validSettingsRequestID(requestID) {
+		if err := c.Broadcast(OperationFailed, invalidSettingsRequest); err != nil {
+			utils.LogErrorf("Failed to report invalid settings request: %v", err)
+		}
+		return
+	}
+	deviceID, _ := fields[settingsDeviceIDKey].(string)
+	if len(deviceID) > maxSettingsDeviceID || strings.TrimSpace(deviceID) == "" || strings.ContainsRune(deviceID, '\x00') {
+		if err := c.Broadcast(OperationFailed, invalidSettingsDeviceID); err != nil {
+			utils.LogErrorf("Failed to report invalid settings device: %v", err)
+		}
+		return
+	}
+	result := deviceConfigSaveResult{RequestID: requestID, DeviceID: deviceID}
+	// Transport correlation metadata must not become part of the configuration callback.
+	config := make(map[string]interface{}, len(fields)-1)
+	for key, value := range fields {
+		if key != settingsRequestIDKey {
+			config[key] = value
+		}
+	}
+	if c.onSaveDeviceConfigOverride == nil {
+		result.Error = settingsSaveFailure
+	} else if err := c.onSaveDeviceConfigOverride(config); err != nil {
+		// Return bounded recovery guidance, not repository paths or storage internals.
+		result.Error = settingsSaveFailure
+	} else {
+		result.Success = true
+	}
+	if err := c.Broadcast(DeviceConfigSaveResult, result); err != nil {
+		utils.LogErrorf("Failed to report settings save result: %v", err)
 	}
 }
 

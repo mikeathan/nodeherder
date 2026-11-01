@@ -387,3 +387,39 @@ func TestConnectionsDoNotEnterPublicDevicesOrMCP(t *testing.T) {
 	require.NotContains(t, string(wire), "Private schedule sentinel")
 	require.NotContains(t, string(wire), "waste_schedule/v1")
 }
+
+func TestProviderDevicesExcludedFromPublicContextAndMCP(t *testing.T) {
+	for key, value := range map[string]string{"APP_ENV": "development", "OAUTH_CALLBACK_URL": "http://localhost:4120/api/auth/callback", "JWT_SECRET_KEY": "isolated-public-boundary"} {
+		t.Setenv(key, value)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	h := hubharness.NewFromBridge(t, browserBridge, 2)
+	private := devices.NewDevice("private-provider-id")
+	private.FriendlyName = "Private radar sentinel"
+	private.Provider = "esphome"
+	private.ConnectionType = "esphome"
+	require.NoError(t, h.Store.StoreDevice(private.FriendlyName, private))
+	public := publicDevices{source: h.Store}
+	mcp := mcpserver.New(public, h.Store.AppConfig(), metricservices.NewQueryService(public))
+	router, err := newRouter(4120, h.EventHub, h.Hub, h.Store, mcp, ctx)
+	require.NoError(t, err)
+	requests := []struct{ method, path, body string }{
+		{"GET", "/api/context/devices", ""},
+		{"POST", "/api/mcp", `{"jsonrpc":"2.0","id":1,"method":"resources/read","params":{"uri":"nodeherder://system-prompt"}}`},
+	}
+	for _, request := range requests {
+		r := httptest.NewRequest(request.method, request.path, strings.NewReader(request.body))
+		r.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, r)
+		require.Equal(t, 200, w.Code, w.Body.String())
+		require.NotContains(t, w.Body.String(), "Private radar sentinel")
+		require.NotContains(t, w.Body.String(), "private-provider-id")
+	}
+	state, err := h.Store.LoadHubState()
+	require.NoError(t, err)
+	encoded, err := json.Marshal(state)
+	require.NoError(t, err)
+	require.Contains(t, string(encoded), "Private radar sentinel")
+}

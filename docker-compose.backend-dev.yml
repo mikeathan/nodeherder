@@ -15,11 +15,15 @@ services:
       - ./backend/data:/backend/data
       - ./backend/logs:/backend/logs
       - integration-secrets:/run/nodeherder-secrets
+      - device-provider-secrets:/run/nodeherder-device-keys
     environment:
       APP_ENV: development
       INTEGRATION_KEYRING_FILE: ${INTEGRATION_KEYRING_FILE:-}
       INTEGRATION_KEYRING_DIR: /run/nodeherder-secrets/managed
+      DEVICE_PROVIDER_KEYRING_FILE: ${DEVICE_PROVIDER_KEYRING_FILE:-}
+      DEVICE_PROVIDER_KEYRING_DIR: /run/nodeherder-device-keys/managed
       TZ: Europe/London
 
 volumes:
   integration-secrets:
+  device-provider-secrets:

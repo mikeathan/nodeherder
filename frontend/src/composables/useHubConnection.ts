@@ -2,93 +2,54 @@
 import { store } from '@/store';
 import { fetchHubState } from '@/services/hubstate.service';
 import { onMounted, onBeforeUnmount } from 'vue';
-import type { MutationPayload } from 'vuex';
-import { appConfigMutations } from '@/store/modules/hub-state';
-import type { Device, DeviceUpdate } from '@/types/device';
+import { createHubSnapshotReplay } from './hubSnapshotReplay';
 import type { HubStateSnapshot } from '@/types/hub.type';
 
 let generation = 0;
 let pendingConnection: Promise<void> | null = null;
 let pendingSnapshot: Promise<void> | null = null;
 let snapshotController: AbortController | null = null;
-const maxSnapshotConfigMutations = 256;
+function markSnapshotFailed(owner: number) {
+  if (owner === generation) store.commit('hub/setLoadStatus', 'failed');
+}
 
-function preserveLiveReports(data: HubStateSnapshot, updates: Map<string, DeviceUpdate>, added: Map<string, Device>): HubStateSnapshot {
-  const devices = new Map(data.devices.map((device) => [device.id, device]));
-  for (const [id, device] of added) devices.set(id, device);
-  for (const [id, update] of updates) {
-    const device = devices.get(id);
-    if (!device) continue;
-    const exposes = { ...device.exposes };
-    for (const [name, value] of Object.entries(update.data)) {
-      if (exposes[name]) exposes[name] = { ...exposes[name], data: value };
-    }
-    devices.set(id, { ...device, exposes, last_seen: update.last_seen || device.last_seen, availability: update.availability || device.availability });
+function createSnapshotAttempt(controller: AbortController, owner: number) {
+  let failed = false;
+  function fail() {
+    failed = true;
+    controller.abort();
+    markSnapshotFailed(owner);
   }
-  return { ...data, devices: [...devices.values()] };
+  const replay = createHubSnapshotReplay(fail);
+  const timer = setTimeout(fail, 8000);
+  function dispose() {
+    clearTimeout(timer);
+    replay.stop();
+    controller.signal.removeEventListener('abort', dispose);
+  }
+  controller.signal.addEventListener('abort', dispose, { once: true });
+  return { replay, dispose, hasFailed: () => failed };
+}
+
+function publishSnapshot(snapshot: HubStateSnapshot) {
+  const action = store.getters['hub/isInitialized']() ? 'hub/refresh' : 'hub/init';
+  store.dispatch(action, snapshot);
+  store.commit('hub/setLoadStatus', 'ready');
 }
 
 async function requestSnapshot(controller: AbortController, owner: number) {
-  const { signal } = controller;
-  // Coalesce by known device/field, bounded by the live registry rather than message count.
-  const updates = new Map<string, DeviceUpdate>();
-  const added = new Map<string, Device>();
-  const configEdits: MutationPayload[] = [];
-  let configOverflow = false;
-  let listChanged = false;
-  let timedOut = false;
-  const timer = setTimeout(() => { timedOut = true; controller.abort(); }, 8000);
-  const unsubscribe = store.subscribe((mutation) => {
-    if (mutation.type === 'hub/updateDevice') {
-      const update = mutation.payload as DeviceUpdate;
-      const device = store.getters['hub/findDevice'](update.id) as Device | undefined;
-      if (!device) return;
-      const previous = updates.get(update.id);
-      const data = { ...previous?.data };
-      for (const [name, value] of Object.entries(update.data ?? {})) if (device.exposes[name]) data[name] = value;
-      updates.set(update.id, { ...previous, ...update, data, last_seen: update.last_seen || previous?.last_seen || '', availability: update.availability || previous?.availability || null });
-    } else if (mutation.type === 'hub/addDevice') {
-      const device = mutation.payload as Device;
-      added.set(device.id, device);
-    } else if (mutation.type === 'hub/setDevices') {
-      listChanged = true;
-    } else if (mutation.type.startsWith('hub/') && Object.prototype.hasOwnProperty.call(appConfigMutations, mutation.type.slice(4))) {
-      if (configEdits.length >= maxSnapshotConfigMutations) {
-        configOverflow = true;
-        controller.abort();
-        if (owner === generation) store.commit('hub/setLoadStatus', 'failed');
-        return;
-      }
-      configEdits.push({
-        type: mutation.type.slice(4),
-        payload: mutation.payload === undefined ? undefined : JSON.parse(JSON.stringify(mutation.payload)),
-      });
-    }
-  });
-  const dispose = () => {
-    clearTimeout(timer);
-    unsubscribe();
-    signal.removeEventListener('abort', dispose);
-  };
-  signal.addEventListener('abort', dispose, { once: true });
+  const attempt = createSnapshotAttempt(controller, owner);
   try {
-    let data = await fetchHubState(signal);
-    if (signal.aborted || owner !== generation) return;
-    if (listChanged) data = { ...data, devices: store.getters['hub/listAllDevices']() as Device[] };
-    else data = preserveLiveReports(data, updates, added);
-    if (configEdits.length > 0) {
-      const next = { appConfig: JSON.parse(JSON.stringify(data.config)) as HubStateSnapshot['config'] };
-      for (const edit of configEdits) appConfigMutations[edit.type](next, edit.payload);
-      data = { ...data, config: next.appConfig };
-    }
-    unsubscribe();
-    store.dispatch(store.getters['hub/isInitialized']() ? 'hub/refresh' : 'hub/init', data);
-    store.commit('hub/setLoadStatus', 'ready');
+    const snapshot = await fetchHubState(controller.signal);
+    if (controller.signal.aborted || owner !== generation) return;
+    const reconciled = attempt.replay.reconcile(snapshot);
+    // Publishing the reconciled snapshot must not be captured as another live edit.
+    attempt.replay.stop();
+    publishSnapshot(reconciled);
   } catch {
-    if ((signal.aborted && !timedOut && !configOverflow) || owner !== generation) return;
-    store.commit('hub/setLoadStatus', 'failed');
+    if (!controller.signal.aborted || attempt.hasFailed()) markSnapshotFailed(owner);
   } finally {
-    dispose();
+    attempt.dispose();
   }
 }
 
@@ -118,6 +79,7 @@ async function validateAndConnect(owner: number) {
   loadHubState();
 }
 
+/** Coalesces session validation and starts the shared socket/snapshot work when authenticated. */
 export function startHubConnection(): Promise<void> {
   if (pendingConnection) return pendingConnection;
   const check = validateAndConnect(generation).finally(() => {
@@ -138,6 +100,7 @@ export function stopHubConnection() {
   if (store.getters['hub/loadStatus'] === 'loading') store.commit('hub/setLoadStatus', 'idle');
 }
 
+/** Owns shell recovery listeners and disposes shared connection work on unmount. */
 export function useHubConnection() {
   let connected = false;
   const unsubscribe = store.subscribe((mutation) => {

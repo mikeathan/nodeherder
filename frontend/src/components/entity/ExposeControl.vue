@@ -11,9 +11,10 @@
     binaryOnValue,
     controlOf,
     exposeKind,
-    exposeLabel,
+    exposeSemanticName, exposeDisplayLabel,
     exposePresets,
     exposeRange,
+    exposeTextMaxLength,
     formatExposeValue,
     isBinaryOn,
   } from '@/domain/exposes';
@@ -22,11 +23,15 @@
   import UiRange from '@/components/ui/UiRange.vue';
   import UiToggle from '@/components/ui/UiToggle.vue';
   import UiSelect from '@/components/ui/UiSelect.vue';
+  import UiButton from '@/components/ui/UiButton.vue';
+  import { useDeviceCommand } from '@/composables/useDeviceCommand';
+  import { confirm } from '@/composables/useConfirm';
 
   const props = defineProps<{ device: Device; expose: Expose; label?: string; expanded?: boolean; card?: boolean }>();
+  const { sendAction } = useDeviceCommand();
 
   const control = computed(() => controlOf(props.expose));
-  const name = computed(() => props.label ?? exposeLabel(props.expose.name));
+  const name = computed(() => props.label ?? exposeDisplayLabel(props.expose));
   const range = computed(() => exposeRange(props.expose));
   const presets = computed(() => exposePresets(props.expose));
 
@@ -66,6 +71,10 @@
     }
     sendNumber(Number(input.value));
   }
+  async function runAction() {
+    if (props.device.provider && !await confirm({ title: `Run ${name.value}?`, message: 'This action is sent to the device immediately.', confirmLabel: 'Run action' })) return;
+    sendAction(props.device, props.expose.name);
+  }
 </script>
 
 <template>
@@ -73,7 +82,7 @@
     class="nh-xc"
     :class="[`is-${control}`, { 'is-card': card, 'has-presets': presets.length > 0 }]"
     :aria-busy="pending || undefined"
-    :style="{ '--range-color': `var(--nh-kind-${exposeKind(expose.name)})` }">
+    :style="{ '--range-color': `var(--nh-kind-${exposeKind(exposeSemanticName(expose))})` }">
     <UiToggle
       v-if="control === 'switch'"
       :model-value="isBinaryOn(expose)"
@@ -149,6 +158,9 @@
       :disabled="disabled"
       @change="commitNumber" />
 
+    <input v-else-if="control === 'text'" type="text" class="nh-input" :value="typeof expose.data === 'string' ? expose.data : ''" :aria-label="name" :disabled="disabled" :maxlength="exposeTextMaxLength(expose)" @change="commit(($event.target as HTMLInputElement).value)" />
+
+    <UiButton v-else-if="control === 'button'" :disabled="disabled" @click="runAction">{{ name }}</UiButton>
     <span v-else class="nh-xc-read">{{ formatExposeValue(expose) }}</span>
   </div>
 </template>

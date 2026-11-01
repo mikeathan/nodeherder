@@ -51,6 +51,70 @@ func TestDirtyCallbackMayRegisterAnotherCallback(t *testing.T) {
 	}
 }
 
+func TestProviderDeviceKeepsStableIdentityAcrossBridgeRefresh(t *testing.T) {
+	repo := repository.NewMemoryDeviceRepo()
+	app, err := store.NewAppStore(repo, nil, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	d := devices.NewDevice("a-provider-uuid")
+	d.FriendlyName = "Provider device"
+	d.Provider = "esphome"
+	if err := app.StoreDevice(d.FriendlyName, d); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := app.FindDeviceById(d.Id); err != nil || got.Id != d.Id {
+		t.Fatalf("ID lookup: %v %v", got, err)
+	}
+	if err := app.StoreBridgeInfoList(nil); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := app.FindDeviceByFriendlyName(d.FriendlyName); err != nil || got.Id != d.Id {
+		t.Fatalf("name lookup after refresh: %v %v", got, err)
+	}
+	imposter := devices.NewDevice("other")
+	imposter.FriendlyName = d.FriendlyName
+	if err := app.StoreDevice(imposter.FriendlyName, imposter); err == nil {
+		t.Fatal("legacy device overwrote provider")
+	}
+	other := devices.NewDevice("other")
+	other.FriendlyName = d.FriendlyName
+	other.Provider = "second-provider"
+	if err := app.StoreDevice(other.FriendlyName, other); err == nil {
+		t.Fatal("provider name collision accepted")
+	}
+	if got, err := app.FindDeviceById(d.Id); err != nil || got.Provider != "esphome" {
+		t.Fatalf("original lost: %v %v", got, err)
+	}
+}
+
+func TestProviderRenameReleasesOldName(t *testing.T) {
+	app, err := store.NewAppStore(repository.NewMemoryDeviceRepo(), nil, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	first := devices.NewDevice("first-provider")
+	first.Provider, first.FriendlyName = "esphome", "Old name"
+	if err := app.StoreDevice(first.FriendlyName, first); err != nil {
+		t.Fatal(err)
+	}
+	first.FriendlyName = "New name"
+	if err := app.StoreDevice(first.FriendlyName, first); err != nil {
+		t.Fatal(err)
+	}
+	second := devices.NewDevice("second-provider")
+	second.Provider, second.FriendlyName = "esphome", "Old name"
+	if err := app.StoreDevice(second.FriendlyName, second); err != nil {
+		t.Fatalf("old name remained reserved: %v", err)
+	}
+	if got, err := app.FindDeviceByFriendlyName("New name"); err != nil || got.Id != first.Id {
+		t.Fatalf("new name: %v %v", got, err)
+	}
+	if got, err := app.FindDeviceByFriendlyName("Old name"); err != nil || got.Id != second.Id {
+		t.Fatalf("old name: %v %v", got, err)
+	}
+}
+
 func TestDirtyCallbackRegistrationConcurrentWithDeviceWrites(t *testing.T) {
 	app, err := store.NewAppStore(&mocks.NopRepository{}, nil, nil, nil)
 	if err != nil {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"maps"
 	"node-herder/models/automations"
+	"node-herder/models/bridge"
 	"node-herder/models/devices"
 	"node-herder/models/settings"
 
@@ -132,6 +133,90 @@ func (dm *DeviceProcessor) CreateOrUpdateDevice(friendlyName, connType string, d
 	}
 
 	dm.processDeviceUpdate(device, dataMap)
+	return nil
+}
+
+// RegisterProviderDevice installs a fresh provider inventory generation under its
+// stable ID. The caller must serialize it with reports and removal on the device
+// lane. Storage failure leaves the previous lifetime untouched.
+func (dm *DeviceProcessor) RegisterProviderDevice(device *devices.Device) error {
+	if device == nil || device.Id == "" || device.Provider == "" || device.FriendlyName == "" {
+		return fmt.Errorf("provider device identity is required")
+	}
+	dm.mutex.RLock()
+	old := dm.deviceServices[device.Id]
+	dm.mutex.RUnlock()
+	storeDevice := func() error { return dm.registrar.store.StoreDevice(device.FriendlyName, device) }
+	var err error
+	if old != nil {
+		// Change-only binary sensors may not republish their current state after a
+		// reconnect. Retain the last confirmed binary value for matching entities
+		// before fencing/replacing the old generation.
+		preserveProviderBinaryValues(device, old.service.device)
+		// Fence delayed publication before replacing the persisted generation.
+		err = old.service.Retire(storeDevice)
+	} else {
+		err = storeDevice()
+	}
+	if err != nil {
+		return fmt.Errorf("store provider device: %w", err)
+	}
+	dm.mutex.Lock()
+	if dm.deviceServices[device.Id] == old {
+		delete(dm.deviceServices, device.Id)
+	}
+	dm.mutex.Unlock()
+	dm.processDeviceUpdate(device, map[string]interface{}{})
+	return nil
+}
+
+// preserveProviderBinaryValues carries matching binary states across a provider
+// inventory replacement. Numeric readings are re-published on subscription and are
+// deliberately not carried, so stale measurements are never presented as live.
+func preserveProviderBinaryValues(next, previous *devices.Device) {
+	if next == nil || previous == nil {
+		return
+	}
+	for name, entity := range next.Exposes {
+		if entity == nil || entity.Type != bridge.BinaryDataType {
+			continue
+		}
+		oldEntity := previous.Exposes[name]
+		if oldEntity == nil || oldEntity.Type != entity.Type {
+			continue
+		}
+		if value := oldEntity.Data.Value(); value != nil {
+			entity.Data.SetValue(value)
+		}
+	}
+}
+
+// UpdateProviderDevice applies a report to an already registered provider
+// generation. The caller serializes updates with inventory and availability.
+func (dm *DeviceProcessor) UpdateProviderDevice(id string, payload map[string]interface{}) error {
+	dm.mutex.RLock()
+	entry := dm.deviceServices[id]
+	dm.mutex.RUnlock()
+	if entry == nil || entry.service.device.Provider == "" {
+		return fmt.Errorf("provider device not registered")
+	}
+	dm.processDeviceUpdate(entry.service.device, payload)
+	return nil
+}
+
+// ProviderOffline marks an existing provider generation unavailable and clears
+// queued presentation updates. The caller serializes it on the device lane.
+func (dm *DeviceProcessor) ProviderOffline(id string) error {
+	dm.mutex.RLock()
+	entry := dm.deviceServices[id]
+	dm.mutex.RUnlock()
+	if entry == nil || entry.service.device.Provider == "" {
+		return fmt.Errorf("provider device not registered")
+	}
+	entry.service.ProviderOffline()
+	if err := dm.registrar.store.StoreDevice(entry.service.device.FriendlyName, entry.service.device); err != nil {
+		return fmt.Errorf("store provider availability: %w", err)
+	}
 	return nil
 }
 

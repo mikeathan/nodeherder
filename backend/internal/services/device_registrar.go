@@ -1,12 +1,16 @@
 package services
 
 import (
+	"context"
 	"fmt"
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
 	"node-herder/store"
 	"node-herder/utils"
 	"strings"
+	"sync"
+
+	"node-herder/models/bridge"
 )
 
 type DeviceRegistrar interface {
@@ -23,6 +27,47 @@ type HubRegisterService struct {
 	store                     store.AppStore
 	eventHub                  ws.EventHub
 	deviceAvailabilityTimeout int
+	commandMu                 sync.RWMutex
+	providerCommands          ProviderCommands
+}
+
+// ProviderCommands submits commands to the owner of active provider sessions.
+type ProviderCommands interface {
+	Command(context.Context, string, string, any) error
+}
+
+// SetProviderCommands installs the shared provider command target. It is safe to
+// replace while automation or WebSocket handlers are active.
+func (s *HubRegisterService) SetProviderCommands(commands ProviderCommands) {
+	s.commandMu.Lock()
+	defer s.commandMu.Unlock()
+	s.providerCommands = commands
+}
+
+// SendProviderCommand validates current availability and writable metadata before
+// dispatching one command. A successful return means submitted, not confirmed.
+func (s *HubRegisterService) SendProviderCommand(ctx context.Context, id, name string, value any) error {
+	if ctx == nil {
+		return fmt.Errorf("command context is required")
+	}
+	device, err := s.LookupById(id)
+	if err != nil || device == nil || device.Provider == "" {
+		return fmt.Errorf("provider device not found")
+	}
+	if device.GetAvailability() != devices.OnlineAvailability || s.store.AppConfig().GetDeviceConfigCache().IsDeviceDisabled(id) {
+		return fmt.Errorf("provider device is unavailable")
+	}
+	expose, ok := device.GetExpose(name)
+	if !ok || (expose.AccessMode != bridge.WriteAccessMode && expose.AccessMode != bridge.ReadWriteAccessMode) {
+		return fmt.Errorf("device field is not writable")
+	}
+	s.commandMu.RLock()
+	commands := s.providerCommands
+	s.commandMu.RUnlock()
+	if commands == nil {
+		return fmt.Errorf("provider device is unavailable")
+	}
+	return commands.Command(ctx, id, name, value)
 }
 
 func NewHubRegisterService(store store.AppStore, hub ws.EventHub, deviceAvailabilityTimeout int) *HubRegisterService {

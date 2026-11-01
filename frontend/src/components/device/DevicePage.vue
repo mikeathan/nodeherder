@@ -4,12 +4,15 @@
    * The tab is kept in the URL (?tab=) so it survives reloads and can be linked.
    * Back returns to where the user came from, or to the device list when opened directly.
    */
-  import { computed, defineAsyncComponent } from 'vue';
-  import { useRoute, useRouter } from 'vue-router';
+  import { computed, defineAsyncComponent, ref, watch } from 'vue';
+  import { useRouter } from 'vue-router';
   import { RouteName } from '@/types/router';
-  import { ExposeCategories } from '@/types/device.type';
+  import { ConnectionTypes } from '@/types/device.type';
   import { useHub } from '@/composables/useHub';
-  import { resolveProtocol } from '@/domain/devices';
+  import { useDeviceTabs } from '@/composables/device/useDeviceTabs';
+  import { isESPHomeDevice } from '@/domain/devices';
+  import { DeviceTabIds, deviceCategorySections, deviceTabLabel, lastSeenLabel } from '@/domain/devices/page';
+  import { supportsSpatialMapping } from '@/domain/spatial';
   import { deviceIcon } from '@/components/ui/icons';
   import UiPageHeader from '@/components/ui/UiPageHeader.vue';
   import UiCard from '@/components/ui/UiCard.vue';
@@ -21,45 +24,35 @@
   import DeviceChips from '@/components/entity/DeviceChips.vue';
   import DeviceStatusChip from '@/components/entity/DeviceStatusChip.vue';
   import DeviceActions from './DeviceActions.vue';
+  import DeviceAbout from './DeviceAbout.vue';
+  import ESPHomeManageDialog from './esphome/ESPHomeManageDialog.vue';
+  import ProviderEntitySection from './provider/ProviderEntitySection.vue';
 
   const DeviceMetrics = defineAsyncComponent(() => import('./DeviceMetrics.vue'));
   const DeviceSettings = defineAsyncComponent(() => import('./DeviceSettings.vue'));
+  const SpatialPanel = defineAsyncComponent(() => import('./spatial/SpatialPanel.vue'));
 
   const props = defineProps<{ id: string }>();
-  const route = useRoute();
   const router = useRouter();
   const { findDevice, initialized, statusOf } = useHub();
+  const { tabs, tab, selectTab, onTabKey } = useDeviceTabs();
 
   const device = computed(() => findDevice(props.id));
   const status = computed(() => (device.value ? statusOf(device.value) : 'unknown'));
-
-  const TABS = [
-    { id: 'controls', label: 'Controls' },
-    { id: 'history', label: 'History' },
-    { id: 'settings', label: 'Settings' },
-    { id: 'about', label: 'About' },
-  ] as const;
-  type TabId = (typeof TABS)[number]['id'];
-  const tab = computed<TabId>(() => (TABS.some((t) => t.id === route.query.tab) ? (route.query.tab as TabId) : 'controls'));
-  const selectTab = (id: TabId) => router.replace({ query: { ...route.query, tab: id === 'controls' ? undefined : id } });
-  function onTabKey(e: KeyboardEvent, index: number) {
-    const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
-    if (!step) return;
-    const next = TABS[(index + step + TABS.length) % TABS.length];
-    selectTab(next.id);
-    (document.getElementById(`tab-${next.id}`) as HTMLElement | null)?.focus();
-  }
+  const isESPHome = computed(() => isESPHomeDevice(device.value));
+  const lastSeenText = computed(() => lastSeenLabel(device.value));
+  const showSpatial = ref(false);
+  const showESPHomeSettings = ref(false);
+  const canMapSpatial = computed(() => supportsSpatialMapping(device.value));
+  watch(() => props.id, () => { showSpatial.value = false; });
 
   const back = computed(() => {
     const previous = router.options.history.state.back;
     return typeof previous === 'string' ? previous : { name: RouteName.DeviceList };
   });
 
-  const byCategory = (category: string) => Object.values(device.value?.exposes ?? {}).filter((e) => e.category === category);
-  const measurements = computed(() => byCategory(ExposeCategories.Measurement));
-  const configuration = computed(() => byCategory(ExposeCategories.Config));
-  const diagnostics = computed(() => byCategory(ExposeCategories.Diagnostic));
-  const protocol = computed(() => resolveProtocol(device.value?.connection_type));
+  const sections = computed(() => deviceCategorySections(device.value));
+
 </script>
 
 <template>
@@ -75,12 +68,12 @@
     <div class="nh-dev-chips">
       <DeviceStatusChip :device="device" />
       <DeviceChips :device="device" />
-      <span class="nh-muted nh-dev-seen">Last seen <RelativeTime :value="device.last_seen" /></span>
+      <span class="nh-muted nh-dev-seen">{{ lastSeenText }} <RelativeTime :value="device.last_seen" /></span>
     </div>
 
     <div class="nh-tabs" role="tablist" aria-label="Device sections">
       <button
-        v-for="(t, i) in TABS"
+        v-for="(t, i) in tabs"
         :id="`tab-${t.id}`"
         :key="t.id"
         type="button"
@@ -91,7 +84,7 @@
         :tabindex="tab === t.id ? 0 : -1"
         @click="selectTab(t.id)"
         @keydown="onTabKey($event, i)">
-        {{ t.label }}
+        {{ deviceTabLabel(t.id, isESPHome) }}
       </button>
     </div>
 
@@ -99,44 +92,43 @@
       <template v-if="tab === 'controls'">
         <p v-if="status === 'offline'" class="nh-alert is-warn"><UiIcon name="offline" /><span>This device is offline. Values are the last ones it reported and controls are paused.</span></p>
         <p v-else-if="status === 'disabled'" class="nh-alert"><UiIcon name="disabled" /><span>This device is disabled in its settings, so the hub ignores its updates.</span></p>
+        <UiButton v-if="canMapSpatial" icon="signal" @click="showSpatial = !showSpatial">{{ showSpatial ? 'Hide spatial view' : 'Open spatial view' }}</UiButton>
+        <SpatialPanel v-if="showSpatial" :device="device" />
         <div class="nh-dev-grid">
-          <UiCard title="Readings and controls" icon="gauge" flush>
-            <ExposeRow v-for="e in measurements" :key="e.name" :device="device" :expose="e" show-description />
-            <p v-if="!measurements.length" class="nh-card-body nh-muted">This device reports no readings.</p>
-          </UiCard>
-          <div class="nh-dev-side">
-            <UiCard v-if="configuration.length" title="Configuration" icon="settings" flush>
-              <ExposeRow v-for="e in configuration" :key="e.name" :device="device" :expose="e" show-description />
+          <template v-if="isESPHome">
+            <div class="nh-dev-side">
+              <ProviderEntitySection v-if="sections.readings.length" :device="device" :entities="sections.readings" title="Readings" icon="gauge" show-description />
+              <ProviderEntitySection v-if="sections.controls.length" :device="device" :entities="sections.controls" title="Controls" icon="power" show-description />
+              <ProviderEntitySection v-if="sections.diagnostics.length" :device="device" :entities="sections.diagnostics" title="Diagnostics" icon="signal" />
+            </div>
+            <div v-if="sections.configuration.length" class="nh-dev-side">
+              <ProviderEntitySection :device="device" :entities="sections.configuration" title="Device configuration" icon="settings" show-description />
+            </div>
+          </template>
+          <template v-else>
+            <UiCard title="Readings and controls" icon="gauge" flush>
+              <ExposeRow v-for="e in sections.measurements" :key="e.name" :device="device" :expose="e" show-description />
+              <p v-if="!sections.measurements.length" class="nh-card-body nh-muted">This device reports no readings.</p>
             </UiCard>
-            <UiCard v-if="diagnostics.length" title="Diagnostics" icon="signal" flush>
-              <ExposeRow v-for="e in diagnostics" :key="e.name" :device="device" :expose="e" />
-            </UiCard>
-          </div>
+            <div class="nh-dev-side">
+              <UiCard v-if="sections.configuration.length" title="Configuration" icon="settings" flush>
+                <ExposeRow v-for="e in sections.configuration" :key="e.name" :device="device" :expose="e" show-description />
+              </UiCard>
+              <UiCard v-if="sections.diagnostics.length" title="Diagnostics" icon="signal" flush>
+                <ExposeRow v-for="e in sections.diagnostics" :key="e.name" :device="device" :expose="e" />
+              </UiCard>
+            </div>
+          </template>
         </div>
       </template>
-      <DeviceMetrics v-else-if="tab === 'history'" :id="device.id" />
-      <UiCard v-else-if="tab === 'settings'" title="Settings on this hub" icon="settings">
+      <DeviceMetrics v-else-if="tab === DeviceTabIds.History" :id="device.id" />
+      <UiCard v-else-if="tab === DeviceTabIds.Settings" title="Settings on this hub" icon="settings">
+        <UiButton v-if="device.connection_type === ConnectionTypes.ESPHome" icon="settings" @click="showESPHomeSettings = true">Manage ESPHome connection</UiButton>
         <DeviceSettings :id="device.id" />
       </UiCard>
-      <UiCard v-else title="About" icon="info" flush>
-        <dl class="nh-kv">
-          <dt>Name</dt>
-          <dd>{{ device.friendly_name }}</dd>
-          <dt>Address</dt>
-          <dd><code>{{ device.id }}</code></dd>
-          <dt>Model</dt>
-          <dd>{{ device.description || '—' }}</dd>
-          <dt>Connection</dt>
-          <dd>{{ protocol.label }}<span v-if="protocol.generic" class="nh-muted"> (reported as “{{ device.connection_type || 'unknown' }}”)</span></dd>
-          <dt>Power</dt>
-          <dd>{{ device.power_source || '—' }}</dd>
-          <dt>Availability</dt>
-          <dd>{{ device.availability }}</dd>
-          <dt>Last seen</dt>
-          <dd><RelativeTime :value="device.last_seen" /></dd>
-        </dl>
-      </UiCard>
+      <DeviceAbout v-else :device="device" />
     </div>
+    <ESPHomeManageDialog :open="showESPHomeSettings" @close="showESPHomeSettings = false" />
   </div>
   <div v-else-if="!initialized" aria-busy="true" class="nh-card nh-dev-skel"><span class="nh-skel" /><span class="nh-skel" /></div>
   <UiEmpty v-else icon="unknown" title="Device not found" text="It may have been removed or renamed on the bridge.">

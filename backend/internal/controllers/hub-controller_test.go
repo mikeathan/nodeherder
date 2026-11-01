@@ -46,6 +46,29 @@ const device1BatterySource = `{"id":"device 1","conn":"mqtt","power_source":"bat
 const device2 = `{"battery":98, "humidity":71.2,  "linkquality":36.1,"temperature":17.1,"voltage":2999}`
 const device3NoLastSeen = `{"id":"device 1","conn":"mqtt","power_source":"battery","humidity":91.12,"temperature":19.000000000000004,"availability":"online","linkquality":47,"battery":67}`
 
+func TestProviderDeviceUsesOrderedHubPipeline(t *testing.T) {
+	h := hubharness.NewFromBridge(t, []byte(`[]`), 0)
+	device := devices.NewDevice("provider-device-id")
+	device.FriendlyName = "Provider device"
+	device.Provider = "esphome"
+	device.ConnectionType = "esphome"
+	entity := devices.NewEntity("temperature")
+	entity.Type = bridge.NumericDataType
+	entity.AccessMode = bridge.ReadAccessMode
+	device.Exposes[entity.Name] = entity
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	require.NoError(t, h.Hub.RegisterProviderDevice(ctx, device))
+	require.NoError(t, h.Hub.UpdateProviderDevice(ctx, device.Id, map[string]interface{}{"temperature": float64(21)}))
+	stored, err := h.Store.FindDeviceById(device.Id)
+	require.NoError(t, err)
+	require.Equal(t, float64(21), stored.Exposes["temperature"].Data.Value())
+	require.NoError(t, h.Hub.ProviderDeviceOffline(ctx, device.Id))
+	stored, err = h.Store.FindDeviceById(device.Id)
+	require.NoError(t, err)
+	require.Equal(t, devices.OfflineAvailability, stored.GetAvailability())
+}
+
 func TestDoorTriggersDoorAlarmAutomation(t *testing.T) {
 	mqtt := &mocks.MockMqttClient{}
 	ws := &mocks.NopWsServer{}

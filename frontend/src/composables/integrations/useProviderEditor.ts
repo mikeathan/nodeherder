@@ -7,6 +7,7 @@ import type { DestinationReview, ProviderEditorMode } from '@/types/integrations
 import { useProviderDraft } from './useProviderDraft';
 import { useProviderPreview } from './useProviderPreview';
 import { cloneDefinitionValue } from './useEditableModel';
+import { createUUID } from '@/utils/unique';
 
 /** Coordinates validated host-definition actions; draft navigation and previews have separate owners. */
 export function useProviderEditor() {
@@ -185,7 +186,7 @@ export function useProviderEditor() {
     }
   }
   async function copy() {
-    const id = `${String(route.params.provider).slice(0, 44)}_${crypto.randomUUID().slice(0, 8)}`;
+    const id = `${String(route.params.provider).slice(0, 44)}_${createUUID().slice(0, 8)}`;
     const value = await confirm({
       title: 'Copy provider?',
       message: `Create a separate editable provider named ${id}. It will not share integration addresses or credentials.`,

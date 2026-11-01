@@ -17,5 +17,10 @@ const (
 	NumericDataType   ExposeDataType = "numeric"
 	EnumDataType      ExposeDataType = "enum"
 	BinaryDataType    ExposeDataType = "binary"
+	TextDataType      ExposeDataType = "text"
+	ButtonDataType    ExposeDataType = "button"
 	CompositeDataType ExposeDataType = "composite"
+
+	ValueKeyOn  = "on"
+	ValueKeyOff = "off"
 )

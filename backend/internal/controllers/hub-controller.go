@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"node-herder/internal/automations"
 	"node-herder/internal/lanes"
 	mcpserver "node-herder/internal/mcp/server"
@@ -82,6 +83,11 @@ func WithMCPServer(mcp mcpserver.MCPStatusProvider) HubControllerOption {
 	return func(h *HubController) {
 		h.mcpServer = mcp
 	}
+}
+
+// SetProviderCommands connects UI and automation commands to the active provider manager.
+func (h *HubController) SetProviderCommands(commands services.ProviderCommands) {
+	h.registrar.SetProviderCommands(commands)
 }
 
 func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt.MqttClient, options ...HubControllerOption) *HubController {
@@ -352,12 +358,21 @@ func (h *HubController) registerEventHubEvents() {
 			return fmt.Errorf("device field %q is not writable", name)
 		}
 		value, exists := payload["value"]
-		if !exists || value == nil {
+		if !exists || (value == nil && device.Provider == "") {
 			return errors.New("device value is required")
 		}
 		// Use the hub policy shared with the browser. A report remains evidence;
 		// routine cached configuration echoes no longer force observation broadcasts.
 		expose.Data.ExpectReportUntil(time.Now().Add(appconfig.GetDeviceConfigCache().GetCommandConfirmationTimeout(id)))
+		if device.Provider != "" {
+			ctx, cancel := context.WithTimeout(h.ctx, 10*time.Second)
+			defer cancel()
+			if err := h.registrar.SendProviderCommand(ctx, id, name, value); err != nil {
+				expose.Data.ExpectReportUntil(time.Time{})
+				return err
+			}
+			return nil
+		}
 		msg := map[string]any{
 			name: value,
 		}
@@ -619,6 +634,89 @@ func (h *HubController) Ingest(id string, payload []byte, connType string) error
 	return h.ingress.Submit(ingressKey, func() { h.route(id, payload, connType) })
 }
 
+// RegisterProviderDevice installs a discovered device on the same ordered lane
+// used by its automations and later reports. The caller owns the device until
+// this call and must not mutate its inventory after registration.
+func (h *HubController) RegisterProviderDevice(ctx context.Context, device *devices.Device) error {
+	if ctx == nil || device == nil || device.Provider == "" || device.FriendlyName == "" {
+		return errors.New("invalid provider device")
+	}
+	return h.deviceLanes.Do(ctx, device.FriendlyName, func() error { return h.getDeviceProcessor().RegisterProviderDevice(device) })
+}
+
+// UpdateProviderDevice applies a confirmed report on its device lane. The map
+// is copied before enqueueing; its values must be immutable scalar observations.
+func (h *HubController) UpdateProviderDevice(ctx context.Context, id string, payload map[string]interface{}) error {
+	if ctx == nil {
+		return errors.New("context is required")
+	}
+	name, ok := h.getDeviceProcessor().DeviceName(id)
+	if !ok {
+		return errors.New("provider device not registered")
+	}
+	copy := maps.Clone(payload)
+	return h.deviceLanes.Do(ctx, name, func() error { return h.getDeviceProcessor().UpdateProviderDevice(id, copy) })
+}
+
+// ProviderDeviceOffline serializes a provider disconnect with reports and marks
+// the stored generation unavailable without discarding its last known values.
+func (h *HubController) ProviderDeviceOffline(ctx context.Context, id string) error {
+	if ctx == nil {
+		return errors.New("context is required")
+	}
+	name, ok := h.getDeviceProcessor().DeviceName(id)
+	if !ok {
+		found, err := h.store.FindDeviceByIds([]string{id})
+		if err != nil {
+			return err
+		}
+		if len(found) == 0 {
+			return nil
+		}
+		device := found[0]
+		if device == nil || device.Provider == "" {
+			return errors.New("provider device not registered")
+		}
+		return h.deviceLanes.Do(ctx, device.FriendlyName, func() error {
+			device.SetAvailability(devices.OfflineAvailability)
+			if err := h.store.StoreDevice(device.FriendlyName, device); err != nil {
+				return err
+			}
+			update := devices.NewUpdatePackage(id)
+			update.Availability = devices.OfflineAvailability
+			return h.eventHub.Broadcast(ws.DeviceUpdated, update)
+		})
+	}
+	return h.deviceLanes.Do(ctx, name, func() error { return h.getDeviceProcessor().ProviderOffline(id) })
+}
+
+// RemoveProviderDevice retires one provider generation on its device lane and
+// broadcasts a fresh list. Missing devices are safe during pre-discovery removal.
+func (h *HubController) RemoveProviderDevice(ctx context.Context, id string) error {
+	if ctx == nil {
+		return errors.New("context is required")
+	}
+	found, err := h.store.FindDeviceByIds([]string{id})
+	if err != nil {
+		return err
+	}
+	if len(found) == 0 {
+		return nil
+	}
+	device := found[0]
+	if device == nil || device.Provider == "" {
+		return errors.New("provider device not found")
+	}
+	if err := h.deviceLanes.Do(ctx, device.FriendlyName, func() error { return h.getDeviceProcessor().RemoveDevice(id) }); err != nil {
+		return err
+	}
+	all, err := h.store.AllDevices()
+	if err != nil {
+		return err
+	}
+	return h.eventHub.Broadcast(ws.DeviceList, all)
+}
+
 func (m *HubController) TriggerAutomation(device *devices.Device, payload map[string]interface{}) {
 	m.automationEngine.HandleDevice(device, payload)
 }
@@ -745,6 +843,9 @@ func (d *HubController) createDeviceProcessor() *services.DeviceProcessor {
 	events.WithOnDeviceUpdated(func(device *devices.Device, p *devices.UpdatePackage) {
 		reportDeviceOutputError(device.Id, d.handleDeviceUpdated(device, p))
 	})
+	events.OnSpatialObserved = func(p *devices.UpdatePackage) {
+		reportDeviceOutputError(p.Id, d.eventHub.Broadcast(ws.DeviceUpdated, p))
+	}
 	events.WithOnDeviceAvailabilityChanged(func(p *devices.UpdatePackage) {
 		d.handleDeviceAvailabilityChanged(p)
 	})

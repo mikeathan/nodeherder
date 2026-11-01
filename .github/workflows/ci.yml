@@ -98,6 +98,9 @@ jobs:
         run: go build -o "${RUNNER_TEMP}/nodeherder" .
       - name: Run backend tests (uncached)
         run: go test -count=1 -timeout=5m ./...
+      - name: Test patched ESPHome module
+        working-directory: backend/third_party/esphome_api
+        run: go test -race -count=1 -timeout=5m ./...
       - name: Go static analysis
         if: ${{ !cancelled() }}
         run: go vet ./...

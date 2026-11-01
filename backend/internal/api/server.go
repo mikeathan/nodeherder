@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"node-herder/utils"
@@ -9,9 +10,18 @@ import (
 )
 
 type ApiServer struct {
-	httpServer http.Server
-	ctx        context.Context
-	router     *Router
+	httpServer    http.Server
+	ctx           context.Context
+	router        *Router
+	shutdownHooks []func(context.Context) error
+}
+
+// AddShutdownHook registers an owned service to stop after the listener exits.
+// Hooks must be added before Listen is called and run with a bounded context.
+func (s *ApiServer) AddShutdownHook(hook func(context.Context) error) {
+	if hook != nil {
+		s.shutdownHooks = append(s.shutdownHooks, hook)
+	}
 }
 
 func WithContext(ctx context.Context) func(s *ApiServer) {
@@ -45,7 +55,14 @@ func NewHttpServer(port int, opts ...func(s *ApiServer)) *ApiServer {
 }
 
 // Listen serves until cancellation or failure and returns listener errors after removing its watcher.
-func (s *ApiServer) Listen() error {
+func (s *ApiServer) Listen() (result error) {
+	defer func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		for _, hook := range s.shutdownHooks {
+			result = errors.Join(result, hook(ctx))
+		}
+	}()
 	stop := context.AfterFunc(s.ctx, func() { _ = s.httpServer.Close() })
 	defer stop()
 	utils.LogInfof("HTTP Server Listening %s", s.httpServer.Addr)

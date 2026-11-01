@@ -9,6 +9,7 @@
     binaryStateOf,
     controlOf,
     exposeKind,
+    exposeDisplayLabel,
     exposeLabel,
     formatExposeValue,
     isWritable,
@@ -41,7 +42,7 @@
   const series = computed(() => entry.value?.series.find((s) => s.name === selected.value));
   // The heading follows the selected expose; the legacy `title` prop stays declared for
   // caller compatibility but must not shadow this binding (vue/no-dupe-keys).
-  const heading = computed(() => exposeLabel(selected.value));
+  const heading = computed(() => (expose.value ? exposeDisplayLabel(expose.value) : exposeLabel(selected.value)));
   const writable = computed(() => !!adjustment.value && controlOf(adjustment.value) !== 'none');
   const kind = computed(() => exposeKind(selected.value));
   const unknownCurrent = computed(
@@ -100,10 +101,10 @@
   function isMode(control: Expose) {
     return ['brightness', 'color_temp'].includes(control.name);
   }
-  function controlLabel(name: string) {
-    if (name === 'state') return 'Power';
-    if (name === 'color_temp') return 'Colour temp';
-    return exposeLabel(name);
+  function controlLabel(entity: Expose) {
+    if (entity.name === 'state') return 'Power';
+    if (entity.name === 'color_temp') return 'Colour temp';
+    return exposeDisplayLabel(entity);
   }
   function select(name: string) {
     selected.value = name;
@@ -155,13 +156,13 @@
           </p>
           <p v-else-if="unknownCurrent" class="entity-readout-note">No reading reported.</p>
           <div v-if="writable" class="entity-writable">
-            <span class="entity-control-label">{{ controlLabel(adjustment.name) }}</span>
+            <span class="entity-control-label">{{ controlLabel(adjustment) }}</span>
             <ExposeControl :device="device" :expose="adjustment" expanded />
           </div>
         </template>
         <div v-for="action in alertControl" :key="action.name" class="entity-writable">
-          <span class="entity-control-label">{{ controlLabel(action.name) }}</span>
-          <ExposeControl :device="device" :expose="action" :label="controlLabel(action.name)" />
+          <span class="entity-control-label">{{ controlLabel(action) }}</span>
+          <ExposeControl :device="device" :expose="action" :label="controlLabel(action)" />
         </div>
         <div v-if="hasControls" class="entity-controls">
           <button
@@ -169,11 +170,11 @@
             :key="control.name"
             type="button"
             class="entity-mode"
-            :aria-label="exposeLabel(control.name)"
+            :aria-label="exposeDisplayLabel(control)"
             :aria-pressed="selected === control.name"
             @click="select(control.name)">
             <span class="entity-mode-icon"><UiIcon :path="exposeIcon(control.name)" /></span>
-            <span class="entity-mode-label">{{ controlLabel(control.name) }}</span>
+            <span class="entity-mode-label">{{ controlLabel(control) }}</span>
           </button>
           <EntityPowerButton v-if="powerControl && adjustable" :device="device" :expose="powerControl" />
           <div v-else-if="powerControl" class="entity-extra-control">
@@ -182,8 +183,8 @@
             <span class="entity-control-state">{{ powerState }}</span>
           </div>
           <div v-for="control in otherExtraControls" :key="control.name" class="entity-extra-control">
-            <ExposeControl :device="device" :expose="control" :label="controlLabel(control.name)" />
-            <span class="entity-control-label">{{ controlLabel(control.name) }}</span>
+            <ExposeControl :device="device" :expose="control" :label="controlLabel(control)" />
+            <span class="entity-control-label">{{ controlLabel(control) }}</span>
           </div>
         </div>
       </div>
@@ -215,7 +216,7 @@
         <h3>Other readings</h3>
         <dl>
           <div v-for="reading in otherReadings" :key="reading.name">
-            <dt>{{ exposeLabel(reading.name) }}</dt>
+            <dt>{{ exposeDisplayLabel(reading) }}</dt>
             <dd>{{ formatExposeValue(reading) }}</dd>
           </div>
         </dl>

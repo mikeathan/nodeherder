@@ -149,3 +149,14 @@ describe('step actions', () => {
     expect(describeTrigger(automation([t]), t, lookup)).toBe('When Hall sensor occupancy changes, if occupancy = Detected, then set Desk lamp brightness to brightness + (action time × 0.5).');
   });
 });
+
+test('button automation accepts only an explicit null action payload', () => {
+  const button = device('button', { provider: 'esphome' }, [expose('restart', { type: 'button' as never, access_mode: 'write' as never, attributes: { label: 'Restart' } })]);
+  const find = (id: string) => id === button.id ? button : lookup(id);
+  const t = trigger({ actions: [{ id: button.id, type: 'trigger', exposes: [{ name: 'restart', data: null }] } as never] });
+  const a = automation([t]);
+  expect(validateAutomation(a, find).errors).toEqual([]);
+  expect(describeTrigger(a, t, find)).toContain('run Restart');
+  (t.actions[0] as { exposes: { data: unknown }[] }).exposes[0].data = 'press';
+  expect(validateAutomation(a, find).errors).toEqual(expect.arrayContaining([expect.objectContaining({ message: 'Button actions must have no value.' })]));
+});

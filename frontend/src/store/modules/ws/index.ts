@@ -1,3 +1,4 @@
+import { DEVICE_CONFIG_SAVE_RESULT, parseDeviceConfigSaveResult } from '@/contracts/device-settings';
 import { markRaw } from 'vue';
 import type { ActionContext, Module } from 'vuex';
 import type { RootState } from '../../state';
@@ -52,6 +53,7 @@ const actionEvents = new Map([
   ['logger', 'console/addMessage'], ['operationFailed', 'alerts/showError'],
 ]);
 const mutationEvents = new Map([
+  [DEVICE_CONFIG_SAVE_RESULT, 'ws/setDeviceConfigSaveResult'],
   ['automationUpdated', 'automations/update'], ['deviceUpdated', 'hub/updateDevice'],
   ['bridgeConfig', 'hub/setBridgeSettings'], ['deviceAdded', 'hub/addDevice'],
   ['dashboardGroups', 'hub/setDashboardGroups'], ['mcpStatus', 'hub/setMCPStatus'],
@@ -140,12 +142,18 @@ function disconnect(context: Context) {
 
 export const WSClientModule: Module<WSClientState, RootState> = {
   namespaced: true,
-  state: () => ({ socket: null, connectionStatus: 'idle' }),
+  state: () => ({ deviceConfigSaveResult: null, socket: null, connectionStatus: 'idle' }),
   getters: {
+    /** Last validated reply metadata; no configuration is retained on the socket module. */
+    getDeviceConfigSaveResult: (state) => state.deviceConfigSaveResult,
     getConnectionStatus: (state) => state.connectionStatus,
     getSocket: (state) => state.socket,
   },
   mutations: {
+    /** Decodes untrusted metadata before pending-save subscribers can observe it. */
+    setDeviceConfigSaveResult(state, payload: unknown) {
+      state.deviceConfigSaveResult = parseDeviceConfigSaveResult(payload);
+    },
     setSocket(state, socket: WebSocket | null) { state.socket = socket; },
     setConnectionStatus(state, status: ConnectionStatusType) { state.connectionStatus = status; },
     sendMessage(state, { event, message }) {

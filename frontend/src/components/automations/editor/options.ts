@@ -4,7 +4,7 @@
  */
 import { Device, Expose } from '@/types/device';
 import { ExposeAccessModes, ExposeCategories, ExposeTypes } from '@/types/device.type';
-import { exposeLabel } from '@/domain/exposes';
+import { exposeDisplayLabel, exposeLabel } from '@/domain/exposes';
 import { isPresetExpose } from '@/configs/automation/device.config';
 import { EqualityOperators, NumericOperators } from '@/contracts/automations';
 import type { SelectOption } from '@/components/ui/UiSelect.vue';
@@ -17,10 +17,11 @@ export const numericWritable: ExposeFilter = (e) => e.type === ExposeTypes.Numer
 export const numericMeasurement: ExposeFilter = (e) => e.type === ExposeTypes.Numeric && e.category === ExposeCategories.Measurement;
 export const hasPresets: ExposeFilter = (e) => isPresetExpose(e);
 
+/** Returns sorted discovered labels for matching entities, retaining an absent saved selection for correction. */
 export function exposeOptions(device: Device | undefined, filter: ExposeFilter, keep?: string): SelectOption[] {
   const list = Object.values(device?.exposes ?? {})
     .filter(filter)
-    .map((e) => ({ value: e.name, label: exposeLabel(e.name) }))
+    .map((e) => ({ value: e.name, label: exposeDisplayLabel(e) }))
     .sort((a, b) => a.label.localeCompare(b.label));
   // keep a stored value visible even if the device no longer offers it
   if (keep && !list.some((o) => o.value === keep)) list.unshift({ value: keep, label: `${exposeLabel(keep)} (not reported)` });

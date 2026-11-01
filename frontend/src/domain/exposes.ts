@@ -5,7 +5,7 @@
  * so new devices work without UI changes. Framework-free; covered by Jest.
  */
 import { Device, Expose } from '@/types/device';
-import { ExposeAccessModes, ExposeCategories, ExposeTypes } from '@/types/device.type';
+import { ExposeAccessModes, ExposeAttributeKeys, ExposeCategories, ExposeTypes, ExposeValueKeys } from '@/types/device.type';
 import { getSensorName } from '@/modules/formatters/sensor-formatter';
 import { formatQuantity, formatWithUnit } from '@/utils/units';
 import { displayNumber, exposeRange } from './controls';
@@ -158,17 +158,79 @@ export function exposeLabel(name: string): string {
   return LABELS[name] ?? getSensorName(name).replace(/_/g, ' ');
 }
 
+/** Maps validated discovery classes to legacy presentation names without changing entity identity. */
+export function exposeSemanticName(expose: Expose): string {
+  const deviceClass: unknown = expose.attributes?.[ExposeAttributeKeys.DeviceClass];
+  const aliases: Record<string, string> = { door: 'contact', window: 'contact', opening: 'contact', motion: 'occupancy', moisture: 'water_leak', carbon_dioxide: 'co2', signal_strength: 'rssi' };
+  if (typeof deviceClass === 'string' && deviceClass) return aliases[deviceClass] ?? deviceClass;
+  const kind: unknown = expose.attributes?.[ExposeAttributeKeys.EntityKind];
+  if (kind === 'light' || kind === 'switch') return 'state';
+  if (kind === 'button') return 'action';
+  return expose.name;
+}
+
+/** Provider-scoped entity IDs must never replace a human-readable discovered label. */
+export function looksLikeProviderEntityId(value: string): boolean {
+  return /^[\da-f]{8}-[\da-f]{8}$/i.test(value.trim()) || /^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i.test(value.trim());
+}
+
+function usableLabel(value: unknown): string {
+  return typeof value === 'string' && value.trim() && !looksLikeProviderEntityId(value) ? value.trim() : '';
+}
+
+/** Uses the discovered label when supplied, otherwise keeps the existing name formatting. */
+export function exposeDisplayLabel(expose: Expose): string {
+  const label = usableLabel(expose.attributes?.[ExposeAttributeKeys.Label]);
+  if (label) return label;
+  // Older provider records may have lost attributes.label; description stores the
+  // discovered name. Only use it when the raw entity key is an opaque provider ID.
+  if (looksLikeProviderEntityId(expose.name)) {
+    const description = usableLabel(expose.description);
+    if (description) return description;
+    const deviceClass = usableLabel(expose.attributes?.[ExposeAttributeKeys.DeviceClass]);
+    if (deviceClass) return humanise(deviceClass);
+  }
+  return exposeLabel(expose.name);
+}
+
+/** Option text for a discovered entity: label plus its unit when the device reports one. */
+export function exposeOptionLabel(expose: Expose): string {
+  const label = exposeDisplayLabel(expose);
+  const unit = expose.unit?.trim();
+  return unit ? `${label} (${unit})` : label;
+}
+
+/** Default maximum length for a writable text entity when the device omits one. */
+export const DEFAULT_TEXT_MAX_LENGTH = 1024;
+
+/** Validated maximum length for a writable text entity. */
+export function exposeTextMaxLength(expose: Expose): number {
+  const value = Number(expose.attributes?.[ExposeAttributeKeys.MaxLength]);
+  return Number.isInteger(value) && value > 0 ? value : DEFAULT_TEXT_MAX_LENGTH;
+}
+
+/** Optional explanation attached by a provider when a writable control is limited. */
+export function exposeControlUnavailable(expose: Expose): string | null {
+  const value = expose.attributes?.[ExposeAttributeKeys.ControlUnavailable];
+  return typeof value === 'string' && value.trim() ? value : null;
+}
+
+/** Whether the row should render a description distinct from its label. */
+export function showsExposeDescription(expose: Expose, enabled = false): boolean {
+  return enabled && expose.description?.trim() !== exposeDisplayLabel(expose).trim();
+}
+
 /** Value of the "on" side for a binary expose; Zigbee2MQTT uses values.on/off, others plain booleans. */
 export function binaryOnValue(e: Expose): unknown {
-  return e.values && 'on' in e.values ? e.values['on'] : true;
+  return e.values && ExposeValueKeys.On in e.values ? e.values[ExposeValueKeys.On] : true;
 }
 export function binaryOffValue(e: Expose): unknown {
-  return e.values && 'off' in e.values ? e.values['off'] : false;
+  return e.values && ExposeValueKeys.Off in e.values ? e.values[ExposeValueKeys.Off] : false;
 }
 
 /** A toggle is a device-declared command, never a confirmed binary state. */
 function binaryToggleValue(e: Expose): string | undefined {
-  const value = e.values?.['toggle'];
+  const value = e.values?.[ExposeValueKeys.Toggle];
   return e.type === ExposeTypes.Binary && typeof value === 'string' && value.trim() !== '' &&
     value !== binaryOnValue(e) && value !== binaryOffValue(e) ? value : undefined;
 }
@@ -232,11 +294,13 @@ function isPresetExpose(expose: Expose): boolean {
   return supported && isWritable(expose) && exposePresets(expose).length > 0;
 }
 
-export type ExposeControl = 'switch' | 'slider' | 'choice' | 'number' | 'none';
+export type ExposeControl = 'switch' | 'slider' | 'choice' | 'number' | 'text' | 'button' | 'none';
 
 /** Which input changes this expose (any category; config exposes are edited the same way). */
 export function controlOf(e: Expose): ExposeControl {
   if (!isWritable(e)) return 'none';
+  if (e.type === 'button') return 'button';
+  if (e.type === 'text') return 'text';
   if (e.type === ExposeTypes.Binary) return 'switch';
   if (e.type === ExposeTypes.Numeric) return exposeRange(e) ? 'slider' : 'number';
   if (e.type === ExposeTypes.Enum && exposePresets(e).length) return 'choice';
@@ -256,7 +320,7 @@ export function formatExposeValue(e: Expose, value: unknown = e.data): string {
   return '—';
 }
 function binaryText(e: Expose, value: unknown): string {
-  const [on, off] = BINARY_WORDS[e.name] ?? ['On', 'Off'];
+  const [on, off] = BINARY_WORDS[exposeSemanticName(e)] ?? ['On', 'Off'];
   const state = binaryStateOf(e, value);
   if (state === true) return on;
   if (state === false) return off;
