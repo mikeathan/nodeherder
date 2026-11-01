@@ -6,6 +6,8 @@ import {
   colourTemperatureName,
   controlOf,
   exposeKind,
+  exposeSemanticName,
+  exposeDisplayLabel,
   exposeLabel,
   exposePresets,
   exposeRange,
@@ -210,4 +212,20 @@ test('state badges and histories share label-aligned colours', () => {
   expect(exposeKind('action')).toBe('event');
   expect(exposeKind('action_double')).toBe('event');
   expect(exposeKind('event_count')).toBe('event');
+});
+
+ test('discovered classes preserve hashed identity and meaningful binary words', () => {
+ const e = expose('00000000-12345678', { type: 'binary' as never, data: true, values: { on: true, off: false }, attributes: { device_class: 'occupancy' } });
+ expect(exposeSemanticName(e)).toBe('occupancy');
+ expect(formatExposeValue(e)).toBe('Detected');
+ expect(e.name).toBe('00000000-12345678');
+ });
+
+test('provider entity IDs fall back to description or device class, never the hex key', () => {
+  const named = expose('00000000-0e4537ac', { description: 'Target 1 X' });
+  expect(exposeDisplayLabel(named)).toBe('Target 1 X');
+  const classified = expose('00000000-0e4537ac', { attributes: { device_class: 'occupancy' } as never });
+  expect(exposeDisplayLabel(classified)).toBe('Occupancy');
+  const labelled = expose('00000000-0e4537ac', { attributes: { label: 'Target 1 X' } as never });
+  expect(exposeDisplayLabel(labelled)).toBe('Target 1 X');
 });

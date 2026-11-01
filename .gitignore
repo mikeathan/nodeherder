@@ -1,6 +1,7 @@
 *.log
 nodeherder
 backend/data/*.db
+backend/data/device-providers/
 backend/.gocache/*
 .gocache/
 .env

@@ -29,6 +29,102 @@ type rapidActionClient struct {
 	publish func(string, interface{})
 }
 
+func TestProviderReconnectRetainsChangeOnlyBinaryState(t *testing.T) {
+	store := utils_test.CreateStoreFromDeviceRepo(repository.NewMemoryDeviceRepo())
+	registrar := services.NewHubRegisterService(store, &mocks.MockEventHub{}, 30000)
+	events := &devices.DeviceRequestEvents{
+		AvailabilityTimeout:         time.Hour,
+		OnNewDevice:                 func(*devices.Device) {},
+		OnDeviceUpdated:             func(*devices.Device, *devices.UpdatePackage) {},
+		OnDeviceMeasurementsUpdated: func(*devices.Device, map[string]interface{}) {},
+		OnDeviceAvailabilityChanged: func(*devices.UpdatePackage) {},
+	}
+	processor := services.NewDeviceProcessorBuilder().WithRegistrar(registrar).WithStore(store).WithEvents(events).WithAutomationQuerier(mocks.NewMockAutomationDeviceQuerier()).Build()
+	first := devices.NewDevice("provider-id")
+	first.Provider, first.FriendlyName = "esphome", "Radar"
+	occupancy := devices.NewEntity("occupancy")
+	occupancy.Type = bridge.BinaryDataType
+	first.Exposes[occupancy.Name] = occupancy
+	numeric := devices.NewEntity("target_x")
+	numeric.Type = bridge.NumericDataType
+	first.Exposes[numeric.Name] = numeric
+	if err := processor.RegisterProviderDevice(first); err != nil {
+		t.Fatal(err)
+	}
+	defer processor.RemoveDevice(first.Id)
+	if err := processor.UpdateProviderDevice(first.Id, map[string]interface{}{"occupancy": true, "target_x": float64(1200)}); err != nil {
+		t.Fatal(err)
+	}
+	replacement := devices.NewDevice(first.Id)
+	replacement.Provider, replacement.FriendlyName = first.Provider, first.FriendlyName
+	replacement.Exposes["occupancy"] = devices.NewEntity("occupancy")
+	replacement.Exposes["occupancy"].Type = bridge.BinaryDataType
+	replacement.Exposes["target_x"] = devices.NewEntity("target_x")
+	replacement.Exposes["target_x"].Type = bridge.NumericDataType
+	if err := processor.RegisterProviderDevice(replacement); err != nil {
+		t.Fatal(err)
+	}
+	if got := replacement.Exposes["occupancy"].Data.Value(); got != true {
+		t.Fatalf("change-only binary value = %v", got)
+	}
+	if got := replacement.Exposes["target_x"].Data.Value(); got != nil {
+		t.Fatalf("numeric reading was carried across reconnect: %v", got)
+	}
+}
+
+func TestProviderDeviceLifecycleUsesStableGeneration(t *testing.T) {
+	store := utils_test.CreateStoreFromDeviceRepo(repository.NewMemoryDeviceRepo())
+	registrar := services.NewHubRegisterService(store, &mocks.MockEventHub{}, 30000)
+	var availability devices.AvailabilityType
+	events := &devices.DeviceRequestEvents{
+		AvailabilityTimeout:         time.Hour,
+		OnNewDevice:                 func(*devices.Device) {},
+		OnDeviceUpdated:             func(*devices.Device, *devices.UpdatePackage) {},
+		OnDeviceMeasurementsUpdated: func(*devices.Device, map[string]interface{}) {},
+		OnDeviceAvailabilityChanged: func(p *devices.UpdatePackage) { availability = p.Availability },
+	}
+	processor := services.NewDeviceProcessorBuilder().WithRegistrar(registrar).WithStore(store).WithEvents(events).WithAutomationQuerier(mocks.NewMockAutomationDeviceQuerier()).Build()
+	device := devices.NewDevice("provider-id")
+	device.Provider = "esphome"
+	device.FriendlyName = "Provider device"
+	entity := devices.NewEntity("sensor")
+	entity.Type = bridge.NumericDataType
+	entity.AccessMode = bridge.ReadAccessMode
+	device.Exposes[entity.Name] = entity
+	if err := processor.RegisterProviderDevice(device); err != nil {
+		t.Fatal(err)
+	}
+	defer processor.RemoveDevice(device.Id)
+	if err := processor.UpdateProviderDevice(device.Id, map[string]interface{}{"sensor": float64(21)}); err != nil {
+		t.Fatal(err)
+	}
+	if got := entity.Data.Value(); got != float64(21) {
+		t.Fatalf("state = %v", got)
+	}
+	if err := processor.ProviderOffline(device.Id); err != nil {
+		t.Fatal(err)
+	}
+	if device.GetAvailability() != devices.OfflineAvailability || availability != devices.OfflineAvailability {
+		t.Fatal("offline not propagated")
+	}
+	replacement := devices.NewDevice(device.Id)
+	replacement.Provider, replacement.FriendlyName = device.Provider, device.FriendlyName
+	replacement.Exposes["new_sensor"] = devices.NewEntity("new_sensor")
+	if err := processor.RegisterProviderDevice(replacement); err != nil {
+		t.Fatal(err)
+	}
+	stored, err := store.FindDeviceById(device.Id)
+	if err != nil || stored != replacement {
+		t.Fatalf("replacement = %v, %v", stored, err)
+	}
+	if err := processor.UpdateProviderDevice(device.Id, map[string]interface{}{"new_sensor": float64(5)}); err != nil {
+		t.Fatal(err)
+	}
+	if replacement.Exposes["new_sensor"].Data.Value() != float64(5) {
+		t.Fatal("replacement did not receive report")
+	}
+}
+
 func TestDeviceProcessorCreationOwnership(t *testing.T) {
 	for _, registered := range []bool{false, true} {
 		for _, disable := range []string{"", "defaults", "override"} {

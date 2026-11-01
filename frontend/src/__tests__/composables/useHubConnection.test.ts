@@ -93,6 +93,51 @@ test('slow snapshot is shared and never blocks subsequent session recovery', asy
   expect(store.getters['hub/loadStatus']).toBe('ready');
 });
 
+test('initial snapshot preserves a live report received before its device is hydrated', async () => {
+  const snapshot = deferred<typeof payload>();
+  const device = payload.devices.find((item) => Object.keys(item.exposes).length > 0)!;
+  const field = Object.keys(device.exposes)[0];
+  jest.mocked(fetchHubState).mockReturnValueOnce(snapshot.promise);
+  await startHubConnection();
+  expect(store.getters['hub/findDevice'](device.id)).toBeUndefined();
+  store.commit('hub/updateDevice', { id: device.id, data: { [field]: 123, unknown_field: 456 }, last_seen: 'new', availability: 'online' });
+  store.commit('hub/updateDevice', { id: 'not-in-snapshot', data: { unknown: 1 } });
+  snapshot.resolve(JSON.parse(JSON.stringify(payload)) as typeof payload);
+  await settle();
+  expect(store.getters['hub/findDevice'](device.id).exposes[field].data).toBe(123);
+  expect(store.getters['hub/findDevice'](device.id).exposes.unknown_field).toBeUndefined();
+  expect(store.getters['hub/findDevice']('not-in-snapshot')).toBeUndefined();
+});
+
+test('excess early reports abort snapshot hydration instead of growing without bound', async () => {
+  const snapshot = deferred<typeof payload>();
+  jest.mocked(fetchHubState).mockReturnValueOnce(snapshot.promise);
+  await startHubConnection();
+  const signal = jest.mocked(fetchHubState).mock.calls[0][0];
+  for (let index = 0; index < 257; index++) {
+    store.commit('hub/updateDevice', { id: `unknown-${index}`, data: { value: index } });
+  }
+  expect(signal?.aborted).toBe(true);
+  expect(store.getters['hub/loadStatus']).toBe('failed');
+  snapshot.resolve(payload);
+  await settle();
+  expect(store.getters['hub/isInitialized']()).toBe(false);
+});
+
+test('excess fields in an early report abort snapshot hydration', async () => {
+  const snapshot = deferred<typeof payload>();
+  jest.mocked(fetchHubState).mockReturnValueOnce(snapshot.promise);
+  await startHubConnection();
+  const signal = jest.mocked(fetchHubState).mock.calls[0][0];
+  const data = Object.fromEntries(Array.from({ length: 257 }, (_, index) => [`field-${index}`, index]));
+  store.commit('hub/updateDevice', { id: 'unknown-device', data });
+  expect(signal?.aborted).toBe(true);
+  expect(store.getters['hub/loadStatus']).toBe('failed');
+  snapshot.resolve(payload);
+  await settle();
+  expect(store.getters['hub/isInitialized']()).toBe(false);
+});
+
 test('unmount aborts a pending snapshot and ignores late success', async () => {
   const data = deferred<typeof payload>();
   jest.mocked(fetchHubState).mockReturnValue(data.promise);
@@ -284,4 +329,33 @@ test('config replay overflow fails safely and can be retried', async () => {
   expect(store.getters['hub/listAllDevices']()).toHaveLength(payload.devices.length);
   await startHubConnection(); await settle();
   expect(store.getters['hub/loadStatus']).toBe('ready');
+});
+
+test('a live registry replacement wins over the pending HTTP device list', async () => {
+  const snapshot = deferred<typeof payload>();
+  jest.mocked(fetchHubState).mockReturnValueOnce(snapshot.promise);
+  await startHubConnection();
+  const retained = JSON.parse(JSON.stringify(payload.devices[0])) as typeof payload.devices[number];
+  retained.friendly_name = 'Live registry';
+  store.commit('hub/setDevices', [retained]);
+  snapshot.resolve(payload);
+  await settle();
+  expect(store.getters['hub/listAllDevices']()).toHaveLength(1);
+  expect(store.getters['hub/findDevice'](retained.id).friendly_name).toBe('Live registry');
+});
+
+test('device additions and subsequent reports are reconciled without modifying the HTTP snapshot', async () => {
+  const snapshot = deferred<typeof payload>();
+  jest.mocked(fetchHubState).mockReturnValueOnce(snapshot.promise);
+  await startHubConnection();
+  const added = JSON.parse(JSON.stringify(payload.devices.find((item) => Object.keys(item.exposes).length > 0)!)) as typeof payload.devices[number];
+  added.id = 'new-provider';
+  const field = Object.keys(added.exposes)[0];
+  store.commit('hub/addDevice', added);
+  store.commit('hub/updateDevice', { id: added.id, data: { [field]: 987 } });
+  const server = { ...payload, devices: [] };
+  snapshot.resolve(server);
+  await settle();
+  expect(store.getters['hub/findDevice'](added.id).exposes[field].data).toBe(987);
+  expect(server.devices).toEqual([]);
 });

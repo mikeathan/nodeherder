@@ -31,6 +31,7 @@ type DeviceLifetimeService struct {
 	automationQueries automations.AutomationQuerier
 	monitorMu         sync.Mutex
 	monitor           *availabilityMonitor
+	spatialPublished  map[string]time.Time
 }
 
 type availabilityMonitor struct {
@@ -60,6 +61,7 @@ func NewDeviceLifetimeService(device *devices.Device, events *devices.DeviceRequ
 		configCache:       configCache,
 		debouncerService:  settings.NewDeviceDebouncer(device.Id, configCache, clock),
 		device:            device,
+		spatialPublished:  make(map[string]time.Time),
 		events:            events,
 		stopped:           false,
 		automationQueries: automationQueries,
@@ -165,6 +167,57 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 		d.attemptToStoreMetrics(sampled)
 	}
 	d.publisher.Publish(live)
+	d.publishSpatialFreshness(payload, live)
+}
+
+// publishSpatialFreshness forwards repeated physical reports without changing
+// automation, metrics or persistence. It is bounded per configured coordinate.
+func (d *DeviceLifetimeService) publishSpatialFreshness(payload map[string]interface{}, published *devices.UpdatePackage) {
+	const spatialFreshnessInterval = 250 * time.Millisecond
+	if d.events.OnSpatialObserved == nil || !d.device.IsAvailable() {
+		return
+	}
+	coordinates := d.configCache.SpatialCoordinates(d.device.Id)
+	for name := range d.spatialPublished {
+		if _, ok := coordinates[name]; !ok {
+			delete(d.spatialPublished, name)
+		}
+	}
+	now := d.clock.Now()
+	update := devices.NewUpdatePackage(d.device.Id)
+	update.LastSeen = published.LastSeen
+	for name, value := range payload {
+		if _, ok := coordinates[name]; !ok {
+			continue
+		}
+		if _, ok := published.Data[name]; ok {
+			d.spatialPublished[name] = now
+			continue
+		}
+		if last, ok := d.spatialPublished[name]; ok && now.Sub(last) < spatialFreshnessInterval {
+			continue
+		}
+		update.Data[name] = value
+		d.spatialPublished[name] = now
+	}
+	if update.HasData() {
+		d.events.OnSpatialObserved(update)
+	}
+}
+
+// ProviderOffline marks this provider device unavailable and cancels pending
+// presentation output. Call on the same lane as Seed and Update.
+func (d *DeviceLifetimeService) ProviderOffline() {
+	if d.ctx.Err() != nil || d.device.GetAvailability() == devices.OfflineAvailability {
+		return
+	}
+	d.device.SetAvailability(devices.OfflineAvailability)
+	d.publisher.Clear()
+	if d.events.OnDeviceAvailabilityChanged != nil {
+		update := devices.NewUpdatePackage(d.device.Id)
+		update.Availability = devices.OfflineAvailability
+		d.events.OnDeviceAvailabilityChanged(update)
+	}
 }
 
 // collectUpdate splits one report into independent consumer outputs. Raw entity state
@@ -309,7 +362,8 @@ func (s *DeviceLifetimeService) startAvailabilityMonitoring(timeoutDuration time
 }
 
 func (s *DeviceLifetimeService) startAvailabilityMonitoringLocked(timeoutDuration time.Duration, onChangeCallback func(p *devices.UpdatePackage)) {
-	if s.monitor != nil || s.ctx.Err() != nil {
+	// Provider session health owns availability; unchanged entities are not heartbeats.
+	if s.device.Provider != "" || s.monitor != nil || s.ctx.Err() != nil {
 		return
 	}
 

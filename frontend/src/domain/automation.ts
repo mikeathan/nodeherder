@@ -14,7 +14,7 @@ import {
   isTimeCondition,
 } from '@/types/automation.type';
 import { DeviceAutomation, isPresetCyclingAction, isStepAction, isTriggerAction } from '@/contracts/automations';
-import { exposeLabel, formatExposeCommandValue, formatExposeValue } from './exposes';
+import { exposeDisplayLabel, exposeLabel, formatExposeCommandValue, formatExposeValue } from './exposes';
 
 export type DeviceLookup = (id: string) => Device | undefined;
 export type Issue = { path: string; message: string };
@@ -58,11 +58,17 @@ export function stepFormula(a: AutomationStepAction): string {
   return acc;
 }
 
+/** Describes requested device actions as text, including stateless buttons; never implies confirmed execution. */
 export function describeAction(a: AutomationAction, lookup: DeviceLookup): string {
   const device = a.id ? lookup(a.id) : undefined;
   const target = device?.friendly_name ?? (a.id ? a.id : '…');
   if (isTriggerAction(a)) {
-    const values = a.exposes.length ? a.exposes.map((x) => `${lower(x.name)} to ${valueText(device, x.name, x.data, true)}`).join(', ') : '…';
+    const describeValue = (row: { name: string; data: unknown }): string => {
+      const entity = device?.exposes[row.name];
+      if (entity?.type === 'button') return `run ${exposeDisplayLabel(entity)}`;
+      return `${lower(row.name)} to ${valueText(device, row.name, row.data, true)}`;
+    };
+    const values = a.exposes.length ? a.exposes.map(describeValue).join(', ') : '…';
     const wait = a.delay && a.delay.value > 0 ? ` after ${a.delay.value} ${a.delay.unit}` : '';
     return `set ${target} ${values}${wait}`;
   }
@@ -83,6 +89,7 @@ export function describeTrigger(automation: Automation, t: AutomationTrigger | u
   return `${when}${ifs}${thens}.`;
 }
 
+/** Validates editor payloads against current targets, including null-only stateless buttons; returns field errors without mutation. */
 export function validateAutomation(a: Automation, lookup: DeviceLookup): Validation {
   const errors: Issue[] = [];
   const warnings: Issue[] = [];
@@ -113,12 +120,14 @@ export function validateAutomation(a: Automation, lookup: DeviceLookup): Validat
       if (!x.id) return err(`${ap}.id`, 'Choose a device to control.');
       const target = lookup(x.id);
       if (!target) err(`${ap}.id`, 'This device no longer exists.');
-      else if (target.availability === 'offline') warn(ap, `${target.friendly_name} is offline; the command waits until it reconnects.`);
+      else if (target.availability === 'offline') warn(ap, `${target.friendly_name} is offline; commands fail until it reconnects.`);
       if (isTriggerAction(x)) {
         if (!x.exposes.length) err(`${ap}.exposes`, 'Add a value to set.');
         x.exposes.forEach((row, n) => {
           if (!row.name) err(`${ap}.exposes.${n}.name`, 'Choose a property.');
-          else if (blank(row.data)) err(`${ap}.exposes.${n}.data`, 'Enter a value.');
+          else if (target?.exposes[row.name]?.type === 'button') {
+            if (row.data !== null) err(`${ap}.exposes.${n}.data`, 'Button actions must have no value.');
+          } else if (blank(row.data)) err(`${ap}.exposes.${n}.data`, 'Enter a value.');
           if (x.id === a.id && row.name && row.name === t.name) warn(ap, 'This sets the property that starts the trigger. The hub prevents loops, but check it is intended.');
         });
         if (x.delay && (!Number.isFinite(x.delay.value) || x.delay.value < 0)) err(`${ap}.delay.value`, 'Enter a wait of 0 or more; 0 means no wait.');

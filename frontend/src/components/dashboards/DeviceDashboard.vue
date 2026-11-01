@@ -9,6 +9,7 @@
   import UiEmpty from '@/components/ui/UiEmpty.vue';
   import DeviceCard from '@/components/entity/DeviceCard.vue';
   import DeviceFilterBar from '@/components/entity/DeviceFilterBar.vue';
+  import ESPHomeDeviceActions from '@/components/device-list/esphome/ESPHomeDeviceActions.vue';
 
   const { devices, initialized, isDeviceDisabled } = useHub();
   const filters = ref<DeviceFilters>({ ...DEFAULT_FILTERS });
@@ -19,6 +20,7 @@
   <div>
     <UiPageHeader title="Devices" :subtitle="`${devices.length} devices`">
       <template #actions>
+        <ESPHomeDeviceActions />
         <UiButton icon="list" :to="{ name: RouteName.DeviceList }">Device list</UiButton>
       </template>
     </UiPageHeader>

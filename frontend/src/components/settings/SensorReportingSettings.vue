@@ -6,7 +6,7 @@
   import type { DeviceConfig } from '@/types/settings.type';
   import { findDevice } from '@/composables/useHub';
   import { effectiveCategoryInterval, effectiveFieldInterval, effectiveLiveInterval, formatLiveInterval, intervalSeconds, resolveFieldSetting, updateReportingInterval, updateReportingThreshold, validConfirmationTimeout } from '@/domain/reporting-settings';
-  import { exposeLabel } from '@/domain/exposes';
+  import { exposeDisplayLabel, exposeLabel } from '@/domain/exposes';
   import UiButton from '@/components/ui/UiButton.vue';
   import ReportingRateControl from './ReportingRateControl.vue';
   import ReportingSensorPicker from './ReportingSensorPicker.vue';
@@ -24,11 +24,16 @@
   const historyFields = computed<string[]>(() => [...new Set([...draftHistory.value, ...Object.keys(props.config.metricOverrides ?? {}), ...Object.keys(props.config.debounceOverrides ?? {})])]);
   const available = (selected: string[]) => Object.values(exposes.value)
     .filter((e) => e.type === 'numeric' && e.access_mode === 'read' && !selected.includes(e.name))
-    .map((e) => ({ name: e.name, label: `${exposeLabel(e.name)}${e.unit ? ` (${e.unit})` : ''}` }));
+    .map((e) => ({ name: e.name, label: `${exposeDisplayLabel(e)}${e.unit ? ` (${e.unit})` : ''}` }));
   const offline = computed(() => store.getters['ws/getConnectionStatus'] !== 'connected');
   const deviceConfig = computed(() => props.id ? props.config as DeviceConfig : undefined);
   const globalConfig = computed(() => props.id ? props.defaults : props.config as DeviceConfig);
   const unit = (name: string) => exposes.value[name]?.unit ?? 'native units';
+  /** Human label for a configured expose, including provider-scoped IDs. */
+  const label = (name: string) => {
+    const expose = exposes.value[name];
+    return expose ? exposeDisplayLabel(expose) : exposeLabel(name);
+  };
   const live = (name: string) => effectiveLiveInterval(deviceConfig.value, globalConfig.value, name, String(exposes.value[name]?.category ?? 'measurement'));
   const categoryRule = (category: string, history = false) => effectiveCategoryInterval(deviceConfig.value, globalConfig.value, category, history);
   const categoryInherited = computed(() => props.id ? 'Use shared default' : 'No category rule · every change');
@@ -123,8 +128,8 @@
       <p v-if="!fields.length" class="empty">No individual adjustments. Category rules above still apply.</p>
       <article v-for="name in fields" :key="`${id}:${name}`" class="reporting-field">
         <div class="reporting-heading">
-          <h4>{{ exposeLabel(name) }}</h4>
-          <UiButton variant="ghost" size="sm" :disabled="offline" @click="removeField(name)">Reset {{ exposeLabel(name) }} adjustment</UiButton>
+          <h4>{{ label(name) }}</h4>
+          <UiButton variant="ghost" size="sm" :disabled="offline" @click="removeField(name)">Reset {{ label(name) }} adjustment</UiButton>
         </div>
         <label class="threshold">
           <span>Ignore changes smaller than ({{ unit(name) }})</span>
@@ -163,8 +168,8 @@
         <legend>History sensor adjustments</legend>
         <article v-for="name in historyFields" :key="`${id}:${name}`" class="reporting-field">
           <div class="reporting-heading">
-            <h4>{{ exposeLabel(name) }}</h4>
-            <UiButton variant="ghost" size="sm" :disabled="offline" @click="removeField(name, true)">Reset {{ exposeLabel(name) }} history</UiButton>
+            <h4>{{ label(name) }}</h4>
+            <UiButton variant="ghost" size="sm" :disabled="offline" @click="removeField(name, true)">Reset {{ label(name) }} history</UiButton>
           </div>
           <div class="reporting-field-grid">
             <label><span>Save to history</span>

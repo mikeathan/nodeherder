@@ -23,6 +23,7 @@ type DeviceRequestEvents struct {
 	AvailabilityTimeout         time.Duration
 	OnNewDevice                 func(device *Device)
 	OnDeviceUpdated             func(device *Device, data *UpdatePackage)
+	OnSpatialObserved           func(data *UpdatePackage)
 	OnDeviceMeasurementsUpdated func(device *Device, dataMap map[string]interface{})
 	OnDeviceAutomationTriggered func(device *Device, payload map[string]interface{})
 	OnDeviceAvailabilityChanged func(p *UpdatePackage)

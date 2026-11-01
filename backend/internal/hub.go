@@ -7,6 +7,8 @@ import (
 	"node-herder/internal/auth"
 	"node-herder/internal/automations"
 	"node-herder/internal/controllers"
+	"node-herder/internal/deviceproviders"
+	"node-herder/internal/deviceproviders/esphome"
 	"node-herder/internal/fs"
 	"node-herder/internal/integrations"
 	mcpserver "node-herder/internal/mcp/server"
@@ -16,8 +18,10 @@ import (
 	"node-herder/internal/mqtt"
 	"node-herder/internal/ratelimiter"
 	"node-herder/internal/ws"
+	"node-herder/models/devices"
 	"node-herder/store"
 	"node-herder/utils"
+	"os"
 	"time"
 )
 
@@ -52,6 +56,7 @@ func newRouter(port int, ws ws.EventHub, hub *controllers.HubController, store s
 	if configuration.connections != nil {
 		api.RegisterIntegrationRoutes(router, configuration.connections)
 	}
+	api.RegisterESPHomeRoutes(router, configuration.providers)
 	var homeSources api.HomeIntegrations
 	if configuration.connections != nil {
 		homeSources = configuration.connections
@@ -77,7 +82,7 @@ func newRouter(port int, ws ws.EventHub, hub *controllers.HubController, store s
 	router.DELETE("/api/assistant/history/:id", api.NewAssistantDeleteHandler(store))
 
 	// public routes
-	router.PublicGET("/api/context/devices", api.NewDeviceContextHandler(store, 1*time.Second))
+	router.PublicGET("/api/context/devices", api.NewDeviceContextHandler(publicDevices{source: store}, 1*time.Second))
 	router.PublicPOST("/api/auth/token", authProvider.ServiceTokenHandler())
 
 	// MCP routes
@@ -96,6 +101,7 @@ func newRouter(port int, ws ws.EventHub, hub *controllers.HubController, store s
 }
 
 func Register(port int, store store.AppStore, ctx context.Context, options ...Option) (*api.ApiServer, error) {
+	markProviderDevicesOffline(store)
 
 	ws := ws.NewWsHub()
 	ws.Start()
@@ -105,8 +111,9 @@ func Register(port int, store store.AppStore, ctx context.Context, options ...Op
 
 	mqtt := mqtt.NewMqttClient(mqtt.WithDefaultMqttConfig())
 
-	querier := metrics.NewQueryService(store)
-	mcpServer := mcpserver.New(store, store.AppConfig(), querier)
+	public := publicDevices{source: store}
+	querier := metrics.NewQueryService(public)
+	mcpServer := mcpserver.New(public, store.AppConfig(), querier)
 
 	utils.LogInfo("Initializing MCP Server")
 	if err := mcpServer.Initialize(); err != nil {
@@ -123,11 +130,27 @@ func Register(port int, store store.AppStore, ctx context.Context, options ...Op
 	if hub == nil {
 		return nil, fmt.Errorf("failed to register hub controller")
 	}
-
-	return registerApi(port, ws, hub, store, mcpServer, ctx, options...)
+	providerManager := startDeviceProviders(ctx, hub)
+	if providerManager != nil {
+		hub.SetProviderCommands(providerManager)
+		options = append(options, WithDeviceProviders(providerManager))
+	}
+	server, err := registerApi(port, ws, hub, store, mcpServer, ctx, options...)
+	if err != nil && providerManager != nil {
+		closeCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		_ = providerManager.Close(closeCtx)
+	}
+	if err == nil && providerManager != nil {
+		server.AddShutdownHook(providerManager.Close)
+	}
+	return server, err
 }
 
-type optionsConfig struct{ connections *integrations.Service }
+type optionsConfig struct {
+	connections *integrations.Service
+	providers   *deviceproviders.Manager
+}
 
 // Option composes optional features without expanding AppStore or device test doubles.
 type Option func(*optionsConfig)
@@ -135,4 +158,45 @@ type Option func(*optionsConfig)
 // WithConnections adds protected connection routes without changing AppStore or device payloads.
 func WithConnections(service *integrations.Service) Option {
 	return func(c *optionsConfig) { c.connections = service }
+}
+
+// WithDeviceProviders supplies the independently owned device provider manager.
+func WithDeviceProviders(manager *deviceproviders.Manager) Option {
+	return func(c *optionsConfig) { c.providers = manager }
+}
+
+func startDeviceProviders(ctx context.Context, pipeline *controllers.HubController) *deviceproviders.Manager {
+	data := os.Getenv("DATA_DIR")
+	if data == "" {
+		data = "./data"
+	}
+	repo, err := deviceproviders.OpenConfiguredEnrollments(data)
+	if err != nil {
+		utils.LogError("Device provider storage unavailable; check key and data paths")
+		return nil
+	}
+	manager, err := deviceproviders.NewManager(ctx, repo, map[string]deviceproviders.Driver{esphome.ProviderName: esphome.NewDriver(pipeline)})
+	if err != nil {
+		_ = repo.Close()
+		utils.LogError("Device provider startup unavailable; check saved configuration and keys")
+		return nil
+	}
+	return manager
+}
+
+func markProviderDevicesOffline(store store.AppStore) {
+	all, err := store.AllDevices()
+	if err != nil {
+		utils.LogError("Unable to load provider device availability")
+		return
+	}
+	for _, device := range all {
+		if device == nil || device.Provider == "" || device.GetAvailability() == devices.OfflineAvailability {
+			continue
+		}
+		device.SetAvailability(devices.OfflineAvailability)
+		if err := store.StoreDevice(device.FriendlyName, device); err != nil {
+			utils.LogError("Unable to persist provider device availability")
+		}
+	}
 }

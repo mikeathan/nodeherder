@@ -3,7 +3,7 @@
   import type { HistorySeries } from '@/domain/history/types';
   import type { Expose } from '@/types/device';
   import { clampHistoryRange, panHistoryRange, zoomHistoryRange, type HistoryRange } from '@/domain/history/range';
-  import { formatExposeValue, exposeLabel } from '@/domain/exposes';
+  import { formatExposeValue, exposeDisplayLabel } from '@/domain/exposes';
   import NumericHistory from './NumericHistory.vue';
   import UiIcon from '@/components/ui/UiIcon.vue';
   import type { HistoryInteraction } from './interactions';
@@ -40,7 +40,7 @@
 </script>
 <template>
   <div data-history-chart :class="{ 'is-compact': compact }" class="history-chart" tabindex="0"
-    role="group" :aria-label="`${exposeLabel(expose.name)} interactive history. ${rangeLabel}. Plus and minus zoom, arrows pan, zero resets.`"
+    role="group" :aria-label="`${exposeDisplayLabel(expose)} interactive history. ${rangeLabel}. Plus and minus zoom, arrows pan, zero resets.`"
     :data-from="range.from" :data-to="range.to">
     <div class="chart-actions desktop-chart-actions" aria-label="Chart controls">
       <button v-for="control in controls" :key="control.label" class="nh-btn" type="button" :aria-label="control.label" @click="control.run">{{ control.text }}</button>

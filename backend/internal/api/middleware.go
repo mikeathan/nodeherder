@@ -46,8 +46,12 @@ func CORS(next http.Handler) http.Handler {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 			w.Header().Set("Access-Control-Allow-Credentials", "true")
 			headers := "Content-Type, Authorization, Cache-Control, Connection"
-			if integrationPath(r.URL.Path) || r.URL.Path == "/api/home/layout" {
-				headers += ", X-NodeHerder-Request, If-Match, If-None-Match"
+			conditionalRequests := integrationPath(r.URL.Path) || r.URL.Path == "/api/home/layout"
+			if conditionalRequests || esphomePath(r.URL.Path) {
+				headers += ", X-NodeHerder-Request"
+			}
+			if conditionalRequests {
+				headers += ", If-Match, If-None-Match"
 				w.Header().Set("Access-Control-Expose-Headers", "ETag, Retry-After, Location")
 			}
 			w.Header().Set("Access-Control-Allow-Headers", headers)

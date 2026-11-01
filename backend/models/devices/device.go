@@ -158,21 +158,28 @@ func getExposeCategory(entity BridgeExpose) string {
 	return entity.Category
 }
 
+// Device holds shared confirmed inventory/state and optional public descriptive metadata.
+// Provider metadata is immutable after registration; state uses the existing device lane.
 type Device struct {
-	Id             string             `json:"id"`
-	FriendlyName   string             `json:"friendly_name"`
-	Description    string             `json:"description,omitempty"`
-	ConnectionType string             `json:"connection_type"`
-	PowerSource    string             `json:"power_source"`
-	Exposes        map[string]*Entity `json:"exposes"`
-	LastSeen       string             `json:"last_seen"`
-	Availability   AvailabilityType   `json:"availability"`
+	// Properties contains optional public descriptive metadata, never credentials.
+	Properties     map[string]interface{} `json:"properties,omitempty"`
+	Id             string                 `json:"id"`
+	FriendlyName   string                 `json:"friendly_name"`
+	Description    string                 `json:"description,omitempty"`
+	ConnectionType string                 `json:"connection_type"`
+	Provider       string                 `json:"provider,omitempty"`
+	PowerSource    string                 `json:"power_source"`
+	Exposes        map[string]*Entity     `json:"exposes"`
+	LastSeen       string                 `json:"last_seen"`
+	Availability   AvailabilityType       `json:"availability"`
 	mutex          sync.RWMutex
 }
 
+// NewDevice creates an unknown device with owned empty inventory and public metadata.
 func NewDevice(id string) *Device {
 
 	return &Device{
+		Properties:     make(map[string]interface{}),
 		Id:             id,
 		FriendlyName:   "",
 		Description:    "",

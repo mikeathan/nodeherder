@@ -104,3 +104,24 @@ describe('configured command confirmation lifecycle', () => {
     expect(jest.getTimerCount()).toBe(0);
   });
 });
+
+test('stateless submission guards duplicates, preserves confirmed state and clears on disconnect', () => {
+  jest.useFakeTimers();
+  const target = device('action-device', { provider: 'esphome' }, [expose('restart', { type: 'button' as never, access_mode: 'write' as never, data: null })]);
+  store.dispatch('hub/init', { devices: [target], config: hubConfig() });
+  store.commit('ws/setConnectionStatus', 'connected');
+  const capture = captureWsFrames();
+  try {
+    const command = useDeviceCommand();
+    expect(command.sendAction(target, 'restart')).toBe(true);
+    expect(command.isPending(target.id, 'restart')).toBe(true);
+    expect(command.sendAction(target, 'restart')).toBe(false);
+    expect(capture.frames).toHaveLength(1);
+    expect(target.exposes.restart.data).toBeNull();
+    jest.advanceTimersByTime(1000);
+    expect(command.isPending(target.id, 'restart')).toBe(false);
+    expect(command.sendAction(target, 'restart')).toBe(true);
+    store.commit('ws/setConnectionStatus', 'disconnected');
+    expect(command.isPending(target.id, 'restart')).toBe(false);
+  } finally { store.commit('hub/clear'); capture.restore(); store.commit('alerts/clear'); jest.useRealTimers(); }
+});

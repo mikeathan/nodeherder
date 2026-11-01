@@ -4,7 +4,7 @@
   import { RouteName } from '@/types/router';
   import { useActivityFeed } from '@/composables/useActivityFeed';
   import { findDevice } from '@/composables/useHub';
-  import { exposeLabel, formatExposeValue } from '@/domain/exposes';
+  import { exposeDisplayLabel, exposeLabel, formatExposeValue } from '@/domain/exposes';
   import { clockTime } from '@/domain/time';
   import { ActivityChange, filterActivityEntries } from '@/domain/activity';
   import UiCard from '@/components/ui/UiCard.vue';
@@ -35,7 +35,11 @@
         deviceId: e.deviceId,
         name: device?.friendly_name ?? e.deviceId,
         time: clockTime(e.at),
-        changes: e.changes.map((c) => ({ label: exposeLabel(c.expose), from: text(c, c.from), to: text(c, c.to) })),
+        changes: e.changes.map((c) => ({
+          label: device?.exposes[c.expose] ? exposeDisplayLabel(device.exposes[c.expose]) : exposeLabel(c.expose),
+          from: text(c, c.from),
+          to: text(c, c.to),
+        })),
       };
     })
   );

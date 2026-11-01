@@ -321,3 +321,27 @@ func TestStoredMeasurementCategoryNormalization(t *testing.T) {
 		})
 	}
 }
+
+func TestDevicePublicMetadataJSONCompatibility(t *testing.T) {
+	var legacy devices.Device
+	if err := json.Unmarshal([]byte(`{"id":"legacy","friendly_name":"Old","exposes":{}}`), &legacy); err != nil {
+		t.Fatal(err)
+	}
+	if legacy.Properties != nil {
+		t.Fatal("legacy record invented metadata")
+	}
+	device := devices.NewDevice("provider")
+	device.Provider = "esphome"
+	device.Properties["model"] = "Radar"
+	wire, err := json.Marshal(device)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var restored devices.Device
+	if err := json.Unmarshal(wire, &restored); err != nil {
+		t.Fatal(err)
+	}
+	if restored.Properties["model"] != "Radar" || restored.Provider != "esphome" {
+		t.Fatal("metadata lost in persisted JSON")
+	}
+}

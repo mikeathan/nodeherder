@@ -1,6 +1,7 @@
 package automations
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"node-herder/internal/mqtt"
@@ -8,8 +9,12 @@ import (
 	"node-herder/models/devices"
 	"node-herder/utils"
 	"reflect"
+	"sort"
 	"sync"
 	"sync/atomic"
+	"time"
+
+	"node-herder/models/bridge"
 )
 
 // brightness + direction_time * value = [expose_name] [+/-] [expose_name] [numeric_operator] [numeric value]
@@ -104,6 +109,33 @@ func (a *MqttTriggerAction) Configure(registrar services.DeviceRegistrar, client
 	mode := a.PublishMode
 	invalidDelay := a.Delay != nil && a.Delay.Value == 0
 	a.configMu.RUnlock()
+	device, err := registrar.LookupById(id)
+	if err != nil {
+		return fmt.Errorf("configure action %s failed: %w", id, err)
+	}
+	if device.Provider != "" {
+		if invalidDelay {
+			return fmt.Errorf("delay must be greater than zero")
+		}
+		if _, ok := registrar.(providerCommandSender); !ok {
+			return fmt.Errorf("provider commands unavailable")
+		}
+		data := make(map[string]any, len(exposes))
+		for _, property := range exposes {
+			expose, ok := device.GetExpose(property.Name)
+			if !ok || (expose.AccessMode != bridge.WriteAccessMode && expose.AccessMode != bridge.ReadWriteAccessMode) {
+				return fmt.Errorf("provider field is not writable")
+			}
+			if expose.Type == "button" && property.Data != nil {
+				return fmt.Errorf("button actions require a null value")
+			}
+			data[property.Name] = property.Data
+		}
+		a.configMu.Lock()
+		a.publishConfiguration(device, client, registrar, newTriggerOperation(data, mode))
+		a.configMu.Unlock()
+		return nil
+	}
 	bridgeInfo, err := registrar.FindBridgeInfo(id)
 	if err != nil {
 		return err
@@ -123,10 +155,6 @@ func (a *MqttTriggerAction) Configure(registrar services.DeviceRegistrar, client
 		return fmt.Errorf("delay must be greater than zero")
 	}
 
-	device, err := registrar.LookupById(id)
-	if err != nil {
-		return fmt.Errorf("configure action %s failed: %w ", id, err)
-	}
 	a.configMu.Lock()
 	defer a.configMu.Unlock()
 	for i := range exposes {
@@ -247,6 +275,8 @@ type MqttBaseAction struct {
 // Immutable binding; operation-local mutable state retains existing Execute ownership.
 type actionConfiguration struct {
 	friendlyName string
+	deviceID     string
+	provider     bool
 	client       mqtt.MqttClient
 	registrar    services.DeviceRegistrar
 	operation    actionOperation
@@ -258,7 +288,11 @@ func (a *MqttBaseAction) publishConfiguration(device *devices.Device, client mqt
 		a.Id = device.Id
 	}
 	a.Client = client
-	a.configuration.Store(&actionConfiguration{device.FriendlyName, client, registrar, operation})
+	a.configuration.Store(&actionConfiguration{friendlyName: device.FriendlyName, deviceID: device.Id, provider: device.Provider != "", client: client, registrar: registrar, operation: operation})
+}
+
+type providerCommandSender interface {
+	SendProviderCommand(context.Context, string, string, any) error
 }
 
 func (a *actionConfiguration) emit(payload []byte) {
@@ -277,6 +311,26 @@ func (b *MqttBaseAction) processAction(ctx AutomationContext) error {
 	payload, err := configuration.operation.CreatePayload()
 	if err != nil {
 		return err
+	}
+	if configuration.provider {
+		sender, ok := configuration.registrar.(providerCommandSender)
+		if !ok {
+			return fmt.Errorf("provider commands unavailable")
+		}
+		keys := make([]string, 0, len(payload.Commands))
+		for key := range payload.Commands {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		commandCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		for _, key := range keys {
+			if err := sender.SendProviderCommand(commandCtx, configuration.deviceID, key, payload.Commands[key]); err != nil {
+				return fmt.Errorf("provider command failed: %w", err)
+			}
+		}
+		// A provider report, not a submission, updates confirmed automation state.
+		return nil
 	}
 
 	if payload.PublishMode == PublishSingle {

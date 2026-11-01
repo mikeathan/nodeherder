@@ -90,10 +90,55 @@ func (d *DeviceConfigCache) GetCommandConfirmationTimeout(id string) time.Durati
 	return time.Duration(milliseconds) * time.Millisecond
 }
 
+const (
+	maxSpatialMappings = 3
+
+	spatialScaleNear    = 3000
+	spatialScaleDefault = 6000
+	spatialScaleFar     = 10000
+)
+
+// validSpatialScale accepts only the display ranges offered by the spatial view.
+func validSpatialScale(scale int) bool {
+	switch scale {
+	case spatialScaleNear, spatialScaleDefault, spatialScaleFar:
+		return true
+	default:
+		return false
+	}
+}
+
+// validSpatialOrientation accepts quarter-turn view rotations.
+func validSpatialOrientation(orientation int) bool {
+	switch orientation {
+	case 0, 90, 180, 270:
+		return true
+	default:
+		return false
+	}
+}
+
 // ValidateReportingSettings runs before publishing or persisting configuration.
 func (d *DeviceConfig) ValidateReportingSettings() error {
 	if d == nil {
 		return fmt.Errorf("device config is required")
+	}
+	if spatial := d.Spatial; spatial != nil {
+		if err := spatial.Workspace.Validate(); err != nil {
+			return err
+		}
+		if len(spatial.Mappings) > maxSpatialMappings ||
+			!validSpatialScale(spatial.Scale) ||
+			!validSpatialOrientation(spatial.Orientation) {
+			return fmt.Errorf("invalid spatial display configuration")
+		}
+		for _, mapping := range spatial.Mappings {
+			for _, id := range []string{mapping.X, mapping.Y, mapping.Active} {
+				if len(id) > maxSpatialEntityBytes || strings.ContainsRune(id, '\x00') {
+					return fmt.Errorf("invalid spatial entity identifier")
+				}
+			}
+		}
 	}
 	for _, intervals := range []map[string]*utils.TimeInterval{d.LiveIntervalByCategory, d.LiveIntervalOverrides, d.DefaultDebounceByCategory, d.DebounceOverrides} {
 		for name, interval := range intervals {

@@ -2,23 +2,24 @@
   /* One expose as a labelled row: kind icon, name, and its value or control. */
   import { computed } from 'vue';
   import { Device, Expose } from '@/types/device';
-  import { controlOf, exposeKind, exposeLabel, isBinaryOn } from '@/domain/exposes';
+  import { controlOf, exposeControlUnavailable, exposeKind, exposeSemanticName, exposeDisplayLabel, isBinaryOn } from '@/domain/exposes';
   import { exposeIcon } from '@/components/ui/icons';
   import UiIcon from '@/components/ui/UiIcon.vue';
   import ExposeControl from './ExposeControl.vue';
 
   const props = defineProps<{ device: Device; expose: Expose; showDescription?: boolean; card?: boolean }>();
-  const label = computed(() => exposeLabel(props.expose.name));
-  const icon = computed(() => exposeIcon(props.expose.name, isBinaryOn(props.expose)));
+  const label = computed(() => exposeDisplayLabel(props.expose));
+  const icon = computed(() => exposeIcon(exposeSemanticName(props.expose), isBinaryOn(props.expose)));
   const cardSlider = computed(() => props.card && controlOf(props.expose) === 'slider');
 </script>
 
 <template>
-  <div class="nh-row" :class="[`kind-${exposeKind(expose.name)}`, { 'is-card': card, 'has-slider': cardSlider }]">
+  <div class="nh-row" :class="[`kind-${exposeKind(exposeSemanticName(expose))}`, { 'is-card': card, 'has-slider': cardSlider }]">
     <UiIcon :path="icon" class="nh-row-ic" />
     <div v-if="!cardSlider" class="nh-row-label">
       <span>{{ label }}</span>
       <small v-if="showDescription && expose.description">{{ expose.description }}</small>
+      <small v-if="exposeControlUnavailable(expose)">{{ exposeControlUnavailable(expose) }}</small>
     </div>
     <ExposeControl :device="device" :expose="expose" :label="label" :card="card" />
   </div>

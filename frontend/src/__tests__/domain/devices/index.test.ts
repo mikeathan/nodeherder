@@ -1,11 +1,12 @@
 import { describe, expect, test } from '@jest/globals';
 import { batteryLevel, deviceStatus, hasLowBattery, hasWeakLink, isBatteryPowered, linkQuality, resolveProtocol } from '@/domain/devices';
-import { device, expose } from '../helpers/devices';
+import { device, expose } from '../../helpers/devices';
 
 describe('protocol registry', () => {
   test('known protocols and their supported bridge operations', () => {
     expect(resolveProtocol('mqtt')).toMatchObject({ label: 'Zigbee', supports: { rename: true, interview: true, remove: true }, generic: false });
     expect(resolveProtocol('http')).toMatchObject({ label: 'Wi-Fi · HTTP', supports: { rename: false, interview: false, remove: false } });
+    expect(resolveProtocol('esphome')).toMatchObject({ label: 'ESPHome', supports: { rename: false, interview: false, remove: false } });
   });
   test('unknown protocols get a generic entry with no bridge operations (AC-08)', () => {
     expect(resolveProtocol('matter')).toEqual({ id: 'matter', label: 'matter', supports: { rename: false, interview: false, remove: false }, generic: true });

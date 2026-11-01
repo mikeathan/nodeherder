@@ -1,0 +1,30 @@
+import { effectScope, nextTick, ref } from 'vue';
+import { useWorkspaceEditor } from '@/composables/spatial/useWorkspaceEditor';
+import { createWorkspace, polygonBounds } from '@/domain/spatial/workspace';
+test('a rectangle gesture keeps its original anchor after corners reorder and can be undone', () => {
+  const scope = effectScope();
+  const workspace = ref(createWorkspace());
+  const editor = scope.run(() => useWorkspaceEditor(workspace))!;
+  editor.addZone('detection');
+  editor.beginGesture(0);
+  editor.setVertex(0, { x: 1000, y: 2500 });
+  editor.setVertex(0, { x: 1500, y: 3000 });
+  expect(polygonBounds(workspace.value.zones[0].points)).toEqual({ x: 500, y: 2000, width: 1000, height: 1000 });
+  editor.endGesture();
+  editor.undo();
+  expect(polygonBounds(workspace.value.zones[0].points)).toEqual({ x: -500, y: 1000, width: 1000, height: 1000 });
+  scope.stop();
+});
+test('device workspace replacement clears history but in-place edits retain it', async () => {
+  const scope = effectScope();
+  const workspace = ref(createWorkspace());
+  const editor = scope.run(() => useWorkspaceEditor(workspace))!;
+  editor.addZone('entry');
+  await nextTick();
+  expect(editor.undoStack.value).toHaveLength(1);
+  workspace.value = createWorkspace();
+  await nextTick();
+  expect(editor.undoStack.value).toHaveLength(0);
+  expect(editor.selectedId.value).toBe('');
+  scope.stop();
+});

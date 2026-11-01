@@ -11,6 +11,7 @@ export type DeviceFilter = (device: Device, expose: Expose) => boolean;
 
 export type Device = {
   id: string;
+  provider?: string;
   friendly_name: string;
   description: string;
   connection_type: string;

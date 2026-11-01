@@ -51,6 +51,7 @@ type appStore struct {
 	deviceIdMapper   *repository.DeviceIdMapper
 	dirtyMu          sync.RWMutex
 	isDirtyCallbacks []AppStoreDirtyFlagCallback
+	deviceWriteMu    sync.Mutex
 }
 
 func NewAppStore(devices devices.Repository, metrics metrics.Repository, config *settings.AppConfigCache, assistantRepo assistant.Repository) (AppStore, error) {
@@ -148,9 +149,48 @@ func (s *appStore) RemoveDeviceById(id string) error {
 }
 
 func (s *appStore) StoreDevice(friendlyName string, device *devices.Device) error {
-	id := s.ResolveFriendlyName(friendlyName)
+	if device == nil {
+		return fmt.Errorf("device is required")
+	}
+	s.deviceWriteMu.Lock()
+	err := s.storeDevice(friendlyName, device)
+	s.deviceWriteMu.Unlock()
+	if err != nil {
+		return err
+	}
+	s.markDirty()
+	return nil
+}
 
-	_, err := s.devices.Store(id, device)
+func (s *appStore) storeDevice(friendlyName string, device *devices.Device) error {
+	id := s.ResolveFriendlyName(friendlyName)
+	ids := []string{id}
+	if device.Provider != "" {
+		if device.Id == "" || friendlyName == "" {
+			return fmt.Errorf("provider device identity is required")
+		}
+		ids = append(ids, device.Id)
+	}
+	existing, err := s.devices.FindDevices(ids)
+	if err != nil {
+		return fmt.Errorf("check device identity: %w", err)
+	}
+	for _, other := range existing {
+		if other == nil {
+			continue
+		}
+		if device.Provider == "" && other.Provider != "" {
+			return fmt.Errorf("device identity is already in use")
+		}
+		if device.Provider != "" && (other.Id != device.Id || other.Provider != device.Provider) {
+			return fmt.Errorf("device identity or name is already in use")
+		}
+	}
+	if device.Provider != "" {
+		id = device.Id
+	}
+
+	_, err = s.devices.Store(id, device)
 	if err != nil {
 		return err
 	}
@@ -162,9 +202,11 @@ func (s *appStore) StoreDevice(friendlyName string, device *devices.Device) erro
 	// 	}
 	// }
 
-	s.deviceIdMapper.UpdateId(friendlyName, id)
-
-	s.markDirty()
+	if device.Provider != "" {
+		s.deviceIdMapper.UpdateProviderId(friendlyName, id)
+	} else {
+		s.deviceIdMapper.UpdateId(friendlyName, id)
+	}
 
 	return nil
 }

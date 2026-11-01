@@ -22,6 +22,20 @@ function settle(key: string) {
   pending.delete(key);
 }
 
+function trackPending(device: Device, expose: string, value: unknown, timeout: number, onTimeout: () => void) {
+  const key = commandKey(device.id, expose);
+  pending.set(key, { key, deviceId: device.id, expose, value, sentAt: Date.now() });
+  timers.set(key, setTimeout(() => {
+    if (!pending.has(key)) return;
+    settle(key);
+    onTimeout();
+  }, timeout));
+}
+
+function reportConfirmationTimeout(device: Device) {
+  store.dispatch('alerts/showError', `${device.friendly_name} did not confirm the change. Check that it is reachable and try again.`);
+}
+
 function subscribe() {
   if (subscribed) return;
   subscribed = true;
@@ -36,10 +50,12 @@ function subscribe() {
   });
 }
 
+/** Shares device command submission and pending guards across views; owns bounded timers cleared on disconnect/reset. */
 export function useDeviceCommand() {
   subscribe();
   const { canControl } = useHub();
 
+  /** Reports an outstanding state confirmation or short stateless submission guard. */
   const isPending = (deviceId: string, expose: string) => pending.has(commandKey(deviceId, expose));
 
   /** Sends `expose = value` to the device. Returns false when the command was refused. */
@@ -56,21 +72,21 @@ export function useDeviceCommand() {
       store.dispatch('alerts/showError', 'Configure a valid command confirmation timeout in hub settings.');
       return false;
     }
-    pending.set(key, { key, deviceId: device.id, expose, value, sentAt: Date.now() });
-    timers.set(
-      key,
-      setTimeout(() => {
-        if (!pending.has(key)) return;
-        settle(key);
-        store.dispatch(
-          'alerts/showError',
-          `${device.friendly_name} did not confirm the change. Check that it is reachable and try again.`
-        );
-      }, timeout)
-    );
+    trackPending(device, expose, value, timeout, () => reportConfirmationTimeout(device));
     store.dispatch('hub/setDeviceValue', { id: device.id, name: expose, value });
     return true;
   }
 
-  return { send, isPending, canControl };
+  /** Requests a stateless action with a one-second duplicate guard; no execution confirmation is inferred. */
+  function sendAction(device: Device | undefined, expose: string): boolean {
+    if (!device || !canControl(device)) return false;
+    const key = commandKey(device.id, expose);
+    if (pending.has(key)) return false;
+    trackPending(device, expose, null, 1000, () => {});
+    store.dispatch('hub/setDeviceValue', { id: device.id, name: expose, value: null });
+    store.dispatch('alerts/showSuccess', 'Action requested. Device execution cannot be confirmed.');
+    return true;
+  }
+
+  return { send, sendAction, isPending, canControl };
 }

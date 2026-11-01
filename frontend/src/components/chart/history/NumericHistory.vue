@@ -5,7 +5,7 @@
   import { displayNumber } from '@/domain/controls';
   import { decimate } from '@/domain/history/numeric';
   import { isEnergyCounter, energyBuckets } from '@/domain/history/energy';
-  import { exposeKind, exposeLabel } from '@/domain/exposes';
+  import { exposeDisplayLabel, exposeKind } from '@/domain/exposes';
   import { useThemeSettings } from '@/composables/useThemeSettings';
   import { historyOptions } from './options';
   import type { HistoryRange } from '@/domain/history/range';
@@ -66,7 +66,7 @@
     class="history-numeric"
     :class="{ 'is-compact': compact }"
     role="img"
-    :aria-label="`${exposeLabel(expose.name)} history in ${unit}`">
+    :aria-label="`${exposeDisplayLabel(expose)} history in ${unit}`">
     <p v-if="chartNotice" class="history-notice">{{ chartNotice }}</p>
     <p v-else-if="!data.length" class="history-notice">
       History has too many gaps to plot. Choose a shorter period in device history.

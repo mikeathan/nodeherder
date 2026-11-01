@@ -5,6 +5,7 @@ WORKDIR /backend
 
 # Copy go modules first
 COPY go.mod go.sum ./
+COPY third_party/esphome_api/go.mod third_party/esphome_api/go.sum ./third_party/esphome_api/
 RUN go mod download
 
 # Copy the rest

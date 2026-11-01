@@ -3,8 +3,8 @@
   import type { Device, Expose } from '@/types/device';
   import {
     colourTemperatureName,
+    exposeDisplayLabel,
     exposeKind,
-    exposeLabel,
     exposeRange,
     formatExposeValue,
   } from '@/domain/exposes';
@@ -20,7 +20,7 @@
   const { value, displayValue, pending, disabled, dragging } = edit;
   const range = computed(() => exposeRange(props.expose));
   const position = computed(() => sliderValue(props.expose, value.value));
-  const label = computed(() => exposeLabel(props.expose.name));
+  const label = computed(() => exposeDisplayLabel(props.expose));
   const temperature = computed(() => props.expose.name === 'color_temp');
   /** Missing data is a state, not a value: never draw it as a minimum fill or a fake dash handle. */
   const unknown = computed(

@@ -1423,6 +1423,41 @@ func TestLifetimeRetirementKeepsPendingReadingOnFailure(t *testing.T) {
 	}
 }
 
+func TestSpatialFreshnessForRepeatedReports(t *testing.T) {
+	device := devices.NewDevice("spatial-device")
+	device.SetAvailable(true)
+	e := devices.NewEntity("x")
+	e.Type, e.AccessMode, e.Category = bridge.NumericDataType, bridge.ReadAccessMode, bridge.DiagnosticCategory
+	e.Data.SetValue(float64(100))
+	device.Exposes[e.Name] = e
+	app := settings.NewAppConfig()
+	config := settings.NewDeviceConfig(device.Id)
+	config.Spatial = &settings.SpatialConfig{Scale: 6000, Mappings: []settings.SpatialMapping{{X: "x"}}}
+	app.AddDeviceConfig(config)
+	cache := settings.NewDeviceConfigCache(&mocks.NopSettingsrepo{}, app, &sync.RWMutex{})
+	clock := mocks.NewMockClock(func() time.Time { return time.Date(2026, 10, 16, 0, 0, 0, 0, time.UTC) })
+	var observations []any
+	service := services.NewDeviceLifetimeService(device, &devices.DeviceRequestEvents{
+		OnSpatialObserved: func(update *devices.UpdatePackage) { observations = append(observations, update.Data["x"]) },
+	}, cache, mocks.NewMockAutomationDeviceQuerier(), clock, context.Background())
+	t.Cleanup(service.Close)
+	service.Update(map[string]interface{}{"x": float64(100)})
+	service.Update(map[string]interface{}{"x": float64(100)})
+	if len(observations) != 1 {
+		t.Fatalf("unbounded freshness updates: %v", observations)
+	}
+	clock.Advance(249 * time.Millisecond)
+	service.Update(map[string]interface{}{"x": float64(100)})
+	if len(observations) != 1 {
+		t.Fatalf("freshness update before interval: %v", observations)
+	}
+	clock.Advance(time.Millisecond)
+	service.Update(map[string]interface{}{"x": float64(100)})
+	if len(observations) != 2 || observations[1] != float64(100) {
+		t.Fatalf("missing repeated report: %v", observations)
+	}
+}
+
 func TestLifetimeRetirementFencesDelayedSnapshotWrite(t *testing.T) {
 	device := devices.NewDevice("retirement-fence")
 	device.SetAvailable(true)
@@ -1640,5 +1675,40 @@ func TestDeviceMeasurementCategoryDelaysOnlyLiveOutput(t *testing.T) {
 				t.Fatalf("another device was throttled: %v", live)
 			}
 		})
+	}
+}
+
+func TestQuietProviderAvailabilityBelongsToSession(t *testing.T) {
+	device := devices.NewDevice("quiet-provider")
+	device.Provider = "esphome"
+	app := settings.NewAppConfig()
+	cache := settings.NewDeviceConfigCache(&mocks.NopSettingsrepo{}, app, &sync.RWMutex{})
+	offline := make(chan struct{}, 1)
+	service := services.NewDeviceLifetimeService(device, &devices.DeviceRequestEvents{
+		AvailabilityTimeout: time.Millisecond,
+		OnNewDevice:         func(*devices.Device) {},
+		OnDeviceAvailabilityChanged: func(*devices.UpdatePackage) {
+			select {
+			case offline <- struct{}{}:
+			default:
+			}
+		},
+	}, cache, mocks.NewMockAutomationDeviceQuerier(), utils.NewRealClock(), context.Background())
+	defer service.Close()
+	service.Seed(map[string]interface{}{})
+	device.SetLastSeen(time.Now().Add(-48 * time.Hour).Format(time.RFC3339))
+	// The existing monitor uses a real one-second ticker; cross that boundary without
+	// manufacturing reports. Provider availability must remain owned by the session.
+	select {
+	case <-offline:
+		t.Fatal("quiet connected provider marked offline")
+	case <-time.After(1200 * time.Millisecond):
+	}
+	if !device.IsAvailable() {
+		t.Fatal("provider availability expired")
+	}
+	service.ProviderOffline()
+	if device.IsAvailable() {
+		t.Fatal("session disconnect did not mark provider offline")
 	}
 }

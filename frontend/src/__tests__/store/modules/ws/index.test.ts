@@ -63,6 +63,14 @@ describe('ws inbound routing', () => {
     expect(FakeSocket.last!.sent.map((s) => JSON.parse(s).type)).toContain('loadMCPStatus');
   });
 
+  test('settings acknowledgements are validated before entering shared socket state', () => {
+    const result={requestId:'00000000-0000-0000-0000-000000000001',deviceId:'radar',success:true};
+    FakeSocket.last!.receive('deviceConfigSaveResult',result);
+    expect(store.getters['ws/getDeviceConfigSaveResult']).toEqual(result);
+    FakeSocket.last!.receive('deviceConfigSaveResult',{...result,success:'yes'});
+    expect(store.getters['ws/getDeviceConfigSaveResult']).toBeNull();
+  });
+
   test('deviceUpdated merges known exposes, last_seen and availability', () => {
     const id = '0xa4c1381b6fd53fc4';
     FakeSocket.last!.receive('deviceUpdated', { id, last_seen: '2026-10-10T10:00:00Z', availability: 'offline', data: { power: 77, unknown_key: 1 } });

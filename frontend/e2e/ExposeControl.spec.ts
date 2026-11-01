@@ -1,6 +1,33 @@
 import { test, expect, signIn, dragBetween } from './support/fixtures';
 import { MOCK } from './support/mock';
 
+test('provider button requires confirmation before sending an action', async ({ page }) => {
+  const commands: unknown[] = [];
+  await page.route('**/api/hubstate', async (route) => {
+    const response = await route.fetch();
+    const state = await response.json();
+    const device = state.devices.find((d: { id: string }) => d.id === MOCK.livingRoomLight.id);
+    device.provider = 'esphome';
+    device.availability = 'online';
+    device.exposes.factory_reset = { name: 'factory_reset', description: '', unit: '', data: null, type: 'button', category: 'config', access_mode: 'write', attributes: { label: 'Factory reset' }, values: {} };
+    await route.fulfill({ response, json: state });
+  });
+  await page.routeWebSocket('ws://localhost:4110/ws', (socket) => socket.onMessage((raw) => {
+    const frame = JSON.parse(String(raw));
+    if (frame.type === 'deviceSetValue') commands.push(frame.payload);
+  }));
+  await signIn(page, `/devicepage/${MOCK.livingRoomLight.id}`);
+  const action = page.getByRole('button', { name: 'Factory reset' });
+  await expect(action).toBeEnabled();
+  await action.click();
+  const dialog = page.getByRole('dialog', { name: 'Run Factory reset?' });
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+  expect(commands).toHaveLength(0);
+  await action.click();
+  await dialog.getByRole('button', { name: 'Run action' }).click();
+  await expect.poll(() => commands.length).toBe(1);
+});
+
 test('device-page sliders use simple rails, aligned values and usable targets in both modes', async ({ page }, info) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.addInitScript(() => localStorage.setItem('nodeherder_theme', JSON.stringify({

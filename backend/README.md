@@ -49,6 +49,8 @@ Full environment/authentication and Docker lifecycle instructions: [setup guide]
 Storage configuration:
 
 - `DATA_DIR` - Directory for database files (default: `data`)
+- `DEVICE_PROVIDER_KEYRING_FILE` - Optional path to an existing private device-provider keyring; takes precedence over the managed directory.
+- `DEVICE_PROVIDER_KEYRING_DIR` - Absolute private directory for the managed device-provider keyring. Docker uses a separate persistent volume; native installs default to the NodeHerder directory in the user configuration directory.
 - `LOGS_DIR` - Directory for log files (default: `logs`)
 
 Additional configuration may be required for MQTT broker connection, database paths, and other settings.
@@ -203,6 +205,22 @@ The backend uses BoltDB, an embedded key-value database, for storing:
 - Assistant chat history (`assistant.db`)
 
 Database files are stored in the directory specified by `DATA_DIR` (default: `data`).
+
+ESPHome enrollment credentials are encrypted in `DATA_DIR/device-providers/integrations.db`
+using a separate device-provider keyring. Back up the database and its matching keyring
+together; losing the keyring makes the encrypted credentials unrecoverable. Managed keyring
+creation is restricted to first installation: an existing database with a missing key fails
+closed. Keep the device-provider key volume when recreating Docker containers. Removing a
+record does not securely erase old database pages or backups, and historical metrics use
+their existing retention policy.
+
+ESPHome discovery uses a short mDNS scan when requested. Multicast may not reach devices
+through a Docker bridge, across subnets, or when mDNS is disabled; enter the private numeric
+IP address and Native API port manually in those cases. Discovery does not enroll devices.
+After adding a device, the ESPHome management dialog shows its connection status while
+NodeHerder discovers entities. If the backend cannot connect, check network access from
+the machine or container running the backend. On macOS, also check Local Network access
+for the application responsible for starting it under Privacy & Security settings.
 In Docker environments, this is typically mapped to `./backend/data`.
 
 ## Logging

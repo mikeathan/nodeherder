@@ -14,6 +14,7 @@
   import DeviceChips from '@/components/entity/DeviceChips.vue';
   import DeviceStatusChip from '@/components/entity/DeviceStatusChip.vue';
   import DeviceActions from '@/components/device/DeviceActions.vue';
+  import ESPHomeDeviceActions from './esphome/ESPHomeDeviceActions.vue';
 
   const { devices, initialized, isDeviceDisabled } = useHub();
   const filters = ref<DeviceFilters>({ ...DEFAULT_FILTERS });
@@ -37,6 +38,7 @@
   <div>
     <UiPageHeader title="Device list" :subtitle="`${devices.length} devices`">
       <template #actions>
+        <ESPHomeDeviceActions />
         <UiButton icon="devices" :to="{ name: RouteName.Devices }">Cards</UiButton>
       </template>
     </UiPageHeader>
