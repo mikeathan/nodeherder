@@ -22,22 +22,38 @@ const (
 // WasteCapability identifies the provider-independent waste schedule output contract.
 const WasteCapability = "waste_schedule/v1"
 
-// Value is either a JSON scalar or an explicit reference to a setup input/captured state.
+// JoinValue combines a bounded list of saved scalar references, for APIs that require one
+// coordinate pair rather than separate parameters. It is not a template language.
+type JoinValue struct {
+	Separator string   `json:"separator" yaml:"separator"`
+	Refs      []string `json:"refs" yaml:"refs"`
+}
+
+// Value is either a JSON scalar, an explicit reference, or a bounded scalar join.
 // It is deliberately not a template or expression language.
 type Value struct {
 	Ref     string
 	Literal any
+	Join    *JoinValue
 }
 
 // UnmarshalYAML rejects implicit or executable YAML forms before accepting the typed value.
 func (v *Value) UnmarshalYAML(n *yaml.Node) error {
 	*v = Value{}
 	if n.Kind == yaml.MappingNode {
-		if len(n.Content) != 2 || n.Content[0].Value != "ref" || n.Content[1].Tag != "!!str" {
-			return fmt.Errorf("expected a scalar or {ref: input.name/state.name}")
+		if len(n.Content) == 2 && n.Content[0].Value == "ref" && n.Content[1].Tag == "!!str" {
+			v.Ref = n.Content[1].Value
+			return nil
 		}
-		v.Ref = n.Content[1].Value
-		return nil
+		if len(n.Content) == 2 && n.Content[0].Value == "join" {
+			var join JoinValue
+			if err := n.Content[1].Decode(&join); err != nil {
+				return fmt.Errorf("invalid join value")
+			}
+			v.Join = &join
+			return nil
+		}
+		return fmt.Errorf("expected a scalar, {ref: input.name/state.name} or {join: ...}")
 	}
 	if n.Kind != yaml.ScalarNode {
 		return fmt.Errorf("request values must be scalars or references")
@@ -55,6 +71,9 @@ func (v Value) MarshalYAML() (any, error) {
 	if v.Ref != "" {
 		return map[string]string{"ref": v.Ref}, nil
 	}
+	if v.Join != nil {
+		return map[string]JoinValue{"join": *v.Join}, nil
+	}
 	if n, ok := v.Literal.(json.Number); ok {
 		if i, err := n.Int64(); err == nil {
 			return i, nil
@@ -69,6 +88,9 @@ func (v Value) MarshalJSON() ([]byte, error) {
 	if v.Ref != "" {
 		return json.Marshal(map[string]string{"ref": v.Ref})
 	}
+	if v.Join != nil {
+		return json.Marshal(map[string]JoinValue{"join": *v.Join})
+	}
 	return json.Marshal(v.Literal)
 }
 
@@ -77,19 +99,30 @@ func (v *Value) UnmarshalJSON(data []byte) error {
 	*v = Value{}
 	data = bytes.TrimSpace(data)
 	if len(data) > 0 && data[0] == '{' {
-		var ref struct {
-			Ref string `json:"ref"`
+		var union struct {
+			Ref  *string    `json:"ref"`
+			Join *JoinValue `json:"join"`
 		}
 		d := json.NewDecoder(bytes.NewReader(data))
 		d.DisallowUnknownFields()
-		if err := d.Decode(&ref); err != nil {
+		if err := d.Decode(&union); err != nil {
 			return err
 		}
-		if ref.Ref == "" {
-			return fmt.Errorf("reference is empty")
+		if union.Ref != nil && union.Join != nil {
+			return fmt.Errorf("choose one value form")
 		}
-		v.Ref = ref.Ref
-		return nil
+		if union.Ref != nil {
+			if *union.Ref == "" {
+				return fmt.Errorf("reference is empty")
+			}
+			v.Ref = *union.Ref
+			return nil
+		}
+		if union.Join != nil {
+			v.Join = union.Join
+			return nil
+		}
+		return fmt.Errorf("reference is empty")
 	}
 	var x any
 	d := json.NewDecoder(bytes.NewReader(data))
@@ -146,21 +179,56 @@ type Definition struct {
 	Mapping map[string]any `json:"mapping" yaml:"mapping"`
 }
 
-// AuthConfig declares how to use a separately stored credential slot; it never holds a token.
+// AuthConfig declares how to use separately stored credential slots; it never holds a token.
+// OAuth client credentials use ClientIDSlot/ClientSecretSlot and a reviewed TokenURL.
 type AuthConfig struct {
-	Mode       string `json:"mode" yaml:"mode"`
-	SecretSlot string `json:"secret_slot,omitempty" yaml:"secret_slot,omitempty"`
+	Mode              string `json:"mode" yaml:"mode"`
+	SecretSlot        string `json:"secret_slot,omitempty" yaml:"secret_slot,omitempty"`
+	TokenURL          string `json:"token_url,omitempty" yaml:"token_url,omitempty"`
+	Scope             string `json:"scope,omitempty" yaml:"scope,omitempty"`
+	ClientIDSlot      string `json:"client_id_slot,omitempty" yaml:"client_id_slot,omitempty"`
+	ClientSecretSlot  string `json:"client_secret_slot,omitempty" yaml:"client_secret_slot,omitempty"`
+	TokenStyle        string `json:"token_style,omitempty" yaml:"token_style,omitempty"`
+	TokenResponseRoot string `json:"token_response_root,omitempty" yaml:"token_response_root,omitempty"`
 }
 
-// RequiresCredential reports whether provider requests must carry the declared private slot.
+// RequiresCredential reports whether provider requests must carry declared private slots.
 // Public cross-origin setup searches are handled separately by request destination policy.
 func (auth AuthConfig) RequiresCredential() bool {
 	switch auth.Mode {
-	case "bearer", "apikey_header", "apikey_query":
+	case "bearer", "apikey_header", "apikey_query", "oauth2_client_credentials":
 		return true
 	default:
 		return false
 	}
+}
+
+// Slots lists the credential slots declared by this auth mode.
+func (auth AuthConfig) Slots() []string {
+	switch auth.Mode {
+	case "bearer", "optional_bearer", "apikey_header", "apikey_query":
+		if auth.SecretSlot == "" {
+			return nil
+		}
+		return []string{auth.SecretSlot}
+	case "oauth2_client_credentials":
+		if auth.ClientIDSlot == "" || auth.ClientSecretSlot == "" {
+			return nil
+		}
+		return []string{auth.ClientIDSlot, auth.ClientSecretSlot}
+	default:
+		return nil
+	}
+}
+
+// AllowsSlot reports whether a named slot belongs to this auth mode.
+func (auth AuthConfig) AllowsSlot(slot string) bool {
+	for _, declared := range auth.Slots() {
+		if declared == slot {
+			return true
+		}
+	}
+	return false
 }
 
 // Policy bounds explicit status checks, fresh lookup creation and safe submission-key replay.
@@ -204,10 +272,30 @@ type Request struct {
 	Path         []Value            `json:"path" yaml:"path"`
 	Query        map[string]Value   `json:"query,omitempty" yaml:"query,omitempty"`
 	Body         map[string]Value   `json:"body,omitempty" yaml:"body,omitempty"`
+	Headers      map[string]string  `json:"headers,omitempty" yaml:"headers,omitempty"`
+	Discover     *DiscoverConfig    `json:"discover,omitempty" yaml:"discover,omitempty"`
+	Pagination   *PaginationConfig  `json:"pagination,omitempty" yaml:"pagination,omitempty"`
 	Idempotency  StrictBool         `json:"idempotency,omitempty" yaml:"idempotency,omitempty"`
 	Conditional  StrictBool         `json:"conditional,omitempty" yaml:"conditional,omitempty"`
 	ResponseRoot string             `json:"response_root,omitempty" yaml:"response_root,omitempty"`
 	Captures     map[string]Capture `json:"captures,omitempty" yaml:"captures,omitempty"`
+}
+
+// DiscoverConfig declares one bounded Atom link lookup immediately before a request.
+type DiscoverConfig struct {
+	Format     string     `json:"format" yaml:"format"`
+	Rel        string     `json:"rel" yaml:"rel"`
+	SameOrigin StrictBool `json:"same_origin" yaml:"same_origin"`
+}
+
+// PaginationConfig declares bounded sequential page collection for array responses.
+type PaginationConfig struct {
+	PageQuery string `json:"page_query" yaml:"page_query"`
+	Start     int    `json:"start" yaml:"start"`
+	MaxPages  int    `json:"max_pages" yaml:"max_pages"`
+	// PageSize is an expected provider page-size hint; collection stops on an empty page or MaxPages.
+	PageSize          int `json:"page_size,omitempty" yaml:"page_size,omitempty"`
+	DelayMilliseconds int `json:"delay_ms,omitempty" yaml:"delay_ms,omitempty"`
 }
 
 // Capture saves a typed response field for a later request. Pointer is an RFC 6901 JSON

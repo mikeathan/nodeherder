@@ -1,8 +1,8 @@
 import { computed, ref, watch } from 'vue';
 import { calendarDateInZone, createZonedTimeFormatter, formatInstant, formatShortCalendarDate } from '@/utils/date.utils';
-import type { WeatherForecast } from '@/types/weather.type';
+import type { WeatherForecast } from '@/types/integrations/weather';
 
-const DAYS_PER_PAGE = 5;
+export const DAYS_PER_PAGE = 5;
 
 /** Project an accepted forecast into upcoming periods and five-day pages.
  * The getter retains reactive ownership in the caller. Scope-owned watchers reset or clamp
@@ -19,6 +19,9 @@ export function useForecastView(forecast: () => WeatherForecast) {
       .slice(0, 24);
   });
   const pages = computed(() => Math.ceil(daily.value.length / DAYS_PER_PAGE));
+  const visibleDays = computed(() =>
+    daily.value.slice(page.value * DAYS_PER_PAGE, (page.value + 1) * DAYS_PER_PAGE)
+  );
   const firstDay = computed(() => page.value * DAYS_PER_PAGE + 1);
   const lastDay = computed(() => Math.min(firstDay.value + DAYS_PER_PAGE - 1, daily.value.length));
   watch(
@@ -41,9 +44,5 @@ export function useForecastView(forecast: () => WeatherForecast) {
   function date(value: string) {
     return formatShortCalendarDate(value);
   }
-  /** Report whether the day index belongs to the currently displayed mobile page. */
-  function outsidePage(index: number) {
-    return index < firstDay.value - 1 || index >= lastDay.value;
-  }
-  return { page, daily, hourly, pages, firstDay, lastDay, hour, date, outsidePage };
+  return { page, daily, visibleDays, hourly, pages, firstDay, lastDay, hour, date };
 }

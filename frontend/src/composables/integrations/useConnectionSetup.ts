@@ -4,7 +4,7 @@ import { useRoute } from 'vue-router';
 import { useConnections } from '@/composables/useConnections';
 import { confirm } from '@/composables/useConfirm';
 import { RouteName } from '@/types/router';
-import type { ProviderDefinition } from '@/types/integrations.type';
+import type { ProviderDefinition } from '@/types/integrations';
 
 /** Owns this page's application actions; the route component only presents its state. */
 export function useConnectionSetup() {
@@ -21,7 +21,7 @@ export function useConnectionSetup() {
     () => { nameEdited = true; },
     { flush: 'sync' }
   );
-  const token = ref('');
+  const tokens = ref<Record<string, string>>({});
   const definition = ref<ProviderDefinition | null>(null);
   // Only named return intents are accepted; setup never redirects to a supplied URL.
   async function finishSetup(id: string) {
@@ -48,16 +48,11 @@ export function useConnectionSetup() {
     }
     if (value.operation_id && value.status === 'searching') observe(value.operation_id, reload);
   });
-  signal.addEventListener(
-    'abort',
-    () => {
-      token.value = '';
-    },
-    { once: true }
-  );
-  onBeforeUnmount(() => {
-    token.value = '';
-  });
+  const clearTokens = () => {
+    tokens.value = {};
+  };
+  signal.addEventListener('abort', clearTokens, { once: true });
+  onBeforeUnmount(clearTokens);
   /** Submit the postcode search and observe its admitted operation; old address choices are discarded. */
   async function search() {
     const current = setup.value;
@@ -91,15 +86,21 @@ export function useConnectionSetup() {
   async function check() {
     await checkOperation(setup.value?.operation_id, reload);
   }
-  /** Save the setup token in server-owned custody and immediately clear its plaintext field. */
-  async function saveToken() {
-    const current = setup.value;
+  /** Save every filled declared slot with one action, reloading the ETag after each write. */
+  async function saveCredentials(slots: readonly string[]) {
+    let current = setup.value;
     if (!current) return;
-    const slot = definition.value?.auth.secret_slot;
-    if (!slot) return;
-    const value = await perform(() => api.credential('setup', current.id, slot, current.etag, token.value));
-    token.value = '';
-    if (value && 'choices' in value) commit('setup', value);
+    for (const slot of slots) {
+      const value = tokens.value[slot];
+      if (!value) continue;
+      const result = await perform(() => api.credential('setup', current!.id, slot, current!.etag, value));
+      if (!result) break;
+      if ('choices' in result) {
+        current = result;
+        commit('setup', result);
+      }
+      delete tokens.value[slot];
+    }
   }
   /** Confirm deletion of this unfinished setup; already-submitted remote work cannot be recalled. */
   async function cancel() {
@@ -126,14 +127,14 @@ export function useConnectionSetup() {
     postcode,
     property,
     name,
-    token,
+    tokens,
     definition,
     busy,
     error,
     search,
     save,
     check,
-    saveToken,
+    saveCredentials,
     cancel,
   };
 }

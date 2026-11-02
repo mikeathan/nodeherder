@@ -1,0 +1,55 @@
+{
+  "contract_version": "air_quality/v1",
+  "instance_id": "air-quality-example",
+  "resource_id": "air-quality-resource",
+  "revision": 1,
+  "location": "Sheffield",
+  "timezone": "Europe/London",
+  "latitude": 53.38,
+  "longitude": -1.47,
+  "index_family": "european",
+  "index": 25,
+  "category": "fair",
+  "dominant": "",
+  "current": {
+    "pm2_5": 12,
+    "pm10": 20,
+    "ozone": 30,
+    "nitrogen_dioxide": 10,
+    "sulphur_dioxide": 2,
+    "carbon_monoxide": 200
+  },
+  "hourly": [
+    {
+      "time": "2026-11-03T12:00:00Z",
+      "pm2_5": 12,
+      "pm10": 20,
+      "ozone": 30,
+      "nitrogen_dioxide": 10,
+      "sulphur_dioxide": 2,
+      "carbon_monoxide": 200
+    },
+    {
+      "time": "2026-11-03T13:00:00Z",
+      "pm2_5": 15,
+      "pm10": 24,
+      "ozone": 32,
+      "nitrogen_dioxide": 11,
+      "sulphur_dioxide": 2,
+      "carbon_monoxide": 210
+    }
+  ],
+  "pollen": {
+    "alder": 1,
+    "birch": 2,
+    "grass": 3,
+    "mugwort": 0,
+    "olive": null,
+    "ragweed": null
+  },
+  "attribution": "Synthetic air quality for isolated verification",
+  "captured_at": "2026-11-03T12:00:00Z",
+  "last_checked_at": "2026-11-03T12:00:00Z",
+  "evaluated_at": "2026-11-03T12:00:00Z",
+  "freshness": "fresh"
+}

@@ -126,9 +126,9 @@ func (s *Service) invalidateSetup(tx *repository.IntegrationTx, p *model.Setup) 
 // makeOperation pins all execution inputs and constructs exact POST bytes before admission.
 // The caller must commit the returned operation with its owner before enqueueing; a retry
 // must not rebuild a changed body under the same idempotency key.
-func (s *Service) makeOperation(tx *repository.IntegrationTx, c *definitions.Compiled, inputs map[string]string, state map[string]any, credentials map[string]model.Credential, origin, requestID, kind string, generation uint64) (model.Operation, error) {
+func (s *Service) makeOperation(tx *repository.IntegrationTx, c *definitions.Compiled, inputs map[string]string, state map[string]any, credentials map[string]model.Credential, origin, requestID string, kind model.OperationKind, generation uint64) (model.Operation, error) {
 	now := s.clock.Now()
-	if kind != "renewal" {
+	if kind != model.OperationKindRenewal {
 		if err := s.ensureOperationCapacity(tx); err != nil {
 			return model.Operation{}, err
 		}
@@ -162,31 +162,21 @@ func (s *Service) makeOperation(tx *repository.IntegrationTx, c *definitions.Com
 		o.CredentialRevision = cred.Revision
 	}
 	request, body, e := operations.Build(context.Background(), operations.Attempt{
-		Definition:     c.Definition,
-		RequestID:      requestID,
-		Inputs:         inputs,
-		State:          state,
-		ApprovedOrigin: origin,
-		Credential:     cred,
-		IdempotencyKey: o.IdempotencyKey,
+		Definition:         c.Definition,
+		RequestID:          requestID,
+		Inputs:             inputs,
+		State:              state,
+		ApprovedOrigin:     origin,
+		Credential:         cred,
+		Credentials:        credentials,
+		SkipAuthentication: c.Definition.Auth.Mode == "oauth2_client_credentials",
+		IdempotencyKey:     o.IdempotencyKey,
 	})
 	o.Body = body
 	if e == nil {
 		o.RequestFingerprint = definitions.ContentHash([]byte(request.Method + "\x00" + request.URL.String()))
 	}
 	return o, e
-}
-
-// credential selects only the slot declared by the active definition. Other saved slots
-// must never be borrowed as an implicit fallback or transferred to a new origin.
-func credential(d model.Definition, credentials map[string]model.Credential) *model.Credential {
-	if d.Auth.Mode == "none" {
-		return nil
-	}
-	if c, ok := credentials[d.Auth.SecretSlot]; ok {
-		return &c
-	}
-	return nil
 }
 
 // SaveSetup claims a selected candidate once, atomically with the instance and initial attempt.

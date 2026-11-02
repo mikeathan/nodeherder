@@ -1,5 +1,5 @@
 import { formatDuration } from '@/utils/date.utils';
-import type { ConnectionSchedule } from '@/types/integrations.type';
+import type { ConnectionSchedule } from '@/types/integrations';
 
 /** Units offered by the automatic-refresh editor; the API always stores seconds. */
 export type ScheduleUnit = 'seconds' | 'minutes' | 'hours' | 'days';

@@ -1,6 +1,6 @@
 # Spec: Home signal integrations and scalable integration UI
 
-ID: 035 | Status: Draft | Owner: NodeHerder contributors | Updated: 2026-10-29
+ID: 035 | Status: Draft — revised after specs 037/038 | Owner: NodeHerder contributors | Updated: 2026-11-01
 Constitution: proposed 1.0.0 | Components: backend and frontend
 
 ## Problem, scope, exclusions
@@ -22,6 +22,9 @@ Observed current behavior:
   unknown contract version, so a new capability resource is rejected as malformed waste.
 - `parseProviderDefinition` hard-codes `waste_schedule/v1|weather_forecast/v1` and
   `waste_collection|weather`, and branches on capability for the mapping shape.
+- Automatic refresh is installed (spec 037): a bounded runtime coordinator admits scheduled
+  provider work through the same refresh path, and each provider definition declares
+  `refresh_default_seconds` and `refresh_min_seconds`. Page reads still never contact a provider.
 - The catalog response already carries `types` (`ConnectionCatalogType`) but
   `ConnectionCatalogDialog.vue` renders types and providers ad hoc, with a `weather` special case.
 - Home has two visually different card implementations: `EntityTile.vue` (devices) and
@@ -32,11 +35,16 @@ Observed current behavior:
   "Kitchen") interrupted by bare "Bin collections" and "Weather" cards at the same top-level
   position, with no section header. They read as ungrouped orphans and their wider card also
   changes the row rhythm.
-- There is no map or coordinate presentation anywhere in `frontend/src`.
+- There is no geographic map or tile dependency. An indoor, canvas-based spatial view exists from
+  spec 038 for device radar and room geometry; it has no geography and is unrelated to a map.
 
 In scope:
 
-1. Add sunrise, sunset and UV to the weather resource and its shipped providers.
+1. Enrich the weather resource and its shipped providers with sunrise, sunset, UV and richer daily
+   detail (feels-like, wind gust/direction, humidity, pressure, visibility, night condition, snow
+   chance), let a user select any daily forecast entry to switch the hourly panel to that day's
+   supplied statistics and hourly values, and let a user open an hourly card for that hour's
+   supplied detail.
 2. Add an `air_quality/v1` capability with pollutants, AQI and pollen.
 3. Add a `weather_alerts/v1` capability with official warnings.
 4. Add a `fuel_prices/v1` capability for nearby forecourts.
@@ -48,11 +56,12 @@ In scope:
    section. A section may hold one card or many and switch between card and list views.
 7. Add an optional, opt-in map on integration detail pages.
 
-Out of scope: automatic or scheduled provider refresh (the deferred coordinator from
-`specs/034-weather-integration/plan.md`), integration values as automation triggers or conditions,
-device control, radar/satellite imagery, civil emergency alerts (there is no public API; the
-Emergency Alerts service is broadcast-only), historical charts of integration data, multi-household
-tenancy, and non-JSON provider formats beyond the single bounded Atom link discovery in
+Out of scope: the shared freshness/retention data-policy service and provider-retention
+enforcement (spec 034 debt); automatic refresh itself was delivered by spec 037 and is reused, not
+reimplemented. Also out of scope: integration values as automation triggers or conditions, device
+control, radar/satellite imagery, civil emergency alerts (there is no public API; the Emergency
+Alerts service is broadcast-only), historical charts of integration data, multi-household tenancy,
+and non-JSON provider formats beyond the single bounded Atom link discovery in
 [ADR-002](adr-002-alert-feed-discovery.md).
 
 Assumptions to validate:
@@ -63,8 +72,9 @@ Assumptions to validate:
   credentials). Unverified; see Q2.
 - A3. Met Office warnings require feed discovery because the GeoJSON snapshot URL embeds a
   per-update UUID. See [provider research](provider-research.md) and Q1.
-- A4. Manual refresh remains the update model for this phase, so alert and air-quality data are
-  only as current as the last explicit refresh. See Q5.
+- A4. Automatic refresh (spec 037) is the update model: every new provider declares a cadence
+  default and minimum, and manual-only remains available. Alerts, air quality and fuel are only as
+  current as their configured schedule. See Q5.
 - A5. Existing homes accept a Home Assistant-style section layout; no user has asked to keep the
   current area/standalone-card composition unchanged.
 
@@ -72,17 +82,35 @@ Assumptions to validate:
 
 ### US-01 — Weather gains daily planning signals (priority P1)
 
-Independent verification: synthetic provider fixtures, model validation tests, presenter tests.
+Independent verification: synthetic provider fixtures, model validation tests, presenter and
+day-detail interaction tests.
 
 - AC-01: Given a refreshed weather resource whose provider supplies sunrise, sunset and UV, when
-  the connection results render, then each daily row shows local sunrise and sunset times and the
-  daily maximum UV, and hourly detail shows the UV value, all labelled with their meaning.
+  the connection results render, then each daily card shows the daily maximum UV, and selecting
+  the day shows local sunrise and sunset, the daily maximum UV and the hourly UV value, all
+  labelled with their meaning.
 - AC-02: Given a provider that does not supply those quantities, when the resource is normalized,
   then the fields are null, the resource is accepted, and the UI omits them rather than showing
   zero; a UV value outside 0–20, an invalid local time or a negative daily maximum is rejected as
   `invalid_response`.
 - AC-03: Given a weather snapshot saved before this change, when it is projected, then it remains
   readable with no migration and renders without the new fields.
+- AC-54: Given a saved daily forecast, when a user selects a day card, then the hourly panel
+  switches from the next-24-hours view to that day's summary and hourly cards, using the same card
+  anatomy as the live view. The summary shows every supplied daily value: day and night condition,
+  high/low, feels-like high/low, wind speed/gust/direction, humidity, pressure, visibility,
+  precipitation chance and amount, rain/snow chance, maximum UV, and sunrise/sunset; missing values
+  are omitted rather than zero-filled.
+- AC-55: Selecting a day is keyboard operable, the selected card exposes its pressed state, and a
+  "Today" control appears when another day is selected and restores the default view; selecting
+  today's card again does the same. Selection updates in place after a refresh and
+  never changes saved forecast data or contacts a provider. When the selected day is outside the
+  provider's hourly horizon, the panel states that hourly data only covers the next N hours instead
+  of showing a bare empty state.
+- AC-56: Given an hourly forecast card, when a user selects it, then the card exposes its pressed
+  state and an inline detail shows that hour's temperature, condition, feels-like, rain chance,
+  precipitation, humidity, wind, gusts, direction and UV when supplied. Selecting the same hour
+  again, switching day or restoring Today closes the detail; missing values are omitted.
 
 ### US-02 — Air quality and pollen (priority P1)
 
@@ -128,9 +156,10 @@ Independent verification: OAuth stub tests, response fixtures, sorting and forma
 - AC-14: Results list stations sorted by distance ascending, then by the cheapest displayed grade,
   showing brand, distance in metres/kilometres, and price per litre for every grade the provider
   supplied; unsupported grades are omitted.
-- AC-15: Prices are integer pence per litre; a negative, fractional or missing price rejects that
-  station's price rather than silently rounding, and a station with no valid price is shown without
-  prices or omitted, never as zero.
+- AC-15: Prices are integer pence per litre. Providers that publish tenths of a penny are rounded
+  to the nearest whole penny, with that precision loss stated in the contract and results; negative
+  or missing prices are rejected and a station with no valid price is shown without prices or
+  omitted, never as zero.
 - AC-16: The client obtains a token from the declared token endpoint, uses it only for the declared
   provider origin, caches it in process memory, and retries once after a 401; client secrets and
   tokens never enter the browser payload, YAML, logs or errors.
@@ -180,8 +209,10 @@ Independent verification: layout schema tests, component tests, 320/375/768/1024
   affordances; an empty section shows an add-card empty state and is never deleted automatically
   because it is empty. Auto-hiding a header is not applied.
 - AC-36: Sections share one layout grammar. Areas keep the two-column inner grid with device
-  cards; Services uses the same grid and changes only card geometry and view. No section or
-  capability gets a bespoke layout, and an integration card moved into an area behaves identically.
+  cards; Services uses the same grid and changes only card geometry and view. Capability cards may
+  declare a bounded preferred/max width for readability, but use the same frame, row anatomy and
+  responsive section grid; they do not introduce a bespoke section layout. An integration card
+  moved into an area behaves identically.
 - AC-37: At section widths of two or more card columns an integration card spans the full section;
   compact integrations use one column. Rows wrap, never scroll horizontally, and card content
   ellipsizes or wraps using shared rules at 320px.
@@ -229,6 +260,10 @@ Independent verification: layout schema tests, component tests, 320/375/768/1024
 - AC-52: A section can hold device cards, integration cards, or both; removing a non-empty section
   requires confirmation and offers moving its cards to another section (Services by default) or
   deleting them with the section.
+- AC-53: Given a new air-quality, alert or fuel provider, when setup completes, then the provider's
+  declared cadence is offered and used by default (manual-only remains selectable), the Settings tab
+  still shows the schedule editor after the tab redesign, and a dirty schedule edit survives
+  switching to Results/Configuration/Help and back.
 
 ### US-07 — Coordinates are visible on demand (priority P3)
 
@@ -245,8 +280,9 @@ Independent verification: presenter tests, disclosure and network-observation ch
 
 ## Requirements and success
 
-- FR-01: MUST extend `weather_forecast/v1` additively with optional sunrise, sunset, daily UV max
-  and hourly UV (AC-01–03).
+- FR-01: MUST extend `weather_forecast/v1` additively with optional sunrise, sunset, daily UV max,
+  hourly UV and richer daily values (feels-like high/low, wind gust/direction, humidity, pressure,
+  visibility, night condition, snow chance) (AC-01–03, 54).
 - FR-02: MUST add an `air_quality/v1` capability and at least one shipped provider (AC-04–07).
 - FR-03: MUST add a `weather_alerts/v1` capability and ship the Met Office and NWS providers or
   record why a provider is unavailable (AC-08–12).
@@ -271,6 +307,14 @@ Independent verification: presenter tests, disclosure and network-observation ch
   smallest fitting span and truncating overflow rather than growing without limit (AC-45–47).
 - FR-14: MUST use one section primitive for one or many cards, with a per-section `cards` or `list`
   view that preserves geometry across switches (AC-48–52).
+- FR-15: MUST declare `refresh_default_seconds` and `refresh_min_seconds` on every newly shipped
+  provider and keep the automatic-refresh controls intact through the Integrations redesign
+  (AC-53).
+- FR-16: MUST let a user select any daily forecast entry to switch the hourly panel to that local
+  day's statistics and hourly values without leaving the results page, changing saved state or
+  contacting a provider (AC-54–55).
+- FR-17: MUST let a user select any hourly forecast card to reveal that hour's supplied values
+  inline without leaving the results page, changing saved state or contacting a provider (AC-56).
 - NFR-01: External payloads are bounded (body size, list lengths, polygon vertices, forecast
   horizon) and validated before publication; missing data never becomes zero (AC-02, 05–07,
   10, 15).
@@ -292,6 +336,9 @@ Independent verification: presenter tests, disclosure and network-observation ch
 ## Entities and external interfaces
 
 - Weather resource: additive optional fields only; existing consumers ignore unknown JSON fields.
+  Daily detail is a read-time projection of the existing `daily` array and the hourly points whose
+  local date matches, so it needs no route or extra request. Met Office supplies far more daily
+  values than the original contract exposed; the optional fields carry those it confirms.
 - Air quality resource: one per instance, carrying the selected origin label, index family,
   current values, a bounded hourly series and pollen. Provider: Open-Meteo Air Quality, a separate
   origin from the forecast host, free for non-commercial use with CAMS attribution.
@@ -318,14 +365,15 @@ Independent verification: presenter tests, disclosure and network-observation ch
   Consequence: no map without approval. Owner: maintainer. Blocks US-07.
 - Q4. Confirm "civil alerts" means official weather warnings only. Assumption: yes, there is no
   public civil-alert API. Owner: requester. Non-blocking for US-03.
-- Q5. Confirm manual refresh remains the model, given that warnings and prices are time-sensitive.
-  Consequence: alerts are only as current as the last refresh; scheduled refresh stays deferred.
-  Owner: maintainer. Non-blocking, but it limits AC-08–10 usefulness.
+- Q5. Resolved by spec 037: automatic refresh is available and reused. Confirm the initial
+  cadences for air quality, alerts and fuel against provider quotas. Consequence: unverified limits
+  remain operational checks; a faster cadence can exhaust quotas. Owner: maintainer.
 
 ## Compatibility and rollback
 
-New contract versions do not affect existing waste or weather resources. The Home layout gains
-optional `width`, `view`, `collapsed`, card `width` and card `height` fields. Binaries predating
+New contract versions do not affect existing waste or weather resources. The instance schedule
+field already exists from spec 037 and is unchanged here. The Home layout gains optional `width`,
+`view`, `collapsed`, card `width` and card `height` fields. Binaries predating
 this change decode JSON into the older struct and silently drop those fields, and compute a
 different Home ETag; a rollback therefore requires exporting/restoring a pre-change Home layout to
 avoid losing the new presentation state. New capabilities can be removed without touching devices.

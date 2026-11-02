@@ -121,7 +121,7 @@ func (s *Service) TestDefinition(key, source, instanceID, mode string, sample js
 			p.State = nil
 			p.Credentials = nil
 		} else {
-			o, e := s.makeOperation(tx, c, p.Inputs, p.State, p.Credentials, c.Origin, c.Definition.Refresh.Request, "test", p.Generation)
+			o, e := s.makeOperation(tx, c, p.Inputs, p.State, p.Credentials, c.Origin, c.Definition.Refresh.Request, model.OperationKindTest, p.Generation)
 			if e != nil {
 				return e
 			}

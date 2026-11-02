@@ -81,7 +81,7 @@ func (s *Service) Refresh(id, expected string) (OperationDTO, error) {
 // service lock and repository transaction and has already checked lifecycle/revision policy.
 func (s *Service) admitRefresh(tx *repository.IntegrationTx, i *model.Instance, c *definitions.Compiled, trigger string) (model.Operation, error) {
 	now := s.clock.Now()
-	o, e := s.makeOperation(tx, c, i.Inputs, i.State, i.Credentials, i.Origin, c.Definition.Refresh.Request, "refresh", i.Generation)
+	o, e := s.makeOperation(tx, c, i.Inputs, i.State, i.Credentials, i.Origin, c.Definition.Refresh.Request, model.OperationKindRefresh, i.Generation)
 	if e != nil {
 		return o, e
 	}
@@ -144,7 +144,7 @@ func (s *Service) CheckOperation(id, expected string) (OperationDTO, error) {
 			return e
 		}
 		actual := revisionETag("instance", owner.instance.ID, owner.instance.Revision)
-		if o.Kind == "search" || owner.candidate || owner.test {
+		if o.Kind == model.OperationKindSearch || owner.candidate || owner.test {
 			actual = revisionETag("setup", owner.setup.ID, owner.setup.Revision)
 		}
 		if e = checkRevision(expected, actual); e != nil {
@@ -492,14 +492,14 @@ func (s *Service) SetCredential(kind, id, slot, value, expected string, remove b
 			return e
 		}
 		_, storedSlot := i.Credentials[slot]
-		if (!remove && (c.Definition.Auth.Mode == "none" || slot != c.Definition.Auth.SecretSlot)) || (remove && !storedSlot) {
+		if (!remove && (c.Definition.Auth.Mode == "none" || !c.Definition.Auth.AllowsSlot(slot))) || (remove && !storedSlot) {
 			return model.Fail("invalid_credential", "This provider does not declare that credential slot.")
 		}
 		old := i.Credentials[slot]
 		if remove {
 			delete(i.Credentials, slot)
 		} else {
-			i.Credentials[slot] = model.Credential{Value: value, Origin: c.Origin, Revision: old.Revision + 1}
+			i.Credentials[slot] = model.Credential{Value: value, Origin: credentialOrigin(c.Definition, c.Origin, slot), Revision: old.Revision + 1}
 		}
 		if cancel := s.running[i.OperationID]; cancel != nil {
 			cancel()
@@ -542,14 +542,14 @@ func (s *Service) setSetupCredential(tx *repository.IntegrationTx, id, slot, val
 	if err != nil {
 		return SetupDTO{}, err
 	}
-	if c.Definition.Auth.Mode == "none" || slot != c.Definition.Auth.SecretSlot {
+	if c.Definition.Auth.Mode == "none" || !c.Definition.Auth.AllowsSlot(slot) {
 		return SetupDTO{}, model.Fail("invalid_credential", "This provider does not declare that credential slot.")
 	}
 	old := p.Credentials[slot]
 	if err = s.invalidateSetup(tx, &p); err != nil {
 		return SetupDTO{}, err
 	}
-	p.Credentials[slot] = model.Credential{Value: value, Origin: c.Origin, Revision: old.Revision + 1}
+	p.Credentials[slot] = model.Credential{Value: value, Origin: credentialOrigin(c.Definition, c.Origin, slot), Revision: old.Revision + 1}
 	p.Status = "input"
 	p.Choices = []model.Choice{}
 	p.State = map[string]any{}

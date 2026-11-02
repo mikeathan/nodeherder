@@ -1,0 +1,139 @@
+# Air-quality readings belong to the selected location; no credential is required.
+---
+schema_version: nodeherder.integration/v1
+integration_type: air_quality
+capability: air_quality/v1
+policy:
+  poll_min_seconds: 5
+  renewal_min_seconds: 86400
+  idempotency_window_seconds: 0
+  refresh_default_seconds: 1800
+  refresh_min_seconds: 900
+errors:
+  code: ''
+  rules: []
+inputs:
+  location:
+    type: text
+    label: Town or postcode
+    required: true
+  coordinates:
+    type: select
+    label: Choose location
+    required: true
+refresh:
+  request: forecast
+id: open_meteo
+name: Open-Meteo Air Quality
+base_url: https://air-quality-api.open-meteo.com
+auth:
+  mode: none
+requests:
+  search:
+    method: GET
+    path:
+    - v1
+    - search
+    query:
+      name:
+        ref: input.location
+      count: 10
+      language: en
+  postcode_search:
+    method: GET
+    path:
+    - postcodes
+    query:
+      query:
+        ref: input.location
+      limit: 10
+  forecast:
+    method: GET
+    path:
+    - v1
+    - air-quality
+    query:
+      latitude:
+        ref: state.latitude
+      longitude:
+        ref: state.longitude
+      timezone: auto
+      timeformat: unixtime
+      forecast_days: 5
+      current: european_aqi,pm2_5,pm10,ozone,nitrogen_dioxide,sulphur_dioxide,carbon_monoxide,alder_pollen,birch_pollen,grass_pollen,mugwort_pollen,olive_pollen,ragweed_pollen
+      hourly: european_aqi,pm2_5,pm10,ozone,nitrogen_dioxide,sulphur_dioxide,carbon_monoxide,alder_pollen,birch_pollen,grass_pollen,mugwort_pollen,olive_pollen,ragweed_pollen
+setup:
+  type: location_select
+  search:
+    input: location
+    request: search
+    options:
+      items: "/results"
+      value: "/name"
+      label: "/name"
+      context: ["/admin2", "/admin1", "/country"]
+      latitude: "/latitude"
+      longitude: "/longitude"
+    base_url: https://geocoding-api.open-meteo.com
+    postcode:
+      base_url: https://api.postcodes.io
+      request: postcode_search
+      options:
+        items: "/result"
+        label: "/postcode"
+        context: ["/admin_district", "/country"]
+        latitude: "/latitude"
+        longitude: "/longitude"
+  select:
+    input: coordinates
+    request: forecast
+  status:
+    request: ''
+    pointer: ''
+    pending: []
+    done: []
+    failed: []
+mapping:
+  location: ''
+  timezone: "/timezone"
+  default_timezone: Europe/London
+  attribution: Air quality data by Open-Meteo (CAMS); location search by GeoNames and Postcodes.io.
+    Free hosted API for non-commercial use.
+  index_family: european
+  current:
+    items: "/current"
+    time: "/time"
+    format: unix
+    fields:
+      index: "/european_aqi"
+      pm2_5: "/pm2_5"
+      pm10: "/pm10"
+      ozone: "/ozone"
+      nitrogen_dioxide: "/nitrogen_dioxide"
+      sulphur_dioxide: "/sulphur_dioxide"
+      carbon_monoxide: "/carbon_monoxide"
+      alder: "/alder_pollen"
+      birch: "/birch_pollen"
+      grass: "/grass_pollen"
+      mugwort: "/mugwort_pollen"
+      olive: "/olive_pollen"
+      ragweed: "/ragweed_pollen"
+  hourly:
+    items: "/hourly"
+    time: "/time"
+    format: unix
+    columns: true
+    fields:
+      index: "/european_aqi"
+      pm2_5: "/pm2_5"
+      pm10: "/pm10"
+      ozone: "/ozone"
+      nitrogen_dioxide: "/nitrogen_dioxide"
+      sulphur_dioxide: "/sulphur_dioxide"
+      carbon_monoxide: "/carbon_monoxide"
+      alder: "/alder_pollen"
+      birch: "/birch_pollen"
+      grass: "/grass_pollen"
+      mugwort: "/mugwort_pollen"
+      olive: "/olive_pollen"
+      ragweed: "/ragweed_pollen"

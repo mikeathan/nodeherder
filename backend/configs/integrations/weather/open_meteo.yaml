@@ -61,8 +61,8 @@ requests:
       timeformat: unixtime
       forecast_days: 16
       current: temperature_2m,apparent_temperature,wind_speed_10m,wind_gusts_10m,wind_direction_10m,relative_humidity_2m,precipitation,weather_code
-      hourly: temperature_2m,apparent_temperature,wind_speed_10m,wind_gusts_10m,wind_direction_10m,relative_humidity_2m,precipitation,weather_code,precipitation_probability
-      daily: temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max,precipitation_sum,wind_speed_10m_max
+      hourly: temperature_2m,apparent_temperature,wind_speed_10m,wind_gusts_10m,wind_direction_10m,relative_humidity_2m,precipitation,weather_code,precipitation_probability,uv_index
+      daily: temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,weather_code,precipitation_probability_max,precipitation_sum,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant,sunrise,sunset,uv_index_max
       wind_speed_unit: kmh
       temperature_unit: celsius
       precipitation_unit: mm
@@ -160,6 +160,7 @@ mapping:
       precipitation: "/precipitation"
       condition: "/weather_code"
       precipitation_probability: "/precipitation_probability"
+      uv: "/uv_index"
     columns: true
   daily:
     offset: /utc_offset_seconds
@@ -169,8 +170,16 @@ mapping:
     fields:
       high: "/temperature_2m_max"
       low: "/temperature_2m_min"
+      feels_like_high: "/apparent_temperature_max"
+      feels_like_low: "/apparent_temperature_min"
       condition: "/weather_code"
       wind: "/wind_speed_10m_max"
+      wind_gust: "/wind_gusts_10m_max"
+      wind_direction: "/wind_direction_10m_dominant"
       precipitation_probability: "/precipitation_probability_max"
       precipitation: "/precipitation_sum"
+      uv_max: "/uv_index_max"
+      sunrise: "/sunrise"
+      sunset: "/sunset"
+    clocks: [sunrise, sunset]
     columns: true

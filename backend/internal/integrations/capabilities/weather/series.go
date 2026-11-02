@@ -15,8 +15,9 @@ func rows(root any, s series) ([]map[string]any, error) {
 		return nil, err
 	}
 	for _, row := range result {
-		for field, value := range row {
-			if field != "time" && field != "condition" && value != nil && number(value) == nil {
+		for name, value := range row {
+			field := weatherField(name)
+			if field != fieldTime && field != fieldCondition && field != fieldNightCondition && !s.isClock(field) && value != nil && number(value) == nil {
 				return nil, fmt.Errorf("invalid weather quantity")
 			}
 		}
@@ -39,7 +40,7 @@ func rawRows(root any, selectors series) ([]map[string]any, error) {
 // nestedRows flattens bounded parent and child lists into a single forecast series.
 func nestedRows(root any, selectors series) ([]map[string]any, error) {
 	parents, ok := pointer(root, selectors.Parent).([]any)
-	if !ok || len(parents) > 16 {
+	if !ok || len(parents) > maxNestedParents {
 		return nil, fmt.Errorf("invalid parent rows")
 	}
 	childSelectors := selectors
@@ -51,7 +52,7 @@ func nestedRows(root any, selectors series) ([]map[string]any, error) {
 			return nil, err
 		}
 		result = append(result, childRows...)
-		if len(result) > 384 {
+		if len(result) > maxSeriesRows {
 			return nil, fmt.Errorf("too many hours")
 		}
 	}
@@ -61,7 +62,7 @@ func nestedRows(root any, selectors series) ([]map[string]any, error) {
 // columnRows pairs equal-length field columns with their corresponding timestamps.
 func columnRows(source any, selectors series) ([]map[string]any, error) {
 	timestamps, ok := pointer(source, selectors.Time).([]any)
-	if !ok || len(timestamps) > 384 {
+	if !ok || len(timestamps) > maxSeriesRows {
 		return nil, fmt.Errorf("invalid time column")
 	}
 	columns := make(map[string][]any, len(selectors.Fields))
@@ -74,7 +75,7 @@ func columnRows(source any, selectors series) ([]map[string]any, error) {
 	}
 	result := make([]map[string]any, 0, len(timestamps))
 	for index, timestamp := range timestamps {
-		row := map[string]any{"time": timestamp}
+		row := map[string]any{string(fieldTime): timestamp}
 		for field, column := range columns {
 			row[field] = column[index]
 		}
@@ -92,12 +93,12 @@ func objectRows(source any, selectors series) ([]map[string]any, error) {
 	if !ok {
 		items = []any{source}
 	}
-	if len(items) > 384 {
+	if len(items) > maxSeriesRows {
 		return nil, fmt.Errorf("too many forecast rows")
 	}
 	result := make([]map[string]any, 0, len(items))
 	for _, item := range items {
-		row := map[string]any{"time": pointer(item, selectors.Time)}
+		row := map[string]any{string(fieldTime): pointer(item, selectors.Time)}
 		for field, selector := range selectors.Fields {
 			row[field] = pointer(item, selector)
 		}
@@ -107,10 +108,10 @@ func objectRows(source any, selectors series) ([]map[string]any, error) {
 }
 
 // quantity applies the configured unit scale while preserving absent values as nil.
-func quantity(row map[string]any, s series, key string) *float64 {
-	n := number(row[key])
+func quantity(row map[string]any, s series, key weatherField) *float64 {
+	n := number(row[string(key)])
 	if n != nil {
-		if scale, ok := s.Scales[key]; ok {
+		if scale, ok := s.Scales[string(key)]; ok {
 			*n *= scale
 		}
 	}
@@ -118,21 +119,22 @@ func quantity(row map[string]any, s series, key string) *float64 {
 }
 func values(row map[string]any, s series) model.WeatherValues {
 	return model.WeatherValues{
-		Temperature:              quantity(row, s, "temperature"),
-		FeelsLike:                quantity(row, s, "feels_like"),
-		Wind:                     quantity(row, s, "wind"),
-		Gust:                     quantity(row, s, "gust"),
-		Direction:                quantity(row, s, "direction"),
-		Humidity:                 quantity(row, s, "humidity"),
-		PrecipitationProbability: quantity(row, s, "precipitation_probability"),
-		Precipitation:            quantity(row, s, "precipitation"),
+		Temperature:              quantity(row, s, fieldTemperature),
+		FeelsLike:                quantity(row, s, fieldFeelsLike),
+		Wind:                     quantity(row, s, fieldWind),
+		Gust:                     quantity(row, s, fieldGust),
+		Direction:                quantity(row, s, fieldDirection),
+		Humidity:                 quantity(row, s, fieldHumidity),
+		PrecipitationProbability: quantity(row, s, fieldPrecipitationProbability),
+		Precipitation:            quantity(row, s, fieldPrecipitation),
+		UV:                       quantity(row, s, fieldUV),
 	}
 }
 
 // condition maps a provider code to the shared weather condition or unknown.
 func condition(row map[string]any, m mapping) string {
-	if c, ok := m.Conditions[text(row["condition"])]; ok {
+	if c, ok := m.Conditions[text(row[string(fieldCondition)])]; ok {
 		return c
 	}
-	return "unknown"
+	return model.WeatherConditionUnknown
 }

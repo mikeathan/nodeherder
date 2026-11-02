@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { integrationViewKey } from '@/domain/integration-navigation';
+  import { integrationViewKey } from '@/domain/integrations/navigation';
   /*
    * Signed-in application frame: navigation, header, status banners and the shared hosts
    * (confirm dialog, legacy dialogs, toasts, appearance). Routes with meta.layout = 'panel'

@@ -1,7 +1,7 @@
 import { createStore } from 'vuex';
 import { HomeModule, type HomeState } from '@/store/modules/home';
-import { homeApi, HomeError } from '@/services/home.service';
-import type { HomeLayout } from '@/types/home.type';
+import { homeApi, HomeError } from '@/services/home';
+import type { HomeLayout } from '@/types/home';
 import type { DashboardGroups } from '@/types/settings.type';
 
 const layout = (revision: number): HomeLayout => ({ version: 1, revision, etag: `"${revision}"`, blocks: [] });

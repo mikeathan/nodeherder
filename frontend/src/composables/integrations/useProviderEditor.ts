@@ -3,7 +3,7 @@ import { useRoute } from 'vue-router';
 import { useConnections } from '@/composables/useConnections';
 import { confirm } from '@/composables/useConfirm';
 import { RouteName } from '@/types/router';
-import type { DestinationReview, ProviderEditorMode } from '@/types/integrations.type';
+import type { DefinitionValidation, DestinationReview, ProviderEditorMode } from '@/types/integrations';
 import { useProviderDraft } from './useProviderDraft';
 import { useProviderPreview } from './useProviderPreview';
 import { cloneDefinitionValue } from './useEditableModel';
@@ -100,12 +100,19 @@ export function useProviderEditor() {
       remember();
     }
   }
+  function destinationChanged(v: DefinitionValidation): boolean {
+    return Boolean(
+      (v.previous_origin && v.origin !== v.previous_origin) ||
+        (v.previous_credential_origin && v.credential_origin !== v.previous_credential_origin)
+    );
+  }
   function review(): DestinationReview | undefined {
     const v = validation.value;
-    if (!v || !v.previous_origin || v.origin === v.previous_origin) return undefined;
+    if (!v || !destinationChanged(v)) return undefined;
     if (!approve.value) return undefined;
     return {
       origin: v.origin,
+      credential_origin: v.credential_origin,
       reassociate: v.affected_instances.filter((i) => reassociate.value.includes(i.instance_id)),
     };
   }
@@ -113,7 +120,7 @@ export function useProviderEditor() {
     message.value = '';
     const v = validation.value ?? (await validate());
     if (!v) return;
-    if (v.previous_origin && v.origin !== v.previous_origin && !approve.value) {
+    if (destinationChanged(v) && !approve.value) {
       message.value = 'Review the destination below, then choose Save changes again.';
       return;
     }
@@ -142,7 +149,7 @@ export function useProviderEditor() {
     await apply(current);
     const v = await validate();
     if (!v) return;
-    if (v.previous_origin && v.origin !== v.previous_origin) {
+    if (destinationChanged(v)) {
       dirty.value = true;
       message.value = 'The host file changes the destination. Review it and Save changes to apply it.';
       return;
@@ -241,6 +248,7 @@ export function useProviderEditor() {
     error,
     affectedInstances,
     instances,
+    destinationChanged,
     rememberFocus: draft.rememberFocus,
     useShipped,
     keepVersion,

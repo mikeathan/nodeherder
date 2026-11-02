@@ -209,8 +209,27 @@ func validateProviderMetadata(d *model.Definition) error {
 		if !identifier.MatchString(d.Auth.SecretSlot) {
 			return configError("auth.secret_slot", "Choose a named credential slot.")
 		}
+	case "oauth2_client_credentials":
+		if _, err := destination.Parse(d.Auth.TokenURL); err != nil {
+			return configError("auth.token_url", "Use a public HTTPS token endpoint on port 443.")
+		}
+		if len(d.Auth.Scope) > 256 || strings.ContainsAny(d.Auth.Scope, "\r\n") {
+			return configError("auth.scope", "Use a bounded scope without line breaks.")
+		}
+		if !identifier.MatchString(d.Auth.ClientIDSlot) || !identifier.MatchString(d.Auth.ClientSecretSlot) {
+			return configError("auth.client_id_slot", "Choose named client ID and secret slots.")
+		}
+		if d.Auth.TokenStyle == "" {
+			d.Auth.TokenStyle = "basic_form"
+		}
+		if d.Auth.TokenStyle != "basic_form" && d.Auth.TokenStyle != "json_body" && d.Auth.TokenStyle != "form_body" {
+			return configError("auth.token_style", "Use basic_form, form_body or json_body.")
+		}
+		if d.Auth.TokenResponseRoot != "" && !validPointer(d.Auth.TokenResponseRoot) {
+			return configError("auth.token_response_root", "Use a JSON Pointer for the token response.")
+		}
 	default:
-		return configError("auth.mode", "Supported modes are none, bearer, optional_bearer, apikey_header and apikey_query.")
+		return configError("auth.mode", "Supported modes are none, bearer, optional_bearer, apikey_header, apikey_query and oauth2_client_credentials.")
 	}
 	if d.Policy.PollMinSeconds == 0 {
 		d.Policy.PollMinSeconds = 5
@@ -267,6 +286,40 @@ func validateRequestDeclarations(d *model.Definition) error {
 		if !validPointer(q.ResponseRoot) {
 			return configError(path+".response_root", "Invalid JSON Pointer.")
 		}
+		if err := validateRequestHeaders(path, q.Headers); err != nil {
+			return err
+		}
+		for _, value := range q.Path {
+			if value.Join != nil {
+				return configError(path+".path", "Join values are only valid in query or body fields.")
+			}
+			if err := validateValue(path+".path", value); err != nil {
+				return err
+			}
+		}
+		for name, value := range q.Query {
+			if err := validateValue(path+".query."+name, value); err != nil {
+				return err
+			}
+		}
+		for name, value := range q.Body {
+			if err := validateValue(path+".body."+name, value); err != nil {
+				return err
+			}
+		}
+		if q.Discover != nil {
+			if q.Method != "GET" || q.Combine != "" || bool(q.Conditional) || q.Discover.Format != "atom" || q.Discover.Rel == "" || len(q.Discover.Rel) > 64 || !bool(q.Discover.SameOrigin) {
+				return configError(path+".discover", "Use one same-origin Atom link lookup on an unconditional GET.")
+			}
+		}
+		if q.Pagination != nil {
+			pagination := q.Pagination
+			if q.Method != "GET" || q.Discover != nil || pagination.PageQuery == "" || len(pagination.PageQuery) > 64 ||
+				pagination.Start < 1 || pagination.Start > 1000 || pagination.MaxPages < 1 || pagination.MaxPages > 100 ||
+				pagination.PageSize < 0 || pagination.PageSize > 1000 || pagination.DelayMilliseconds < 0 || pagination.DelayMilliseconds > 5000 {
+				return configError(path+".pagination", "Use bounded pagination on a GET without discovery.")
+			}
+		}
 		for name, c := range q.Captures {
 			count++
 			if count > 64 || !identifier.MatchString(name) || name == "etag" {
@@ -290,6 +343,52 @@ func validateRequestDeclarations(d *model.Definition) error {
 				return configError(path+".captures."+name, "Saved value types must agree.")
 			}
 			captureTypes[name] = c.Type
+		}
+	}
+	return nil
+}
+
+// validateValue bounds scalar references and scalar joins before runtime evaluation.
+func validateValue(path string, value model.Value) error {
+	if value.Join != nil {
+		if len(value.Join.Refs) == 0 || len(value.Join.Refs) > 8 || len(value.Join.Separator) > 8 {
+			return configError(path+".join", "Use 1–8 references and a separator of at most eight characters.")
+		}
+		for _, ref := range value.Join.Refs {
+			if !validValueReference(ref) {
+				return configError(path+".join", "Join references must name input.* or state.* values.")
+			}
+		}
+		return nil
+	}
+	if value.Ref != "" && !validValueReference(value.Ref) {
+		return configError(path+".ref", "References must name input.* or state.* values.")
+	}
+	return nil
+}
+
+// validValueReference accepts the declared input/state reference namespace only.
+func validValueReference(ref string) bool {
+	prefix, name, ok := strings.Cut(ref, ".")
+	return ok && (prefix == "input" || prefix == "state") && name != "" && len(ref) <= 128
+}
+
+// validateRequestHeaders accepts bounded public constants and rejects credential-bearing headers.
+func validateRequestHeaders(path string, headers map[string]string) error {
+	if len(headers) > 8 {
+		return configError(path+".headers", "Use at most eight fixed headers.")
+	}
+	blocked := map[string]bool{
+		"authorization": true, "apikey": true, "cookie": true, "host": true,
+		"content-length": true, "transfer-encoding": true, "connection": true,
+		"idempotency-key": true, "if-none-match": true, "content-type": true,
+	}
+	for name, value := range headers {
+		if !regexp.MustCompile(`^[A-Za-z0-9-]{1,64}$`).MatchString(name) || blocked[strings.ToLower(name)] {
+			return configError(path+".headers", "Use a public fixed header name.")
+		}
+		if value == "" || len(value) > 256 || strings.ContainsAny(value, "\r\n") {
+			return configError(path+".headers", "Use bounded fixed header values without line breaks.")
 		}
 	}
 	return nil

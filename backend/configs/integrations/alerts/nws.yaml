@@ -1,0 +1,95 @@
+# US severe-weather warnings; public endpoint with a fixed identifying User-Agent.
+---
+schema_version: nodeherder.integration/v1
+integration_type: alerts
+capability: weather_alerts/v1
+policy:
+  poll_min_seconds: 5
+  renewal_min_seconds: 86400
+  idempotency_window_seconds: 0
+  refresh_default_seconds: 900
+  refresh_min_seconds: 300
+errors:
+  code: ''
+  rules: []
+inputs:
+  location:
+    type: text
+    label: Town or postcode
+    required: true
+  coordinates:
+    type: select
+    label: Choose location
+    required: true
+refresh:
+  request: warnings
+id: nws
+name: National Weather Service
+base_url: https://api.weather.gov
+auth:
+  mode: none
+requests:
+  search:
+    method: GET
+    path:
+    - v1
+    - search
+    query:
+      name:
+        ref: input.location
+      count: 10
+      language: en
+  warnings:
+    method: GET
+    path:
+    - alerts
+    - active
+    headers:
+      User-Agent: NodeHerder weather-alert integration
+      Accept: application/geo+json
+    query:
+      point:
+        join:
+          separator: ","
+          refs:
+          - state.latitude
+          - state.longitude
+setup:
+  type: location_select
+  search:
+    input: location
+    request: search
+    options:
+      items: "/results"
+      value: "/name"
+      label: "/name"
+      context: ["/admin2", "/admin1", "/country"]
+      latitude: "/latitude"
+      longitude: "/longitude"
+    base_url: https://geocoding-api.open-meteo.com
+  select:
+    input: coordinates
+    request: warnings
+  status:
+    request: ''
+    pointer: ''
+    pending: []
+    done: []
+    failed: []
+mapping:
+  attribution: "Warnings: National Weather Service."
+  warnings:
+    items: "/features"
+    format: rfc3339
+    fields:
+      warning_id: "/properties/id"
+      severity: "/properties/severity"
+      type: "/properties/event"
+      headline: "/properties/headline"
+      description: "/properties/description"
+      instruction: "/properties/instruction"
+      areas: "/properties/areaDesc"
+      valid_from: "/properties/effective"
+      valid_to: "/properties/expires"
+      issued_at: "/properties/sent"
+      polygon: "/geometry"

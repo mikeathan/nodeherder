@@ -2,12 +2,12 @@ import { effectScope } from 'vue';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { useForecastView } from '@/integrations/weather/useForecastView';
-import type { WeatherForecast } from '@/types/weather.type';
+import type { WeatherForecast } from '@/types/integrations/weather';
 
 test('next 24 hours excludes the past and includes 24 future points', () => {
   const now = Date.parse('2026-10-28T10:30:00Z');
   const forecast: WeatherForecast = JSON.parse(
-    readFileSync(resolve(__dirname, '../../fixtures/weather.json'), 'utf8')
+    readFileSync(resolve(__dirname, '../../fixtures/integrations/weather.json'), 'utf8')
   );
   forecast.evaluated_at = new Date(now).toISOString();
   forecast.timezone = 'UTC';

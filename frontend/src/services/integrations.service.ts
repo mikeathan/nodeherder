@@ -19,7 +19,7 @@ import type {
   ProviderDefinition,
   ProviderTestMode,
   ConnectionBoardEntry,
-} from '@/types/integrations.type';
+} from '@/types/integrations';
 /** Sanitized API/session failure exposed to UI feedback; never contains a raw provider response. */
 export class ConnectionError extends Error {
   constructor(

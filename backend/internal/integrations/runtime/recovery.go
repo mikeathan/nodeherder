@@ -22,7 +22,7 @@ func (s *Service) renewOperation(tx *repository.IntegrationTx, o *model.Operatio
 	if i.LastRenewal != nil && now.Before(i.LastRenewal.Add(time.Duration(c.Definition.Policy.RenewalMinSeconds)*time.Second)) {
 		return model.Fail("renewal_not_due", "A new lookup was requested recently. Keep the saved data and try again tomorrow.")
 	}
-	next, e := s.makeOperation(tx, c, i.Inputs, i.State, i.Credentials, i.Origin, c.Definition.Refresh.RenewalRequest, "renewal", i.Generation)
+	next, e := s.makeOperation(tx, c, i.Inputs, i.State, i.Credentials, i.Origin, c.Definition.Refresh.RenewalRequest, model.OperationKindRenewal, i.Generation)
 	if e != nil {
 		return e
 	}

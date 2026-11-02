@@ -1,5 +1,5 @@
 import { weatherHeadline, weatherHeadlineValue } from '@/integrations/weather/headline';
-import type { WeatherDay, WeatherForecast, WeatherPoint } from '@/types/weather.type';
+import type { WeatherDay, WeatherForecast, WeatherPoint } from '@/types/integrations/weather';
 
 function point(time: string, temperature: number | null = 14, condition = 'partly_cloudy'): WeatherPoint {
   return {
@@ -13,17 +13,31 @@ function point(time: string, temperature: number | null = 14, condition = 'partl
     humidity: 72,
     precipitation_probability: 20,
     precipitation: 0,
+    uv: null,
   };
 }
 
 const day = (date: string, high: number | null = 16): WeatherDay => ({
   date,
   condition: 'partly_cloudy',
+  night_condition: null,
   high,
   low: 9,
+  feels_like_high: null,
+  feels_like_low: null,
   wind: 18,
+  wind_gust: null,
+  wind_direction: null,
+  humidity: null,
+  pressure: null,
+  visibility: null,
   precipitation_probability: 20,
   precipitation: 0,
+  rain_probability: null,
+  snow_probability: null,
+  sunrise: null,
+  sunset: null,
+  uv_max: null,
 });
 
 function forecast(overrides: Partial<WeatherForecast> = {}): WeatherForecast {

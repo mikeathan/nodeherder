@@ -1,10 +1,11 @@
 # Integrations: local and personal Docker setup
 
-Integrations adds external information independently of Devices. The first release supports UK
-bin collections through a supplied WhenIsBins definition. Refresh retrieves data immediately, and
-each saved integration can also opt into automatic refresh at a provider-suggested or
-household-chosen interval. Check status continues a pending lookup. All signed-in users share the
-same controls. Nothing is added to Home, Overview, Devices or Panel.
+Integrations adds external information independently of Devices. Shipped capabilities cover bin
+collections, weather, air quality, severe-weather alerts and UK fuel prices. Refresh retrieves data
+immediately, and each saved integration can also opt into automatic refresh at a provider-suggested
+or household-chosen interval. Check status continues a pending lookup. All signed-in users share the
+same controls. Results can be placed on Home and Panel as read-only cards; integration management
+stays on the Integrations page.
 
 ## Local run: automatic first-time setup
 
@@ -107,10 +108,13 @@ save. A provider token is optional for the supplied personal-use flow; provider 
 change. Supply your own token if required. No live lookup is created by installation or page reads.
 Unsupported address-input branches and approximate/neighbour results are rejected clearly.
 
-Configure operations offers Form, YAML and Help. URL/endpoint/JSON field-location repairs within
-the supported GET/POST/search-select/waste primitives need no rebuild. Other authentication,
-transports or capabilities require application support. Map collections once, not per bin colour.
-Request names are arbitrary identifiers linked by the setup/refresh sections.
+Configure operations offers Form, YAML and Help. Help combines shared integration guidance with
+optional notes owned by the selected capability and provider; shared text never names a specific
+integration. URL/endpoint/JSON field-location repairs within the supported GET/POST/location-select
+recipe primitives need no rebuild, including fixed headers, scalar joins, Atom link discovery,
+bounded pagination and combined requests. Other authentication, transports or capabilities require
+application support. Map a returned list once, not per item. Request names are arbitrary identifiers
+linked by the setup/refresh sections.
 
 Save changes writes the host file and applies it; it does not commit or push Git. Review fixed
 constants/comments for private values before committing a definition. Tokens and selected addresses
@@ -232,11 +236,87 @@ service that receives no cross-origin credentials. `apikey_header` sends the key
 `apikey`; `apikey_query` sends it in `key`. A forecast GET may `combine` one named
 same-origin GET; neither can use conditional caching, and both must succeed before
 publication. Weather mappings declare row/column selectors, time formats, condition
-codes and bounded unit scales; no executable templates are supported.
+codes and bounded unit scales; no executable templates are supported. Daily
+`sunrise`/`sunset` fields are declared in `clocks` and reduced to local HH:MM from either a local
+timestamp or a Unix instant. Met Office
+daily values use the provider's `midday…`/`day…`/`night…` parameter names; absent parameters
+stay blank rather than becoming zero.
 
 Add the weather result through Home's existing edit/picker flow; it also supports
-Panel placement. Open the card for hourly weather and daily forecasts. Mobile shows
-five daily rows per page; desktop uses scrollable cards. Before rolling back to a
-binary predating weather, back up the private Home layout and restore a pre-weather
-layout if needed: older binaries reject the new weather reference kind. Existing bin
+Panel placement. The Home/Panel weather card shows the current condition plus icon-led
+high/low, rain-chance and UV-max chips. Open the card for hourly weather and daily forecasts. Daily cards show the date,
+condition icon, high/low, condition and compact rain/wind/UV chips; select any day to replace the
+next-24-hours panel with that day's full summary and hourly cards. The summary
+shows every value the provider supplies: day and night conditions, high/low, feels-like
+temperatures, wind speed/gust/direction, humidity, pressure, visibility, precipitation,
+rain and snow chances, maximum UV, sunrise and sunset. Met Office daily wind/gust/direction,
+humidity, pressure and visibility are representative midday values; other providers may supply
+daily maxima. The current and selected-day summaries
+share the same icon-led stat tiles, and values the provider did not return are omitted rather
+than shown as a dash; the current rain chance falls back to the nearest hourly value when the
+observation omits it. The current panel also shows today's daily high/low, maximum UV, sunrise
+and sunset so it carries the same daily context as a selected day. Select an hourly card to show
+that hour's temperature, feels-like, rain, precipitation, humidity, wind, gusts, direction and UV
+inline below the strip; select it again or change day to close it. A "Today" control appears only when another day is selected and restores
+the current view; selecting the same day again also clears it. Met Office hourly data covers
+48 hours while its daily data covers seven
+days, so a later day states the available hourly horizon instead of showing an empty list.
+Five daily rows are shown per page at every width; wide layouts arrange that page as a grid. Before
+rolling back to a binary predating weather, air quality, alerts or fuel, back up the private Home
+layout and remove cards using the newer reference kinds: older binaries reject them. Existing bin
 configurations and saved results do not require migration.
+
+## Air quality
+
+Choose **Air quality** in Add integration, select Open-Meteo Air Quality, and search for a town or
+postcode. Confirm a returned location and save the integration. No key is required. The provider
+combines Open-Meteo's CAMS air-quality data with Open-Meteo/GeoNames place search and Postcodes.io
+for full UK postcodes; Setup lists those recipients. Loading pages does not contact the provider.
+
+Refresh retrieves a new snapshot immediately, or the automatic schedule retrieves it at the chosen
+interval. Saved data remains visible after a failed refresh and is labelled stale after six hours.
+The snapshot holds current pollutant concentrations, a bounded 168-hour hourly forecast, a
+server-derived index category and the six pollen species. The index family is declared by the
+provider (`european` or `us`); the browser displays the category and never recalculates its
+thresholds. Pollen values are nullable and seasonal, so an absent species stays blank instead of
+becoming zero.
+
+Add the air-quality result through Home's existing edit/picker flow; it also supports Panel
+placement. The Home/Panel card shows the category and index with icon-led PM2.5, PM10 and pollen
+rows. Open it for the current pollutant and pollen tiles and the next 24 hourly pollutant values.
+The shipped seed is in `backend/configs/integrations/air_quality/`; host-edited definitions are
+never overwritten on upgrade, so re-apply a local copy if it already exists. Existing weather and
+bin configurations do not require migration.
+
+## Severe weather alerts
+
+Choose **Severe weather alerts** in Add integration. The shipped providers are Met Office
+Warnings for UK locations (a Met Office DataHub API key is required) and National Weather Service
+for US locations (no key; an identifying `User-Agent` is declared in the provider YAML). The
+Met Office feed uses one bounded Atom discovery hop to find the current warning snapshot; the
+snapshot URL is never saved or reused.
+
+Save the Met Office key in Setup before searching. Refresh retrieves active warnings immediately,
+or the automatic schedule retrieves them at the chosen interval. The provider seeds default to a
+15-minute refresh with a 5-minute minimum. Warning data is stale after one hour; individual
+warnings also disappear when their `valid_to` time passes. The Home card shows the highest
+severity, affected area and expiry; open it for the full warning text, affected areas, validity
+window and instructions. Provider seeds are in `backend/configs/integrations/alerts/`.
+
+## Fuel prices
+
+Choose **Fuel prices** in Add integration, select UK Fuel Finder, and save the OAuth client ID and
+client secret in the two credential slots shown in Setup. The credentials are sent only to the
+declared Fuel Finder token endpoint; the short-lived access token is cached in process memory and
+never saved in the browser, logs or provider YAML. The setup preview and refresh collect the
+paginated station and price datasets, join them by station ID, compute distance from the selected
+origin and keep the nearest 100 stations within the 50 km radius.
+
+The shipped seed defaults to a one-hour refresh with a 15-minute minimum; prices are stale after one
+hour. Fuel Finder publishes tenths of a penny; the adapter rounds to the nearest whole penny
+because the current contract stores integer pence. The first collection can take a couple of
+minutes because Fuel Finder rate-limits pages. The
+Home card shows the nearest station, its cheapest supplied grade and distance; open it for station
+addresses, all returned grades and update times. The provider seed is in
+`backend/configs/integrations/fuel_prices/`. Host-edited definitions are never overwritten on
+upgrade.

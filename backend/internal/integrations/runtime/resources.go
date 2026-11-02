@@ -70,6 +70,10 @@ func (s *Service) normalizeOperationResult(tx *repository.IntegrationTx, op mode
 		resource = ""
 		bindingRevision++
 	}
+	origin, err := selectedOrigin(c.Definition.Setup.Type, op.State)
+	if err != nil {
+		return capabilities.Result{}, err
+	}
 	return s.capabilities.Normalize(c.Definition, response.Root, capabilities.Context{
 		NewIdentity:     snapshotIdentityAllocator(tx),
 		InstanceID:      op.InstanceID,
@@ -80,8 +84,26 @@ func (s *Service) normalizeOperationResult(tx *repository.IntegrationTx, op mode
 		BindingRevision: bindingRevision,
 		SelectedValue:   selected,
 		SelectedLabel:   searchselect.SelectionLabel(op.State),
+		Origin:          origin,
 		Now:             s.clock.Now(),
 		Previous:        prior,
 		Identities:      ids,
 	})
+}
+
+// selectedOrigin converts the private location checkpoint into the capability contract's
+// optional origin. Only location setups can produce one, even if a captured state key happens
+// to be named latitude or longitude.
+func selectedOrigin(setupType string, state map[string]any) (*capabilities.Origin, error) {
+	if setupType != searchselect.SetupLocationSelect {
+		return nil, nil
+	}
+	latitude, longitude, ok, err := searchselect.SelectedCoordinates(state)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, nil
+	}
+	return &capabilities.Origin{Latitude: latitude, Longitude: longitude}, nil
 }

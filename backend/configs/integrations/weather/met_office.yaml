@@ -159,6 +159,7 @@ mapping:
       precipitation_probability: "/probOfPrecipitation"
       precipitation: "/totalPrecipAmount"
       condition: "/significantWeatherCode"
+      uv: "/uvIndex"
     scales:
       wind: 3.6
       gust: 3.6
@@ -170,7 +171,21 @@ mapping:
       high: "/dayMaxScreenTemperature"
       low: "/nightMinScreenTemperature"
       condition: "/daySignificantWeatherCode"
-      wind: "/dayMax10mWindSpeed"
+      night_condition: "/nightSignificantWeatherCode"
+      feels_like_high: "/dayMaxFeelsLikeTemp"
+      feels_like_low: "/nightMinFeelsLikeTemp"
+      # These wind/comfort values are representative midday observations, not day maxima.
+      wind: "/midday10MWindSpeed"
+      wind_gust: "/midday10MWindGust"
+      wind_direction: "/midday10MWindDirection"
+      humidity: "/middayRelativeHumidity"
+      pressure: "/middayMslp"
+      visibility: "/middayVisibility"
       precipitation_probability: "/dayProbabilityOfPrecipitation"
+      rain_probability: "/dayProbabilityOfRain"
+      snow_probability: "/dayProbabilityOfSnow"
+      uv_max: "/maxUvIndex"
     scales:
       wind: 3.6
+      wind_gust: 3.6
+      pressure: 0.01

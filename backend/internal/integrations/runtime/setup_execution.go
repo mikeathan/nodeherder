@@ -42,7 +42,7 @@ func (s *Service) finishSearch(tx *repository.IntegrationTx, o *model.Operation,
 // acceptLookupProgress saves only the lookup checkpoint for pending statuses. Completion
 // permits normalization; failed/unknown statuses become sanitized durable failures.
 func (s *Service) acceptLookupProgress(tx *repository.IntegrationTx, op *model.Operation, owner operationOwner, c *definitions.Compiled, response operations.Response) (bool, error) {
-	if op.Kind == "refresh" || owner.test || c.Definition.Setup.Type == "location_select" {
+	if op.Kind == model.OperationKindRefresh || owner.test || c.Definition.Setup.Type == searchselect.SetupLocationSelect {
 		return true, nil
 	}
 

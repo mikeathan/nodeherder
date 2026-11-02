@@ -4,7 +4,7 @@ import { store } from '@/store';
 import { createConnectionsApi, ConnectionError } from '@/services/integrations.service';
 import { createOperationObserver } from '@/domain/connection-operation-observer';
 import type { ConnectionsState } from '@/store/modules/integrations';
-import type { ConnectionFailure } from '@/types/integrations.type';
+import type { ConnectionFailure } from '@/types/integrations';
 import { RouteName } from '@/types/router';
 
 /** Page/session ownership for authenticated requests, feedback and local progress observation. */

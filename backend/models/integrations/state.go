@@ -57,15 +57,31 @@ type DefinitionRecord struct {
 	DiskError         string    `json:"disk_error,omitempty"`
 }
 
+// OperationKind classifies persisted integration work.
+type OperationKind string
+
+const (
+	// OperationKindSearch performs the setup search step.
+	OperationKindSearch OperationKind = "search"
+	// OperationKindSetup performs the setup selection/lookup step.
+	OperationKindSetup OperationKind = "setup"
+	// OperationKindRefresh retrieves or renews saved provider data.
+	OperationKindRefresh OperationKind = "refresh"
+	// OperationKindRenewal resumes an asynchronous provider lookup.
+	OperationKindRenewal OperationKind = "renewal"
+	// OperationKindTest runs an isolated definition test.
+	OperationKindTest OperationKind = "test"
+)
+
 // RunSummary is a bounded, sanitized check history entry; it contains no provider response body.
 // Trigger distinguishes manual work from scheduler-admitted work for older and newer records.
 type RunSummary struct {
-	OperationID string    `json:"operation_id"`
-	Kind        string    `json:"kind"`
-	Trigger     string    `json:"trigger,omitempty"`
-	Outcome     string    `json:"outcome"`
-	Message     string    `json:"message"`
-	At          time.Time `json:"at"`
+	OperationID string        `json:"operation_id"`
+	Kind        OperationKind `json:"kind"`
+	Trigger     string        `json:"trigger,omitempty"`
+	Outcome     string        `json:"outcome"`
+	Message     string        `json:"message"`
+	At          time.Time     `json:"at"`
 }
 
 // RefreshSchedule is private automatic-refresh configuration and state for one instance.
@@ -169,7 +185,7 @@ type Operation struct {
 	Inputs             map[string]string `json:"inputs"`
 	Origin             string            `json:"origin"`
 	RequestID          string            `json:"request_id"`
-	Kind               string            `json:"kind"`
+	Kind               OperationKind     `json:"kind"`
 	Trigger            string            `json:"trigger,omitempty"`
 	Status             string            `json:"status"`
 	Body               []byte            `json:"body,omitempty"`

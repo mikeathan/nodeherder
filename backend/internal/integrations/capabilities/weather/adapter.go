@@ -15,7 +15,7 @@ type Adapter struct{}
 
 // Descriptor publishes the weather contract through the shared integration catalogue.
 func (Adapter) Descriptor() capabilities.Descriptor {
-	return capabilities.Descriptor{Capability: model.WeatherCapability, IntegrationType: "weather", Name: "Weather", Description: "Local conditions and forecasts. Refresh manually."}
+	return capabilities.Descriptor{Capability: model.WeatherCapability, IntegrationType: model.WeatherIntegrationType, Name: "Weather", Description: "Local conditions and forecasts. Refreshes manually or on an automatic schedule."}
 }
 
 // ValidateMapping rejects unsupported weather selectors before activation.

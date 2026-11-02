@@ -1,5 +1,5 @@
-import type { ConnectionInstance } from '@/types/integrations.type';
-import type { WasteSchedulePresentation } from '@/domain/waste-schedule';
+import type { ConnectionInstance } from '@/types/integrations';
+import type { WasteSchedulePresentation } from '@/domain/integrations/waste-schedule';
 /** Project lifecycle/freshness precedence for already-presented resources, without transport or mutation. */
 export function connectionStatus(
   instance: ConnectionInstance,

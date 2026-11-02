@@ -17,21 +17,27 @@ type CatalogDTO struct {
 }
 
 // TypeDTO describes an installed capability category available in the Connections catalog.
+// ConfiguredCount/WorstStatus are read-time summaries; WorstStatus is empty when nothing is configured.
 type TypeDTO struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
+	ID              string `json:"id"`
+	Name            string `json:"name"`
+	Description     string `json:"description"`
+	ConfiguredCount int    `json:"configured_count"`
+	WorstStatus     string `json:"worst_status"`
 }
 
 // ProviderDTO describes local provider availability without exposing private connection inputs.
 type ProviderDTO struct {
-	Key             string `json:"key"`
-	ID              string `json:"id"`
-	Name            string `json:"name"`
-	IntegrationType string `json:"integration_type"`
-	Origin          string `json:"origin"`
-	Available       bool   `json:"available"`
-	DiskError       string `json:"disk_error,omitempty"`
+	Key                   string `json:"key"`
+	ID                    string `json:"id"`
+	Name                  string `json:"name"`
+	IntegrationType       string `json:"integration_type"`
+	Origin                string `json:"origin"`
+	Available             bool   `json:"available"`
+	DiskError             string `json:"disk_error,omitempty"`
+	RequiresCredential    bool   `json:"requires_credential"`
+	RefreshDefaultSeconds int    `json:"refresh_default_seconds"`
+	RefreshMinSeconds     int    `json:"refresh_min_seconds"`
 }
 
 // SetupDTO is the browser view of a shared wizard/test. It omits captured state, exact POST
@@ -50,6 +56,7 @@ type SetupDTO struct {
 	OperationID          string         `json:"operation_id,omitempty"`
 	ExpiresAt            time.Time      `json:"expires_at"`
 	CredentialConfigured bool           `json:"credential_configured"`
+	CredentialSlots      []string       `json:"credential_slots"`
 	Error                *model.Failure `json:"last_error"`
 }
 
@@ -90,14 +97,14 @@ type InstanceDTO struct {
 
 // OperationDTO exposes durable progress and retry timing, never private attempt payloads.
 type OperationDTO struct {
-	ID         string         `json:"id"`
-	Status     string         `json:"status"`
-	Kind       string         `json:"kind"`
-	SetupID    string         `json:"setup_id,omitempty"`
-	InstanceID string         `json:"instance_id,omitempty"`
-	RetryAt    time.Time      `json:"retry_at"`
-	ExpiresAt  time.Time      `json:"expires_at"`
-	Error      *model.Failure `json:"last_error"`
+	ID         string              `json:"id"`
+	Status     string              `json:"status"`
+	Kind       model.OperationKind `json:"kind"`
+	SetupID    string              `json:"setup_id,omitempty"`
+	InstanceID string              `json:"instance_id,omitempty"`
+	RetryAt    time.Time           `json:"retry_at"`
+	ExpiresAt  time.Time           `json:"expires_at"`
+	Error      *model.Failure      `json:"last_error"`
 }
 
 // DefinitionDTO separates exact host bytes/hash from the active compiled revision.
@@ -119,12 +126,14 @@ type DefinitionDTO struct {
 // ValidationDTO is a normalized unsaved definition plus the destination-review scope.
 // Validation does not write the host file or send any provider request.
 type ValidationDTO struct {
-	YAML           string             `json:"yaml"`
-	Document       model.Definition   `json:"document"`
-	Hash           string             `json:"content_hash"`
-	Origin         string             `json:"origin"`
-	PreviousOrigin string             `json:"previous_origin"`
-	Affected       []CredentialReview `json:"affected_instances"`
+	YAML                     string             `json:"yaml"`
+	Document                 model.Definition   `json:"document"`
+	Hash                     string             `json:"content_hash"`
+	Origin                   string             `json:"origin"`
+	PreviousOrigin           string             `json:"previous_origin"`
+	CredentialOrigin         string             `json:"credential_origin"`
+	PreviousCredentialOrigin string             `json:"previous_credential_origin"`
+	Affected                 []CredentialReview `json:"affected_instances"`
 }
 
 // CredentialReview pins the specific active slot and instance/credential revisions a user
@@ -139,6 +148,7 @@ type CredentialReview struct {
 // DestinationReview is explicit consent outside YAML to send private inputs and selected
 // credentials to a changed origin. YAML alone cannot authorize credential reassociation.
 type DestinationReview struct {
-	Origin      string             `json:"origin"`
-	Reassociate []CredentialReview `json:"reassociate"`
+	Origin           string             `json:"origin"`
+	CredentialOrigin string             `json:"credential_origin,omitempty"`
+	Reassociate      []CredentialReview `json:"reassociate"`
 }

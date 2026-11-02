@@ -1,4 +1,5 @@
-import type { ConnectionInstance, ProviderDefinition } from '@/types/integrations.type';
+import type { HelpTopic } from '@/domain/integrations/help';
+import type { ConnectionInstance, ProviderDefinition } from '@/types/integrations';
 import type {
   IntegrationPresenter,
   IntegrationResource,
@@ -6,11 +7,20 @@ import type {
   IntegrationSourceReference,
   SourceIcon,
 } from './types';
+import { airQualityPresenter } from './air-quality/presentation';
+import { alertsPresenter } from './alerts/presentation';
+import { fuelPresenter } from './fuel/presentation';
 import { wastePresenter } from './waste/presentation';
 import { weatherPresenter } from './weather/presentation';
 
 // Composition is the only layer that names the installed presentation adapters.
-const presenters: readonly IntegrationPresenter[] = [wastePresenter, weatherPresenter];
+const presenters: readonly IntegrationPresenter[] = [
+  wastePresenter,
+  weatherPresenter,
+  airQualityPresenter,
+  alertsPresenter,
+  fuelPresenter,
+];
 
 /** Resolve the presenter registered for a validated resource; absent capabilities fail visibly. */
 export function resourcePresenter(resource: IntegrationResource): IntegrationPresenter | undefined {
@@ -75,4 +85,9 @@ export function setupPresentation(provider: ProviderDefinition) {
   const presenter = presenters.find((candidate) => candidate.contractVersion === provider.capability);
   if (!presenter) throw new Error('The integration capability is not installed.');
   return presenter.setup(provider);
+}
+
+/** Collect optional capability help; shared guidance is composed by the Help page. */
+export function integrationHelp(typeId: string, providerId: string): readonly HelpTopic[] {
+  return presenters.find((presenter) => presenter.integrationType === typeId)?.help?.(providerId) ?? [];
 }

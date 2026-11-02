@@ -157,3 +157,122 @@ func TestCaptureTypedValues(t *testing.T) {
 		t.Fatal("accepted invalid calendar date")
 	}
 }
+
+func testResponse(status int, body string) *http.Response {
+	return &http.Response{StatusCode: status, Header: http.Header{}, Body: io.NopCloser(strings.NewReader(body))}
+}
+
+func TestBuildSkipsAuthenticationForOAuthFingerprint(t *testing.T) {
+	definition := model.Definition{
+		BaseURL: "https://api.fuel.example",
+		Auth: model.AuthConfig{
+			Mode:             "oauth2_client_credentials",
+			TokenURL:         "https://auth.fuel.example/token",
+			ClientIDSlot:     "client_id",
+			ClientSecretSlot: "client_secret",
+		},
+		Requests: map[string]model.Request{"prices": {Method: "GET", Path: []model.Value{{Literal: "prices"}}}},
+	}
+	request, _, err := Build(context.Background(), Attempt{
+		Definition:         definition,
+		RequestID:          "prices",
+		ApprovedOrigin:     "https://api.fuel.example",
+		SkipAuthentication: true,
+	})
+	if err != nil || request.Header.Get("Authorization") != "" {
+		t.Fatalf("fingerprint build attached authentication: %v", err)
+	}
+}
+
+func TestBuildFixedHeadersAndJoin(t *testing.T) {
+	definition := model.Definition{
+		BaseURL: "https://alerts.example",
+		Auth:    model.AuthConfig{Mode: "none"},
+		Requests: map[string]model.Request{
+			"warnings": {
+				Method:  "GET",
+				Path:    []model.Value{{Literal: "alerts"}},
+				Headers: map[string]string{"User-Agent": "NodeHerder test"},
+				Query: map[string]model.Value{
+					"point": {Join: &model.JoinValue{Separator: ",", Refs: []string{"state.latitude", "state.longitude"}}},
+				},
+			},
+		},
+	}
+	request, _, err := Build(context.Background(), Attempt{
+		Definition:     definition,
+		RequestID:      "warnings",
+		ApprovedOrigin: "https://alerts.example",
+		State:          map[string]any{"latitude": 53.3, "longitude": -1.4},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if request.Header.Get("User-Agent") != "NodeHerder test" || request.URL.Query().Get("point") != "53.3,-1.4" {
+		t.Fatalf("headers/join = %q / %q", request.Header.Get("User-Agent"), request.URL.Query().Get("point"))
+	}
+}
+
+func TestPaginationTreatsLater404AsEndOfSequence(t *testing.T) {
+	definition := model.Definition{
+		BaseURL: "https://fuel.example",
+		Auth:    model.AuthConfig{Mode: "none"},
+		Requests: map[string]model.Request{
+			"prices": {
+				Method:     "GET",
+				Path:       []model.Value{{Literal: "prices"}},
+				Pagination: &model.PaginationConfig{PageQuery: "batch-number", Start: 1, MaxPages: 4},
+			},
+		},
+	}
+	client := doerFunc(func(request *http.Request) (*http.Response, error) {
+		if request.URL.Query().Get("batch-number") == "1" {
+			return testResponse(http.StatusOK, `[1,2]`), nil
+		}
+		return testResponse(http.StatusNotFound, `{"error":"no more pages"}`), nil
+	})
+	response, err := Execute(context.Background(), client, Attempt{
+		Definition: definition, RequestID: "prices", ApprovedOrigin: "https://fuel.example",
+	}, time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	items, ok := response.Root.([]any)
+	if !ok || len(items) != 2 {
+		t.Fatalf("pages = %#v", response.Root)
+	}
+}
+
+func TestPaginationCollectsPagesUntilEmpty(t *testing.T) {
+	definition := model.Definition{
+		BaseURL: "https://fuel.example",
+		Auth:    model.AuthConfig{Mode: "none"},
+		Requests: map[string]model.Request{
+			"prices": {
+				Method:     "GET",
+				Path:       []model.Value{{Literal: "prices"}},
+				Pagination: &model.PaginationConfig{PageQuery: "batch-number", Start: 1, MaxPages: 4},
+			},
+		},
+	}
+	client := doerFunc(func(request *http.Request) (*http.Response, error) {
+		switch request.URL.Query().Get("batch-number") {
+		case "1":
+			return testResponse(http.StatusOK, `[1,2]`), nil
+		case "2":
+			return testResponse(http.StatusOK, `[3,4]`), nil
+		default:
+			return testResponse(http.StatusOK, `[]`), nil
+		}
+	})
+	response, err := Execute(context.Background(), client, Attempt{
+		Definition: definition, RequestID: "prices", ApprovedOrigin: "https://fuel.example",
+	}, time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	items, ok := response.Root.([]any)
+	if !ok || len(items) != 4 {
+		t.Fatalf("pages = %#v", response.Root)
+	}
+}

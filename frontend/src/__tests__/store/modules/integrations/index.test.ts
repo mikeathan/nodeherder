@@ -1,7 +1,7 @@
 import { createStore } from 'vuex';
 import { IntegrationsModule, type ConnectionsState } from '@/store/modules/integrations';
 import { connectionsApi, ConnectionError } from '@/services/integrations.service';
-import type { ConnectionCatalog, ConnectionInstance, ConnectionDefinition } from '@/types/integrations.type';
+import type { ConnectionCatalog, ConnectionInstance, ConnectionDefinition } from '@/types/integrations';
 const catalog: ConnectionCatalog = { available: true, availability_error: null, types: [], providers: [] };
 afterEach(() => jest.restoreAllMocks());
 function fixture() {

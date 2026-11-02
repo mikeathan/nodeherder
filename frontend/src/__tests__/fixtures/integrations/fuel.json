@@ -1,0 +1,30 @@
+{
+  "contract_version": "fuel_prices/v1",
+  "instance_id": "fuel-example",
+  "resource_id": "fuel-resource",
+  "revision": 1,
+  "origin": { "label": "Nether Edge", "latitude": 53.3601, "longitude": -1.4832 },
+  "radius_metres": 5000,
+  "currency": "GBP",
+  "stations": [
+    {
+      "station_id": "7f3c2a1b-9d8e-4c5f-8a6b-1c2d3e4f5a6b",
+      "name": "Shell Abbeydale",
+      "brand": "Shell",
+      "address": "Abbeydale Road, Sheffield",
+      "postcode": "S7 2QF",
+      "latitude": 53.3552,
+      "longitude": -1.4921,
+      "distance_metres": 1240,
+      "prices": [
+        { "grade": "e10", "label": "E10", "pence_per_litre": 143, "updated_at": "2026-10-29T13:50:00Z" },
+        { "grade": "b7", "label": "B7", "pence_per_litre": 150, "updated_at": "2026-10-29T13:50:00Z" }
+      ]
+    }
+  ],
+  "captured_at": "2026-10-29T14:02:00Z",
+  "last_checked_at": "2026-10-29T14:02:00Z",
+  "evaluated_at": "2026-10-29T14:05:00Z",
+  "freshness": "fresh",
+  "attribution": "Fuel prices: UK Fuel Finder (Department for Energy Security and Net Zero)."
+}

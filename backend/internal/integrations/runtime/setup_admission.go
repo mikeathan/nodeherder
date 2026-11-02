@@ -137,7 +137,7 @@ func (s *Service) admitSearch(tx *repository.IntegrationTx, id, query, expected 
 	}
 	resetSearch(&setup, inputName, normalized)
 	s.touch(&setup)
-	operation, err := s.makeOperation(tx, compiled, setup.Inputs, setup.State, setup.Credentials, compiled.Origin, requestID, "search", setup.Generation)
+	operation, err := s.makeOperation(tx, compiled, setup.Inputs, setup.State, setup.Credentials, compiled.Origin, requestID, model.OperationKindSearch, setup.Generation)
 	if err != nil {
 		return setup, "", err
 	}

@@ -43,6 +43,9 @@ func ValidateCombination(definition model.Definition, requestID string) error {
 		if request.Conditional {
 			return invalid("Combined requests cannot use conditional caching.")
 		}
+		if request.Discover != nil {
+			return invalid("Combined requests cannot use link discovery.")
+		}
 	}
 	return nil
 }
@@ -58,7 +61,7 @@ func combineResponse(ctx context.Context, client Doer, attempt Attempt, primary 
 	additionalAttempt.RequestID = attempt.Definition.Requests[attempt.RequestID].Combine
 	additionalAttempt.ETag = ""
 	additionalAttempt.Body = nil
-	additional, err := executeSingle(ctx, client, additionalAttempt, now)
+	additional, err := executeRequest(ctx, client, additionalAttempt, now)
 	if err != nil {
 		return primary, err
 	}

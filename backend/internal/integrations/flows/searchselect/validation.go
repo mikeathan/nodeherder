@@ -15,13 +15,13 @@ import (
 // ValidateLinks checks the named search/select/status journey and disjoint progress states.
 func ValidateLinks(d *model.Definition) error {
 	s := d.Setup
-	if s.Type == "location_select" {
+	if s.Type == SetupLocationSelect {
 		return validateLocation(d)
 	}
 	if s.Search.BaseURL != "" || s.Search.Postcode != nil {
 		return configError("setup.search.base_url", "Separate search services require location_select.")
 	}
-	if s.Type != "search_select" || s.Search.Input == s.Select.Input {
+	if s.Type != SetupSearchSelect || s.Search.Input == s.Select.Input {
 		return configError("setup", "Use a search_select recipe with two different inputs.")
 	}
 	if _, ok := d.Inputs[s.Search.Input]; !ok {
@@ -76,7 +76,7 @@ func ValidateLinks(d *model.Definition) error {
 // ValidateAvailability proves saved values exist on immediate and polled completion paths.
 func ValidateAvailability(d *model.Definition) error {
 	s := d.Setup
-	if s.Type == "location_select" {
+	if s.Type == SetupLocationSelect {
 		return validateLocation(d)
 	}
 	if s.Search.Request == s.Select.Request || s.Search.Request == s.Status.Request || s.Select.Request == s.Status.Request || d.Refresh.Request == s.Search.Request || d.Refresh.Request == s.Select.Request || d.Refresh.Request == s.Status.Request {
@@ -149,22 +149,36 @@ func copyNames(m map[string]bool) map[string]bool {
 
 // validateRequestRefs ensures a request uses only inputs and state available at its step.
 func validateRequestRefs(id string, q model.Request, inputs, states map[string]bool) error {
+	checkRef := func(ref string) error {
+		parts := strings.Split(ref, ".")
+		if len(parts) != 2 {
+			return configError("requests."+id, "Use input.name or state.name.")
+		}
+		allowed := inputs
+		if parts[0] == "state" {
+			allowed = states
+		} else if parts[0] != "input" {
+			return configError("requests."+id, "Only input and saved state references are supported.")
+		}
+		if !allowed[parts[1]] {
+			return configError("requests."+id, "Value is unavailable at this step: "+ref)
+		}
+		return nil
+	}
 	check := func(v model.Value, path bool) error {
-		if v.Ref != "" {
-			parts := strings.Split(v.Ref, ".")
-			if len(parts) != 2 {
-				return configError("requests."+id, "Use input.name or state.name.")
+		if v.Join != nil {
+			if path || len(v.Join.Refs) == 0 || len(v.Join.Refs) > 8 || len(v.Join.Separator) > 8 {
+				return configError("requests."+id, "Use a bounded scalar join outside path segments.")
 			}
-			allowed := inputs
-			if parts[0] == "state" {
-				allowed = states
-			} else if parts[0] != "input" {
-				return configError("requests."+id, "Only input and saved state references are supported.")
-			}
-			if !allowed[parts[1]] {
-				return configError("requests."+id, "Value is unavailable at this step: "+v.Ref)
+			for _, ref := range v.Join.Refs {
+				if err := checkRef(ref); err != nil {
+					return err
+				}
 			}
 			return nil
+		}
+		if v.Ref != "" {
+			return checkRef(v.Ref)
 		}
 		encoded, err := json.Marshal(v.Literal)
 		if err != nil {

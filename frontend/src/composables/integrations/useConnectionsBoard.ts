@@ -4,7 +4,7 @@ import { RouteName } from '@/types/router';
 import { useConnections } from '@/composables/useConnections';
 import { useConnectionsCatalog } from './useConnectionsCatalog';
 import { useConnectionBoardLayout } from './useConnectionBoardLayout';
-import type { ConnectionInstance } from '@/types/integrations.type';
+import type { ConnectionInstance } from '@/types/integrations';
 
 /** One page owns all local reads/observations. Widgets have no timers or transport state. */
 export function useConnectionsBoard() {
@@ -51,7 +51,7 @@ export function useConnectionsBoard() {
     const saved = state.value.boardReturn;
     if (!saved || !isActive()) return;
     await nextTick();
-    const links = Array.from(document.querySelectorAll<HTMLAnchorElement>('.connection-widget-link'));
+    const links = Array.from(document.querySelectorAll<HTMLAnchorElement>('.integration-entry-link'));
     const link = links.find((element) => element.dataset.instanceId === saved.id);
     const fallback = document.querySelector<HTMLElement>('[data-board-add]');
     (link ?? fallback)?.focus({ preventScroll: true });

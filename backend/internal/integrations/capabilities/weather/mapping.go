@@ -12,11 +12,14 @@ import (
 
 type series struct {
 	// Offset is an optional root selector for fixed provider daily boundaries.
-	Offset  string             `json:"offset,omitempty"`
-	Items   string             `json:"items"`
-	Parent  string             `json:"parent,omitempty"`
-	Time    string             `json:"time"`
-	Format  string             `json:"format"`
+	Offset string     `json:"offset,omitempty"`
+	Items  string     `json:"items"`
+	Parent string     `json:"parent,omitempty"`
+	Time   string     `json:"time"`
+	Format timeFormat `json:"format"`
+	// Clocks lists fields whose values are local clock timestamps reduced to HH:MM in the
+	// resource timezone. Only daily series may declare clocks; only sunrise/sunset are clocks.
+	Clocks  []weatherField     `json:"clocks,omitempty"`
 	Columns bool               `json:"columns"`
 	Fields  map[string]string  `json:"fields"`
 	Scales  map[string]float64 `json:"scales,omitempty"`
@@ -44,7 +47,7 @@ func decode(raw map[string]any) (mapping, error) {
 	if e = d.Decode(&m); e != nil {
 		return m, model.InvalidDefinition("mapping", "Invalid weather mapping.")
 	}
-	if m.Attribution == "" || len(m.Attribution) > 512 {
+	if m.Attribution == "" || len(m.Attribution) > model.WeatherMaxAttributionLength {
 		return m, model.InvalidDefinition("mapping.attribution", "Declare provider attribution.")
 	}
 	for _, selectors := range []*series{m.Current, &m.Hourly, &m.Daily} {
@@ -53,6 +56,12 @@ func decode(raw map[string]any) (mapping, error) {
 				return m, err
 			}
 		}
+	}
+	if m.Current != nil && len(m.Current.Clocks) > 0 {
+		return m, model.InvalidDefinition("mapping.current.clocks", "Clock selectors are only supported for daily weather.")
+	}
+	if len(m.Hourly.Clocks) > 0 {
+		return m, model.InvalidDefinition("mapping.hourly.clocks", "Clock selectors are only supported for daily weather.")
 	}
 	return m, nil
 }
@@ -68,11 +77,12 @@ func validateSeries(selectors series) error {
 		}
 	}
 	switch selectors.Format {
-	case "unix", "rfc3339", "date", "local":
+	case formatUnix, formatRFC3339, formatDate, formatLocal:
 	default:
 		return model.InvalidDefinition("mapping.format", "Declare a supported time format.")
 	}
-	for field, selector := range selectors.Fields {
+	for name, selector := range selectors.Fields {
+		field := weatherField(name)
 		if !supportedWeatherField(field) {
 			return model.InvalidDefinition("mapping.fields", "Unknown weather field.")
 		}
@@ -80,23 +90,53 @@ func validateSeries(selectors series) error {
 			return model.InvalidDefinition("mapping.fields", "Use JSON pointers for weather fields.")
 		}
 	}
-	for field, scale := range selectors.Scales {
-		if !supportedWeatherField(field) {
+	for name, scale := range selectors.Scales {
+		if !supportedWeatherField(weatherField(name)) {
 			return model.InvalidDefinition("mapping.scales", "Unknown weather field.")
 		}
-		if scale <= 0 || scale > 1000 {
+		if scale <= 0 || scale > maxUnitScale {
 			return model.InvalidDefinition("mapping.scales", "Use bounded positive unit conversions.")
 		}
+	}
+	seen := map[weatherField]bool{}
+	for _, field := range selectors.Clocks {
+		if !clockField(field) {
+			return model.InvalidDefinition("mapping.clocks", "Declare only sunrise or sunset clock selectors.")
+		}
+		if seen[field] {
+			return model.InvalidDefinition("mapping.clocks", "Declare each clock selector once.")
+		}
+		if _, ok := selectors.Fields[string(field)]; !ok {
+			return model.InvalidDefinition("mapping.clocks", "Declare a selector for each clock field.")
+		}
+		seen[field] = true
 	}
 	return nil
 }
 
 // supportedWeatherField limits mappings to fields understood by the weather contract.
-func supportedWeatherField(field string) bool {
+func supportedWeatherField(field weatherField) bool {
 	switch field {
-	case "temperature", "feels_like", "wind", "gust", "direction", "humidity", "precipitation_probability", "precipitation", "condition", "high", "low":
+	case fieldTemperature, fieldFeelsLike, fieldWind, fieldGust, fieldDirection, fieldHumidity,
+		fieldPressure, fieldVisibility, fieldPrecipitationProbability, fieldPrecipitation,
+		fieldUV, fieldCondition, fieldNightCondition, fieldHigh, fieldLow, fieldFeelsLikeHigh,
+		fieldFeelsLikeLow, fieldWindGust, fieldWindDirection, fieldRainProbability,
+		fieldSnowProbability, fieldUVMax, fieldSunrise, fieldSunset:
 		return true
 	default:
 		return false
 	}
+}
+
+// clockField reports whether a weather field is a local clock time rather than a quantity.
+func clockField(field weatherField) bool { return field == fieldSunrise || field == fieldSunset }
+
+// isClock reports whether the field is normalized from a local clock timestamp.
+func (s series) isClock(field weatherField) bool {
+	for _, clock := range s.Clocks {
+		if clock == field {
+			return true
+		}
+	}
+	return false
 }

@@ -15,6 +15,13 @@ type Descriptor struct {
 	Capability, IntegrationType, Name, Description string
 }
 
+// Origin is a validated WGS84 location selected during setup. It is query/presentation input,
+// not a credential, and is nil for providers that do not select a location.
+type Origin struct {
+	Latitude  float64
+	Longitude float64
+}
+
 // Context carries publication evidence and tentative identity allocation, never credentials.
 // Previous is nil for previews/new bindings. Identity maps are read-only inputs; results must
 // return their own maps. NewIdentity reserves nothing until runtime commits publication.
@@ -24,6 +31,7 @@ type Context struct {
 	InstanceID, ResourceID, ProviderID, ProviderVersion string
 	ProfileRevision, BindingRevision                    uint64
 	SelectedValue                                       string
+	Origin                                              *Origin
 	Now                                                 time.Time
 	Previous                                            *model.Resource
 	Identities                                          map[string]string

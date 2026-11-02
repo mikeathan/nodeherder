@@ -1,6 +1,7 @@
 import { markRaw, defineAsyncComponent } from 'vue';
 const WasteResults = defineAsyncComponent(() => import('./Results.vue'));
 import { wasteWidget, wasteIcon } from './widget';
+import { wasteHelp } from './help';
 
 import type {
   IntegrationPresenter,
@@ -8,13 +9,13 @@ import type {
   IntegrationResource,
   SourceRow,
 } from '../types';
-import type { ConnectionInstance } from '@/types/integrations.type';
+import type { ConnectionInstance } from '@/types/integrations';
 import {
   presentWasteSchedule,
   wasteServiceDateLabel,
   type WasteSchedulePresentation,
   type WasteServiceCard,
-} from '@/domain/waste-schedule';
+} from '@/domain/integrations/waste-schedule';
 import { connectionStatus } from './status';
 type ResourceContext = Pick<HomeSourcePresentation, 'origin' | 'status' | 'checked' | 'warning' | 'error'>;
 
@@ -40,6 +41,7 @@ function collectionRow(service: WasteServiceCard): SourceRow {
 
 function summaryPresentation(
   instanceId: string,
+  postcode: string,
   schedule: WasteSchedulePresentation,
   context: ResourceContext
 ): HomeSourcePresentation {
@@ -48,6 +50,7 @@ function summaryPresentation(
     reference: { kind: 'waste_summary', instance_id: instanceId, resource_id: schedule.resource_id },
     title: context.origin,
     value: 'Collection schedule',
+    origin: postcode || 'Collection schedule',
     pickerLabel: context.origin + ' · complete schedule',
     colour: null,
     rows: schedule.cards.map(collectionRow),
@@ -56,6 +59,7 @@ function summaryPresentation(
 
 function servicePresentation(
   instanceId: string,
+  postcode: string,
   resourceId: string,
   service: WasteServiceCard,
   context: ResourceContext
@@ -71,6 +75,7 @@ function servicePresentation(
     title: service.title,
     selectable: false,
     value: wasteServiceDateLabel(service),
+    origin: postcode || 'Collection schedule',
     colour: service.bin_colour,
     rows: [],
   };
@@ -81,8 +86,10 @@ function sources(instance: ConnectionInstance, resource: IntegrationResource): H
   const schedule = presentWasteSchedule(resource),
     context = resourceContext(instance, schedule);
   return [
-    summaryPresentation(instance.id, schedule, context),
-    ...schedule.cards.map((service) => servicePresentation(instance.id, schedule.resource_id, service, context)),
+    summaryPresentation(instance.id, instance.postcode, schedule, context),
+    ...schedule.cards.map((service) =>
+      servicePresentation(instance.id, instance.postcode, schedule.resource_id, service, context)
+    ),
   ];
 }
 /** Waste owns its reference types, source summaries, icons and results component. */
@@ -92,16 +99,19 @@ export const wastePresenter: IntegrationPresenter = {
     sectionTitle: 'Your address',
     defaultName: 'Bin collections',
     searchLabel: 'Postcode',
+    searchPlaceholder: 'For example S8 9ED',
+    noResults: 'No address was found for this postcode. Check it and try again.',
     searchButton: 'Find address',
     choiceLabel: 'Choose your address',
     choicePlaceholder: 'Select an address',
     searchMaxLength: 10,
     autocomplete: 'postal-code',
     notice:
-      'The provider receives your postcode and selected address to retrieve collection dates. Refreshes are manual.',
+      'The provider receives your postcode and selected address to retrieve collection dates. Refresh manually or use the saved schedule.',
   }),
   contractVersion: 'waste_schedule/v1',
   integrationType: 'waste_collection',
+  help: wasteHelp,
   widget: wasteWidget,
   sourceKinds: {
     waste_summary: { title: 'Bin collections', requiresService: false },

@@ -54,7 +54,7 @@ test('stop during refresh cannot schedule a replacement timer or report an old e
   expect(f.onError).not.toHaveBeenCalled();
 });
 
-test('terminal progress and the 30-second deadline both stop local observation', async () => {
+test('terminal progress and the five-minute deadline both stop local observation', async () => {
   jest.useFakeTimers();
   const f = fixture();
   f.read.mockResolvedValueOnce({ status: 'pending' });
@@ -63,6 +63,6 @@ test('terminal progress and the 30-second deadline both stop local observation',
   expect(jest.getTimerCount()).toBe(0);
   f.observer.start('running');
   await flush();
-  await jest.advanceTimersByTimeAsync(31_000);
+  await jest.advanceTimersByTimeAsync(301_000);
   expect(jest.getTimerCount()).toBe(0);
 });

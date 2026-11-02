@@ -24,15 +24,33 @@ func (s *Service) worker() {
 	}
 }
 
+// operationTimeout allows explicit page pacing while keeping every operation bounded.
+func operationTimeout(definition model.Definition) time.Duration {
+	timeout := 30 * time.Second
+	for _, request := range definition.Requests {
+		if request.Pagination == nil {
+			continue
+		}
+		timeout += time.Duration(request.Pagination.MaxPages) *
+			(time.Duration(request.Pagination.DelayMilliseconds)*time.Millisecond + time.Second)
+	}
+	if timeout > 5*time.Minute {
+		return 5 * time.Minute
+	}
+	return timeout
+}
+
 // execute performs at most the admitted request and one bounded renewal. Network I/O is
 // outside the Service lock; every publication rechecks its owner inside the write transaction.
 func (s *Service) execute(id string) {
-	ctx, cancel := context.WithTimeout(s.ctx, 30*time.Second)
+	parent, cancel := context.WithCancel(s.ctx)
 	defer cancel()
 	op, owner, c, accepted := s.claimOperation(id, cancel)
 	if !accepted {
 		return
 	}
+	ctx, timeout := context.WithTimeout(parent, operationTimeout(c.Definition))
+	defer timeout()
 	defer func() {
 		s.mu.Lock()
 		delete(s.running, id)
@@ -47,6 +65,7 @@ func (s *Service) execute(id string) {
 			State:          op.State,
 			ApprovedOrigin: op.Origin,
 			Credential:     credential(c.Definition, owner.credentials),
+			Credentials:    owner.credentials,
 			Body:           op.Body,
 			IdempotencyKey: op.IdempotencyKey,
 			ETag:           op.ETag,

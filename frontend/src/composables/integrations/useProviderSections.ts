@@ -1,6 +1,6 @@
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
-import { integrationInstanceId, type IntegrationNavigationContext } from '@/domain/integration-navigation';
+import { integrationInstanceId, type IntegrationNavigationContext } from '@/domain/integrations/navigation';
 
 /** Expose provider/Help navigation from explicit route context, without loading or guessing
  * an instance. This readonly projection owns no subscriptions, private answers or HTTP requests.

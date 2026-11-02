@@ -1,7 +1,9 @@
 # Plan: Home signal integrations and scalable integration UI
 
-Spec: [spec.md](spec.md) | Status: Draft for review | Author: NodeHerder contributors | Updated: 2026-10-29
+Spec: [spec.md](spec.md) | Status: Draft for review — revised 2026-11-01 (specs 037/038 landed) |
+Author: NodeHerder contributors | Updated: 2026-11-01
 Constitutions: parent/backend/frontend 1.0.0 (proposed)
+Repository inspected: `6b42c646` on `main`.
 Research: [provider research](provider-research.md) · Prototypes:
 [home layout options](prototypes/home-layout-options.html) ·
 [home layout with real card sizes and views](prototypes/home-layout-realistic.html) ·
@@ -15,8 +17,10 @@ ADRs: [001 OAuth](adr-001-oauth-client-credentials.md) ·
 The integrations subsystem is a declarative provider engine with two installed capabilities.
 `capabilities.Registry` is the extension point; concrete types are `waste_schedule/v1` and
 `weather_forecast/v1`. Provider YAML is host-editable and shipped seeds are embedded from
-`backend/configs/integrations`. The runtime has no scheduler: provider I/O happens only on an
-admitted setup step, refresh or status check, and page reads never call a provider.
+`backend/configs/integrations`. The runtime now owns a bounded automatic-refresh coordinator
+(spec 037): provider I/O happens on an admitted setup step, refresh, status check or `scheduled`
+refresh through the same admission path, and page reads never call a provider. The scheduler is
+reused here, not reimplemented.
 
 Facts that constrain this design:
 
@@ -33,7 +37,13 @@ Facts that constrain this design:
   (`HomeCardItem.vue` forces `grid-column: 1 / -1` for integrations).
 - The app already has a density system (`data-density` comfortable/compact/spacious) and theme
   tokens; no new design system is required.
-- No map library exists in `frontend/package.json`.
+- No map library exists in `frontend/package.json`. Spec 038 added an indoor canvas spatial view
+  (`components/device/spatial/SpatialCanvas.vue`) with no geography or tile provider.
+
+Post-plan changes (2026-10-30 and 2026-11-01): spec 037 delivered the automatic-refresh scheduler,
+provider cadence policy fields, a schedule API and the settings editor; spec 038 delivered ESPHome
+provider devices, buttons and the indoor spatial canvas. This plan reuses both and does not
+reimplement scheduling or device-provider work.
 
 ## Design
 
@@ -87,6 +97,11 @@ Layout rules:
   device name need the extra line. Integration cards default to four units, or five when they carry
   rows. The choice is computed once from the known source presentation, then stored; it is not
   re-measured on every render, so the layout does not jump.
+- **Provider devices render through the same frame.** Spec 038 added ESPHome/provider devices,
+  read-only entities and stateless buttons to the registry. The shared frame and rows must present
+  them with the existing `EntityTile`/`ExposeRow` semantics, without a provider branch and without
+  changing Zigbee tiles; the smallest fitting span must tolerate a long provider label and a
+  button's submitted-state line.
 - **Sections have independent heights.** They are top-aligned `align-self: start` items. A row may
   contain a 300px area and a 200px section; the shorter one leaves whitespace below. That is
   accepted, not stretched. Dense placement can fill gaps, off by default.
@@ -124,8 +139,8 @@ Schema additions, all additive and optional:
 - `HomeCard.Width` (`1|2`) and `HomeCard.Height` (`2..5`), empty means the source default.
 
 Existing `kind: card` blocks render inside an implicit Services section without rewriting saved
-data. The section becomes a real `group` block on the next accepted save, matching the read-only
-legacy migration pattern in `home_cache.go`.
+data. The section becomes a real `group` block on the next accepted save, matching the legacy
+adaptation pattern in `backend/models/settings/cache.go`.
 
 Affected files: `frontend/src/components/dashboards/GroupDashboard.vue` (render sections),
 new `HomeSection.vue`, `HomeCardFrame.vue`, `HomeCardRow.vue`, `CardSizeControl.vue`,
@@ -144,6 +159,8 @@ and `AddTilesDialog.vue` become grouped/searchable. `HomeBlock.Width`, `HomeBloc
   availability before the wizard starts. Remove the weather special case.
 - Configured entries are grouped by type with a status dot **and** word (OK/Stale/Error/Disabled),
   name, provider · location subtitle, last checked time, refresh and overflow actions.
+- Entries show schedule state when present (next due / last success, manual when absent), and the
+  Settings tab keeps the automatic-refresh editor from spec 037.
 - Search matches name, type, provider and location. Type chips filter. Empty search explains.
 - Detail keeps Results/Settings/Configuration/Help but presents them as tabs at ≥768px and as
   labelled stacked sections below. Refresh and Configure stay in the header.
@@ -152,23 +169,64 @@ and `AddTilesDialog.vue` become grouped/searchable. `HomeBlock.Width`, `HomeBloc
 
 Affected files: `ConnectionCatalogDialog.vue`, `ConnectionsPage.vue`, `ConnectionBoard.vue`,
 `ConnectionWidget.vue` → entry row, `ConnectionDetail.vue`, `IntegrationSections.vue`,
-`IntegrationPageHeader.vue`, new `IntegrationCatalog.vue`, `IntegrationTypeCard.vue`,
-`IntegrationEntry.vue`, `integration-icons.ts`, plus `types/integrations.type.ts` additions for
-type metadata (`icon`, `provider_count`, `configured_count`, `status`).
+`IntegrationPageHeader.vue`, `ConnectionSettings.vue`, `ProviderPolicyFields.vue`,
+`domain/schedule.ts`, `composables/integrations/useConnectionDetail.ts`, new
+`IntegrationCatalog.vue`, `IntegrationTypeCard.vue`, `IntegrationEntry.vue`,
+`integration-icons.ts`, plus `types/integrations.type.ts` additions for type metadata (`icon`,
+`provider_count`, `configured_count`, `status`). Tab conversion must preserve the schedule editor's
+dirty draft and base ETag.
 
 ### Weather extension (additive, no version bump)
 
-- `models/integrations/weather.go`: `WeatherDay.Sunrise`, `.Sunset` (`*string`, local `HH:MM`),
-  `.UVMax` (`*float64`); `WeatherPoint.UV` (`*float64`). Nullable, never zero-filled.
-- Validation: UV 0–20, clock strings `HH:MM`, sunset after sunrise when both exist, daily UV max
-  ≥ 0. Invalid values reject the response as `invalid_response`.
-- `capabilities/weather/mapping.go` accepts `uv`, `uv_max`, `sunrise`, `sunset`; daily clock
-  selectors declare a local-time format. `normalize.go` reduces an ISO local timestamp to `HH:MM`
-  in the resource timezone. Projection unchanged.
-- Shipped YAML: Open-Meteo daily `sunrise,sunset,uv_index_max`, hourly `uv_index`. Met Office and
-  WeatherAPI add only the fields their fixtures confirm; absent fields stay null.
+- `models/integrations/weather.go`: `WeatherDay` gains `Sunrise`/`Sunset` (`*string`, local
+  `HH:MM`), `UVMax`, `FeelsLikeHigh`, `FeelsLikeLow`, `WindGust`, `WindDirection`, `Humidity`,
+  `Pressure` (hPa), `Visibility` (metres), `SnowProbability` (0–100) and `NightCondition`
+  (`*string`); `WeatherPoint` gains `UV`. All are nullable and never zero-filled.
+- Validation: UV 0–20, feels-like −150..100 °C, gust 0–600 km/h, direction 0–360°, humidity 0–100%,
+  pressure 800–1100 hPa, visibility 0–100000 m, snow probability 0–100%, clock strings `HH:MM`,
+  sunset after sunrise when both exist, and a known night condition when present. Invalid values
+  reject the response as `invalid_response`.
+- `capabilities/weather/mapping.go` accepts `uv`, `uv_max`, `sunrise`, `sunset`, `feels_like_high`,
+  `feels_like_low`, `wind_gust`, `wind_direction`, `humidity`, `pressure`, `visibility`,
+  `snow_probability` and `night_condition`. Daily clock selectors declare a local-time format.
+  `normalize.go` reduces a local timestamp or Unix instant to `HH:MM` in the resource timezone and
+  maps an optional night condition to `unknown` when the provider code is unrecognised. Projection
+  unchanged.
+- Shipped YAML: Open-Meteo daily adds `apparent_temperature_max,min`, `wind_gusts_10m_max`,
+  `wind_direction_10m_dominant`, `sunrise,sunset,uv_index_max`; hourly adds `uv_index`. It does not
+  request daily humidity/pressure/visibility because those are not daily Open-Meteo variables.
+  Met Office daily uses its actual field
+  names (`midday10MWindSpeed`, `midday10MWindGust`, `midday10MWindDirection`,
+  `middayRelativeHumidity`, `middayMslp`, `middayVisibility`, `maxUvIndex`,
+  `dayMaxFeelsLikeTemp`, `nightMinFeelsLikeTemp`, `dayProbabilityOfSnow`,
+  `nightSignificantWeatherCode`) with m/s→km/h and Pa→hPa scales; hourly adds `uvIndex`.
+  WeatherAPI adds the daily values its fixture confirms (`day.uv`, `day.avghumidity`,
+  `day.daily_chance_of_snow`, `day.totalprecip_mm`). Absent fields stay null. The shipped weather
+  YAMLs already declare `refresh_default_seconds` and `refresh_min_seconds` (spec 037); keep them.
 - Frontend: `types/weather.type.ts`, `contracts/weather.ts`, `WeatherResults.vue`,
-  `integrations/weather/presentation.ts` (compact value uses UV/sunset when useful).
+  `integrations/weather/presentation.ts`. The Home/Panel card uses capability-owned rows with
+  icons for high/low, next-hour rain chance and daily maximum UV; the generic integration card
+  renders those rows as compact metric chips without a weather branch.
+- **Daily detail.** Each daily card in `WeatherResults.vue` is a compact, icon-led selectable
+  button showing date, condition icon, high/low, condition and rain/wind/UV chips; the remaining
+  daily values stay in the selected-day panel. Selecting it
+  replaces the "Next 24 hours" panel in place with that day's summary and the same horizontal
+  hourly-card view; the selected card exposes `aria-pressed`, and a "Today" control appears when
+  another day is selected and restores the current view. Selecting the same day again also clears
+  the selection. The summary shows every supplied daily value (day/night condition, high/low,
+  feels-like, wind/gust/direction, humidity, pressure, visibility, rain/snow chance, precipitation,
+  UV, sunrise/sunset); hourly points are filtered by local date and capped at 24. Nulls are omitted,
+  never zero-filled. Because Met Office hourly covers 48 hours while daily covers seven days, a day
+  outside the hourly horizon states the available horizon instead of a bare empty message. The
+  helpers `hoursForDate`, `weatherHourlyHorizonHours` and `weatherDayDetail` own filtering and
+  formatting. The current and selected-day summaries share one stat-grid component with semantic
+  weather icons; unavailable values are omitted rather than rendered as a dash, and the current
+  rain chance falls back to the nearest hourly point when the observation omits it. The current
+  panel also includes today's daily high/low, maximum UV, sunrise and sunset so it is not thinner
+  than a selected day. Hourly cards are selectable buttons; an inline detail below the strip shows
+  that hour's temperature, condition, feels-like, rain chance, precipitation, humidity, wind,
+  gusts, direction and UV using the shared stat grid. Selecting the hour again, switching day or
+  restoring Today closes it. No dialog, route, URL state, provider call or saved-state change.
 
 ### Air quality capability (`air_quality/v1`, type `air_quality`)
 
@@ -184,8 +242,12 @@ type metadata (`icon`, `provider_count`, `configured_count`, `status`).
   `https://air-quality-api.open-meteo.com` (separate from the forecast host). Setup uses the
   existing `location_select` flow with Open-Meteo geocoding and Postcodes.io, disclosed as
   recipients. No key. CAMS + Open-Meteo attribution required.
+- The provider YAML declares `refresh_default_seconds: 1800` and `refresh_min_seconds: 900`
+  provisionally; confirm against provider quotas. Air quality is stale after six hours; the
+  contract's 168-hour bound and CAMS update cadence remain authoritative.
 - Frontend presenter `frontend/src/integrations/air-quality/` with a compact widget (category +
-  dominant + one pollen row) and a results component (current pollutants, hourly, pollen).
+  index, icon-led PM2.5/PM10 and the highest supplied pollen species) and a results component
+  (current pollutant tiles, top-level pollen tiles and the next 24 hourly pollutant values).
 - Because the origin differs from `api.open-meteo.com`, air quality is its own instance and the
   user selects a location once for it. Sharing one location across instances is out of scope.
 
@@ -203,6 +265,9 @@ type metadata (`icon`, `provider_count`, `configured_count`, `status`).
     name is `apikey`), GeoJSON snapshot reached through one bounded Atom link discovery
     ([ADR-002](adr-002-alert-feed-discovery.md)).
   - `nws`: `https://api.weather.gov`, no key, stable `/alerts/active` JSON for US installations.
+- The provider YAMLs declare `refresh_default_seconds: 900` and `refresh_min_seconds: 300`
+  provisionally; confirm against provider quotas. The snapshot is stale after one hour, while
+  individual warnings expire by `valid_to`.
 - Frontend presenter with severity-led card body, expiry display and plain-text instruction.
 
 ### Fuel prices capability (`fuel_prices/v1`, type `fuel_prices`)
@@ -213,7 +278,8 @@ type metadata (`icon`, `provider_count`, `configured_count`, `status`).
 - New `internal/integrations/capabilities/fuel/` adapter/mapping/normalize/sources. Distance is
   computed in normalization with a haversine helper from a new optional `capabilities.Context`
   origin, then sorted by distance then cheapest displayed grade.
-- Price validation: integer pence, 0–1000; invalid station prices are dropped, never rounded or
+- Price validation: integer pence 1–1000; provider tenths are rounded to the nearest penny because
+  v1 has no fractional field (documented precision loss); negative/missing prices are dropped, never
   zero-filled; a station with no valid price is shown without prices or omitted.
 - Auth: new `oauth2_client_credentials` mode ([ADR-001](adr-001-oauth-client-credentials.md)):
   `token_url`, optional `scope`, private `client_id`/`client_secret` slots, in-memory token cache,
@@ -221,6 +287,8 @@ type metadata (`icon`, `provider_count`, `configured_count`, `status`).
 - Provider `backend/configs/integrations/fuel_prices/fuel_finder.yaml`. The Fuel Finder query
   shape, rate limits and terms are unverified until credentials exist (Q2); fixtures and the YAML
   are completed against a captured response.
+- The provider YAML declares `refresh_default_seconds: 3600` and `refresh_min_seconds: 900`
+  provisionally; confirm against provider quotas (Q2). Fuel prices are stale after 24 hours.
 
 ### Cross-cutting backend changes
 
@@ -236,7 +304,9 @@ type metadata (`icon`, `provider_count`, `configured_count`, `status`).
   visible in the reviewed YAML.
 - Registry registration in `service.go`; presenter registration in `integrations/registry.ts`.
 - `contracts/integrations.ts`: extend `parseResource` dispatch, capability/type enums,
-  `parseProviderDefinition` mapping branches, and add per-resource parsers.
+  `parseProviderDefinition` mapping branches, validate catalog provider `id`,
+  `integration_type`, `origin` and `disk_error`, keep the already-required policy refresh fields,
+  and add per-resource parsers.
 - `backend/configs/integrations/embed.go` adds the new directories.
 
 ### Map (optional, phase 8)
@@ -245,6 +315,9 @@ Coordinate-bearing resources (weather location, fuel origin/stations, alert poly
 on demand. Leaflet is loaded lazily on detail pages only, behind an explicit "Show map" action and
 a disclosure naming the tile provider. No tiles, no map on Home, no coordinates in browser
 storage, logs or URLs. See [ADR-003](adr-003-map-and-coordinate-presentation.md).
+The geographic map is separate from spec 038's indoor spatial canvas
+(`components/device/spatial/SpatialCanvas.vue`), which has no geography or tile provider; do not
+reuse it for lat/lon and do not add maps to device pages.
 Warnings with missing or over-limit geometry are still listed; the map renders the rest.
 
 ## Alternatives considered
@@ -258,6 +331,7 @@ Warnings with missing or over-limit geometry are still listed; the map renders t
 | Alerts UK source | Feed discovery, one hop | Hard-coding the snapshot UUID is stale by design; full XML engine is unnecessary |
 | Fuel auth | OAuth client credentials | Manual bearer expires and is unusable; CSV export is twice daily and not an integration |
 | Map | Opt-in Leaflet on detail | Static map URLs leak location too and add a vendor; a coordinate list alone answers the "where" question but not the spatial one |
+| Daily forecast detail | Dialog via `UiDialog` | Inline expansion reflows the horizontal day strip and complicates focus/return; a dedicated route adds history and empty states for a transient view |
 
 ## Constitution Check
 
@@ -294,7 +368,8 @@ phases, not a claimed approval.
 | Air quality resource | `air_quality/v1` | New ([contract](contracts/air_quality.v1.md)) | New presenter, Home card |
 | Alerts resource | `weather_alerts/v1` | New ([contract](contracts/alerts.v1.md)) | New presenter, Home card |
 | Fuel resource | `fuel_prices/v1` | New ([contract](contracts/fuel_prices.v1.md)) | New presenter, Home card |
-| Provider definition | `nodeherder.integration/v1` | Add `oauth2_client_credentials`, `token_url`, `scope`, `discover`, `headers` | Compiler, editor, setup, runtime |
+| Provider definition | `nodeherder.integration/v1` | Add `oauth2_client_credentials`, `token_url`, `scope`, `discover`, `headers`; refresh policy fields already shipped by 037 | Compiler, editor, setup, runtime |
+| Instance schedule | unchanged | Already shipped by spec 037; no change here | Settings editor, scheduler |
 | Home layout | version 1 | Additive optional section `width`/`view`/`collapsed` and card `width`/`height`; no block shape change | Home, Panel, settings export |
 | HTTP API | unchanged | No new routes; existing authenticated integrations endpoints only | Web client, tests |
 
@@ -303,7 +378,7 @@ phases, not a claimed approval.
   absent means the default.
 - Migration: loading Home renders legacy `kind: card` blocks in the implicit Services section
   without writing. The first accepted save materialises the group. This mirrors the existing
-  read-only legacy behavior in `home_cache.go`.
+  legacy adaptation behavior in `backend/models/settings/cache.go`.
 - Rollback: pre-redesign binaries decode the saved JSON into the older struct, silently drop the
   new `width`, `view`, `collapsed` and card `height` fields, and compute a different Home ETag. A
   rollback can therefore cause one revision conflict and would erase the new presentation state on
@@ -323,24 +398,50 @@ phases, not a claimed approval.
 | FR-03, AC-08–12 | `models/integrations/alerts.go`, `capabilities/alerts/*`, `configs/integrations/alerts/*`, `operations` discovery | Expiry projection, empty vs unavailable, discovery negatives (origin/size/parse/redirect), credential errors | Pending |
 | FR-04, AC-13–17 | `models/integrations/fuel.go`, `capabilities/fuel/*`, `operations` OAuth, `configs/integrations/fuel_prices/*` | OAuth stub (token, 401 retry, origin binding, redaction), distance sort, price validation, error recovery | Pending |
 | FR-05, AC-18–23 | `components/integrations/*`, `integrations/registry.ts`, `integration-icons.ts`, `types/integrations.type.ts` | Component tests, search/filter, status semantics, tabs vs stacked, no provider branch | Pending |
+| FR-15, AC-53 | `backend/configs/integrations/{air_quality,alerts,fuel_prices}/*.yaml`, `ConnectionSettings.vue`, `ProviderPolicyFields.vue`, `domain/schedule.ts`, `composables/integrations/useConnectionDetail.ts` | Provider policy compile/parser tests; dirty schedule draft survives tab switches | Pending |
+| FR-08 | `backend/configs/integrations/*`, `definitions/compiler.go`, `capabilities/registry.go` | New provider YAMLs compile and reload without application edits; a synthetic definition for an installed capability requires no code change | Pending |
+| FR-16, AC-54–55 | `components/integrations/WeatherResults.vue`, `WeatherStatGrid.vue`, `integrations/weather/day-detail.ts`, `integrations/weather/stats.ts`, `domain/weather.ts` | Selection/restore keyboard tests, hourly-by-date filtering, current fallback, null omission, horizon state, mobile pagination | Pending |
+| FR-17, AC-56 | `WeatherResults.vue`, `WeatherStatGrid.vue`, `integrations/weather/{day-detail,stats}.ts` | Hour selection/toggle tests, point-value rendering, null omission, day-switch reset | Pending |
 | FR-06, FR-09, FR-10, FR-11, FR-12, FR-13, FR-14, AC-24–28, 33–52 | `GroupDashboard.vue`, `HomeSection.vue`, `HomeCardFrame.vue`, `HomeCardRow.vue`, `HomeCardItem.vue`, `home-picker.ts`, `AddTilesDialog.vue`, `models/settings/home.go` | Layout schema tests (width/height/view/collapsed/legacy standalone), wide-section height check at 1024/1440, cards-vs-list geometry preservation, compact body bounds, collapse persistence, split action, picker tests, drag/reorder, viewport checks | Pending |
 | FR-07, AC-29–32 | `components/integrations/IntegrationMap.vue`, `integrations/map/*`, ADR-003 | No-request-before-opt-in, disclosure, marker/list parity, unusable geometry fallback | Pending |
 | NFR-01–05 | Capability validators, contracts, transport limits | Bounds tables, malformed fixtures, secret redaction, 320–1440 and keyboard checks | Pending |
+| SC-01–03 | Backend/frontend suites, mock hubs and saved-layout fixtures | Synthetic providers only; catalog with four types and ten providers; existing waste/weather instances and Home placements load unchanged | Pending |
+
+Verification record (2026-11-02):
+
+- Backend: `go test ./...`, `go build ./...`, `go vet ./...` and
+  `go test -race ./internal/integrations/... ./models/integrations/...` passed.
+- Frontend: `npm test -- --runInBand`, `npm run lint` and `npm run build` passed; lint has
+  pre-existing warnings in untouched files.
+- Not run: live provider credential checks and browser viewport/keyboard checks at
+  320/375/768/1024/1440. Live provider shapes remain deployment-specific.
 
 Proposed component checks, run from the component directories:
 
 - Backend: `go test ./...`, `go build ./...`, `go vet ./...`, race on
   `./internal/integrations/...` after shared changes.
 - Frontend: `npm test -- --runInBand`, `npm run lint`, `npm run build`; browser checks for Home and
-  Integrations at 320/375/768/1024/1440.
+  Integrations at 320/375/768/1024/1440, including one ESPHome device/button placement, a dirty
+  schedule draft carried across Results/Settings/Configuration/Help, and weather day-detail
+  open/close with focus return on desktop and mobile.
 - Fixtures are synthetic; no household device, real provider account or live API key is used.
   Fuel Finder and Met Office live verification remain manual, credential-gated checks.
 
 ## Debt, risks, exceptions
 
-- **Manual refresh (Q5).** Alerts, air quality and fuel prices are time-sensitive; without the
-  deferred coordinator they are only as current as the last refresh. The UI must show the checked
-  time prominently. Pulling scheduling forward is a scope decision, not silently included.
+- **Provider cadence and quota (Q2/Q5).** Automatic refresh is delivered by spec 037, so the data
+  is as current as its schedule. Air quality, alert and fuel intervals are unverified against
+  provider limits; a too-fast cadence can exhaust quotas. The UI must show the checked time and
+  offer manual-only.
+- **Schedule-editor regression.** The tabs rewrite touches `ConnectionDetail.vue` and the settings
+  tab; a dirty schedule draft or its base ETag could be lost on a tab switch. Mitigation: keep the
+  editor state in `useConnectionDetail` and add the AC-53 regression.
+- **Provider device compatibility.** ESPHome devices and stateless buttons now share the Home
+  frame. Mitigation: no provider branches in the frame, and a Home fixture containing one provider
+  device/button.
+- **Daily detail coverage.** Hourly points may not cover every daily entry, and providers differ in
+  horizon. Mitigation: omit missing values, cap the dialog at 24 hourly rows, and show the daily
+  summary with an explicit no-hourly message.
 - **Met Office discovery.** ADR-002 adds one narrow transport capability. Risk: a discovered URL
   could target another origin. Mitigation: one hop, same declared origin, public HTTPS, bounded
   body, no redirects, no recursion, failure preserves last-good.
@@ -365,5 +466,5 @@ Proposed component checks, run from the component directories:
 ## Completion
 
 Acceptance evidence, actual check results, changed documentation and prototype links are added
-here when implementation runs. Unresolved: Q1–Q5, live provider verification, and the deferred
-scheduling/data-policy work inherited from spec 034.
+here when implementation runs. Unresolved: Q1–Q4, live provider verification, and the
+freshness/retention data-policy work inherited from spec 034. Q5 is resolved by spec 037.

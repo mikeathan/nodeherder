@@ -1,5 +1,5 @@
 import { formatScheduleInterval, matchesScheduleEditor, scheduleEditor, splitInterval, toIntervalSeconds } from '@/domain/schedule';
-import type { ConnectionSchedule } from '@/types/integrations.type';
+import type { ConnectionSchedule } from '@/types/integrations';
 
 function schedule(overrides: Partial<ConnectionSchedule> = {}): ConnectionSchedule {
   return {

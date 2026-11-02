@@ -14,14 +14,16 @@ func prepareTestCredentials(i model.Instance, c *definitions.Compiled, mode stri
 	for slot, cred := range i.Credentials {
 		credentials[slot] = cred
 	}
+	slot := credentialSlot(c.Definition)
+	expectedCredentialOrigin := credentialOrigin(c.Definition, c.Origin, slot)
 	activeCredential := credential(c.Definition, i.Credentials)
-	if c.Origin != i.Origin || activeCredential != nil && activeCredential.Origin != c.Origin {
+	if c.Origin != i.Origin || activeCredential != nil && activeCredential.Origin != expectedCredentialOrigin {
 		if mode == "live" && !testDestinationApproved(i, c, activeCredential, review) {
 			return nil, model.Fail("destination_review_required", "Approve sending this integration's saved inputs and token to the test destination.")
 		}
 		if cred := credential(c.Definition, credentials); cred != nil {
-			cred.Origin = c.Origin
-			credentials[c.Definition.Auth.SecretSlot] = *cred
+			cred.Origin = expectedCredentialOrigin
+			credentials[slot] = *cred
 		}
 	}
 	return credentials, nil
@@ -36,7 +38,7 @@ func testDestinationApproved(instance model.Instance, compiled *definitions.Comp
 	if active != nil {
 		credentialRevision = active.Revision
 	}
-	return hasCredentialReview(review, instance.ID, instance.Revision, credentialRevision, compiled.Definition.Auth.SecretSlot)
+	return hasCredentialReview(review, instance.ID, instance.Revision, credentialRevision, credentialSlot(compiled.Definition))
 }
 
 // ensureTestCapacity bounds temporary provider tests and unfinished setups.
