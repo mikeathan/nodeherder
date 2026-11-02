@@ -30,7 +30,7 @@
   <div class="connections connection-stack">
     <IntegrationPageHeader
       title="Integrations help"
-      subtitle="Shared guidance for every integration, plus notes for the selected provider." />
+      subtitle="Shared guidance plus provider-specific setup notes." />
     <IntegrationSections active="help" :context="sectionContext" />
     <label class="connection-field"
       ><span>Find help</span
