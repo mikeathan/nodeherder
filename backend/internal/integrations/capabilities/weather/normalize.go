@@ -86,7 +86,7 @@ func (reader forecastReader) points(selectors series) ([]model.WeatherPoint, err
 	}
 	points := make([]model.WeatherPoint, 0, len(sourceRows))
 	for _, row := range sourceRows {
-		timestamp, err := instant(row["time"], selectors.Format, reader.zone)
+		timestamp, err := instant(row[string(fieldTime)], selectors.Format, reader.zone)
 		if err != nil {
 			return nil, invalidForecast("The provider returned an invalid forecast timestamp.")
 		}
@@ -104,19 +104,39 @@ func (reader forecastReader) days() ([]model.WeatherDay, error) {
 	}
 	days := make([]model.WeatherDay, 0, len(sourceRows))
 	for _, row := range sourceRows {
-		date, err := reader.dailyDate(row["time"])
+		date, err := reader.dailyDate(row[string(fieldTime)])
 		if err != nil {
 			return nil, err
 		}
-		days = append(days, model.WeatherDay{
+		day := model.WeatherDay{
 			Date:                     date,
 			Condition:                condition(row, reader.selectors),
-			High:                     quantity(row, selectors, "high"),
-			Low:                      quantity(row, selectors, "low"),
-			Wind:                     quantity(row, selectors, "wind"),
-			PrecipitationProbability: quantity(row, selectors, "precipitation_probability"),
-			Precipitation:            quantity(row, selectors, "precipitation"),
-		})
+			NightCondition:           optionalCondition(row, reader.selectors, fieldNightCondition),
+			High:                     quantity(row, selectors, fieldHigh),
+			Low:                      quantity(row, selectors, fieldLow),
+			FeelsLikeHigh:            quantity(row, selectors, fieldFeelsLikeHigh),
+			FeelsLikeLow:             quantity(row, selectors, fieldFeelsLikeLow),
+			Wind:                     quantity(row, selectors, fieldWind),
+			WindGust:                 quantity(row, selectors, fieldWindGust),
+			WindDirection:            quantity(row, selectors, fieldWindDirection),
+			Humidity:                 quantity(row, selectors, fieldHumidity),
+			Pressure:                 quantity(row, selectors, fieldPressure),
+			Visibility:               quantity(row, selectors, fieldVisibility),
+			PrecipitationProbability: quantity(row, selectors, fieldPrecipitationProbability),
+			Precipitation:            quantity(row, selectors, fieldPrecipitation),
+			RainProbability:          quantity(row, selectors, fieldRainProbability),
+			SnowProbability:          quantity(row, selectors, fieldSnowProbability),
+			UVMax:                    quantity(row, selectors, fieldUVMax),
+		}
+		day.Sunrise, err = reader.clock(row, selectors, fieldSunrise)
+		if err != nil {
+			return nil, err
+		}
+		day.Sunset, err = reader.clock(row, selectors, fieldSunset)
+		if err != nil {
+			return nil, err
+		}
+		days = append(days, day)
 	}
 	return days, nil
 }
@@ -124,7 +144,7 @@ func (reader forecastReader) days() ([]model.WeatherDay, error) {
 // dailyDate resolves a daily timestamp using the declared timezone or fixed provider offset.
 func (reader forecastReader) dailyDate(value any) (string, error) {
 	selectors := reader.selectors.Daily
-	if selectors.Format == "date" {
+	if selectors.Format == formatDate {
 		return text(value), nil
 	}
 	timestamp, err := instant(value, selectors.Format, reader.zone)
@@ -132,18 +152,50 @@ func (reader forecastReader) dailyDate(value any) (string, error) {
 		return "", invalidForecast("The provider returned an invalid daily timestamp.")
 	}
 	if selectors.Offset == "" {
-		return timestamp.In(reader.zone).Format("2006-01-02"), nil
+		return timestamp.In(reader.zone).Format(model.WeatherDateLayout), nil
 	}
 	offset := number(pointer(reader.root, selectors.Offset))
 	if offset == nil {
 		return "", invalidForecast("The provider omitted its daily timezone offset.")
 	}
-	if *offset < -50400 || *offset > 50400 {
+	if *offset < -maxClockOffsetSeconds || *offset > maxClockOffsetSeconds {
 		return "", invalidForecast("The provider returned an invalid daily timezone offset.")
 	}
 	// Some providers use the request-time offset for every daily boundary, including
 	// dates crossing DST. Preserve that declared calendar instead of applying a new offset.
-	return timestamp.UTC().Add(time.Duration(*offset) * time.Second).Format("2006-01-02"), nil
+	return timestamp.UTC().Add(time.Duration(*offset) * time.Second).Format(model.WeatherDateLayout), nil
+}
+
+// optionalCondition maps an optional provider code into the shared vocabulary. An absent
+// selector stays nil; a mapped but unrecognised code becomes "unknown" without inventing weather.
+func optionalCondition(row map[string]any, m mapping, field weatherField) *string {
+	raw, present := row[string(field)]
+	if !present || raw == nil {
+		return nil
+	}
+	value, known := m.Conditions[text(raw)]
+	if !known {
+		value = model.WeatherConditionUnknown
+	}
+	return &value
+}
+
+// clock reads an optional local clock field and reduces it to HH:MM in the resource timezone.
+// A declared clock field that is present but unparsable rejects the response rather than
+// silently dropping the value.
+func (reader forecastReader) clock(row map[string]any, selectors series, field weatherField) (*string, error) {
+	if !selectors.isClock(field) {
+		return nil, nil
+	}
+	raw, present := row[string(field)]
+	if !present || raw == nil {
+		return nil, nil
+	}
+	clock, err := clockValue(raw, reader.zone)
+	if err != nil {
+		return nil, invalidForecast("The provider returned an invalid daily clock.")
+	}
+	return &clock, nil
 }
 
 // current uses an explicit observation when supplied, otherwise the latest recent hourly point.

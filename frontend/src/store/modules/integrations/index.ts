@@ -8,7 +8,7 @@ import type {
   ConnectionSetup,
   ProviderDraft,
   ConnectionDefinition,
-} from '@/types/integrations.type';
+} from '@/types/integrations';
 export interface ConnectionsState {
   board: ConnectionBoard | null;
   boardReturn: { id: string; scrollTop: number } | null;
@@ -74,6 +74,10 @@ export const IntegrationsModule: Module<ConnectionsState, RootState> = {
     },
     current(state, value: ConnectionInstance | null) {
       state.current = value;
+      if (!value) return;
+      const index = state.instances.findIndex((instance) => instance.id === value.id);
+      if (index >= 0) state.instances.splice(index, 1, value);
+      else state.instances.push(value);
     },
     setup(state, value: ConnectionSetup | null) {
       state.setup = value;

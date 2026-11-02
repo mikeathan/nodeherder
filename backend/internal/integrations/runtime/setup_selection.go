@@ -168,7 +168,7 @@ func ensureInstanceCapacity(tx *repository.IntegrationTx) error {
 
 // admitSelection persists the selection, operation and new instance atomically.
 func (s *Service) admitSelection(tx *repository.IntegrationTx, compiled *definitions.Compiled, setup *model.Setup, instance *model.Instance, name, submissionHash string) (string, error) {
-	operation, err := s.makeOperation(tx, compiled, setup.Inputs, setup.State, setup.Credentials, compiled.Origin, compiled.Definition.Setup.Select.Request, "setup", instance.Generation)
+	operation, err := s.makeOperation(tx, compiled, setup.Inputs, setup.State, setup.Credentials, compiled.Origin, compiled.Definition.Setup.Select.Request, model.OperationKindSetup, instance.Generation)
 	if err != nil {
 		return "", err
 	}

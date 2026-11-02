@@ -15,8 +15,10 @@ export type QuantityKind =
   | 'energy'
   | 'illuminance'
   | 'uv'
+  | 'direction'
   | 'aqi'
   | 'pollutant'
+  | 'pollen'
   | 'distance';
 
 /** Formatting overrides; every field has a documented default for the quantity. */
@@ -48,8 +50,10 @@ const QUANTITIES: Record<Exclude<QuantityKind, 'distance'>, UnitSpec> = {
   energy: { unit: 'kWh', digits: 2, spaced: true },
   illuminance: { unit: 'lx', digits: 0, spaced: true },
   uv: { unit: '', digits: 1 },
+  direction: { unit: '°', digits: 0 },
   aqi: { unit: '', digits: 0 },
   pollutant: { unit: 'µg/m³', digits: 0, spaced: true },
+  pollen: { unit: 'grains/m³', digits: 0, spaced: true },
 };
 
 /**

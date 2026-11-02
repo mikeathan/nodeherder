@@ -13,6 +13,14 @@ import (
 	model "node-herder/models/integrations"
 )
 
+// Setup types recognized by the search/select flow compiler.
+const (
+	// SetupLocationSelect selects a validated coordinate pair.
+	SetupLocationSelect = "location_select"
+	// SetupSearchSelect selects a provider-defined candidate by input value.
+	SetupSearchSelect = "search_select"
+)
+
 // LocationCoordinates parses a selected latitude/longitude pair in decimal degrees.
 // Both coordinates must be finite and within geographic bounds; invalid input returns
 // a safe selection error without retaining provider text.
@@ -45,6 +53,42 @@ func parseCoordinate(value string, limit float64) (float64, error) {
 }
 
 func invalidLocationChoice() error { return model.Fail("invalid_choice", "Choose a valid location.") }
+
+// SelectedCoordinates restores a validated latitude/longitude pair from a location-selection
+// checkpoint. ok is false when the checkpoint has no location; a present but malformed pair
+// returns an error because saved state must never be silently reinterpreted.
+func SelectedCoordinates(state map[string]any) (latitude, longitude float64, ok bool, err error) {
+	rawLatitude, hasLatitude := state["latitude"]
+	rawLongitude, hasLongitude := state["longitude"]
+	if !hasLatitude && !hasLongitude {
+		return 0, 0, false, nil
+	}
+	latitude, latitudeOK := coordinateValue(rawLatitude, 90)
+	longitude, longitudeOK := coordinateValue(rawLongitude, 180)
+	if !latitudeOK || !longitudeOK {
+		return 0, 0, false, invalidLocationChoice()
+	}
+	return latitude, longitude, true, nil
+}
+
+// coordinateValue accepts only finite persisted JSON numbers within the geographic limit.
+func coordinateValue(value any, limit float64) (float64, bool) {
+	switch typed := value.(type) {
+	case float64:
+		if math.IsNaN(typed) || math.IsInf(typed, 0) || math.Abs(typed) > limit {
+			return 0, false
+		}
+		return typed, true
+	case json.Number:
+		parsed, err := typed.Float64()
+		if err != nil {
+			return 0, false
+		}
+		return coordinateValue(parsed, limit)
+	default:
+		return 0, false
+	}
+}
 
 // validateLocation checks the complete location selection recipe before activation.
 func validateLocation(definition *model.Definition) error {
@@ -189,7 +233,7 @@ func SelectionState(recipe model.SetupRecipe, choice model.Choice, previous map[
 	for key, value := range previous {
 		state[key] = value
 	}
-	if recipe.Type == "location_select" {
+	if recipe.Type == SetupLocationSelect {
 		latitude, longitude, err := LocationCoordinates(choice.ID)
 		if err != nil {
 			return nil, err

@@ -38,7 +38,7 @@ func TestBootstrapNativeFirstRun(t *testing.T) {
 	for n := 0; n < 2; n++ {
 		service := Bootstrap(context.Background())
 		catalog, err := service.Catalog()
-		if err != nil || !catalog.Available || len(catalog.Providers) != 4 {
+		if err != nil || !catalog.Available || len(catalog.Providers) != 8 {
 			t.Fatalf("native startup %d: %+v, %v", n, catalog, err)
 		}
 		if err := service.Close(context.Background()); err != nil {

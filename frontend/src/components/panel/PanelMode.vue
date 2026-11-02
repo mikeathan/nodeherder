@@ -7,11 +7,11 @@
   import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
   import { RouteName } from '@/types/router';
   import { Automations } from '@/types/automation.type';
-  import { useHomeLayout } from '@/composables/useHomeLayout';
-  import { homeDeviceGroup } from '@/domain/home-compatibility';
-  import { homePanelBlocks, homePanelItems } from '@/domain/home-panel';
-  import { homeCardTitle } from '@/domain/home-cards';
-  import IntegrationTile from '@/components/dashboards/IntegrationTile.vue';
+  import { useHomeLayout } from '@/composables/home/useHomeLayout';
+  import { homeDeviceGroup } from '@/domain/home/compatibility';
+  import { homePanelBlocks, homePanelItems } from '@/domain/home/panel';
+  import { homeCardTitle } from '@/domain/home/cards';
+  import IntegrationTile from '@/components/home/IntegrationTile.vue';
   import { findDevice, useHub } from '@/composables/useHub';
   import { useAutomationsLoader } from '@/composables/useAutomations';
   import { useThemeSettings } from '@/composables/useThemeSettings';

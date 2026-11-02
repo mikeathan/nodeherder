@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import WasteBinIcon from '@/components/integrations/WasteBinIcon.vue';
+  import WasteBinIcon from '@/components/integrations/waste/WasteBinIcon.vue';
   import UiIcon from '@/components/ui/UiIcon.vue';
   defineProps<{ kind: string; colour: string | null }>();
 </script>

@@ -14,6 +14,13 @@ func authenticateRequest(request *http.Request, attempt Attempt, forwardCredenti
 	if !forwardCredentials || attempt.Definition.Auth.Mode == "none" {
 		return nil
 	}
+	if attempt.Definition.Auth.Mode == "oauth2_client_credentials" {
+		if !validCredentialValue(attempt.Token) {
+			return model.Fail("credential_required", "The OAuth token is unavailable. Save the client credentials and retry.")
+		}
+		request.Header.Set("Authorization", "Bearer "+attempt.Token)
+		return nil
+	}
 	credential := attempt.Credential
 	if credential == nil {
 		if attempt.Definition.Auth.Mode != "optional_bearer" {

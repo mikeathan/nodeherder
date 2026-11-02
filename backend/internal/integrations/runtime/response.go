@@ -40,7 +40,7 @@ func (s *Service) publishResponse(tx *repository.IntegrationTx, op *model.Operat
 		return s.failOperation(tx, op, owner, failure(runErr))
 	}
 	if response.Status < 200 || response.Status >= 300 && response.Status != 304 {
-		if op.Kind == "refresh" && !op.Renewed && canRenew(c.Definition, response) {
+		if op.Kind == model.OperationKindRefresh && !op.Renewed && canRenew(c.Definition, response) {
 			if e = s.renewOperation(tx, op, owner, c); e != nil {
 				return s.failOperation(tx, op, owner, failure(e))
 			}
@@ -62,7 +62,7 @@ func (s *Service) publishResponse(tx *repository.IntegrationTx, op *model.Operat
 // publishSuccessfulResponse applies validated successful replies and optional renewal.
 func (s *Service) publishSuccessfulResponse(tx *repository.IntegrationTx, op *model.Operation, ownerRef *operationOwner, c *definitions.Compiled, response operations.Response, result *operationPublication) error {
 	owner := *ownerRef
-	if op.Kind == "search" {
+	if op.Kind == model.OperationKindSearch {
 		return s.finishSearch(tx, op, owner, c, response)
 	}
 	if response.Status == 304 {
@@ -76,7 +76,7 @@ func (s *Service) publishSuccessfulResponse(tx *repository.IntegrationTx, op *mo
 
 	r, e := s.normalizeOperationResult(tx, *op, owner, c, response)
 	if e != nil {
-		if s.renewAfter(c.Definition.Capability, e) && op.Kind == "refresh" && !op.Renewed && owner.instance.Snapshot != nil && c.Definition.Refresh.RenewalRequest != "" {
+		if s.renewAfter(c.Definition.Capability, e) && op.Kind == model.OperationKindRefresh && !op.Renewed && owner.instance.Snapshot != nil && c.Definition.Refresh.RenewalRequest != "" {
 			if renewalErr := s.renewOperation(tx, op, owner, c); renewalErr == nil {
 				result.next = true
 				return nil
@@ -106,7 +106,7 @@ func (s *Service) publishSuccessfulResponse(tx *repository.IntegrationTx, op *mo
 	if e = s.finishSnapshot(tx, op, owner, c, r, state, response.ETag); e != nil {
 		return e
 	}
-	if op.Kind == "refresh" && !op.Renewed && r.Renew && c.Definition.Refresh.RenewalRequest != "" {
+	if op.Kind == model.OperationKindRefresh && !op.Renewed && r.Renew && c.Definition.Refresh.RenewalRequest != "" {
 		var i model.Instance
 		if _, e = tx.Get("instances", op.InstanceID, &i); e != nil {
 			return e

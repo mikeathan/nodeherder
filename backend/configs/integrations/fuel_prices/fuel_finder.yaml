@@ -1,0 +1,134 @@
+# UK Fuel Finder prices; OAuth client credentials belong in Setup, never in this file.
+---
+schema_version: nodeherder.integration/v1
+integration_type: fuel_prices
+capability: fuel_prices/v1
+policy:
+  poll_min_seconds: 5
+  renewal_min_seconds: 86400
+  idempotency_window_seconds: 0
+  refresh_default_seconds: 3600
+  refresh_min_seconds: 900
+errors:
+  code: ''
+  rules: []
+inputs:
+  location:
+    type: text
+    label: Town or postcode
+    required: true
+  coordinates:
+    type: select
+    label: Choose location
+    required: true
+refresh:
+  request: prices
+id: fuel_finder
+name: UK Fuel Finder
+base_url: https://www.fuel-finder.service.gov.uk
+auth:
+  mode: oauth2_client_credentials
+  token_url: https://www.fuel-finder.service.gov.uk/api/v1/oauth/generate_access_token
+  client_id_slot: client_id
+  client_secret_slot: client_secret
+  scope: fuelfinder.read
+  token_style: form_body
+requests:
+  search:
+    method: GET
+    path:
+    - v1
+    - search
+    query:
+      name:
+        ref: input.location
+      count: 10
+      language: en
+  postcode_search:
+    method: GET
+    path:
+    - postcodes
+    query:
+      query:
+        ref: input.location
+      limit: 10
+  prices:
+    method: GET
+    path:
+    - api
+    - v1
+    - pfs
+    - fuel-prices
+    combine: stations
+    pagination:
+      page_query: batch-number
+      start: 1
+      max_pages: 40
+      page_size: 500
+      delay_ms: 2100
+  stations:
+    method: GET
+    path:
+    - api
+    - v1
+    - pfs
+    pagination:
+      page_query: batch-number
+      start: 1
+      max_pages: 40
+      page_size: 500
+      delay_ms: 2100
+setup:
+  type: location_select
+  search:
+    input: location
+    request: search
+    options:
+      items: "/results"
+      value: "/name"
+      label: "/name"
+      context: ["/admin2", "/admin1", "/country"]
+      latitude: "/latitude"
+      longitude: "/longitude"
+    base_url: https://geocoding-api.open-meteo.com
+    postcode:
+      base_url: https://api.postcodes.io
+      request: postcode_search
+      options:
+        items: "/result"
+        label: "/postcode"
+        context: ["/admin_district", "/country"]
+        latitude: "/latitude"
+        longitude: "/longitude"
+  select:
+    input: coordinates
+    request: prices
+  status:
+    request: ''
+    pointer: ''
+    pending: []
+    done: []
+    failed: []
+mapping:
+  attribution: "Fuel prices: UK Fuel Finder (Department for Energy Security and Net Zero)."
+  currency: GBP
+  radius_metres: 50000
+  stations:
+    items: "/additional"
+    fields:
+      station_id: "/node_id"
+      name: "/trading_name"
+      brand: "/brand_name"
+      address: "/location/address_line_1"
+      postcode: "/location/postcode"
+      latitude: "/location/latitude"
+      longitude: "/location/longitude"
+  prices:
+    items: "/primary"
+    station_id: "/node_id"
+    prices: "/fuel_prices"
+    format: rfc3339
+    fields:
+      grade: "/fuel_type"
+      pence_per_litre: "/price"
+      updated_at: "/price_last_updated"

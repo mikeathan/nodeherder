@@ -160,6 +160,7 @@ func (s *Service) Close(ctx context.Context) error {
 		if client, ok := s.http.(interface{ CloseIdleConnections() }); ok {
 			client.CloseIdleConnections()
 		}
+		operations.ClearOAuthTokenCache()
 		go func() { s.wg.Wait(); close(s.closeDone) }()
 	}
 	done := s.closeDone
@@ -194,6 +195,29 @@ func (s *Service) Catalog() (CatalogDTO, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	err := s.repo.View(func(tx *repository.IntegrationTx) error {
+		counts := map[string]int{}
+		worst := map[string]string{}
+		if e := tx.Each("instances", func(_ string, b []byte) error {
+			var instance model.Instance
+			if e := repository.DecodeIntegrationRecord(b, &instance); e != nil {
+				return e
+			}
+			typeID := strings.Split(instance.DefinitionKey, "/")[0]
+			if typeID == "" {
+				return nil
+			}
+			counts[typeID]++
+			worst[typeID] = catalogWorstStatus(worst[typeID], catalogInstanceStatus(instance))
+			return nil
+		}); e != nil {
+			return e
+		}
+		for index := range result.Types {
+			if counts[result.Types[index].ID] > 0 {
+				result.Types[index].ConfiguredCount = counts[result.Types[index].ID]
+				result.Types[index].WorstStatus = worst[result.Types[index].ID]
+			}
+		}
 		return tx.Each("definitions", func(_ string, b []byte) error {
 			var r model.DefinitionRecord
 			if e := repository.DecodeIntegrationRecord(b, &r); e != nil {
@@ -201,10 +225,11 @@ func (s *Service) Catalog() (CatalogDTO, error) {
 			}
 			c, e := s.compiler.CompileYAML(r.YAML)
 			if e != nil {
+				typeID, providerID, _ := strings.Cut(r.Key, "/")
 				result.Providers = append(result.Providers, ProviderDTO{
 					Key:             r.Key,
-					ID:              strings.Split(r.Key, "/")[1],
-					IntegrationType: strings.Split(r.Key, "/")[0],
+					ID:              providerID,
+					IntegrationType: typeID,
 					Name:            r.Key,
 					Available:       false,
 					DiskError:       r.DiskError,
@@ -213,13 +238,16 @@ func (s *Service) Catalog() (CatalogDTO, error) {
 			}
 			d := c.Definition
 			result.Providers = append(result.Providers, ProviderDTO{
-				Key:             r.Key,
-				ID:              d.ID,
-				Name:            d.Name,
-				IntegrationType: d.IntegrationType,
-				Origin:          c.Origin,
-				Available:       r.DiskError == "",
-				DiskError:       r.DiskError,
+				Key:                   r.Key,
+				ID:                    d.ID,
+				Name:                  d.Name,
+				IntegrationType:       d.IntegrationType,
+				Origin:                c.Origin,
+				Available:             r.DiskError == "",
+				DiskError:             r.DiskError,
+				RequiresCredential:    d.Auth.RequiresCredential(),
+				RefreshDefaultSeconds: d.Policy.RefreshDefaultSeconds,
+				RefreshMinSeconds:     d.Policy.RefreshMinSeconds,
 			})
 			return nil
 		})
@@ -339,7 +367,7 @@ func (s *Service) setupDTO(p model.Setup) SetupDTO {
 	postcode := ""
 	configured := false
 	if c, e := s.compiler.CompileYAML(p.DefinitionYAML); e == nil {
-		configured = credential(c.Definition, p.Credentials) != nil
+		configured = credentialsConfigured(c.Definition, p.Credentials)
 		postcode = p.Inputs[c.Definition.Setup.Search.Input]
 	}
 	if p.Preview != nil {
@@ -352,6 +380,11 @@ func (s *Service) setupDTO(p model.Setup) SetupDTO {
 			p.Preview = &projected
 		}
 	}
+	slots := make([]string, 0, len(p.Credentials))
+	for slot := range p.Credentials {
+		slots = append(slots, slot)
+	}
+	sort.Strings(slots)
 
 	return SetupDTO{
 		ID:                   p.ID,
@@ -365,6 +398,7 @@ func (s *Service) setupDTO(p model.Setup) SetupDTO {
 		OperationID:          p.OperationID,
 		ExpiresAt:            p.ExpiresAt,
 		CredentialConfigured: configured,
+		CredentialSlots:      slots,
 		Error:                p.LastError,
 		Preview:              p.Preview,
 	}

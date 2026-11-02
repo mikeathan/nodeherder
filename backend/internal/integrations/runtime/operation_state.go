@@ -80,7 +80,7 @@ func (s *Service) failOperation(tx *repository.IntegrationTx, o *model.Operation
 			o.RetryAt = *f.RetryAt
 		}
 	}
-	if o.Kind == "search" || owner.candidate || owner.test {
+	if o.Kind == model.OperationKindSearch || owner.candidate || owner.test {
 		p := owner.setup
 		p.LastError = f
 		p.Status = "error"

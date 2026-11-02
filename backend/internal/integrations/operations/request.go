@@ -21,6 +21,9 @@ import (
 // MaxResponseBytes bounds the decoded provider body, including decompressed responses.
 const MaxResponseBytes = 2 << 20
 
+// MaxPaginationItems bounds cumulative decoded rows across one paginated operation.
+const MaxPaginationItems = 20000
+
 // Doer permits isolated HTTP fixtures; production uses the policy-bound client.
 type Doer interface {
 	Do(*http.Request) (*http.Response, error)
@@ -36,6 +39,11 @@ type Attempt struct {
 	Inputs               map[string]string
 	State                map[string]any
 	Credential           *model.Credential
+	Credentials          map[string]model.Credential
+	Token                string
+	DiscoveredURL        *url.URL
+	Page                 int
+	SkipAuthentication   bool
 	ApprovedOrigin       string
 	Body                 []byte
 	IdempotencyKey, ETag string
@@ -53,6 +61,32 @@ type Response struct {
 
 // resolve reads a declared literal or a saved input/state reference without evaluating templates.
 func resolve(v model.Value, inputs map[string]string, state map[string]any) (any, error) {
+	if v.Join != nil {
+		separator := v.Join.Separator
+		if separator == "" {
+			separator = ","
+		}
+		if len(v.Join.Refs) == 0 || len(v.Join.Refs) > 8 || len(separator) > 8 {
+			return nil, model.Fail("invalid_input", "A request value has an invalid join.")
+		}
+		parts := make([]string, 0, len(v.Join.Refs))
+		for _, ref := range v.Join.Refs {
+			value, err := resolve(model.Value{Ref: ref}, inputs, state)
+			if err != nil {
+				return nil, err
+			}
+			text, err := scalar(value)
+			if err != nil {
+				return nil, err
+			}
+			parts = append(parts, text)
+		}
+		joined := strings.Join(parts, separator)
+		if len(joined) > 2048 {
+			return nil, model.Fail("invalid_input", "A request value is too long.")
+		}
+		return joined, nil
+	}
 	if v.Ref == "" {
 		return v.Literal, nil
 	}
@@ -109,12 +143,20 @@ func Build(ctx context.Context, attempt Attempt) (*http.Request, []byte, error) 
 	if !ok {
 		return nil, nil, model.Fail("reconfigure_needed", "The configured request no longer exists.")
 	}
-	destination, forwardCredentials, err := requestDestination(attempt)
-	if err != nil {
-		return nil, nil, err
-	}
-	if err = configureRequestURL(destination, definition, attempt); err != nil {
-		return nil, nil, err
+	var destination *url.URL
+	var forwardCredentials bool
+	if attempt.DiscoveredURL != nil {
+		destination = attempt.DiscoveredURL
+		forwardCredentials = true
+	} else {
+		var err error
+		destination, forwardCredentials, err = requestDestination(attempt)
+		if err != nil {
+			return nil, nil, err
+		}
+		if err = configureRequestURL(destination, definition, attempt); err != nil {
+			return nil, nil, err
+		}
 	}
 	body, err := requestBody(definition, attempt)
 	if err != nil {
@@ -127,8 +169,10 @@ func Build(ctx context.Context, attempt Attempt) (*http.Request, []byte, error) 
 	if err = setRequestHeaders(request, definition, attempt); err != nil {
 		return nil, nil, err
 	}
-	if err = authenticateRequest(request, attempt, forwardCredentials); err != nil {
-		return nil, nil, err
+	if !attempt.SkipAuthentication {
+		if err = authenticateRequest(request, attempt, forwardCredentials); err != nil {
+			return nil, nil, err
+		}
 	}
 	return request, body, nil
 }
@@ -155,6 +199,9 @@ func configureRequestURL(destination *url.URL, definition model.Request, attempt
 			return err
 		}
 		query.Set(name, resolved)
+	}
+	if definition.Pagination != nil && attempt.Page > 0 {
+		query.Set(definition.Pagination.PageQuery, strconv.Itoa(attempt.Page))
 	}
 	destination.Path = path
 	destination.RawPath = escaped
@@ -195,11 +242,14 @@ func requestBody(definition model.Request, attempt Attempt) ([]byte, error) {
 	return body, nil
 }
 
-// setRequestHeaders applies content, idempotency and conditional request headers.
+// setRequestHeaders applies public fixed headers, content, idempotency and conditional headers.
 func setRequestHeaders(request *http.Request, definition model.Request, attempt Attempt) error {
 	request.Header.Set("Accept", "application/json")
 	if definition.Method == http.MethodPost {
 		request.Header.Set("Content-Type", "application/json")
+	}
+	for name, value := range definition.Headers {
+		request.Header.Set(name, value)
 	}
 	if definition.Idempotency {
 		if attempt.IdempotencyKey == "" {
@@ -219,15 +269,80 @@ func Execute(ctx context.Context, client Doer, attempt Attempt, now time.Time) (
 	if err := ValidateCombination(attempt.Definition, attempt.RequestID); err != nil {
 		return Response{}, err
 	}
-	primary, err := executeSingle(ctx, client, attempt, now)
+	prepared, err := prepareAttempt(ctx, client, attempt, now)
+	if err != nil {
+		return Response{}, err
+	}
+	request := prepared.Definition.Requests[prepared.RequestID]
+	if request.Discover != nil {
+		prepared, err = executeDiscovery(ctx, client, prepared, now)
+		if err != nil {
+			return Response{}, err
+		}
+	}
+	primary, err := executeRequest(ctx, client, prepared, now)
 	if err != nil {
 		return primary, err
 	}
-	request := attempt.Definition.Requests[attempt.RequestID]
 	if request.Combine == "" || !successful(primary) {
 		return primary, nil
 	}
-	return combineResponse(ctx, client, attempt, primary, now)
+	return combineResponse(ctx, client, prepared, primary, now)
+}
+
+// executeRequest collects bounded sequential pages before one normalization/publication step.
+func executeRequest(ctx context.Context, client Doer, attempt Attempt, now time.Time) (Response, error) {
+	config := attempt.Definition.Requests[attempt.RequestID].Pagination
+	if config == nil {
+		return executeWithRetry(ctx, client, attempt, now)
+	}
+	start := config.Start
+	if start < 1 {
+		start = 1
+	}
+	collected := []any{}
+	var last Response
+	for page := start; page < start+config.MaxPages; page++ {
+		if page > start && config.DelayMilliseconds > 0 {
+			timer := time.NewTimer(time.Duration(config.DelayMilliseconds) * time.Millisecond)
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+				return last, model.Fail("provider_unavailable", "The provider page collection timed out.")
+			case <-timer.C:
+			}
+		}
+		pageAttempt := attempt
+		pageAttempt.Page = page
+		response, err := executeWithRetry(ctx, client, pageAttempt, now)
+		if err != nil {
+			return response, err
+		}
+		last = response
+		if response.Status == http.StatusNotFound && len(collected) > 0 {
+			// Some providers signal the end of a page sequence with 404; the first page must still fail.
+			last.Status = http.StatusOK
+			break
+		}
+		if !successful(response) {
+			return response, nil
+		}
+		items, ok := response.Root.([]any)
+		if !ok {
+			return response, model.Fail("invalid_response", "A paginated provider response was not an array.")
+		}
+		if len(collected)+len(items) > MaxPaginationItems {
+			return response, model.Fail("invalid_response", "The paginated provider response exceeded its row limit.")
+		}
+		collected = append(collected, items...)
+		if len(items) == 0 {
+			break
+		}
+	}
+	last.Root = collected
+	last.Body = collected
+	last.ETag = ""
+	return last, nil
 }
 
 // executeSingle sends one request and retains status and headers separately from JSON.

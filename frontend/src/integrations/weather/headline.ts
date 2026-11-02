@@ -1,5 +1,5 @@
-import type { WeatherForecast, WeatherPoint } from '@/types/weather.type';
-import { weatherLabel } from '@/domain/weather';
+import type { WeatherForecast, WeatherPoint } from '@/types/integrations/weather';
+import { weatherLabel } from '@/domain/integrations/weather';
 import { calendarDateInZone, createZonedTimeFormatter, formatInstant } from '@/utils/date.utils';
 import { formatQuantity } from '@/utils/units';
 

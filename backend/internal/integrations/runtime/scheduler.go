@@ -123,7 +123,7 @@ func (s *Service) admitDue(id string, now time.Time) error {
 				return e
 			}
 			if ok && o.Status != "done" && o.Status != "failed" {
-				if o.Kind != "refresh" && o.Kind != "renewal" {
+				if o.Kind != model.OperationKindRefresh && o.Kind != model.OperationKindRenewal {
 					return nil
 				}
 				if o.Status == "queued" || o.Status == "running" || s.running[o.ID] != nil {

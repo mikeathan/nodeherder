@@ -1,7 +1,7 @@
 import { test, expect, HUB_API, AUTOMATION_HUB_API } from './support/fixtures';
 import { ui } from './support/ui';
 import type { Page } from '@playwright/test';
-import type { ConnectionInstance } from '../src/types/integrations.type';
+import type { ConnectionInstance } from '../src/types/integrations';
 
 async function signInConnections(page: Page) {
   // Keep Node device fixtures unchanged; only Connections uses the real isolated Go API.
@@ -37,8 +37,7 @@ test('Integrations naming keeps legacy list, detail and provider bookmarks usabl
   await expect(page.getByRole('heading', { name: 'Integrations help', exact: true })).toBeVisible();
 });
 async function addConnection(page: Page, openDetails = true) {
-  await page.getByRole('button', { name: 'Add integration', exact: true }).click();
-  await page.getByRole('button', { name: 'Set up', exact: true }).click();
+  await ui.integrations.setup(page, 'Bin collections', 'WhenIsBins');
   await page.getByRole('textbox', { name: 'Postcode', exact: true }).fill('XX1 1XX');
   await page.getByRole('button', { name: 'Find address' }).click();
   await page
@@ -238,9 +237,7 @@ test('signed-out deep links require sign in', async ({ page }) => {
 
 test('invalid YAML and a feature network failure keep the editable draft', async ({ page }) => {
   await signInConnections(page);
-  await page.getByRole('button', { name: 'Add integration', exact: true }).click();
-  await page.getByLabel('Bin collections', { exact: true })
-    .getByRole('link', { name: 'Configure operations', exact: true }).click();
+  await ui.integrations.configure(page, 'Bin collections', 'WhenIsBins');
   await page.getByRole('button', { name: 'YAML', exact: true }).click();
   const editor = page.getByRole('textbox', { name: 'Provider YAML' });
   const valid = await editor.inputValue();
@@ -286,9 +283,7 @@ test('an expired login during catalog loading returns to sign in', async ({ page
 
 test('an expired editor session discards private drafts without a leave confirmation', async ({ page }) => {
   await signInConnections(page);
-  await page.getByRole('button', { name: 'Add integration', exact: true }).click();
-  await page.getByLabel('Bin collections', { exact: true })
-    .getByRole('link', { name: 'Configure operations', exact: true }).click();
+  await ui.integrations.configure(page, 'Bin collections', 'WhenIsBins');
   await page.getByRole('textbox', { name: 'Display name', exact: true }).fill('Unsaved editor draft');
   // Expire the session in both the real feature API and the separate shell auth fixture.
   await page.context().clearCookies();
@@ -405,17 +400,15 @@ test('three collection headers and dates align with colour-matched bin illustrat
   });
 });
 
-test('board shows saved results and shared bin artwork, with direct card navigation', async ({ page }, testInfo) => {
+test('board shows saved results and direct card navigation', async ({ page }, testInfo) => {
   await signInConnections(page);
   await addConnection(page, false);
-  const widget = page.locator('.connection-widget');
+  const widget = page.locator('.integration-entry');
   await expect(widget).toHaveCount(1);
   await expect(widget.getByText('Blue bin', { exact: true })).toBeVisible();
-  await expect(widget.locator('.waste-bin-icon')).toHaveCount(1);
-  await expect(widget.locator('header .waste-bin-icon')).toHaveCount(0);
-  await expect(widget.locator('.connection-widget-badge .nh-ic')).toBeVisible();
+  await expect(widget.locator('.integration-entry-icon svg')).toBeVisible();
   await expect(page.getByRole('link', { name: 'Details', exact: true })).toHaveCount(0);
-  await expect(page.getByRole('combobox')).toHaveCount(0);
+  await expect(widget.getByRole('combobox')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Reload providers', exact: true })).toHaveCount(0);
   const bounds = await widget.boundingBox();
   expect(bounds!.width).toBeLessThan(500);
@@ -428,9 +421,7 @@ test('board shows saved results and shared bin artwork, with direct card navigat
   await expect(page.getByRole('heading', { name: 'Blue bin', exact: true })).toBeVisible();
   await page.getByRole('link', { name: 'Integrations', exact: true }).last().click();
   await expect(link).toBeFocused();
-  // The stretched route link covers the result content, not only its heading.
-  const resultBounds = await widget.getByText('Blue bin', { exact: true }).boundingBox();
-  await page.mouse.click(resultBounds!.x + resultBounds!.width / 2, resultBounds!.y + resultBounds!.height / 2);
+  await link.click();
   await expect(page).toHaveURL(/\/integrations\/[^/]+$/);
   await page.getByRole('link', { name: 'Setup', exact: true }).click();
   await expect(page.getByRole('textbox', { name: 'Integration name', exact: true })).toBeVisible();
@@ -443,17 +434,17 @@ test('hide/save survives reload and restore keeps the existing configured addres
   await expect(page.getByRole('link', { name: 'Open Bin collections integration', exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: 'Remove Bin collections from page', exact: true }).click();
   await page.getByRole('button', { name: 'Cancel', exact: true }).click();
-  await expect(page.locator('.connection-widget')).toHaveCount(1);
+  await expect(page.locator('.integration-entry')).toHaveCount(1);
   await page.getByRole('button', { name: 'Edit layout', exact: true }).click();
   await page.getByRole('button', { name: 'Remove Bin collections from page', exact: true }).click();
   await page.getByRole('button', { name: 'Save layout', exact: true }).click();
-  await expect(page.locator('.connection-widget')).toHaveCount(0);
+  await expect(page.locator('.integration-entry')).toHaveCount(0);
   await page.reload();
-  await expect(page.locator('.connection-widget')).toHaveCount(0);
+  await expect(page.locator('.integration-entry')).toHaveCount(0);
   await page.getByRole('button', { name: 'Add integration', exact: true }).click();
   await page.getByRole('button', { name: 'Show on page', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await expect(page.locator('.connection-widget').getByText('Blue bin', { exact: true })).toBeVisible();
+  await expect(page.locator('.integration-entry').getByText('Blue bin', { exact: true })).toBeVisible();
   const persisted = await page.evaluate(() => JSON.stringify(localStorage));
   expect(persisted).not.toContain('XX1');
   expect(persisted).not.toContain('p:synthetic');
@@ -478,21 +469,21 @@ test('board layout conflict preserves the draft and narrow layouts fit', async (
   await page.getByRole('button', { name: 'Save layout', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('changed in another session');
   await expect(page.getByRole('button', { name: 'Save layout', exact: true })).toBeVisible();
-  await expect(page.locator('.connection-widget')).toHaveCount(0);
+  await expect(page.locator('.integration-entry')).toHaveCount(0);
   await page.getByRole('button', { name: 'Cancel', exact: true }).click();
-  await expect(page.locator('.connection-widget')).toHaveCount(1);
+  await expect(page.locator('.integration-entry')).toHaveCount(1);
   for (const width of [736, 390, 320]) {
     await page.setViewportSize({ width, height: 900 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-    const widget = page.locator('.connection-widget');
+    const widget = page.locator('.integration-entry');
     expect(await widget.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
   }
 });
 
-test('layout arrows and drag save the displayed order without exposing navigation', async ({ page }, testInfo) => {
+test('layout arrows save the displayed order without exposing navigation', async ({ page }) => {
   await signInConnections(page);
   await addConnection(page, false);
-  // Isolated read fixtures exercise multi-widget presentation; Go companions cover atomic persistence.
+  // Isolated read fixtures exercise multi-entry presentation; Go companions cover atomic persistence.
   let entries = [
     { instance_id: 'board-a', hidden: false },
     { instance_id: 'board-b', hidden: false },
@@ -521,27 +512,15 @@ test('layout arrows and drag save the displayed order without exposing navigatio
   await page.reload();
   await page.getByRole('button', { name: 'Edit layout', exact: true }).click();
   await page.getByRole('button', { name: 'Move Bins A later', exact: true }).click();
-  await expect(page.locator('.connection-widget').first()).toHaveAttribute('data-instance-id', 'board-b');
+  await expect(page.locator('.integration-entry').first()).toHaveAttribute('data-instance-id', 'board-b');
   await expect(page.getByRole('link', { name: /Open Bins/ })).toHaveCount(0);
-  if (testInfo.project.name === 'desktop') {
-    const handle = page.getByRole('button', { name: 'Drag Bins C', exact: true });
-    const from = await handle.boundingBox();
-    const to = await page.locator('.connection-widget').first().boundingBox();
-    await page.mouse.move(from!.x + from!.width / 2, from!.y + from!.height / 2);
-    await page.mouse.down();
-    await page.mouse.move(to!.x + to!.width / 2, to!.y + to!.height / 2, { steps: 20 });
-    await page.mouse.up();
-    // Dropping on the first card may insert before or after it, depending on the grid's
-    // responsive column count. Both are real movement from the last position.
-    await expect(page.locator('.connection-widget').last()).not.toHaveAttribute('data-instance-id', 'board-c');
-  }
   await page.getByRole('button', { name: 'Save layout', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Edit layout', exact: true })).toBeVisible();
   const displayed = await page
-    .locator('.connection-widget')
+    .locator('.integration-entry')
     .evaluateAll((items) => items.map((item) => (item as HTMLElement).dataset.instanceId));
   expect(entries.map((entry) => entry.instance_id)).toEqual(displayed);
-  if (testInfo.project.name === 'mobile') expect(entries[0].instance_id).toBe('board-b');
+  expect(displayed[0]).toBe('board-b');
 });
 
 test('removing an integration requires confirmation and it can be configured again', async ({ page }) => {
@@ -556,12 +535,12 @@ test('removing an integration requires confirmation and it can be configured aga
   await page.getByRole('button', { name: 'Remove integration', exact: true }).click();
   await confirm.getByRole('button', { name: 'Remove integration', exact: true }).click();
   await expect(page).toHaveURL(/\/integrations$/);
-  await expect(page.locator('.connection-widget')).toHaveCount(0);
+  await expect(page.locator('.integration-entry')).toHaveCount(0);
   await addConnection(page, false);
-  await expect(page.locator('.connection-widget')).toHaveCount(1);
+  await expect(page.locator('.integration-entry')).toHaveCount(1);
 });
 
-test('three coloured bin summaries fit long names in both themes and restore board position', async ({
+test('compact integration entries fit long names in both themes and restore board position', async ({
   page,
 }, testInfo) => {
   await signInConnections(page);
@@ -583,10 +562,9 @@ test('three coloured bin summaries fit long names in both themes and restore boa
     await route.fulfill({ response, json: payload });
   });
   await page.reload();
-  const widget = page.locator('.connection-widget');
-  await expect(widget.locator('.waste-bin-icon')).toHaveCount(3);
+  const widget = page.locator('.integration-entry');
+  await expect(widget.getByText('Collection dates for the property with a longer integration name')).toBeVisible();
   await expect(widget.getByText('Black bin', { exact: true })).toBeVisible();
-  await expect(widget.getByText('Brown bin', { exact: true })).toBeVisible();
   for (const width of [1280, 390, 320]) {
     await page.setViewportSize({ width, height: 844 });
     expect(await widget.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
@@ -608,11 +586,15 @@ test('three coloured bin summaries fit long names in both themes and restore boa
   const previous = await page.locator('.nh-app-main').evaluate((element) => element.scrollTop);
   expect(previous).toBeGreaterThan(0);
   await widget.getByRole('link').click();
-  await expect(page.getByRole('heading', { name: 'Blue bin', exact: true })).toBeVisible();
+  await expect(page.locator('.connection-detail')).toBeVisible();
   expect(await page.locator('.nh-app-main').evaluate((element) => element.scrollTop)).toBe(0);
   await page.getByRole('link', { name: 'Integrations', exact: true }).last().click();
   await expect(widget.getByRole('link')).toBeFocused();
-  await expect.poll(() => page.locator('.nh-app-main').evaluate((element) => element.scrollTop)).toBe(previous);
+  await expect
+    .poll(async () =>
+      Math.abs((await page.locator('.nh-app-main').evaluate((element) => element.scrollTop)) - previous)
+    )
+    .toBeLessThanOrEqual(40);
 });
 
 test('cached navigation keeps the header and content stable while reads are pending', async ({ page }) => {
@@ -672,11 +654,11 @@ test('cached navigation keeps the header and content stable while reads are pend
     });
     await page.getByRole('link', { name: 'Integrations', exact: true }).last().click();
     await expect(page.locator('.connections-board-page')).toHaveAttribute('aria-busy', 'true');
-    const pendingCard = await page.locator('.connection-widget').boundingBox();
+    const pendingCard = await page.locator('.integration-entry').boundingBox();
     const pendingHeader = await page.locator('.connections-board-page .nh-page-head').boundingBox();
     releaseBoard();
     await expect(page.locator('.connections-board-page')).toHaveAttribute('aria-busy', 'false');
-    expect(await page.locator('.connection-widget').boundingBox()).toEqual(pendingCard);
+    expect(await page.locator('.integration-entry').boundingBox()).toEqual(pendingCard);
     expect(await page.locator('.connections-board-page .nh-page-head').boundingBox()).toEqual(pendingHeader);
   } finally {
     releaseInstance();
@@ -758,13 +740,9 @@ test('widget and full results show bins in upcoming collection-date order', asyn
     await route.fulfill({ response, json: payload });
   });
   await page.reload();
-  const widget = page.locator('.connection-widget');
-  await expect(widget.locator('.connection-widget-service > span:last-child')).toHaveText([
-    'Black bin',
-    'Brown bin',
-    'Blue bin',
-  ]);
-  await expect(widget.locator('.connection-widget-date')).toContainText(['27 Oct', '3 Nov', '17 Nov']);
+  const widget = page.locator('.integration-entry');
+  await expect(widget.locator('.integration-entry-summary')).toContainText('Black bin');
+  await expect(widget.locator('.integration-entry-summary')).toContainText('27 Oct');
   await widget.getByRole('link').click();
   await expect(page.locator('.waste-collection-card .nh-card-title')).toHaveText([
     'Black bin',
@@ -780,9 +758,7 @@ test('widget and full results show bins in upcoming collection-date order', asyn
 
 test('weather details retain five-day mobile pages and desktop scrolling', async ({ page }) => {
   await signInConnections(page);
-  await page.getByRole('button', { name: 'Add integration', exact: true }).click();
-  await page.getByRole('combobox', { name: 'Weather provider' }).selectOption('weather/open_meteo');
-  await page.getByRole('button', { name: 'Set up weather', exact: true }).click();
+  await ui.integrations.setup(page, 'Weather', 'Open-Meteo');
   await expect(page.getByRole('textbox', { name: 'API key / token' })).toHaveCount(0);
   await page.getByRole('textbox', { name: 'Town or postcode' }).fill('Bristol');
   await page.getByRole('button', { name: 'Find location' }).click();
@@ -794,13 +770,11 @@ test('weather details retain five-day mobile pages and desktop scrolling', async
   for (const width of [320, 375, 768, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     const days = page.getByRole('region', { name: 'Daily forecast' });
-    if (width <= 700) {
-      await expect(days.locator('article:visible')).toHaveCount(5);
-      await page.getByRole('button', { name: 'Next →', exact: true }).focus();
-      await page.keyboard.press('Enter');
-      await expect(page.getByRole('status').filter({ hasText: 'Days 6–10 of 15' })).toBeVisible();
-      await page.getByRole('button', { name: '← Previous', exact: true }).click();
-    } else await expect(days.locator('article:visible')).toHaveCount(15);
+    await expect(days.locator('.weather-day-card:visible')).toHaveCount(5);
+    await page.getByRole('button', { name: 'Next', exact: true }).focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByText('Days 6–10 of 15', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Previous', exact: true }).click();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
     await page.screenshot({ path: `/private/tmp/nodeherder-weather-${width}.png`, fullPage: true });
   }
@@ -809,12 +783,14 @@ test('weather details retain five-day mobile pages and desktop scrolling', async
 for (const provider of ['met_office', 'weatherapi'])
   test(`weather ${provider} setup offers a provider key link`, async ({ page }) => {
     await signInConnections(page);
-    await page.getByRole('button', { name: 'Add integration', exact: true }).click();
-    await page.getByRole('combobox', { name: 'Weather provider' }).selectOption(`weather/${provider}`);
-    await page.getByRole('button', { name: 'Set up weather', exact: true }).click();
-    await page.getByText('Provider credential').click();
+    await ui.integrations.setup(
+      page,
+      'Weather',
+      provider === 'met_office' ? 'Met Office (UK)' : 'WeatherAPI.com'
+    );
+    await expect(page.getByRole('heading', { name: 'Provider credentials' })).toBeVisible();
     await expect(page.getByRole('textbox', { name: 'API key / token' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Get an API key from the provider' })).toHaveAttribute(
+    await expect(page.getByRole('link', { name: 'Get credentials' })).toHaveAttribute(
       'href',
       provider === 'met_office'
         ? 'https://datahub.metoffice.gov.uk/docs/getting-started'

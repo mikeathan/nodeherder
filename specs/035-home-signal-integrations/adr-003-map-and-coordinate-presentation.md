@@ -14,6 +14,10 @@ coordinates are sensitive: they can reveal occupancy and routines.
 A map is therefore a presentation feature with a privacy cost, not a data requirement. Every
 resource is usable as a list with coordinates and distances.
 
+Spec 038 added an indoor, canvas-based spatial view for device radar and room geometry. It carries
+no geography, basemap or tile provider and does not answer "where is this place"; it is neither
+reused nor modified by this decision.
+
 ## Options
 
 1. No map: show coordinates and distance in the list. Lowest cost, no dependency, no disclosure.

@@ -1,6 +1,6 @@
 import { ref } from 'vue';
 import { useConnectionDetail } from '@/composables/integrations/useConnectionDetail';
-import type { ConnectionInstance, ConnectionSchedule } from '@/types/integrations.type';
+import type { ConnectionInstance, ConnectionSchedule } from '@/types/integrations';
 
 let mockMounted: (() => Promise<void>) | undefined;
 let mockScope: any;

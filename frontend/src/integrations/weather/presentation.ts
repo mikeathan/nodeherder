@@ -1,13 +1,63 @@
 import { markRaw, defineAsyncComponent } from 'vue';
 const WeatherResults = defineAsyncComponent(() => import('./Results.vue'));
 const SourceIcon = defineAsyncComponent(() => import('./SourceIcon.vue'));
-import type { IntegrationPresenter, IntegrationResource, IntegrationSourcePresentation } from '../types';
-import type { WeatherForecast } from '@/types/weather.type';
-import type { ConnectionInstance, ProviderDefinition } from '@/types/integrations.type';
-import { weatherLabel } from '@/domain/weather';
+import type { IntegrationPresenter, IntegrationResource, IntegrationSourcePresentation, SourceIcon, SourceRow } from '../types';
+import type { IconName } from '@/components/ui/icons';
+import type { WeatherForecast } from '@/types/integrations/weather';
+import type { ConnectionInstance, ProviderDefinition } from '@/types/integrations';
+import { weatherHelp } from './help';
 import { formatQuantity } from '@/utils/units';
+import { serviceHomeURL } from '@/domain/integrations/service-links';
 import { weatherHeadline, weatherHeadlineValue } from './headline';
 import { calendarDateInZone, formatLocalDateTime } from '@/utils/date.utils';
+
+const MetricIcon = markRaw(defineAsyncComponent(() => import('@/components/ui/UiIcon.vue')));
+
+/** Build a capability-owned metric icon for the compact Home card. */
+function metricIcon(name: IconName): SourceIcon {
+  return { component: MetricIcon, props: { name } };
+}
+
+/** Compact card metrics: today's range, next-hour rain chance and daily maximum UV. */
+function metricRows(forecast: WeatherForecast): SourceRow[] {
+  const today = calendarDateInZone(forecast.evaluated_at, forecast.timezone);
+  const day = forecast.daily.find((value) => value.date === today);
+  const now = Date.parse(forecast.evaluated_at);
+  const upcoming = forecast.hourly.find(
+    (point) => Date.parse(point.time) > now && Date.parse(point.time) <= now + 3600000
+  );
+  const rows: SourceRow[] = [];
+  if (day?.high != null || day?.low != null) {
+    const temperatures: string[] = [];
+    if (day?.high != null) temperatures.push(`H ${formatQuantity(day.high, 'temperature', { short: true })}`);
+    if (day?.low != null) temperatures.push(`L ${formatQuantity(day.low, 'temperature', { short: true })}`);
+    rows.push({
+      id: 'range',
+      title: 'High / Low',
+      value: temperatures.join(' · '),
+      colour: null,
+      icon: metricIcon('weatherTemperature'),
+    });
+  }
+  if (forecast.freshness === 'fresh' && upcoming?.precipitation_probability != null)
+    rows.push({
+      id: 'rain',
+      title: 'Rain chance',
+      value: formatQuantity(upcoming.precipitation_probability, 'percent'),
+      colour: null,
+      icon: metricIcon('weatherRain'),
+    });
+  if (day?.uv_max != null)
+    rows.push({
+      id: 'uv',
+      title: 'UV max',
+      value: formatQuantity(day.uv_max, 'uv'),
+      colour: null,
+      icon: metricIcon('weatherSun'),
+    });
+  return rows;
+}
+
 function sources(instance: ConnectionInstance, resource: IntegrationResource): IntegrationSourcePresentation[] {
   if (resource.contract_version !== 'weather_forecast/v1') return [];
   const headline = weatherHeadline(resource);
@@ -21,15 +71,14 @@ function sources(instance: ConnectionInstance, resource: IntegrationResource): I
       reference: { kind: 'weather', instance_id: instance.id, resource_id: resource.resource_id },
       title: 'Weather',
       icon: { component: markRaw(SourceIcon), props: { condition: headline?.condition } },
-      detail: forecastSummary(resource),
       value: weatherHeadlineValue(headline),
-      origin: instance.name + ' · ' + resource.location,
+      origin: resource.location || instance.name,
       status,
       checked: formatLocalDateTime(resource.captured_at),
       colour: null,
       warning: !instance.enabled || !!instance.last_error || resource.freshness === 'stale' || !headline,
       error: !!instance.last_error,
-      rows: [],
+      rows: metricRows(resource),
     },
   ];
 }
@@ -38,6 +87,7 @@ export const weatherPresenter: IntegrationPresenter = {
   setup: weatherSetup,
   contractVersion: 'weather_forecast/v1',
   integrationType: 'weather',
+  help: weatherHelp,
   widget: weatherWidget,
   sourceKinds: { weather: { title: 'Weather', requiresService: false } },
   sources,
@@ -72,16 +122,26 @@ function weatherSetup(provider: ProviderDefinition) {
     met_office: 'https://datahub.metoffice.gov.uk/docs/getting-started',
     weatherapi: 'https://www.weatherapi.com/signup.aspx',
   };
-  const notices = ['Choose a location to send to the selected weather provider. Refreshes are manual.'];
-  if (provider.setup.search.base_url) notices.push(`Place search uses ${provider.setup.search.base_url}.`);
-  if (provider.setup.search.postcode) notices.push(`UK postcode search uses ${provider.setup.search.postcode.base_url}.`);
-  if (provider.id === 'met_office') notices.push('UK locations only.');
+  const notices = [
+    'Choose a location to send to the selected weather provider. Refreshes run manually or on the saved schedule.',
+  ];
+  const services = [];
+  if (provider.setup.search.base_url)
+    services.push({ label: 'Location search', url: serviceHomeURL(provider.setup.search.base_url) });
+  if (provider.setup.search.postcode)
+    services.push({ label: 'UK postcode search', url: serviceHomeURL(provider.setup.search.postcode.base_url) });
+  if (provider.id === 'met_office') notices.push('UK locations only. Save the DataHub API key before searching.');
   if (provider.id === 'open_meteo') notices.push('Free hosted access is for non-commercial use.');
   return {
     title: 'Set up weather',
     sectionTitle: 'Your location',
     defaultName: 'Weather',
-    searchLabel: 'Town or postcode',
+    searchLabel: provider.id === 'met_office' ? 'UK town or postcode' : 'Town or postcode',
+    searchPlaceholder: provider.id === 'met_office' ? 'For example Sheffield or S8 9ED' : 'For example Sheffield',
+    noResults:
+      provider.id === 'met_office'
+        ? 'No UK location was found. Met Office weather covers the United Kingdom; try a UK town or postcode.'
+        : 'No location was found. Try a different town or postcode.',
     searchButton: 'Find location',
     choiceLabel: 'Choose your location',
     choicePlaceholder: 'Select a location',
@@ -89,20 +149,7 @@ function weatherSetup(provider: ProviderDefinition) {
     autocomplete: 'off',
     notice: notices.join(' '),
     keyURL: keys[provider.id],
+    providerURL: serviceHomeURL(provider.base_url),
+    services,
   };
-}
-
-function forecastSummary(forecast: WeatherForecast): string {
-  const today = calendarDateInZone(forecast.evaluated_at, forecast.timezone);
-  const day = forecast.daily.find((value) => value.date === today);
-  const details: string[] = [];
-  if (day?.high != null) details.push(`H ${formatQuantity(day.high, 'temperature', { short: true })}`);
-  if (day?.low != null) details.push(`L ${formatQuantity(day.low, 'temperature', { short: true })}`);
-  const now = Date.parse(forecast.evaluated_at);
-  const upcoming = forecast.hourly.find(
-    (point) => Date.parse(point.time) > now && Date.parse(point.time) <= now + 3600000
-  );
-  if (upcoming?.precipitation_probability != null)
-    details.push(`Rain chance ${formatQuantity(upcoming.precipitation_probability, 'percent')}`);
-  return details.join(' · ');
 }

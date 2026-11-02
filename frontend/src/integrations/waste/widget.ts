@@ -1,5 +1,5 @@
 import { markRaw, defineAsyncComponent } from 'vue';
-import type { ConnectionInstance } from '@/types/integrations.type';
+import type { ConnectionInstance } from '@/types/integrations';
 import type {
   IntegrationWidget as ConnectionWidgetSummary,
   IntegrationWidgetRow as ConnectionWidgetRow,
@@ -9,8 +9,8 @@ import {
   wasteServiceDateLabel,
   type WasteSchedulePresentation,
   type WasteServiceCard,
-} from '@/domain/waste-schedule';
-import { compareCollectionDates } from '@/domain/waste-calendar';
+} from '@/domain/integrations/waste-schedule';
+import { compareCollectionDates } from '@/domain/integrations/waste-calendar';
 import { connectionStatus } from './status';
 const MAX_WIDGET_ROWS = 3;
 const Icon = markRaw(defineAsyncComponent(() => import('./SourceIcon.vue')));

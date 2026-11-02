@@ -296,6 +296,12 @@ func (browserProvider) Do(r *http.Request) (*http.Response, error) {
 					if key == "temperature_2m_min" {
 						v = 9
 					}
+					if kind == "daily" && key == "sunrise" {
+						v = float64(now.Add(6 * time.Hour).Unix())
+					}
+					if kind == "daily" && key == "sunset" {
+						v = float64(now.Add(18 * time.Hour).Unix())
+					}
 					values = append(values, v)
 				}
 				columns[key] = values

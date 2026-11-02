@@ -8,6 +8,9 @@ import (
 
 	defaults "node-herder/configs/integrations"
 	"node-herder/internal/integrations/capabilities"
+	"node-herder/internal/integrations/capabilities/airquality"
+	"node-herder/internal/integrations/capabilities/alerts"
+	"node-herder/internal/integrations/capabilities/fuel"
 	"node-herder/internal/integrations/capabilities/waste"
 	"node-herder/internal/integrations/capabilities/weather"
 	"node-herder/internal/integrations/definitions"
@@ -60,5 +63,5 @@ func CompileDocument(raw json.RawMessage) (*definitions.Compiled, error) {
 
 // shippedCapabilities is the single registration point used by runtime and standalone editors.
 func shippedCapabilities() (*capabilities.Registry, error) {
-	return capabilities.NewRegistry(waste.Adapter{}, weather.Adapter{})
+	return capabilities.NewRegistry(waste.Adapter{}, weather.Adapter{}, airquality.Adapter{}, alerts.Adapter{}, fuel.Adapter{})
 }

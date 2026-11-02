@@ -10,7 +10,10 @@ function fixture() {
         { instance_id: 'b', hidden: false },
       ],
     },
-    instances: [{ id: 'a' }, { id: 'b' }],
+    instances: [
+      { id: 'a', provider_key: 'weather/open_meteo' },
+      { id: 'b', provider_key: 'weather/open_meteo' },
+    ],
   });
   const saveBoard = jest.fn();
   const commit = jest.fn((_name, value) => {

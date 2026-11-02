@@ -6,16 +6,17 @@
  */
 import {
   mdiAccessPointNetwork, mdiAccountCircleOutline, mdiAirFilter, mdiAlarmLight, mdiAlertCircleOutline, mdiAlertOutline,
-  mdiArrowDown, mdiArrowLeft, mdiArrowUp, mdiBattery, mdiBatteryAlertVariantOutline, mdiBrightness6, mdiCalendarClock,
+  mdiArrowDown, mdiArrowLeft, mdiArrowUp, mdiBattery, mdiBatteryAlertVariantOutline, mdiBlur, mdiBrightness6, mdiCalendarClock,
   mdiCancel, mdiChartLine, mdiCheck, mdiChevronDown, mdiChevronLeft, mdiChevronRight, mdiChevronUp, mdiClockOutline,
-  mdiClose, mdiCodeJson, mdiCogOutline, mdiConsoleLine, mdiContentCopy, mdiCreationOutline, mdiCubeOutline, mdiDevices,
-  mdiDoorOpen, mdiDotsVertical, mdiDragVertical, mdiExportVariant, mdiFlashOutline, mdiFormatListBulleted, mdiGauge, mdiGestureTapButton,
+  mdiClose, mdiCodeJson, mdiCogOutline, mdiCompassOutline, mdiConsoleLine, mdiContentCopy, mdiCreationOutline, mdiCubeOutline, mdiDevices,
+  mdiDoorOpen, mdiDotsVertical, mdiDragVertical, mdiExportVariant, mdiEyeOutline, mdiFlashOutline, mdiFlower, mdiFormatListBulleted, mdiGasStation, mdiGauge, mdiGestureTapButton,
   mdiGoogle, mdiHelpCircleOutline, mdiHomeOutline, mdiImport, mdiInformationOutline, mdiLanDisconnect, mdiLeaf,
   mdiLinkVariant, mdiLightbulbOnOutline, mdiLightbulbOutline, mdiLightningBolt, mdiLockOutline, mdiLogout, mdiMagnify, mdiMenu, mdiMinus,
   mdiMotionSensor, mdiPaletteOutline, mdiPencilOutline, mdiPlay, mdiPlus, mdiPowerPlugOutline, mdiRadar, mdiRefresh,
   mdiPin, mdiPinOutline, mdiPower, mdiRemote, mdiRobotOutline, mdiShieldCheckOutline, mdiSignal, mdiSmokeDetectorVariant, mdiSync, mdiTabletDashboard,
   mdiThermometer, mdiTimerOutline, mdiTrashCanOutline, mdiTune, mdiViewDashboardOutline, mdiVolumeHigh, mdiWater,
-  mdiWaterPercent, mdiWeatherNight, mdiWhiteBalanceSunny, mdiWifi, mdiZigbee,
+  mdiWaterPercent, mdiWeatherNight, mdiWeatherRainy, mdiWeatherSnowy, mdiWeatherSunny, mdiWeatherSunsetDown,
+  mdiWeatherSunsetUp, mdiWeatherWindy, mdiWeatherWindyVariant, mdiWhiteBalanceSunny, mdiWifi, mdiZigbee,
 } from '@mdi/js';
 import { Device } from '@/types/device';
 import { ConnectionTypes } from '@/types/device.type';
@@ -89,6 +90,25 @@ export const ICONS = {
   signal: mdiSignal,
   gauge: mdiGauge,
   power: mdiPower,
+  // weather
+  weatherTemperature: mdiThermometer,
+  weatherRain: mdiWeatherRainy,
+  weatherPrecipitation: mdiWater,
+  weatherHumidity: mdiWaterPercent,
+  weatherWind: mdiWeatherWindy,
+  weatherGust: mdiWeatherWindyVariant,
+  weatherDirection: mdiCompassOutline,
+  weatherSun: mdiWeatherSunny,
+  weatherPressure: mdiGauge,
+  weatherVisibility: mdiEyeOutline,
+  weatherSunrise: mdiWeatherSunsetUp,
+  weatherSunset: mdiWeatherSunsetDown,
+  weatherSnow: mdiWeatherSnowy,
+  weatherNight: mdiWeatherNight,
+  weatherAir: mdiAirFilter,
+  weatherParticle: mdiBlur,
+  weatherPollen: mdiFlower,
+  fuel: mdiGasStation,
 } as const;
 
 export type IconName = keyof typeof ICONS;

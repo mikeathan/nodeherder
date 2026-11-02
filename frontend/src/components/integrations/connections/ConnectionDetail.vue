@@ -1,0 +1,115 @@
+<script setup lang="ts">
+  import { ref } from 'vue';
+  import IntegrationPageHeader from '../shared/IntegrationPageHeader.vue';
+  import { resourcePresenter } from '@/integrations/registry';
+  import ConnectionSettings from './ConnectionSettings.vue';
+  import UiButton from '@/components/ui/UiButton.vue';
+  import ConnectionFeedback from '../shared/ConnectionFeedback.vue';
+  import IntegrationSections from '../shared/IntegrationSections.vue';
+  import { useConnectionDetail } from '@/composables/integrations/useConnectionDetail';
+  import { formatLocalDateTime } from '@/utils/date.utils';
+  import '../connections.css';
+  const {
+    item,
+    tab,
+    name,
+    definition,
+    scheduleEnabled,
+    scheduleValue,
+    scheduleUnit,
+    sectionContext,
+    busy,
+    error,
+    refresh,
+    check,
+    rename,
+    toggleEnabled,
+    saveSchedule,
+    editAddress,
+    credential,
+    saveCredentials,
+    remove,
+    reloadPage,
+  } = useConnectionDetail();
+  const settings = ref<{ clearSavedCredentials(slots: string[]): void } | null>(null);
+  async function saveInstanceCredentials(items: { slot: string; value: string }[]) {
+    const saved = await saveCredentials(items);
+    if (saved.length) settings.value?.clearSavedCredentials(saved);
+  }
+</script>
+<template>
+  <div class="connections connection-stack connection-detail" :aria-busy="busy">
+    <IntegrationPageHeader :title="item?.name ?? 'Integration'" :subtitle="item?.postcode">
+      <template #actions>
+        <UiButton :disabled="busy || !item?.enabled" icon="refresh" @click="refresh">Refresh</UiButton>
+      </template>
+    </IntegrationPageHeader>
+    <IntegrationSections v-if="item" :active="tab" :context="sectionContext" />
+    <ConnectionFeedback :error="error ?? item?.last_error" :busy="busy" compact-busy />
+    <p v-if="busy && !item" class="connection-muted">Loading integration…</p>
+    <UiButton
+      v-if="
+        item &&
+        [
+          'no_collection_dates',
+          'lookup_failed',
+          'reconfigure_needed',
+          'operation_expired',
+          'restart_setup',
+          'reconciliation_required',
+        ].includes(error?.code ?? item.last_error?.code ?? '')
+      "
+      :disabled="busy"
+      @click="editAddress"
+      >Repeat address setup</UiButton
+    >
+    <template v-if="item">
+      <div v-if="!item.enabled" class="connection-notice" role="status">
+        This integration is disabled. Saved dates remain visible.
+      </div>
+      <div v-if="item.operation_id" class="connection-notice" role="status">
+        <p>
+          A lookup is in progress. This page checks for up to five minutes; Check status continues that lookup without
+          submitting a new one.
+        </p>
+        <UiButton :disabled="busy || !item.enabled" @click="check">Check status</UiButton>
+      </div>
+      <template v-if="tab === 'results'">
+        <component
+          v-for="resource in item.resources"
+          :key="`${resource.resource_id}:${resource.revision}`"
+          :is="resourcePresenter(resource)?.results"
+          :resource="resource" />
+        <p v-if="!item.resources.length" class="connection-muted">
+          No information has been saved yet. Use Refresh to retrieve it.
+        </p>
+      </template>
+      <ConnectionSettings
+        v-else
+        ref="settings"
+        v-model:name="name"
+        v-model:schedule-enabled="scheduleEnabled"
+        v-model:schedule-value="scheduleValue"
+        v-model:schedule-unit="scheduleUnit"
+        :item="item"
+        :definition="definition"
+        :busy="busy"
+        @rename="rename"
+        @toggle-enabled="toggleEnabled"
+        @edit-address="editAddress"
+        @credential="credential"
+        @credentials="saveInstanceCredentials"
+        @save-schedule="saveSchedule"
+        @remove="remove" />
+      <details v-if="item.runs.length">
+        <summary>Recent checks</summary>
+        <ol class="connection-list">
+          <li v-for="run in [...item.runs].reverse()" :key="run.operation_id">
+            {{ formatLocalDateTime(run.at) }} — {{ run.message }}
+          </li>
+        </ol>
+      </details>
+    </template>
+    <UiButton v-if="error" @click="reloadPage">Reload integration</UiButton>
+  </div>
+</template>

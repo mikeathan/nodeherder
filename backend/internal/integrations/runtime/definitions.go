@@ -182,7 +182,14 @@ func (s *Service) validateDefinition(key, source string, document json.RawMessag
 	if key != "" && definitions.DefinitionKey(c.Definition) != key {
 		return out, model.InvalidDefinition("id", "The type and provider ID must match the selected provider file.")
 	}
-	out = ValidationDTO{YAML: c.YAML, Document: c.Definition, Hash: c.Hash, Origin: c.Origin, Affected: []CredentialReview{}}
+	out = ValidationDTO{
+		YAML:             c.YAML,
+		Document:         c.Definition,
+		Hash:             c.Hash,
+		Origin:           c.Origin,
+		CredentialOrigin: credentialReviewOrigin(c.Definition),
+		Affected:         []CredentialReview{},
+	}
 	if s.repo == nil {
 		return out, nil
 	}
@@ -198,6 +205,7 @@ func (s *Service) validateDefinition(key, source string, document json.RawMessag
 				return e
 			}
 			out.PreviousOrigin = old.Origin
+			out.PreviousCredentialOrigin = credentialReviewOrigin(old.Definition)
 		}
 
 		return tx.Each("instances", func(_ string, b []byte) error {
@@ -208,23 +216,28 @@ func (s *Service) validateDefinition(key, source string, document json.RawMessag
 			if i.DefinitionKey != key {
 				return nil
 			}
-			changed := out.PreviousOrigin != "" && out.PreviousOrigin != out.Origin
 			activeCredential := credential(c.Definition, i.Credentials)
-			credentialMoved := activeCredential != nil && activeCredential.Origin != out.Origin
-			if !changed && i.Origin == out.Origin && !credentialMoved {
+			dataMoved := out.PreviousOrigin != "" && out.PreviousOrigin != out.Origin
+			credentialMoved := out.CredentialOrigin != "" && activeCredential != nil && activeCredential.Origin != out.CredentialOrigin
+			if !dataMoved && i.Origin == out.Origin && !credentialMoved {
 				return nil
 			}
 			if out.PreviousOrigin == out.Origin {
 				out.PreviousOrigin = i.Origin
-				if credentialMoved {
-					out.PreviousOrigin = activeCredential.Origin
-				}
+			}
+			if out.PreviousCredentialOrigin == out.CredentialOrigin && credentialMoved {
+				out.PreviousCredentialOrigin = activeCredential.Origin
 			}
 			rev := uint64(0)
-			if cred := credential(c.Definition, i.Credentials); cred != nil {
-				rev = cred.Revision
+			if activeCredential != nil {
+				rev = activeCredential.Revision
 			}
-			out.Affected = append(out.Affected, CredentialReview{CredentialSlot: c.Definition.Auth.SecretSlot, InstanceID: i.ID, Revision: i.Revision, CredentialRevision: rev})
+			out.Affected = append(out.Affected, CredentialReview{
+				CredentialSlot:     credentialSlot(c.Definition),
+				InstanceID:         i.ID,
+				Revision:           i.Revision,
+				CredentialRevision: rev,
+			})
 			return nil
 		})
 	})
@@ -325,20 +338,23 @@ func (s *Service) SaveDefinition(key, source, expected string, create bool, revi
 // reviewDestination requires consent outside the editable file. Configuration text is
 // descriptive and cannot grant itself permission to send saved inputs/credentials elsewhere.
 func reviewDestination(v ValidationDTO, r *DestinationReview) error {
-	if v.PreviousOrigin != "" && v.Origin != v.PreviousOrigin {
-		if r == nil || r.Origin != v.Origin {
-			return model.Fail("destination_review_required", "Review the new provider destination before saving.")
+	dataChanged := v.PreviousOrigin != "" && v.Origin != v.PreviousOrigin
+	credentialChanged := v.PreviousCredentialOrigin != "" && v.CredentialOrigin != v.PreviousCredentialOrigin
+	if !dataChanged && !credentialChanged {
+		return nil
+	}
+	if r == nil || dataChanged && r.Origin != v.Origin || credentialChanged && r.CredentialOrigin != v.CredentialOrigin {
+		return model.Fail("destination_review_required", "Review the new provider destination before saving.")
+	}
+	for _, given := range r.Reassociate {
+		found := false
+		for _, actual := range v.Affected {
+			if given == actual {
+				found = true
+			}
 		}
-		for _, given := range r.Reassociate {
-			found := false
-			for _, actual := range v.Affected {
-				if given == actual {
-					found = true
-				}
-			}
-			if !found {
-				return model.Fail("revision_conflict", "A integration changed after destination review. Validate again.")
-			}
+		if !found {
+			return model.Fail("revision_conflict", "An integration changed after destination review. Validate again.")
 		}
 	}
 	return nil
@@ -418,19 +434,21 @@ func (s *Service) rebindDefinitionInstance(tx *repository.IntegrationTx, instanc
 	instance.Generation++
 	instance.ETag = ""
 	instance.CacheScope = ""
+	slot := credentialSlot(compiled.Definition)
+	expectedCredentialOrigin := credentialOrigin(compiled.Definition, compiled.Origin, slot)
 	current := credential(compiled.Definition, instance.Credentials)
-	if instance.Origin != compiled.Origin || current != nil && current.Origin != compiled.Origin {
+	if instance.Origin != compiled.Origin || current != nil && current.Origin != expectedCredentialOrigin {
 		var revision uint64
 		if current != nil {
 			revision = current.Revision
 		}
-		if hasCredentialReview(review, instance.ID, oldRevision, revision, compiled.Definition.Auth.SecretSlot) {
+		if hasCredentialReview(review, instance.ID, oldRevision, revision, slot) {
 			instance.Origin = compiled.Origin
 			instance.LastError = nil
 			if current != nil {
-				current.Origin = compiled.Origin
+				current.Origin = expectedCredentialOrigin
 				current.Revision++
-				instance.Credentials[compiled.Definition.Auth.SecretSlot] = *current
+				instance.Credentials[slot] = *current
 			}
 		} else {
 			instance.LastError = destinationReviewFailure("The provider destination changed. Review and reconnect before sending saved inputs.")

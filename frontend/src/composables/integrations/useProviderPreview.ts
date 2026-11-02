@@ -1,7 +1,7 @@
 import { onBeforeUnmount, ref, shallowRef, type Ref } from 'vue';
 import { confirm } from '@/composables/useConfirm';
 import type { ConnectionScope } from '@/composables/useConnections';
-import type { ConnectionSetup, DefinitionValidation, DestinationReview, ProviderTestMode } from '@/types/integrations.type';
+import type { ConnectionSetup, DefinitionValidation, DestinationReview, ProviderTestMode } from '@/types/integrations';
 
 /** Owns ephemeral sample/preview data; tests cannot replace saved schedules or provider files. */
 export function useProviderPreview(

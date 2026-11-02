@@ -19,6 +19,55 @@ func TestWeatherForecastValidation(t *testing.T) {
 		{"implicit timezone", func(f *WeatherForecast) { f.Timezone = "Local" }},
 		{"duplicate hours", func(f *WeatherForecast) { f.Hourly = append(f.Hourly, f.Hourly[0]) }},
 		{"invalid probability", func(f *WeatherForecast) { v := 101.0; f.Hourly[0].PrecipitationProbability = &v }},
+		{"invalid uv", func(f *WeatherForecast) { v := 21.0; f.Hourly[0].UV = &v }},
+		{"negative daily uv", func(f *WeatherForecast) {
+			v := -1.0
+			f.Daily = []WeatherDay{{Date: "2026-10-28", Condition: "clear", UVMax: &v}}
+		}},
+		{"invalid sunrise", func(f *WeatherForecast) {
+			value := "7:05"
+			f.Daily = []WeatherDay{{Date: "2026-10-28", Condition: "clear", Sunrise: &value}}
+		}},
+		{"sunset before sunrise", func(f *WeatherForecast) {
+			sunrise, sunset := "19:00", "06:00"
+			f.Daily = []WeatherDay{{Date: "2026-10-28", Condition: "clear", Sunrise: &sunrise, Sunset: &sunset}}
+		}},
+		{"invalid feels like", func(f *WeatherForecast) {
+			v := 101.0
+			f.Daily = []WeatherDay{{Date: "2026-10-28", Condition: "clear", FeelsLikeHigh: &v}}
+		}},
+		{"invalid wind gust", func(f *WeatherForecast) {
+			v := 601.0
+			f.Daily = []WeatherDay{{Date: "2026-10-28", Condition: "clear", WindGust: &v}}
+		}},
+		{"invalid wind direction", func(f *WeatherForecast) {
+			v := 361.0
+			f.Daily = []WeatherDay{{Date: "2026-10-28", Condition: "clear", WindDirection: &v}}
+		}},
+		{"invalid humidity", func(f *WeatherForecast) {
+			v := 101.0
+			f.Daily = []WeatherDay{{Date: "2026-10-28", Condition: "clear", Humidity: &v}}
+		}},
+		{"invalid pressure", func(f *WeatherForecast) {
+			v := 1200.0
+			f.Daily = []WeatherDay{{Date: "2026-10-28", Condition: "clear", Pressure: &v}}
+		}},
+		{"invalid visibility", func(f *WeatherForecast) {
+			v := -1.0
+			f.Daily = []WeatherDay{{Date: "2026-10-28", Condition: "clear", Visibility: &v}}
+		}},
+		{"invalid snow probability", func(f *WeatherForecast) {
+			v := 101.0
+			f.Daily = []WeatherDay{{Date: "2026-10-28", Condition: "clear", SnowProbability: &v}}
+		}},
+		{"invalid rain probability", func(f *WeatherForecast) {
+			v := -1.0
+			f.Daily = []WeatherDay{{Date: "2026-10-28", Condition: "clear", RainProbability: &v}}
+		}},
+		{"invalid night condition", func(f *WeatherForecast) {
+			v := "stormy"
+			f.Daily = []WeatherDay{{Date: "2026-10-28", Condition: "clear", NightCondition: &v}}
+		}},
 		{"non finite", func(f *WeatherForecast) { v := math.NaN(); f.Hourly[0].Temperature = &v }},
 		{"invalid date", func(f *WeatherForecast) { f.Daily = []WeatherDay{{Date: "2026-02-30", Condition: "unknown"}} }},
 		{"inverted temperatures", func(f *WeatherForecast) {
@@ -38,6 +87,17 @@ func TestWeatherForecastValidation(t *testing.T) {
 				t.Fatal("invalid forecast accepted")
 			}
 		})
+	}
+	withSignals := fixture()
+	hourlyUV, dailyUV := 5.0, 6.0
+	sunrise, sunset := "07:00", "19:00"
+	withSignals.Hourly[0].UV = &hourlyUV
+	withSignals.Daily = []WeatherDay{{Date: "2026-10-28", Condition: "clear", Sunrise: &sunrise, Sunset: &sunset, UVMax: &dailyUV}}
+	if err := withSignals.Validate(); err != nil {
+		t.Fatal("valid daily signals rejected", err)
+	}
+	if projected := withSignals.Project(now.Add(time.Hour)); projected.Daily[0].UVMax == nil || *projected.Daily[0].UVMax != dailyUV {
+		t.Fatal("projection dropped daily signals")
 	}
 	f := fixture()
 	projected := f.Project(now.Add(time.Hour))

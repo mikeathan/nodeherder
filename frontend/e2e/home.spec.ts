@@ -11,7 +11,7 @@ import { ui } from './support/ui';
 import { MOCK } from './support/mock';
 import type { Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
-import type { ConnectionInstance } from '../src/types/integrations.type';
+import type { ConnectionInstance } from '../src/types/integrations';
 
 /** Seed only the isolated Go fixture; production persistence and source admission remain real. */
 async function mixedHomeFixture(page: Page) {
@@ -32,8 +32,7 @@ async function mixedHomeFixture(page: Page) {
   });
   expect(saved.status()).toBe(200);
   await page.reload();
-  await page.getByRole('button', { name: 'Add integration', exact: true }).click();
-  await page.getByRole('button', { name: 'Set up', exact: true }).click();
+  await ui.integrations.setup(page, 'Bin collections', 'WhenIsBins');
   await page.getByRole('textbox', { name: 'Postcode', exact: true }).fill('XX1 1XX');
   await page.getByRole('button', { name: 'Find address' }).click();
   await page

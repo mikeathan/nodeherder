@@ -1,4 +1,4 @@
-import type { ProviderEditorMode } from '@/types/integrations.type';
+import type { ProviderEditorMode } from '@/types/integrations';
 import { nextTick, onBeforeUnmount, ref, shallowRef, watch, type Ref } from 'vue';
 import { onBeforeRouteLeave } from 'vue-router';
 import { confirm } from '@/composables/useConfirm';
@@ -8,7 +8,7 @@ import type {
   DefinitionValidation,
   ProviderDefinition,
   ProviderDraft,
-} from '@/types/integrations.type';
+} from '@/types/integrations';
 import { revealConnectionField } from '@/components/integrations/field-focus';
 import { RouteName } from '@/types/router';
 import { cloneDefinitionValue } from './useEditableModel';

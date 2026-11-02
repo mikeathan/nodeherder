@@ -5,8 +5,8 @@ import { confirm } from '@/composables/useConfirm';
 import { RouteName } from '@/types/router';
 import { ConnectionError } from '@/services/integrations.service';
 import { matchesScheduleEditor, sameScheduleConfig, scheduleEditor, toIntervalSeconds, type ScheduleUnit } from '@/domain/schedule';
-import type { ConnectionInstance, ProviderDefinition } from '@/types/integrations.type';
-import { integrationDetailSection, type IntegrationNavigationContext } from '@/domain/integration-navigation';
+import type { ConnectionInstance, ProviderDefinition } from '@/types/integrations';
+import { integrationDetailSection, type IntegrationNavigationContext } from '@/domain/integrations/navigation';
 
 /** Owns this page's application actions; the route component only presents its state. */
 export function useConnectionDetail() {
@@ -25,7 +25,6 @@ export function useConnectionDetail() {
   const tab = computed(() => integrationDetailSection(route.hash));
   const initialName = item.value?.name ?? '';
   const name = ref(initialName);
-  const token = ref('');
   const initialSchedule = item.value?.schedule ?? null;
   const initialEditor = scheduleEditor(initialSchedule);
   const scheduleEnabled = ref(initialEditor.enabled);
@@ -125,7 +124,6 @@ export function useConnectionDetail() {
     if (projection) clearInterval(projection);
     projection = undefined;
     window.removeEventListener('focus', onFocus);
-    token.value = '';
   }
   signal.addEventListener('abort', stopProjection, { once: true });
   onBeforeUnmount(stopProjection);
@@ -141,11 +139,21 @@ export function useConnectionDetail() {
     await checkOperation(item.value?.operation_id, reloadInstance);
   }
   /** Save name/enabled state with revision fencing, then reload the accepted resource view. */
-  async function update(enabled: boolean) {
+  async function update(enabled: boolean, nextName = name.value) {
     const current = item.value;
     if (!current) return;
-    const result = await perform(() => api.update(current.id, current.etag, name.value || current.name, enabled));
+    const result = await perform(() => api.update(current.id, current.etag, nextName || current.name, enabled));
     if (result) await perform(() => reloadInstance());
+  }
+  /** Save only the edited name, leaving an unsaved enable/disable choice untouched. */
+  function rename() {
+    const current = item.value;
+    if (current) void update(current.enabled, name.value);
+  }
+  /** Toggle enabled state without committing an unsaved name edit. */
+  function toggleEnabled() {
+    const current = item.value;
+    if (current) void update(!current.enabled, current.name);
   }
   /** Save the automatic-refresh choice; the server validates it and starts no provider request. */
   async function saveSchedule() {
@@ -169,7 +177,25 @@ export function useConnectionDetail() {
     const p = await perform(() => api.createSetup(current.provider_key, { id: current.id, etag: current.etag }));
     if (p) await router.push({ name: RouteName.IntegrationSetup, params: { id: p.id } });
   }
-  /** Save/remove a named token slot, clearing plaintext after the request and reloading redacted state. */
+  /** Save every filled credential slot with one action, advancing the ETag between writes.
+   * Returns the slots confirmed by the server; a failure keeps both the error and unsaved inputs.
+   */
+  async function saveCredentials(items: { slot: string; value: string }[]): Promise<string[]> {
+    let current = item.value;
+    if (!current) return [];
+    const saved: string[] = [];
+    for (const entry of items) {
+      const result = await perform(() =>
+        api.credential('instances', current!.id, entry.slot, current!.etag, entry.value)
+      );
+      if (!result || !('resources' in result)) break;
+      current = result;
+      saved.push(entry.slot);
+    }
+    if (saved.length === items.length) await perform(() => reloadInstance());
+    return saved;
+  }
+  /** Save/remove one declared credential slot and reload the redacted instance state. */
   async function credential(remove = false, savedSlot?: string) {
     const current = item.value;
     if (!current) return;
@@ -178,18 +204,17 @@ export function useConnectionDetail() {
     if (
       remove &&
       !(await confirm({
-        title: 'Remove provider token?',
+        title: 'Remove provider credential?',
         message:
           'Future requests will use anonymous access if the provider allows it. Saved integration results remain available.',
-        confirmLabel: 'Remove token',
+        confirmLabel: 'Remove credential',
         danger: true,
       }))
     )
       return;
     const result = await perform(() =>
-      api.credential('instances', current.id, slot, current.etag, token.value, remove)
+      api.credential('instances', current.id, slot, current.etag, '', remove)
     );
-    token.value = '';
     if (result) await perform(() => reloadInstance());
   }
   /** Confirm destructive deletion, clear the current private DTO and return to the board. */
@@ -216,7 +241,6 @@ export function useConnectionDetail() {
     item,
     tab,
     name,
-    token,
     definition,
     scheduleEnabled,
     scheduleValue,
@@ -227,9 +251,12 @@ export function useConnectionDetail() {
     refresh,
     check,
     update,
+    rename,
+    toggleEnabled,
     saveSchedule,
     editAddress,
     credential,
+    saveCredentials,
     remove,
     reloadPage,
   };

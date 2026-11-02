@@ -22,7 +22,7 @@ type operationOwner struct {
 // owner verifies the current setup or instance still owns the operation generation.
 func (s *Service) owner(tx *repository.IntegrationTx, o model.Operation) (operationOwner, error) {
 	var owner operationOwner
-	if o.Kind == "search" {
+	if o.Kind == model.OperationKindSearch {
 		p, e := s.getSetup(tx, o.SetupID)
 		if e != nil {
 			return owner, e

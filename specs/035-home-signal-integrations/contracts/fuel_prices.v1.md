@@ -104,6 +104,6 @@ across refreshes even if its price changes.
 }
 ```
 
-Note: v1 stores integer pence. A provider value of `142.9` is rejected rather than rounded, because
-rounding would invent precision the contract does not model. If tenths become necessary, a new
-contract version carries them explicitly.
+Note: v1 stores integer pence. Fuel Finder reports prices with one decimal place (for example
+`142.9`); the adapter rounds provider tenths to the nearest penny before storage because v1 has no
+tenths field. A new contract version is required if exact tenths must be displayed.

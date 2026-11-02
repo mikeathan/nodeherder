@@ -117,4 +117,6 @@ the public docs are partly stale:
 - New origins must be disclosed during setup: Open-Meteo geocoding, Postcodes.io, the air-quality
   host, the Met Office feed/snapshot host, the NWS host and the Fuel Finder token/API hosts.
 - No provider requires an inbound webhook, so the pull-only model still holds.
-- Manual refresh remains the update model; none of these providers is polled on a timer.
+- Automatic refresh (spec 037) is available; these providers are polled only when their instance
+  declares a schedule. Manual refresh remains available, and the proposed cadences need
+  confirmation against provider quotas.

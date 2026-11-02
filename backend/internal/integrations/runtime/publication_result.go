@@ -56,7 +56,7 @@ func (s *Service) finishSnapshot(tx *repository.IntegrationTx, o *model.Operatio
 	i.LastError = nil
 	i.OperationID = ""
 	s.finishInstanceSuccess(&i)
-	if o.Kind == "refresh" {
+	if o.Kind == model.OperationKindRefresh {
 		i.ETag = etag
 		i.CacheScope = o.CacheScope
 	} else {

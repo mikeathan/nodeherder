@@ -21,7 +21,7 @@ test.describe('sign in', () => {
         });
         observer.observe(document, { childList: true, subtree: true });
       });
-      await page.route('**/src/components/dashboards/GroupDashboard.vue', async (route) => {
+      await page.route('**/src/components/home/GroupDashboard.vue', async (route) => {
         destinationRequested = true;
         await gate;
         await route.continue();

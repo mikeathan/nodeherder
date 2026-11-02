@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue';
 import type { ConnectionScope } from '@/composables/useConnections';
-import type { ConnectionBoardEntry } from '@/types/integrations.type';
-import { moveBoardEntry, reconcileBoard } from '@/domain/connection-board';
+import type { ConnectionBoardEntry } from '@/types/integrations';
+import { moveBoardEntry, reconcileBoard } from '@/domain/integrations/connection-board';
 
 /** Owns only a layout draft. Failed/conflicting saves never erase unsaved placements. */
 export function useConnectionBoardLayout(scope: ConnectionScope) {
@@ -33,14 +33,11 @@ export function useConnectionBoardLayout(scope: ConnectionScope) {
   function hide(id: string) {
     draft.value = draft.value.map((entry) => (entry.instance_id === id ? { ...entry, hidden: true } : entry));
   }
-  /** Move among visible draft entries while retaining hidden membership. */
+  /** Move within the visible group of the same integration type, retaining hidden membership. */
   function move(id: string, offset: number) {
-    draft.value = moveBoardEntry(draft.value, id, offset);
-  }
-  /** Merge drag-provided visible order into the full draft, retaining hidden entries. */
-  function reorder(items: ConnectionBoardEntry[]) {
-    let index = 0;
-    draft.value = draft.value.map((entry) => (entry.hidden ? entry : { ...items[index++] }));
+    const typeOf = (instanceId: string) =>
+      scope.state.value.instances.find((item) => item.id === instanceId)?.provider_key?.split('/')[0] ?? '';
+    draft.value = moveBoardEntry(draft.value, id, offset, typeOf);
   }
   /** Atomically save the captured-revision draft; conflicts/failures keep it available for retry. */
   async function save() {
@@ -60,5 +57,5 @@ export function useConnectionBoardLayout(scope: ConnectionScope) {
     if (result) scope.commit('board', result);
     return !!result;
   }
-  return { editing, entries, visible, hidden, begin, cancel, hide, move, reorder, save, restore };
+  return { editing, entries, visible, hidden, begin, cancel, hide, move, save, restore };
 }

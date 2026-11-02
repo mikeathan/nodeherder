@@ -1,8 +1,8 @@
 import type { ActionContext, Module } from 'vuex';
 import type { RootState } from '@/store/state';
-import type { HomeLayout } from '@/types/home.type';
-import { homeApi } from '@/services/home.service';
-import { homeDeviceGroups } from '@/domain/home-compatibility';
+import type { HomeLayout } from '@/types/home';
+import { homeApi } from '@/services/home';
+import { homeDeviceGroups } from '@/domain/home/compatibility';
 
 /** Accepted layout only; local drag/dialog state and source values belong to their own owners. */
 export interface HomeState {

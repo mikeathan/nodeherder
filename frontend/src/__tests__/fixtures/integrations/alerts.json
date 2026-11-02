@@ -1,0 +1,32 @@
+{
+  "contract_version": "weather_alerts/v1",
+  "instance_id": "alerts-example",
+  "resource_id": "alerts-resource",
+  "revision": 1,
+  "status": "active",
+  "warnings": [
+    {
+      "warning_id": "79bb1df2-8983-4bbd-888a-66da9c099a1c",
+      "severity": "severe",
+      "level": "amber",
+      "type": "Wind",
+      "headline": "Strong winds may cause disruption on Thursday",
+      "description": "A deep area of low pressure brings gusts of 60-70 mph.",
+      "instruction": "Secure loose objects and allow extra travel time.",
+      "areas": ["Yorkshire & Humber", "North East England"],
+      "valid_from": "2026-10-30T06:00:00Z",
+      "valid_to": "2026-10-30T18:00:00Z",
+      "issued_at": "2026-10-29T10:12:00Z",
+      "modified_at": "2026-10-29T10:12:00Z",
+      "polygon": {
+        "type": "MultiPolygon",
+        "coordinates": [[[[-1.2, 53.4], [-1.1, 53.5], [-1.0, 53.4], [-1.2, 53.4]]]]
+      }
+    }
+  ],
+  "attribution": "Warnings: Met Office National Severe Weather Warning Service.",
+  "captured_at": "2026-10-29T15:41:00Z",
+  "last_checked_at": "2026-10-29T15:41:00Z",
+  "evaluated_at": "2026-10-29T15:45:00Z",
+  "freshness": "fresh"
+}

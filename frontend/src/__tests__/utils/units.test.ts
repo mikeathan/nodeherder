@@ -17,6 +17,7 @@ test('other quantities use one owner for unit and precision', () => {
   expect(formatQuantity(1013, 'pressure')).toBe('1013 hPa');
   expect(formatQuantity(11, 'pollutant')).toBe('11 µg/m³');
   expect(formatQuantity(3.26, 'uv')).toBe('3.3');
+  expect(formatQuantity(210, 'direction')).toBe('210°');
 });
 
 test('distance converts metres to kilometres above 1000', () => {

@@ -34,12 +34,14 @@ Adopt option 4.
 
 - `AuthConfig` gains `mode: oauth2_client_credentials`, `token_url`, optional `scope` and two
   private slots (`client_id`, `client_secret`). No secret ever appears in YAML.
-- The token request is `POST` form-encoded (`grant_type=client_credentials`, optional `scope`) with
-  HTTP Basic credentials. `token_url` must be public HTTPS on 443 and is an independently declared,
-  reviewed destination, so it gets the same destination-review treatment as a provider origin.
-- The access token is cached in process memory keyed by definition revision plus token URL, with
-  expiry minus a safety margin. It is never persisted, logged, returned to the browser or written
-  to an error.
+- The token request is `POST` with `grant_type=client_credentials` and optional `scope`, using
+  HTTP Basic credentials (`basic_form`, the default), form fields (`form_body`) or a JSON body
+  (`json_body`); every style carries `grant_type`. `token_url` must be public HTTPS on 443 and is an
+  independently declared, reviewed destination, so it gets the same destination-review treatment
+  as a provider origin.
+- The access token is cached in process memory keyed by token URL, scope, client ID and a client
+  secret hash, with expiry minus a safety margin. It is never persisted, logged, returned to the
+  browser or written to an error, and the cache is cleared on service shutdown.
 - The token is sent only to the provider base origin. A 401/403 triggers at most one token refresh
   and retry; a second failure produces a `reconnect` failure and preserves last-good data.
 - `RequiresCredential` returns true, so setup requires both slots before search/refresh. Missing or
