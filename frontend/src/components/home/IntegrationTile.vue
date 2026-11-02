@@ -172,6 +172,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.55rem;
+    font-size: 1rem;
   }
   .nh-integration-rows li {
     display: flex;
@@ -250,10 +251,8 @@
   .is-panel .nh-integration-rows {
     gap: 0.75rem;
   }
-  .is-panel .nh-integration-row-title {
-    font-size: 0.9rem;
-  }
+  .is-panel .nh-integration-row-title,
   .is-panel .nh-integration-row-value {
-    font-size: 0.95rem;
+    font-size: 1rem;
   }
 </style>

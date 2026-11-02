@@ -6,6 +6,11 @@ import { Locator, Page } from '@playwright/test';
  * Current implementation: spec 007 Hearth + Panel UI.
  */
 
+/** Match the exact integration type heading, avoiding e.g. Weather inside "Severe weather alerts". */
+function catalogType(page: Page, type: string): Locator {
+  return page.locator('.catalog-type').filter({ has: page.getByText(type, { exact: true }) }).first();
+}
+
 /** Opens the navigation drawer on narrow screens; no-op when the sidebar is visible. */
 async function openNav(page: Page) {
   // AppShell is deferred: absence of its menu is not evidence of a desktop sidebar.
@@ -70,6 +75,28 @@ export const ui = {
   },
   login: {
     signInButton: (page: Page): Locator => page.getByRole('button', { name: /sign in with google/i }),
+  },
+  integrations: {
+    open: async (page: Page) => page.getByRole('button', { name: 'Add integration', exact: true }).click(),
+    selectType: async (page: Page, type: string) => catalogType(page, type).click(),
+    providerRow: (page: Page, provider?: string): Locator => {
+      const rows = page.locator('.catalog-provider-row');
+      return provider ? rows.filter({ hasText: provider }).first() : rows.first();
+    },
+    setup: async (page: Page, type: string, provider?: string) => {
+      await page.getByRole('button', { name: 'Add integration', exact: true }).click();
+      await catalogType(page, type).click();
+      await (provider ? page.locator('.catalog-provider-row').filter({ hasText: provider }).first() : page.locator('.catalog-provider-row').first())
+        .getByRole('button', { name: 'Set up', exact: true })
+        .click();
+    },
+    configure: async (page: Page, type: string, provider?: string) => {
+      await page.getByRole('button', { name: 'Add integration', exact: true }).click();
+      await catalogType(page, type).click();
+      await (provider ? page.locator('.catalog-provider-row').filter({ hasText: provider }).first() : page.locator('.catalog-provider-row').first())
+        .getByRole('link', { name: 'Configure operations', exact: true })
+        .click();
+    },
   },
   shell: {
     openNav,
