@@ -23,9 +23,16 @@ Spec: [spec.md](spec.md) | Plan: [plan.md](plan.md) | Status: implemented; check
   and group to stay.
 - [x] T005 — `npm test -- --runInBand`: 126 suites, 668 tests passed. `npm run lint`: 0 errors,
   28 pre-existing warnings. `npm run build` (includes `vue-tsc`): passed, built in 2.16 s.
-- [x] T006 — Affected browser suites: `EntityViewDialog` + `DeviceDashboard` desktop, 34 passed,
-  9 skipped; `automations` desktop, 4 passed; `devices` desktop, 9 passed. Full `home.spec.ts`
-  desktop, 10 passed. Final diff reviewed against the Vue rules; no unresolved findings.
+- [x] T006 — Affected browser suites: `home` desktop 10/10; `DeviceMetrics` desktop + mobile;
+  `EntityViewDialog` + `DeviceDashboard` desktop, 34 passed, 9 skipped; `automations` desktop,
+  4 passed; `devices` desktop, 9 passed. Final diff reviewed against the Vue rules; no
+  unresolved findings.
+- [x] T007 — PR CI first failed `DeviceMetrics` on a stale count: the grouped History selector
+  excludes the fixture's config `countdown` entity, so the test now expects 9 options and asserts
+  `countdown` is absent. The rest of that spec passed unchanged; rerun passed on desktop and
+  mobile. Lesson recorded: run the owning spec for each changed domain module before pushing
+  (`historyEntityOptions` is owned by `DeviceMetrics` and `EntityViewDialog`), not only the specs
+  reached from the changed component.
 
 ## Deferred
 
