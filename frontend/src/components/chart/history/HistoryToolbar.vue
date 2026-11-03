@@ -6,6 +6,16 @@
   import UiButton from '@/components/ui/UiButton.vue';
   import UiDialog from '@/components/ui/UiDialog.vue';
   const props = defineProps<{ options: HistoryEntityOption[]; selected: string; preset: string; mode: HistoryMode; statistics: boolean; loading: boolean; exportReason: string; zone: string; rangeLabel: string }>();
+  /** Options arrive ordered by group, so consecutive runs make the sections. */
+  const sections = computed(() => {
+    const result: { group: string; options: HistoryEntityOption[] }[] = [];
+    for (const option of props.options) {
+      const last = result[result.length - 1];
+      if (last?.group === option.group) last.options.push(option);
+      else result.push({ group: option.group, options: [option] });
+    }
+    return result;
+  });
   const selectedLabel = computed(() => props.options.find((option) => option.value === props.selected)?.label ?? props.selected);
   const emit = defineEmits<{ select: [name: string]; preset: [value: string]; mode: [value: HistoryMode]; refresh: []; export: [] }>();
   const optionsOpen = ref(false);
@@ -24,7 +34,9 @@
         <span class="history-field-label" aria-hidden="true">Entity</span>
         <select class="nh-select history-picker" aria-label="Entity" :value="selected"
           @change="$emit('select', ($event.target as HTMLSelectElement).value)">
-          <option v-for="option in options" :key="option.value" :value="option.value">{{ option.label }}</option>
+          <optgroup v-for="section in sections" :key="section.group" :label="section.group">
+            <option v-for="option in section.options" :key="option.value" :value="option.value">{{ option.label }}</option>
+          </optgroup>
         </select>
       </div>
       <div class="history-chips" role="group" aria-label="Period">

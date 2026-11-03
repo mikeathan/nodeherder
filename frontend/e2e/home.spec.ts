@@ -609,4 +609,31 @@ test.describe('home dashboard', () => {
       expect(restored.status()).toBe(200);
     }
   });
+
+  // AC-27: a native source menu can report input before change; a live device report
+  // must not restore the previous selection and hide the chosen group.
+  test('a pending source choice in the tile picker survives live device reports', async ({ page, ws }) => {
+    test.setTimeout(60_000);
+    await signIn(page, ui.home.path);
+    await expect(page.getByRole('button', { name: 'Edit layout' })).toBeEnabled();
+    await ui.home.editLayout(page);
+    await page.getByRole('button', { name: 'Add tiles', exact: true }).first().click();
+    const source = page.getByRole('combobox', { name: 'Device or integration' });
+    const emptyResults = page.getByText('No saved integration results are available.', { exact: false });
+    await expect(source).toHaveValue('-1');
+    const reportCount = () => ws.received.filter((frame) => frame.type === 'deviceUpdated').length;
+    const reports = reportCount();
+    // Own the pending choice before its paired change event, as a native menu does.
+    await source.evaluate((select: HTMLSelectElement) => {
+      select.focus();
+      select.value = '0';
+      select.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await expect(emptyResults).toBeVisible();
+    await expect.poll(reportCount, { timeout: 20_000 }).toBeGreaterThan(reports);
+    await expect(source).toHaveValue('0');
+    await expect(emptyResults).toBeVisible();
+    await source.dispatchEvent('change');
+    await expect(emptyResults).toBeVisible();
+  });
 });

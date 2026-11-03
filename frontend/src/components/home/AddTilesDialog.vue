@@ -4,10 +4,14 @@
   import type { HomeSourcePresentation } from '@/domain/home/cards';
   import { useHub } from '@/composables/useHub';
   import {
+    filterHomeChoices,
     homePickerChoices,
-    homePickerOptions,
+    HOME_FILTER_MAIN,
     homePickerEmptyMessage,
     selectedHomeCards,
+    stableHomePickerFilters,
+    stableHomePickerOptions,
+    type HomePickerOption,
   } from '@/domain/home/picker';
   import UiDialog from '@/components/ui/UiDialog.vue';
   import UiButton from '@/components/ui/UiButton.vue';
@@ -25,8 +29,12 @@
   const { devices } = useHub();
   const source = ref<string | null>(null);
   const picked = ref<string[]>([]);
-  const options = computed(() => homePickerOptions(devices.value));
-  const choices = computed(() => homePickerChoices(source.value, devices.value, props.sources, props.existing));
+  const options = computed<HomePickerOption[]>((previous) => stableHomePickerOptions(previous, devices.value));
+  const filter = ref<string>(HOME_FILTER_MAIN);
+  const allChoices = computed(() => homePickerChoices(source.value, devices.value, props.sources, props.existing));
+  const filters = computed<HomePickerOption[]>((previous) => stableHomePickerFilters(previous, allChoices.value));
+  const showFilter = computed(() => source.value !== 'integrations' && allChoices.value.length > 0);
+  const choices = computed(() => filterHomeChoices(allChoices.value, filter.value));
   const emptyMessage = computed(() => homePickerEmptyMessage(source.value));
   const addLabel = computed(() => {
     if (picked.value.length === 0) return 'Add tiles';
@@ -36,6 +44,7 @@
 
   function resetSelection() {
     source.value = null;
+    filter.value = HOME_FILTER_MAIN;
     picked.value = [];
   }
   function clearPickedValues() {
@@ -51,7 +60,8 @@
       if (open) resetSelection();
     }
   );
-  watch(source, clearPickedValues);
+  watch([source, filter], clearPickedValues);
+  watch(source, () => (filter.value = HOME_FILTER_MAIN));
 </script>
 
 <template>
@@ -65,6 +75,10 @@
       :disabled="busy" />
     <p v-if="source === 'integrations' && sourceError" class="nh-alert is-warning" role="status">{{ sourceError }}</p>
     <p v-if="source === 'integrations' && choices.length" class="nh-muted">Choose one result to add as a card.</p>
+    <template v-if="showFilter">
+      <label class="nh-label nh-filter-label" for="home-tile-filter">Show</label>
+      <UiSelect id="home-tile-filter" v-model="filter" :options="filters" :disabled="busy" />
+    </template>
     <fieldset v-if="choices.length" class="nh-checks-wrap">
       <legend class="nh-label">Values to show</legend>
       <div class="nh-checks" :class="{ 'is-integration': source === 'integrations' }">
@@ -88,6 +102,7 @@
         </label>
       </div>
     </fieldset>
+    <p v-else-if="source && allChoices.length" class="nh-muted">Nothing in this group. Choose another from Show.</p>
     <p v-else-if="source" class="nh-muted">{{ emptyMessage }}</p>
     <template #footer>
       <UiButton :disabled="busy" @click="emit('close')">Cancel</UiButton>
@@ -97,6 +112,10 @@
 </template>
 
 <style scoped>
+  .nh-filter-label {
+    display: block;
+    margin-top: 1rem;
+  }
   .nh-checks-wrap {
     border: 0;
     padding: 0;
