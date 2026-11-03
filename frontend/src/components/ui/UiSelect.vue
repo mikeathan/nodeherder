@@ -25,9 +25,28 @@
     // stored values may arrive as strings for numeric options (or the reverse)
     return props.options.findIndex((o) => String(o.value) === String(props.modelValue));
   });
-  function onChange(event: Event) {
+
+  /** Native menus can report `input` before `change`. The first event owns the choice so
+   *  a render between them cannot restore the previous value and drop it. */
+  let committedOnInput = false;
+
+  function commitSelection(event: Event) {
     const index = Number((event.target as HTMLSelectElement).value);
-    if (index >= 0) emit('update:modelValue', props.options[index].value);
+    const option = props.options[index];
+    if (!option || option.disabled) return;
+    emit('update:modelValue', option.value);
+  }
+  function onInput(event: Event) {
+    committedOnInput = true;
+    commitSelection(event);
+  }
+  function onChange(event: Event) {
+    // The change paired with a committed input must not re-read the restored value.
+    if (committedOnInput) {
+      committedOnInput = false;
+      return;
+    }
+    commitSelection(event);
   }
 </script>
 
@@ -39,6 +58,7 @@
     :aria-label="label"
     :aria-invalid="invalid || undefined"
     :disabled="disabled"
+    @input="onInput"
     @change="onChange">
     <option v-if="selectedIndex < 0" :value="-1" disabled>{{ placeholder ?? 'Choose…' }}</option>
     <option v-for="(opt, i) in options" :key="i" :value="i" :disabled="opt.disabled">{{ opt.label }}</option>
