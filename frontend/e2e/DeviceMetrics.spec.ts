@@ -619,7 +619,9 @@ test('desktop history uses a quiet labelled toolbar for many entities and ranges
   expect((await toolbar.boundingBox())!.height).toBeLessThanOrEqual(112);
   const entity = toolbar.getByRole('combobox', { name: 'Entity', exact: true });
   const period = toolbar.getByRole('combobox', { name: 'Period', exact: true });
-  await expect(entity.getByRole('option')).toHaveCount(10);
+  // Configuration values such as countdown have no history worth charting.
+  await expect(entity.getByRole('option')).toHaveCount(9);
+  await expect(entity.locator('option[value="countdown"]')).toHaveCount(0);
   await expect(period.getByRole('option')).toHaveCount(9);
   await expect(period.getByRole('option', { name: '3d', exact: true })).toHaveCount(1);
   await entity.selectOption('voltage');
