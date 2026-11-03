@@ -50,8 +50,18 @@ skill discovery and verification.
 
 - Backend (`backend/`): `go test ./...`; `go build ./...` for implementation changes.
 - Frontend (`frontend/`): `npm ci` when needed; `npm test -- --runInBand`;
-  `npm run lint` and `npm run build` for source changes; `npm run dev` for local UI.
+  `npm run lint`, `npm run build` and `npm run type-check:e2e` for source changes;
+  `npm run dev` for local UI.
 - Toolchains: `backend/go.mod`, `.nvmrc`. Additional checks: component constitutions.
+
+## Pull request verification
+
+CI runs the full matrix; a PR must not be a check's first run. Before opening one, run
+the checks above plus the browser specs for every changed page, component and domain
+module. Shared modules are often covered from another page: `domain/history/entities.ts`
+→ `e2e/DeviceMetrics.spec.ts` + `e2e/EntityViewDialog.spec.ts`. Cross-page changes need
+the full desktop suite (`npm run test:e2e -- --project=desktop`), adding `--project=mobile`
+for layout/touch/viewport work. Report commands and results, including unrun checks.
 
 ## Test file ownership
 
