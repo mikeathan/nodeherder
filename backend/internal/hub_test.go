@@ -267,6 +267,10 @@ func (browserProvider) Do(r *http.Request) (*http.Response, error) {
 		body = `{"results":[{"name":"Bristol","latitude":51.45,"longitude":-2.59}]}`
 	case r.URL.Host == "api.open-meteo.com":
 		now := time.Now().UTC().Truncate(time.Second)
+		// Daily entries are anchored to UTC midnight. Deriving sunrise/sunset from the current
+		// instant made their local clock strings wrap past midnight for part of the day, which
+		// the weather contract correctly rejects (sunset must follow sunrise).
+		dayStart := now.Truncate(24 * time.Hour)
 		result := map[string]any{"timezone": "Europe/London", "utc_offset_seconds": 0}
 		current := map[string]any{"time": now.Unix()}
 		for _, key := range strings.Split(r.URL.Query().Get("current"), ",") {
@@ -282,8 +286,12 @@ func (browserProvider) Do(r *http.Request) (*http.Response, error) {
 			}
 			columns := map[string]any{}
 			times := []int64{}
+			base := now
+			if kind == "daily" {
+				base = dayStart
+			}
 			for n := 0; n < count; n++ {
-				times = append(times, now.Add(time.Duration(n)*step).Unix())
+				times = append(times, base.Add(time.Duration(n)*step).Unix())
 			}
 			columns["time"] = times
 			for _, key := range strings.Split(r.URL.Query().Get(kind), ",") {
@@ -297,10 +305,10 @@ func (browserProvider) Do(r *http.Request) (*http.Response, error) {
 						v = 9
 					}
 					if kind == "daily" && key == "sunrise" {
-						v = float64(now.Add(6 * time.Hour).Unix())
+						v = float64(dayStart.Add(6 * time.Hour).Unix())
 					}
 					if kind == "daily" && key == "sunset" {
-						v = float64(now.Add(18 * time.Hour).Unix())
+						v = float64(dayStart.Add(18 * time.Hour).Unix())
 					}
 					values = append(values, v)
 				}
