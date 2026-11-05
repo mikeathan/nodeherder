@@ -1,5 +1,5 @@
 import { describe, expect, test } from '@jest/globals';
-import { batteryLevel, deviceStatus, hasLowBattery, hasWeakLink, isBatteryPowered, linkQuality, resolveProtocol } from '@/domain/devices';
+import { batteryLevel, DERIVED_CONNECTION_TYPE, deviceStatus, hasLowBattery, hasWeakLink, isBatteryPowered, linkQuality, resolveProtocol } from '@/domain/devices';
 import { device, expose } from '../../helpers/devices';
 
 describe('protocol registry', () => {
@@ -34,4 +34,11 @@ describe('device health', () => {
     expect(deviceStatus(device('a', { availability: 'offline' as never }), false)).toBe('offline');
     expect(deviceStatus(device('a', { availability: 'unknown' as never }), false)).toBe('unknown');
   });
+});
+
+test('derived devices are labelled instead of looking like an unknown protocol', () => {
+  const protocol = resolveProtocol(DERIVED_CONNECTION_TYPE);
+  expect(protocol.label).toBe('Derived');
+  expect(protocol.generic).toBe(false);
+  expect(protocol.supports).toEqual({ rename: false, interview: false, remove: false });
 });

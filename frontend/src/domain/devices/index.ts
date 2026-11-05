@@ -16,10 +16,16 @@ export type ProtocolDescriptor = {
   generic: boolean;
 };
 
+/** Connection type of hub-derived devices (presence projections), never a wire protocol. */
+export const DERIVED_CONNECTION_TYPE = 'derived';
+
 const PROTOCOLS: Record<string, ProtocolDescriptor> = {
   [ConnectionTypes.Mqtt]: { id: ConnectionTypes.Mqtt, label: 'Zigbee', supports: { rename: true, interview: true, remove: true }, generic: false },
   [ConnectionTypes.Http]: { id: ConnectionTypes.Http, label: 'Wi-Fi · HTTP', supports: { rename: false, interview: false, remove: false }, generic: false },
   [ConnectionTypes.ESPHome]: { id: ConnectionTypes.ESPHome, label: 'ESPHome', supports: { rename: false, interview: false, remove: false }, generic: false },
+  // Hub-derived presence devices are real entities for automations, so they stay visible and
+  // labelled rather than looking like an unknown protocol.
+  [DERIVED_CONNECTION_TYPE]: { id: DERIVED_CONNECTION_TYPE, label: 'Derived', supports: { rename: false, interview: false, remove: false }, generic: false },
 };
 
 export function resolveProtocol(connectionType: string | undefined | null): ProtocolDescriptor {

@@ -4,7 +4,7 @@
    * The tab is kept in the URL (?tab=) so it survives reloads and can be linked.
    * Back returns to where the user came from, or to the device list when opened directly.
    */
-  import { computed, defineAsyncComponent, ref, watch } from 'vue';
+  import { computed, defineAsyncComponent, ref } from 'vue';
   import { useRouter } from 'vue-router';
   import { RouteName } from '@/types/router';
   import { ConnectionTypes } from '@/types/device.type';
@@ -19,6 +19,7 @@
   import UiEmpty from '@/components/ui/UiEmpty.vue';
   import UiIcon from '@/components/ui/UiIcon.vue';
   import UiButton from '@/components/ui/UiButton.vue';
+  import SpatialPresenceChip from './spatial/SpatialPresenceChip.vue';
   import RelativeTime from '@/components/ui/RelativeTime.vue';
   import ExposeRow from '@/components/entity/ExposeRow.vue';
   import DeviceChips from '@/components/entity/DeviceChips.vue';
@@ -35,16 +36,14 @@
   const props = defineProps<{ id: string }>();
   const router = useRouter();
   const { findDevice, initialized, statusOf } = useHub();
-  const { tabs, tab, selectTab, onTabKey } = useDeviceTabs();
+  const { tabs, tab, selectTab, onTabKey } = useDeviceTabs(() => device.value);
 
   const device = computed(() => findDevice(props.id));
   const status = computed(() => (device.value ? statusOf(device.value) : 'unknown'));
   const isESPHome = computed(() => isESPHomeDevice(device.value));
   const lastSeenText = computed(() => lastSeenLabel(device.value));
-  const showSpatial = ref(false);
   const showESPHomeSettings = ref(false);
   const canMapSpatial = computed(() => supportsSpatialMapping(device.value));
-  watch(() => props.id, () => { showSpatial.value = false; });
 
   const back = computed(() => {
     const previous = router.options.history.state.back;
@@ -67,6 +66,7 @@
     </UiPageHeader>
     <div class="nh-dev-chips">
       <DeviceStatusChip :device="device" />
+      <SpatialPresenceChip v-if="canMapSpatial" :device="device" @open="selectTab(DeviceTabIds.Presence)" />
       <DeviceChips :device="device" />
       <span class="nh-muted nh-dev-seen">{{ lastSeenText }} <RelativeTime :value="device.last_seen" /></span>
     </div>
@@ -92,8 +92,6 @@
       <template v-if="tab === 'controls'">
         <p v-if="status === 'offline'" class="nh-alert is-warn"><UiIcon name="offline" /><span>This device is offline. Values are the last ones it reported and controls are paused.</span></p>
         <p v-else-if="status === 'disabled'" class="nh-alert"><UiIcon name="disabled" /><span>This device is disabled in its settings, so the hub ignores its updates.</span></p>
-        <UiButton v-if="canMapSpatial" icon="signal" @click="showSpatial = !showSpatial">{{ showSpatial ? 'Hide spatial view' : 'Open spatial view' }}</UiButton>
-        <SpatialPanel v-if="showSpatial" :device="device" />
         <div class="nh-dev-grid">
           <template v-if="isESPHome">
             <div class="nh-dev-side">
@@ -121,6 +119,7 @@
           </template>
         </div>
       </template>
+      <SpatialPanel v-else-if="tab === DeviceTabIds.Presence" :device="device" />
       <DeviceMetrics v-else-if="tab === DeviceTabIds.History" :id="device.id" />
       <UiCard v-else-if="tab === DeviceTabIds.Settings" title="Settings on this hub" icon="settings">
         <UiButton v-if="device.connection_type === ConnectionTypes.ESPHome" icon="settings" @click="showESPHomeSettings = true">Manage ESPHome connection</UiButton>

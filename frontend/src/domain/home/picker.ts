@@ -11,6 +11,7 @@ import {
   type ExposeGroup,
 } from '../exposeGroups';
 import { homeSourceKey, newHomeId } from './layout';
+import { supportsSpatialMapping } from '@/domain/spatial';
 
 export interface HomePickerOption {
   value: string;
@@ -83,6 +84,11 @@ function hasReading(expose: Expose): boolean {
 
 function deviceChoices(device: Device, existing: ReadonlySet<string>): HomePickerChoice[] {
   const choices: HomePickerChoice[] = [];
+  // Whole-device presence is offered only when the device can carry a spatial mapping; it
+  // reads the hub-derived values, so no single expose is required.
+  if (supportsSpatialMapping(device)) {
+    choices.push(choice({ kind: 'presence', device_id: device.id }, 'Presence', device.friendly_name, existing));
+  }
   for (const expose of Object.values(device.exposes)) {
     if (!isObservableExpose(expose) || !hasReading(expose)) continue;
     const reference: HomeCardSource = { kind: 'device', device_id: device.id, expose: expose.name };

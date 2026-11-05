@@ -4,9 +4,13 @@
   import UiCard from '@/components/ui/UiCard.vue';
   import { SPATIAL_MAX_AGE_MS } from '@/domain/spatial';
   import { MILLISECONDS_PER_SECOND } from '@/domain/spatial/analytics';
+  import { SPATIAL_HOLD_MS, SPATIAL_MERGE_MM, SPATIAL_SILENCE_MS } from '@/domain/spatial/tracks';
 
   defineProps<{ deviceId: string }>();
   const freshnessSeconds = computed(() => Math.round(SPATIAL_MAX_AGE_MS / MILLISECONDS_PER_SECOND));
+  const holdSeconds = computed(() => Math.round(SPATIAL_HOLD_MS / MILLISECONDS_PER_SECOND));
+  const silenceSeconds = computed(() => Math.round(SPATIAL_SILENCE_MS / MILLISECONDS_PER_SECOND));
+  const mergeMetres = computed(() => (SPATIAL_MERGE_MM / 1000).toFixed(2));
 </script>
 
 <template>
@@ -14,6 +18,7 @@
     <nav class="nh-spatial-help-nav" aria-label="Spatial help topics">
       <a :href="`#spatial-mapping-${deviceId}`">Map a target</a>
       <a :href="`#spatial-plane-${deviceId}`">Read the plane</a>
+      <a :href="`#spatial-tracks-${deviceId}`">Tracks, smoothing and limits</a>
       <a :href="`#spatial-troubleshooting-${deviceId}`">If no target appears</a>
     </nav>
     <div class="nh-spatial-help-topics">
@@ -61,12 +66,12 @@
       </UiCard>
       <UiCard :id="`spatial-plane-${deviceId}`" title="Read the plane" :heading-level="3" tabindex="-1">
         <p>
-          The Live dashboard combines room context, raw targets and geometric zone previews. Recent trails show sampled
+          The Live dashboard combines room context, tracks and geometric zone previews. Recent trails show sampled
           movement while this view is open; they are not recorded history.
         </p>
         <p>
-          The sensor dot marks its position from Room Builder. A numbered dot represents a reported target; the
-          accompanying list shows its coordinates and distance.
+          The sensor dot marks its position from Room Builder. Each dot represents a track; the accompanying list
+          shows its label, state and coordinates.
         </p>
         <figure>
           <svg
@@ -106,6 +111,35 @@
           >Manufacturer Live Dashboard guide</a
         >
       </p>
+      <UiCard :id="`spatial-tracks-${deviceId}`" title="Tracks, smoothing and limits" :heading-level="3" tabindex="-1">
+        <p>
+          The device reports up to three numbered <strong>slots</strong>, not people. A slot is reused when someone
+          leaves, so the view keeps its own <strong>track</strong> label while a position stays near the previous one
+          and never claims to identify a person.
+        </p>
+        <dl class="nh-spatial-states">
+          <dt>Live</dt>
+          <dd>A position the sensor just reported.</dd>
+          <dt>Predicted</dt>
+          <dd>A jump too large to be a person was rejected; the last known position is held briefly.</dd>
+          <dt>Held</dt>
+          <dd>A slot cleared; its last position stays visible for about {{ holdSeconds }} s, then disappears.</dd>
+          <dt>Idle</dt>
+          <dd>No new position for {{ silenceSeconds }} s. The device may simply be quiet because nothing moved.</dd>
+        </dl>
+        <p>
+          <strong>Smoothing</strong> trades calm for lag: higher levels steady a standing dot but follow a fast walk
+          less closely. The <strong>Raw</strong> toggle draws the unfiltered sensor reading from the same frames, and
+          the jitter readout reports measured movement while stationary. Smoothing changes the drawing only; it does not
+          improve what the sensor measured.
+        </p>
+        <p>
+          Limits worth remembering: coordinates are best-effort and vary with mounting and room clutter; distance, angle
+          and resolution are derived by the firmware, so they add no independent accuracy; duplicate suppression can hide
+          a second person standing within about {{ mergeMetres }} m; and zone previews are overlays, not firmware occupancy
+          unless you mapped a reported entity.
+        </p>
+      </UiCard>
       <UiCard :id="`spatial-troubleshooting-${deviceId}`" title="If no target appears" :heading-level="3" tabindex="-1">
         <ul>
           <li>
@@ -118,11 +152,13 @@
             is shown only when Active reports true.
           </li>
           <li>
-            Both coordinates need recent reports. Readings older than {{ freshnessSeconds }} seconds are hidden rather
-            than shown as live.
+            Positions come from synchronized frames that carry both axes together. When a server sends only sampled
+            coordinates, readings older than {{ freshnessSeconds }} seconds are hidden rather than shown as live.
           </li>
           <li>Active uses the last reported state while connected. Some devices report it only when it changes.</li>
-          <li>X and Y arrive separately, so the display uses the latest fresh value for each axis.</li>
+          <li>
+            The status strip says which source is in use. Sampled updates can mix axes; frames cannot.
+          </li>
         </ul>
       </UiCard>
     </div>
@@ -130,6 +166,16 @@
 </template>
 
 <style scoped>
+  .nh-spatial-states {
+    margin: 0.5rem 0 0.75rem;
+  }
+  .nh-spatial-states dt {
+    font-weight: 600;
+  }
+  .nh-spatial-states dd {
+    margin: 0 0 0.4rem 1rem;
+    color: var(--nh-text-muted);
+  }
   .nh-spatial-help-layout {
     display: grid;
     grid-template-columns: minmax(10rem, 15rem) minmax(0, 1fr);

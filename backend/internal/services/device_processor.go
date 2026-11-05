@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"maps"
+	"node-herder/internal/spatial"
 	"node-herder/models/automations"
 	"node-herder/models/bridge"
 	"node-herder/models/devices"
@@ -105,6 +106,21 @@ func (dm *DeviceProcessor) DeviceName(id string) (string, bool) {
 // entry. The caller serializes this operation with reports on the device lane.
 // No registry lock surrounds persistence or callbacks. A later accepted discovery
 // creates a fresh generation rather than reusing a closed lifetime.
+// HasCompleteSpatialMapping reports whether at least one saved row maps X, Y and Active to
+// three distinct entities, the minimum a usable derived position needs.
+func HasCompleteSpatialMapping(mappings []settings.SpatialMapping) bool {
+	for _, mapping := range mappings {
+		if mapping.X == "" || mapping.Y == "" || mapping.Active == "" {
+			continue
+		}
+		if mapping.X == mapping.Y || mapping.Active == mapping.X || mapping.Active == mapping.Y {
+			continue
+		}
+		return true
+	}
+	return false
+}
+
 func (dm *DeviceProcessor) RemoveDevice(id string) error {
 	dm.mutex.RLock()
 	entry := dm.deviceServices[id]
@@ -151,8 +167,11 @@ func (dm *DeviceProcessor) RegisterProviderDevice(device *devices.Device) error 
 	if old != nil {
 		// Change-only binary sensors may not republish their current state after a
 		// reconnect. Retain the last confirmed binary value for matching entities
-		// before fencing/replacing the old generation.
-		preserveProviderBinaryValues(device, old.service.device)
+		// before fencing/replacing the old generation. Derived devices are projections:
+		// replaying their old occupancy would present stale presence as current.
+		if device.Provider != spatial.ProviderName {
+			preserveProviderBinaryValues(device, old.service.device)
+		}
 		// Fence delayed publication before replacing the persisted generation.
 		err = old.service.Retire(storeDevice)
 	} else {

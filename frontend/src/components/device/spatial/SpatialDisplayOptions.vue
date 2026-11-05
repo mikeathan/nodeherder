@@ -15,14 +15,14 @@
 
 <template>
   <div class="nh-spatial-options">
-    <label>
-      Scale
+    <label class="nh-field">
+      <span class="nh-label">Scale</span>
       <select :value="scale" class="nh-input" @change="selectScale">
         <option v-for="option in SPATIAL_SCALE_OPTIONS" :key="option.value" :value="option.value">{{ option.label }}</option>
       </select>
     </label>
-    <label>
-      Orientation
+    <label class="nh-field">
+      <span class="nh-label">Orientation</span>
       <select :value="orientation" class="nh-input" @change="selectOrientation">
         <option v-for="option in SPATIAL_ORIENTATION_OPTIONS" :key="option.value" :value="option.value">{{ option.label }}</option>
       </select>
@@ -34,12 +34,7 @@
   .nh-spatial-options {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--nh-space);
-    margin-block: 0.75rem;
-  }
-  .nh-spatial-options label {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.75rem;
+    align-items: flex-end;
   }
 </style>

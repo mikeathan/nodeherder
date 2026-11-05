@@ -15,7 +15,9 @@ import type {
   MCPStatusType,
 } from '../../../types/settings.type';
 import type { KeyValuePair } from '@/types/types.type';
+import type { SpatialFrame } from '@/types/spatial';
 import { createAppconfig } from '@/contracts/settings';
+import { parseSpatialFrame } from '@/domain/spatial/frames';
 
 // Shared by live Vuex commits and recovery replay; config changes have one implementation.
 export const appConfigMutations: MutationTree<Pick<HubStateModuleState, 'appConfig'>> = {
@@ -71,6 +73,7 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
 
   state: () => ({
     deviceMap: {} as DeviceMap,
+    spatialFrames: {},
     appConfig: createAppconfig(),
     initialized: false,
     loadStatus: 'idle',
@@ -85,6 +88,12 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
     listAllDevices: (state) => (): Devices => {
       return Object.values(state.deviceMap) as Devices;
     },
+    /** Latest validated spatial frame for one device, or undefined before the first frame. */
+    spatialFrame:
+      (state) =>
+      (id: string): SpatialFrame | undefined => {
+        return state.spatialFrames[id];
+      },
     findDevice:
       (state) =>
       (id: string): Device => {
@@ -141,6 +150,22 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
       devices.forEach((device: Device) => {
         state.deviceMap[device.id] = device;
       });
+
+      // A frame describes a device that must still exist; keep the map bounded to the list.
+      const known = new Set(devices.map((device) => device.id));
+      Object.keys(state.spatialFrames).forEach((id) => {
+        if (!known.has(id)) delete state.spatialFrames[id];
+      });
+    },
+    /**
+     * Stores one validated spatial frame. The payload is external data, so it is parsed
+     * here before it can reach view state; frames for unknown devices are ignored rather
+     * than inventing a device entry.
+     */
+    updateSpatialTargets(state, payload: unknown) {
+      const frame = parseSpatialFrame(payload);
+      if (!frame || !state.deviceMap[frame.id]) return;
+      state.spatialFrames[frame.id] = frame;
     },
 
     updateDevice(state, deviceUpdate: DeviceUpdate) {
@@ -191,6 +216,7 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
     },
     clear(state) {
       state.deviceMap = {};
+      state.spatialFrames = {};
       state.appConfig = createAppconfig();
       state.initialized = false;
       state.loadStatus = 'idle';

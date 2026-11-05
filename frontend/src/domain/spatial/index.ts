@@ -1,6 +1,6 @@
 import type { Device, Expose } from '@/types/device';
 import type { SpatialMapping } from '@/types/spatial';
-import { exposeDisplayLabel } from '@/domain/exposes';
+import { binaryStateOf, exposeDisplayLabel } from '@/domain/exposes';
 
 export type { SpatialMapping } from '@/types/spatial';
 export type SpatialTarget = { id: number; x: number; y: number; distance: number };
@@ -101,7 +101,8 @@ function mappedTarget(exposes: Record<string, Expose>, mapping: SpatialMapping, 
   if (spatialLabelMismatch(mapping, exposes, index + 1)) return null;
   if (!mapping.x || !mapping.y || !mapping.active || mapping.x === mapping.y) return null;
   if (!coordinateIsFresh(mapping.x, seen, now) || !coordinateIsFresh(mapping.y, seen, now)) return null;
-  if (exposes[mapping.active]?.data !== true) return null;
+  const flag = exposes[mapping.active];
+  if (!flag || binaryStateOf(flag) !== true) return null;
   const x = coordinateMillimetres(exposes[mapping.x]);
   const y = coordinateMillimetres(exposes[mapping.y]);
   if (x === null || y === null) return null;
@@ -109,7 +110,7 @@ function mappedTarget(exposes: Record<string, Expose>, mapping: SpatialMapping, 
 }
 
 /** Builds live targets only from explicitly mapped, fresh independent coordinates. */
-export function spatialTargets(exposes: Record<string, Expose>, mappings: SpatialMapping[], seen: ReadonlyMap<string, number>, now: number, online: boolean): SpatialTarget[] {
+export function spatialTargets(exposes: Record<string, Expose>, mappings: readonly SpatialMapping[], seen: ReadonlyMap<string, number>, now: number, online: boolean): SpatialTarget[] {
   if (!online) return [];
   const targets: SpatialTarget[] = [];
   for (const [index, mapping] of mappings.entries()) {
@@ -119,6 +120,11 @@ export function spatialTargets(exposes: Record<string, Expose>, mappings: Spatia
   return targets;
 }
 
+/** Whether at least one mapping row names distinct X, Y and Active entities. */
+export function hasCompleteSpatialMapping(mappings: readonly SpatialMapping[]): boolean {
+  return mappings.some((mapping) => !!mapping.x && !!mapping.y && !!mapping.active && mapping.x !== mapping.y);
+}
+
 /** Why a mapped target row is or is not currently rendered. */
 export type SpatialTargetState = 'active' | 'not-active' | 'unknown-active' | 'stale' | 'incomplete' | 'mismatch' | 'offline';
 /** One target row's live rendering status. */
@@ -126,14 +132,17 @@ export type SpatialTargetStatus = { id: number; state: SpatialTargetState; label
 
 /**
  * Explains each mapping row without changing it. Mapping remains editable while a
- * target is inactive; only live target rendering is suppressed.
+ * target is inactive; only live target rendering is suppressed. `liveSlots` carries the
+ * slots a fresh frame currently draws: frames are synchronized and already validated, so a
+ * row cannot be reported stale only because the sampled coordinate path is throttled.
  */
 export function spatialTargetStatuses(
   exposes: Record<string, Expose>,
   mappings: readonly SpatialMapping[],
   seen: ReadonlyMap<string, number>,
   now: number,
-  online: boolean
+  online: boolean,
+  liveSlots: ReadonlySet<number> = new Set()
 ): SpatialTargetStatus[] {
   return mappings.map((mapping, index) => {
     const id = index + 1;
@@ -143,7 +152,9 @@ export function spatialTargetStatuses(
     }
     if (spatialLabelMismatch(mapping, exposes, id)) return { id, state: 'mismatch', label: 'Mapping mismatch' };
     if (!online) return { id, state: 'offline', label: 'Device offline' };
-    const active = exposes[mapping.active]?.data;
+    if (liveSlots.has(id)) return { id, state: 'active', label: 'Active' };
+    const flag = exposes[mapping.active];
+    const active = flag ? binaryStateOf(flag) : null;
     if (active !== true) {
       return {
         id,

@@ -5,11 +5,11 @@ import {
   rectanglePoints,
   resizeRectangle,
   polygonBounds,
+  roomPoint,
   roomScreenPoint,
   sensorPoint,
   validPolygon,
   validateWorkspace,
-  zonePreview,
 } from '@/domain/spatial/workspace';
 import type { SpatialZone } from '@/types/spatial';
 const zone: SpatialZone = {
@@ -52,15 +52,14 @@ test('room transforms invert correctly and keep persisted drafts independent', (
   copied.zones[0].points[0].x = 999;
   expect(w.zones[0].points[0].x).toBe(-500);
 });
-test('inclusive occupancy previews respect exclusions and never call missing targets clear', () => {
-  const target = { id: 1, x: 0, y: 1500, distance: 1500 };
+test('point containment is inclusive on zone edges and room transforms stay invertible', () => {
   expect(containsPoint(zone.points, { x: -500, y: 1000 })).toBe(true);
-  expect(zonePreview(zone, [zone], [target], true)).toBe('Target inside');
-  expect(zonePreview(zone, [zone, { ...zone, id: 'mask', kind: 'exclusion' }], [target], true)).toBe(
-    'No target inside'
-  );
-  expect(zonePreview(zone, [zone], [], true)).toContain('Unknown');
-  expect(zonePreview(zone, [zone], [target], false)).toContain('Unknown');
+  expect(containsPoint(zone.points, { x: 0, y: 1500 })).toBe(true);
+  expect(containsPoint(zone.points, { x: 0, y: 500 })).toBe(false);
+
+  const sensor = { x: 1200, y: -300, rotation: 90, fov: 0 };
+  const point = { x: 400, y: 2000 };
+  expect(roomScreenPoint(point, sensor, 0)).toEqual({ ...roomPoint(point, sensor), y: -roomPoint(point, sensor).y });
 });
 
 test('rectangle resizing retains a fixed anchor across both axes and shares numeric bounds', () => {
@@ -84,4 +83,38 @@ test('rectangle resizing retains a fixed anchor across both axes and shares nume
     height: 500,
   });
   expect(anchor).toEqual({ x: 1000, y: 1000 });
+});
+
+test('firmware setting mappings default empty, reject unknown roles and copy independently', () => {
+  const workspace = createWorkspace();
+  expect(workspace.firmwareEntities).toEqual({
+    installationAngle: '',
+    inverseMounting: '',
+    maxDistance: '',
+    occupancyOffDelay: '',
+    polygonMode: '',
+  });
+  workspace.zones = [zone];
+  workspace.firmwareEntities = { installationAngle: 'angle' };
+  expect(validateWorkspace(workspace)).toBe('');
+
+  workspace.firmwareEntities = { unknown: 'entity' } as never;
+  expect(validateWorkspace(workspace)).toContain('firmware');
+
+  const source = { ...createWorkspace(), firmwareEntities: { installationAngle: 'angle' } };
+  const copied = copyWorkspace(source);
+  copied.firmwareEntities!.installationAngle = 'other';
+  expect(source.firmwareEntities!.installationAngle).toBe('angle');
+
+  const polygon = {
+    ...zone,
+    shape: 'polygon' as const,
+    points: [
+      { x: 0, y: 1000 },
+      { x: 1000, y: 1000 },
+      { x: 500, y: 2000 },
+    ],
+    entities: { polygon: 'polygon_zone' },
+  };
+  expect(validateWorkspace({ ...createWorkspace(), zones: [polygon] })).toBe('');
 });

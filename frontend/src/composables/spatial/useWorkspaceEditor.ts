@@ -7,7 +7,8 @@ import type {
   SpatialPoint,
   SpatialWorkspace,
   SpatialZone,
-  ZoneCoordinateRole,
+  FirmwareRole,
+  ZoneEntityRole,
   ZoneKind,
   ZoneShape,
 } from '@/types/spatial';
@@ -112,6 +113,12 @@ export function useWorkspaceEditor(workspace: Ref<SpatialWorkspace>) {
     workspace.value.sensor[key] = value;
   }
 
+  /** Replaces the sensor pose from a calibration result in one undoable step. */
+  function setSensor(patch: Partial<SpatialWorkspace['sensor']>) {
+    checkpoint();
+    workspace.value.sensor = { ...workspace.value.sensor, ...patch };
+  }
+
   /** Maps one entry/assumed-presence entity to its role. */
   function mapEntry(role: EntryRole, id: string) {
     checkpoint();
@@ -125,9 +132,15 @@ export function useWorkspaceEditor(workspace: Ref<SpatialWorkspace>) {
   }
 
   /** Maps one firmware coordinate role on the selected zone. */
-  function mapZone(role: ZoneCoordinateRole, id: string) {
+  function mapZone(role: ZoneEntityRole, id: string) {
     if (!selectedZone.value) return;
     updateZone({ entities: { ...selectedZone.value.entities, [role]: id } });
+  }
+
+  /** Maps one firmware setting role to an explicitly chosen writable entity. */
+  function mapFirmware(role: FirmwareRole, id: string) {
+    checkpoint();
+    workspace.value.firmwareEntities = { ...(workspace.value.firmwareEntities ?? {}), [role]: id };
   }
 
   /** Removes the selected overlay only, with immediate undo available until saved/reloaded. */
@@ -185,8 +198,10 @@ export function useWorkspaceEditor(workspace: Ref<SpatialWorkspace>) {
     updateZone,
     updateObject,
     updateSensor,
+    setSensor,
     mapEntry,
     mapZone,
+    mapFirmware,
     setOutline,
     removeSelected,
     moveSelected,

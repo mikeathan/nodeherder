@@ -31,7 +31,7 @@ type DeviceLifetimeService struct {
 	automationQueries automations.AutomationQuerier
 	monitorMu         sync.Mutex
 	monitor           *availabilityMonitor
-	spatialPublished  map[string]time.Time
+	spatial           *spatialEmitter
 }
 
 type availabilityMonitor struct {
@@ -54,18 +54,23 @@ func NewDeviceLifetimeService(device *devices.Device, events *devices.DeviceRequ
 			events.OnDeviceUpdated(device, p)
 		}
 	})
-	return &DeviceLifetimeService{
+	service := &DeviceLifetimeService{
 		ctx: ctx, cancel: cancel,
 		publisher:         publisher,
 		clock:             clock,
 		configCache:       configCache,
 		debouncerService:  settings.NewDeviceDebouncer(device.Id, configCache, clock),
 		device:            device,
-		spatialPublished:  make(map[string]time.Time),
 		events:            events,
 		stopped:           false,
 		automationQueries: automationQueries,
 	}
+	service.spatial = newSpatialEmitter(clock, device.Id, func(frame *devices.SpatialFrame) {
+		if events.OnSpatialTargets != nil {
+			events.OnSpatialTargets(frame)
+		}
+	})
+	return service
 }
 
 func (d *DeviceLifetimeService) Seed(payload map[string]interface{}) {
@@ -116,6 +121,9 @@ func (d *DeviceLifetimeService) Seed(payload map[string]interface{}) {
 	}
 	d.attemptToStoreMetrics(payload)
 	d.events.OnNewDevice(d.device)
+	// Emit after the device is announced so consumers never receive a frame for a device
+	// they do not know yet.
+	d.publishSpatialTargets()
 }
 
 func (d *DeviceLifetimeService) OnConfigUpdated(cfg *settings.DeviceConfig) {
@@ -124,8 +132,13 @@ func (d *DeviceLifetimeService) OnConfigUpdated(cfg *settings.DeviceConfig) {
 	}
 	if cfg.Disabled {
 		d.publisher.Clear()
+		d.spatial.Discard()
 	} else {
 		d.publisher.Reconfigure()
+		// Forget the previous frame so the next report renders the new mapping. Emission is not
+		// attempted here: this callback is not serialized with device updates, so reading several
+		// entity values now could build a frame that mixes two reports.
+		d.spatial.Discard()
 	}
 	d.monitorMu.Lock()
 	defer d.monitorMu.Unlock()
@@ -167,42 +180,23 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 		d.attemptToStoreMetrics(sampled)
 	}
 	d.publisher.Publish(live)
-	d.publishSpatialFreshness(payload, live)
+	d.publishSpatialTargets()
 }
 
-// publishSpatialFreshness forwards repeated physical reports without changing
-// automation, metrics or persistence. It is bounded per configured coordinate.
-func (d *DeviceLifetimeService) publishSpatialFreshness(payload map[string]interface{}, published *devices.UpdatePackage) {
-	const spatialFreshnessInterval = 250 * time.Millisecond
-	if d.events.OnSpatialObserved == nil || !d.device.IsAvailable() {
+// publishSpatialTargets offers one complete, synchronized frame for the saved mapping.
+// Emission is change-driven and rate-limited, so an idle device stays silent: consumers
+// must treat silence as "nothing changed", never as an empty room. Coordinates are read
+// from accepted state, which is already current for automation at this point.
+func (d *DeviceLifetimeService) publishSpatialTargets() {
+	if d.events.OnSpatialTargets == nil {
 		return
 	}
-	coordinates := d.configCache.SpatialCoordinates(d.device.Id)
-	for name := range d.spatialPublished {
-		if _, ok := coordinates[name]; !ok {
-			delete(d.spatialPublished, name)
-		}
+	mappings := d.configCache.SpatialMappings(d.device.Id)
+	if len(mappings) == 0 || !d.device.IsAvailable() {
+		d.spatial.Discard()
+		return
 	}
-	now := d.clock.Now()
-	update := devices.NewUpdatePackage(d.device.Id)
-	update.LastSeen = published.LastSeen
-	for name, value := range payload {
-		if _, ok := coordinates[name]; !ok {
-			continue
-		}
-		if _, ok := published.Data[name]; ok {
-			d.spatialPublished[name] = now
-			continue
-		}
-		if last, ok := d.spatialPublished[name]; ok && now.Sub(last) < spatialFreshnessInterval {
-			continue
-		}
-		update.Data[name] = value
-		d.spatialPublished[name] = now
-	}
-	if update.HasData() {
-		d.events.OnSpatialObserved(update)
-	}
+	d.spatial.Publish(BuildSpatialTargets(mappings, d.device.GetExpose))
 }
 
 // ProviderOffline marks this provider device unavailable and cancels pending
@@ -213,6 +207,7 @@ func (d *DeviceLifetimeService) ProviderOffline() {
 	}
 	d.device.SetAvailability(devices.OfflineAvailability)
 	d.publisher.Clear()
+	d.spatial.Discard()
 	if d.events.OnDeviceAvailabilityChanged != nil {
 		update := devices.NewUpdatePackage(d.device.Id)
 		update.Availability = devices.OfflineAvailability
@@ -461,6 +456,7 @@ func (s *DeviceLifetimeService) stopAvailabilityMonitoringLocked() {
 // before taking monitorMu prevents any later configuration from starting a worker.
 func (s *DeviceLifetimeService) Close() {
 	s.cancel()
+	s.spatial.Close()
 	s.monitorMu.Lock()
 	s.stopped = true
 	s.stopAvailabilityMonitoringLocked()

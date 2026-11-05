@@ -13,21 +13,22 @@ import (
 const (
 	spatialWorkspaceVersion = 1
 
-	maxSpatialZones          = 8
-	maxSpatialRoomObjects    = 40
-	maxSpatialEntryEntities  = 5
-	maxSpatialZoneEntities   = 4
-	maxDetectionZones        = 4
-	maxExclusionZones        = 2
-	maxEntryZones            = 2
-	minSpatialPolygonPoints  = 3
-	maxSpatialPolygonPoints  = 16
-	spatialCoordinateLimitMM = 20000
-	maxSpatialRotation       = 360
-	maxSpatialFOV            = 180
-	maxSpatialNameRunes      = 80
-	maxSpatialIDBytes        = 80
-	maxSpatialEntityBytes    = 256
+	maxSpatialZones            = 8
+	maxSpatialRoomObjects      = 40
+	maxSpatialEntryEntities    = 5
+	maxSpatialZoneEntities     = 5
+	maxSpatialFirmwareEntities = 5
+	maxDetectionZones          = 4
+	maxExclusionZones          = 2
+	maxEntryZones              = 2
+	minSpatialPolygonPoints    = 3
+	maxSpatialPolygonPoints    = 16
+	spatialCoordinateLimitMM   = 20000
+	maxSpatialRotation         = 360
+	maxSpatialFOV              = 180
+	maxSpatialNameRunes        = 80
+	maxSpatialIDBytes          = 80
+	maxSpatialEntityBytes      = 256
 	// The shoelace sum is twice the area in square millimetres; 1 rejects
 	// zero-area and near-degenerate polygons without affecting normal zones.
 	minSpatialTwiceArea = 1
@@ -51,6 +52,18 @@ const (
 	entryRoleAssumed   = "assumed"
 	entryRoleRemaining = "remaining"
 
+	// Firmware setting roles a workspace may map explicitly. They are ordinary writable device
+	// entities; nothing is inferred from entity names.
+	firmwareRoleInstallationAngle = "installationAngle"
+	firmwareRoleInverseMounting   = "inverseMounting"
+	firmwareRoleMaxDistance       = "maxDistance"
+	firmwareRoleOccupancyOffDelay = "occupancyOffDelay"
+	firmwareRolePolygonMode       = "polygonMode"
+
+	// zoneRolePolygon maps a polygon overlay to one firmware text entity; it is only valid for
+	// polygon shapes, exactly as the four coordinate roles are rectangle-only.
+	zoneRolePolygon      = "polygon"
+	zoneRoleOffDelay     = "offDelay"
 	coordinateRoleBeginX = "beginX"
 	coordinateRoleBeginY = "beginY"
 	coordinateRoleEndX   = "endX"
@@ -102,6 +115,8 @@ type SpatialWorkspace struct {
 	Objects       []SpatialRoomObject `json:"objects"`
 	Sensor        SpatialSensor       `json:"sensor"`
 	EntryEntities map[string]string   `json:"entryEntities"`
+	// FirmwareEntities maps optional firmware setting roles to writable entity names.
+	FirmwareEntities map[string]string `json:"firmwareEntities,omitempty"`
 }
 
 // finiteWithin reports whether v is a finite value within +/- limit.
@@ -173,10 +188,41 @@ func validSpatialEntityMap(entities map[string]string, validRole func(string) bo
 	return true
 }
 
+// validZoneEntities accepts role names that match the zone shape: at most one polygon text
+// entity for polygon zones, and the four rectangle coordinates for rectangle zones. A role
+// from the other shape is rejected instead of being silently ignored.
+func validZoneEntities(zone SpatialZone) bool {
+	if len(zone.Entities) > maxSpatialZoneEntities {
+		return false
+	}
+	if zone.Shape == zoneShapePolygon {
+		if len(zone.Entities) > 2 {
+			return false
+		}
+		return validSpatialEntityMap(zone.Entities, func(role string) bool {
+			return role == zoneRolePolygon || role == zoneRoleOffDelay
+		})
+	}
+	return validSpatialEntityMap(zone.Entities, func(role string) bool {
+		return validCoordinateRole(role) || role == zoneRoleOffDelay
+	})
+}
+
 // validCoordinateRole reports whether role is one of the four rectangle coordinates.
 func validCoordinateRole(role string) bool {
 	switch role {
 	case coordinateRoleBeginX, coordinateRoleBeginY, coordinateRoleEndX, coordinateRoleEndY:
+		return true
+	default:
+		return false
+	}
+}
+
+// validFirmwareRole reports whether role belongs to the optional firmware setting mapping.
+func validFirmwareRole(role string) bool {
+	switch role {
+	case firmwareRoleInstallationAngle, firmwareRoleInverseMounting, firmwareRoleMaxDistance,
+		firmwareRoleOccupancyOffDelay, firmwareRolePolygonMode:
 		return true
 	default:
 		return false
@@ -217,7 +263,7 @@ func validSpatialZone(zone SpatialZone, counts map[string]int, ids map[string]bo
 	if len(zone.OccupancyEntity) > maxSpatialEntityBytes || strings.ContainsRune(zone.OccupancyEntity, '\x00') {
 		return false
 	}
-	if len(zone.Entities) > maxSpatialZoneEntities || !validSpatialEntityMap(zone.Entities, validCoordinateRole) {
+	if !validZoneEntities(zone) {
 		return false
 	}
 	if !validSpatialIDName(zone.ID, zone.Name, ids) || !validSpatialPolygon(zone.Points) {
@@ -258,7 +304,7 @@ func (w *SpatialWorkspace) Validate() error {
 		return nil
 	}
 	invalid := fmt.Errorf("invalid spatial workspace")
-	if w.Version != spatialWorkspaceVersion || len(w.Zones) > maxSpatialZones || len(w.Objects) > maxSpatialRoomObjects || len(w.EntryEntities) > maxSpatialEntryEntities {
+	if w.Version != spatialWorkspaceVersion || len(w.Zones) > maxSpatialZones || len(w.Objects) > maxSpatialRoomObjects || len(w.EntryEntities) > maxSpatialEntryEntities || len(w.FirmwareEntities) > maxSpatialFirmwareEntities {
 		return invalid
 	}
 	if !finiteWithin(w.Sensor.X, spatialCoordinateLimitMM) ||
@@ -285,6 +331,9 @@ func (w *SpatialWorkspace) Validate() error {
 	if !validSpatialEntityMap(w.EntryEntities, validEntryRole) {
 		return invalid
 	}
+	if !validSpatialEntityMap(w.FirmwareEntities, validFirmwareRole) {
+		return invalid
+	}
 	return nil
 }
 
@@ -308,6 +357,10 @@ func cloneSpatialWorkspace(w *SpatialWorkspace) *SpatialWorkspace {
 	result.EntryEntities = make(map[string]string, len(w.EntryEntities))
 	for key, value := range w.EntryEntities {
 		result.EntryEntities[key] = value
+	}
+	result.FirmwareEntities = make(map[string]string, len(w.FirmwareEntities))
+	for key, value := range w.FirmwareEntities {
+		result.FirmwareEntities[key] = value
 	}
 	return &result
 }

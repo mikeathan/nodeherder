@@ -194,9 +194,29 @@ test.describe('devices', () => {
         metricsEnabled: false,
         spatial: { mappings: [{x:'',y:'',active:''},{x:'target2_x',y:'target2_y',active:'target2_active'},{x:'',y:'',active:''}], scale: 6000, orientation: 0 },
       };
+      // A hub-derived presence device (spec 041): the tab must show its values as the
+      // authority instead of pretending the geometric overlay is the server truth.
+      state.devices.push({
+        id: `presence-${MOCK.livingRoomLight.id}`,
+        provider: 'presence',
+        connection_type: 'derived',
+        friendly_name: 'Living Room Light (presence)',
+        description: 'Derived presence',
+        power_source: 'mains',
+        availability: 'online',
+        last_seen: new Date().toISOString(),
+        properties: { source_device_id: MOCK.livingRoomLight.id, derived: true },
+        exposes: {
+          occupied: entity('occupied', 'binary', '', true),
+          target_count: entity('target_count', 'numeric', '', 1),
+          last_zone: entity('last_zone', 'text', '', 'Desk'),
+          empty_seconds: entity('empty_seconds', 'numeric', 's', 0),
+        },
+      });
       await route.fulfill({ response, json: state });
     });
     let sendUpdate: ((payload: unknown) => void) | undefined;
+    let sendSpatial: ((payload: unknown) => void) | undefined;
     const zoneCommands: {name:string;value:number}[]=[];
     let rejectSpatialSave=false;
     let savedMapping: unknown;
@@ -204,6 +224,7 @@ test.describe('devices', () => {
     let savedWorkspace: {zones:{name:string;points:{x:number;y:number}[]}[];objects:{name:string}[];outline:unknown[]} | undefined;
     await page.routeWebSocket('ws://localhost:4110/ws', (socket) => {
       sendUpdate = (payload) => socket.send(JSON.stringify({ type: 'deviceUpdated', payload }));
+      sendSpatial = (payload) => socket.send(JSON.stringify({ type: 'spatialTargets', payload }));
       socket.onMessage((raw) => {
         const frame = JSON.parse(String(raw));
         if (frame.type==='deviceSetValue') zoneCommands.push(frame.payload);
@@ -224,15 +245,43 @@ test.describe('devices', () => {
       });
     });
     await signIn(page, `/devicepage/${MOCK.livingRoomLight.id}`);
-    await page.getByRole('button', { name: 'Open spatial view' }).click();
-    const help = page.locator('summary').filter({ hasText: 'Help with the spatial view' });
+    // Presence is a first-class tab for mappable sensors. Its header chip is the entry point,
+    // and the Controls tab no longer draws a second radar.
+    const presenceTab = page.getByRole('tab', { name: 'Presence', exact: true });
+    await expect(presenceTab).toBeVisible();
+    const presenceChip = page.getByRole('button', { name: /^Presence: .*Open the presence view$/ });
+    await expect(presenceChip).toBeVisible();
+    await expect(page.getByRole('img', { name: /Live room canvas/ })).toHaveCount(0);
+    await presenceChip.click();
+    await expect(presenceTab).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByRole('heading', { name: 'Presence', exact: true })).toBeVisible();
+    await expect(page.getByRole('img', { name: /Live room canvas/ })).toHaveCount(1);
+    await expect(page.getByText(/Server presence: occupied · 1 target · last zone Desk/)).toBeVisible();
+    // Controls share one baseline on wide layouts: label-above fields and bare checkboxes must
+    // not drift, which is the misalignment this row had when it mixed two field layouts.
+    if (page.viewportSize()!.width >= 900) {
+      const selects = await page
+        .locator('.nh-presence-controls select')
+        .evaluateAll((nodes) =>
+          nodes.map((node) => {
+            const box = node.getBoundingClientRect();
+            return { bottom: box.bottom, center: box.top + box.height / 2 };
+          })
+        );
+      expect(selects.length).toBeGreaterThanOrEqual(3);
+      const bottoms = selects.map((select) => select.bottom);
+      expect(Math.max(...bottoms) - Math.min(...bottoms)).toBeLessThanOrEqual(1);
+      const checkbox = await page.locator('.nh-presence-controls input[type="checkbox"]').first().boundingBox();
+      expect(Math.abs(checkbox!.y + checkbox!.height / 2 - selects[0].center)).toBeLessThanOrEqual(4);
+    }
+    const help = page.locator('summary').filter({ hasText: 'Help with the presence view' });
     await help.focus();
     await page.keyboard.press('Enter');
     await expect(page.getByRole('heading', { name: 'Map a target' })).toBeVisible();
     await expect(page.getByRole('img', { name: /Example coordinate plane/ })).toBeVisible();
     await help.press('Enter');
     await expect(page.getByRole('heading', { name: 'Map a target' })).toHaveCount(0);
-    await page.locator('summary').filter({ hasText: 'Configure target mapping' }).click();
+    await page.locator('summary').filter({ hasText: /^Target mapping$/ }).click();
     // Live coordinate reports must not rebuild an open mapping selector.
     await expect.poll(() => !!sendUpdate).toBe(true);
     sendUpdate!({ id: MOCK.livingRoomLight.id, data: { target_x: 101, target2_x: 301 } });
@@ -283,21 +332,46 @@ test.describe('devices', () => {
       { x: '', y: '', active: '' },
       { x: '', y: '', active: '' },
     ]);
-    await page.getByRole('button', { name: 'Hide spatial view', exact: true }).click();
-    await page.getByRole('button', { name: 'Open spatial view', exact: true }).click();
-    await page.locator('summary').filter({ hasText: 'Configure target mapping' }).click();
+    await page.getByRole('tab', { name: 'Controls', exact: true }).click();
+    await expect(page.getByRole('img', { name: /Live room canvas/ })).toHaveCount(0);
+    await page.getByRole('tab', { name: 'Presence', exact: true }).click();
+    await page.locator('summary').filter({ hasText: /^Target mapping$/ }).click();
     for (const role of ['X', 'Y', 'Active'] as const) {
       await expect(target2.getByRole('combobox', { name: role, exact: true })).toHaveValue('');
     }
     await expect(target.getByRole('combobox', { name: 'X', exact: true })).toHaveValue('target_x');
     sendUpdate!({ id: MOCK.livingRoomLight.id, data: { target_x: 100, target_y: 200, target3_active: true } });
-    await expect(page.getByText(/Target 1: X/)).toBeVisible();
+    await expect(page.getByText(/Track 1 \(live\): X/)).toBeVisible();
     const widths = info.project.name === 'desktop' ? [1440, 768, 375] : [page.viewportSize()!.width];
     for (const width of widths) {
       await page.setViewportSize({ width, height: 900 });
       expect(await page.locator('html').evaluate((html) => html.scrollWidth <= html.clientWidth)).toBe(true);
       await page.screenshot({ path: info.outputPath(`spatial-view-${width}.png`), fullPage: true });
     }
+
+    // A complete frame wins over sampled coordinates and is labelled as frames.
+    await expect.poll(() => !!sendSpatial).toBe(true);
+    sendSpatial!({
+      id: MOCK.livingRoomLight.id,
+      at: new Date().toISOString(),
+      targets: [
+        { id: 1, active: true, x: { value: 1000, unit: 'mm' }, y: { value: 2000, unit: 'mm' } },
+        { id: 2, active: false },
+      ],
+    });
+    await expect(page.getByText('Live frames')).toBeVisible();
+    await expect(page.getByText(/Track 1 \(live\): X/)).toBeVisible();
+
+    // Smoothing and raw evidence remain available and never hide the live canvas.
+    const smoothing = page.getByRole('combobox', { name: 'Smoothing' });
+    await smoothing.selectOption('off');
+    await expect(smoothing).toHaveValue('off');
+    await smoothing.selectOption('high');
+    await expect(smoothing).toHaveValue('high');
+    await page.getByLabel('Raw', { exact: true }).check();
+    await expect(page.getByRole('img', { name: /Live room canvas/ })).toBeVisible();
+    await page.getByLabel('Raw', { exact: true }).uncheck();
+
     await page.getByRole('button', {name:'Create your first zone',exact:true}).click();
     await page.getByRole('button', {name:'Add detection zone',exact:true}).click();
     await page.getByLabel('Zone name',{exact:true}).fill('Desk');
@@ -350,7 +424,7 @@ test.describe('devices', () => {
     await page.getByRole('button',{name:'Clear session observations',exact:true}).click();
     await page.getByRole('button',{name:'Confirm clear observations',exact:true}).click();
     await expect(page.getByText('No observed positions in this window.',{exact:false})).toBeVisible();
-    await page.locator('summary').filter({hasText:'Configure target mapping'}).click();
+    await page.locator('summary').filter({hasText:/^Target mapping$/}).click();
     await page.getByRole('button',{name:'Zone editor',exact:true}).click();
     await page.getByRole('combobox',{name:'Zone slots',exact:true}).selectOption({label:'Desk · detection'});
     await page.locator('circle.nh-handle').first().scrollIntoViewIfNeeded();
@@ -383,7 +457,7 @@ test.describe('devices', () => {
     await expect(zoneSlots.getByRole('option',{name:/entry/i})).toHaveCount(1);
     sendUpdate!({ id: MOCK.livingRoomLight.id, availability: 'offline', data: {} });
     await expect(page.getByText('Device or hub connection is offline.')).toBeVisible();
-    await expect(page.getByText(/Target 1: X/)).toHaveCount(0);
+    await expect(page.getByText(/Track \d+ \(/)).toHaveCount(0);
   });
 });
 

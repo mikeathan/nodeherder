@@ -82,3 +82,72 @@ func TestSpatialWorkspaceCloneAndLegacyRoundTrip(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestSpatialPolygonZoneEntityRoles(t *testing.T) {
+	polygon := func() *SpatialWorkspace {
+		workspace := spatialFixture()
+		workspace.Zones[0].Shape = zoneShapePolygon
+		workspace.Zones[0].Points = []SpatialPoint{{X: 0, Y: 1000}, {X: 1000, Y: 1000}, {X: 500, Y: 2000}}
+		workspace.Zones[0].Entities = map[string]string{zoneRolePolygon: "polygon_zone_1"}
+		return workspace
+	}
+	if err := polygon().Validate(); err != nil {
+		t.Fatalf("polygon zone with a polygon entity rejected: %v", err)
+	}
+
+	rectangleRoleOnPolygon := polygon()
+	rectangleRoleOnPolygon.Zones[0].Entities = map[string]string{coordinateRoleBeginX: "begin_x"}
+	if rectangleRoleOnPolygon.Validate() == nil {
+		t.Fatal("polygon zone accepted a rectangle coordinate role")
+	}
+
+	polygonRoleOnRectangle := spatialFixture()
+	polygonRoleOnRectangle.Zones[0].Entities = map[string]string{zoneRolePolygon: "polygon_zone_1"}
+	if polygonRoleOnRectangle.Validate() == nil {
+		t.Fatal("rectangle zone accepted a polygon role")
+	}
+
+	tooManyPolygonEntities := polygon()
+	tooManyPolygonEntities.Zones[0].Entities[coordinateRoleEndX] = "end_x"
+	if tooManyPolygonEntities.Validate() == nil {
+		t.Fatal("polygon zone accepted more than one entity")
+	}
+}
+
+func TestSpatialFirmwareEntityRolesAndZoneOffDelay(t *testing.T) {
+	workspace := spatialFixture()
+	workspace.FirmwareEntities = map[string]string{firmwareRoleInstallationAngle: "angle", firmwareRolePolygonMode: "polygon_mode"}
+	workspace.Zones[0].Entities[zoneRoleOffDelay] = "zone_off_delay"
+	if err := workspace.Validate(); err != nil {
+		t.Fatalf("valid firmware mapping rejected: %v", err)
+	}
+
+	unknown := spatialFixture()
+	unknown.FirmwareEntities = map[string]string{"unknown": "x"}
+	if unknown.Validate() == nil {
+		t.Fatal("unknown firmware role accepted")
+	}
+
+	tooMany := spatialFixture()
+	tooMany.FirmwareEntities = map[string]string{
+		firmwareRoleInstallationAngle: "a", firmwareRoleInverseMounting: "b", firmwareRoleMaxDistance: "c",
+		firmwareRoleOccupancyOffDelay: "d", firmwareRolePolygonMode: "e", "extra": "f",
+	}
+	if tooMany.Validate() == nil {
+		t.Fatal("more firmware roles than allowed accepted")
+	}
+
+	polygon := spatialFixture()
+	polygon.Zones[0].Shape = zoneShapePolygon
+	polygon.Zones[0].Points = []SpatialPoint{{X: 0, Y: 1000}, {X: 1000, Y: 1000}, {X: 500, Y: 2000}}
+	polygon.Zones[0].Entities = map[string]string{zoneRolePolygon: "polygon_zone", zoneRoleOffDelay: "zone_off_delay"}
+	if err := polygon.Validate(); err != nil {
+		t.Fatalf("polygon with off delay rejected: %v", err)
+	}
+
+	clone := cloneSpatialWorkspace(workspace)
+	clone.FirmwareEntities[firmwareRoleInstallationAngle] = "changed"
+	if workspace.FirmwareEntities[firmwareRoleInstallationAngle] != "angle" {
+		t.Fatal("firmware mapping shared between clones")
+	}
+}

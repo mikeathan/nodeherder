@@ -6,22 +6,36 @@ import type { Device, Expose } from '@/types/device';
 import { ExposeCategories } from '@/types/device.type';
 import { isESPHomeDevice, resolveProtocol } from './index';
 import { isWritable } from '@/domain/exposes';
+import { supportsSpatialMapping } from '@/domain/spatial';
 
 /** Stable tab identifiers. */
 export const DeviceTabIds = {
   Controls: 'controls',
+  Presence: 'presence',
   History: 'history',
   Settings: 'settings',
   About: 'about',
 } as const;
 
-/** Tabs in display order. */
+/** Tabs in display order. Presence is offered only to devices that can map coordinates. */
 export const DEVICE_TABS = [
   { id: DeviceTabIds.Controls, label: 'Controls' },
+  { id: DeviceTabIds.Presence, label: 'Presence' },
   { id: DeviceTabIds.History, label: 'History' },
   { id: DeviceTabIds.Settings, label: 'Settings' },
   { id: DeviceTabIds.About, label: 'About' },
 ] as const;
+
+/** One device-page tab. */
+export type DeviceTab = (typeof DEVICE_TABS)[number];
+
+/**
+ * Tabs available for one device. Presence is withheld unless the device exposes mappable
+ * coordinates and an active flag, so unrelated devices gain no empty tab.
+ */
+export function deviceTabs(device: Device | undefined): readonly DeviceTab[] {
+  return DEVICE_TABS.filter((tab) => tab.id !== DeviceTabIds.Presence || supportsSpatialMapping(device));
+}
 
 /** Stable tab identifier used in the URL. */
 export type DeviceTabId = (typeof DEVICE_TABS)[number]['id'];
@@ -37,9 +51,9 @@ export const DEVICE_PROVIDER_INFO_FIELDS = [
 /** Placeholder for an absent About value. */
 export const DEVICE_ABOUT_MISSING = '—';
 
-/** Resolves an arbitrary query value to a known tab. */
-export function resolveDeviceTab(value: unknown): DeviceTabId {
-  return DEVICE_TABS.some((tab) => tab.id === value) ? (value as DeviceTabId) : DeviceTabIds.Controls;
+/** Resolves an arbitrary query value to an available tab; unknown or withheld falls back. */
+export function resolveDeviceTab(value: unknown, tabs: readonly DeviceTab[] = DEVICE_TABS): DeviceTabId {
+  return tabs.some((tab) => tab.id === value) ? (value as DeviceTabId) : DeviceTabIds.Controls;
 }
 
 /** URL query value for a tab; the default tab omits the parameter. */
@@ -53,9 +67,9 @@ export function deviceTabLabel(tab: DeviceTabId, isESPHome: boolean): string {
   return DEVICE_TABS.find((item) => item.id === tab)?.label ?? tab;
 }
 
-/** Wraps keyboard navigation between tabs. */
-export function adjacentDeviceTab(index: number, step: number): (typeof DEVICE_TABS)[number] {
-  return DEVICE_TABS[(index + step + DEVICE_TABS.length) % DEVICE_TABS.length];
+/** Wraps keyboard navigation across the tabs actually shown for this device. */
+export function adjacentDeviceTab(tabs: readonly DeviceTab[], index: number, step: number): DeviceTab {
+  return tabs[(index + step + tabs.length) % tabs.length];
 }
 
 /** Entities in one category for the given device. */

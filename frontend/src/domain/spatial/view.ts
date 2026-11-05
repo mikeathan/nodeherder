@@ -3,10 +3,10 @@
  * ids and labels here avoids string literals spread across panel components.
  */
 import type { Device } from '@/types/device';
-import type { SpatialTarget } from './index';
 import type { SpatialZone } from '@/types/spatial';
 import { formatExposeValue } from '@/domain/exposes';
-import { zonePreview } from './workspace';
+import { zonePreviewText, type ZoneOccupancy } from './occupancy';
+import type { DerivedZoneSignal } from './derived';
 
 /** Context help topics embedded in older spatial components. */
 export const SpatialHelpTopics = {
@@ -39,6 +39,12 @@ export const SpatialViewIds = {
   Zones: 'zones',
   Room: 'room',
   Entry: 'entry',
+  Firmware: 'firmware',
+  Calibrate: 'calibrate',
+  Activity: 'activity',
+  Replay: 'replay',
+  Diagnostics: 'diagnostics',
+  Fusion: 'fusion',
   Heatmap: 'heatmap',
 } as const;
 
@@ -48,6 +54,12 @@ export const SPATIAL_VIEWS = [
   { id: SpatialViewIds.Zones, label: 'Zone editor' },
   { id: SpatialViewIds.Room, label: 'Room builder' },
   { id: SpatialViewIds.Entry, label: 'Entry / exit' },
+  { id: SpatialViewIds.Firmware, label: 'Firmware settings' },
+  { id: SpatialViewIds.Calibrate, label: 'Calibration' },
+  { id: SpatialViewIds.Activity, label: 'Zone activity' },
+  { id: SpatialViewIds.Replay, label: 'Replay' },
+  { id: SpatialViewIds.Diagnostics, label: 'Diagnostics' },
+  { id: SpatialViewIds.Fusion, label: 'Multi-sensor' },
   { id: SpatialViewIds.Heatmap, label: 'Heatmap & analytics' },
 ] as const;
 
@@ -82,6 +94,13 @@ export function frameCountLabel(count: number): string {
   return `${count} one-second frame${count === 1 ? '' : 's'} with fresh targets in this window`;
 }
 
+/** Plain-language source label; "sampled" is not live frames and must say so. */
+export function sourceLabel(source: 'frames' | 'sampled' | 'none'): string {
+  if (source === 'frames') return 'Live frames';
+  if (source === 'sampled') return 'Sampled updates';
+  return 'No position data';
+}
+
 /** Connection label for the spatial status strip. */
 export function connectionLabel(online: boolean): string {
   return online ? 'Connected' : 'Offline';
@@ -97,11 +116,6 @@ export function isSpatialLiveView(view: SpatialViewId): boolean {
   return SPATIAL_LIVE_VIEWS.includes(view);
 }
 
-/** Status text for the number of fresh targets. */
-export function freshTargetLabel(targets: readonly SpatialTarget[]): string {
-  return `${targets.length} fresh ${targets.length === 1 ? 'target' : 'targets'}`;
-}
-
 /** Status text for the number of saved zone overlays. */
 export function zoneOverlayLabel(zoneCount: number): string {
   return `${zoneCount} zone overlay${zoneCount === 1 ? '' : 's'}`;
@@ -110,18 +124,29 @@ export function zoneOverlayLabel(zoneCount: number): string {
 /** One zone preview row, including an optional confirmed device occupancy reading. */
 export type ZonePreviewRow = { zone: SpatialZone; preview: string; reported: string | null; stale: boolean };
 
-/** Builds all per-zone preview text for the panel in one pass. */
+/** Builds all per-zone preview text for the panel in one pass from hysteresis-tracked occupancy. */
 export function zonePreviewRows(
   device: Device,
   zones: readonly SpatialZone[],
-  targets: readonly SpatialTarget[],
-  online: boolean
+  occupancy: ReadonlyMap<string, ZoneOccupancy>,
+  online: boolean,
+  hasData: boolean,
+  derived?: ReadonlyMap<string, DerivedZoneSignal>,
+  derivedOnline = true
 ): ZonePreviewRow[] {
   return zones.map((zone) => {
     const expose = device.exposes[zone.occupancyEntity ?? ''];
+    const signal = derivedOnline ? derived?.get(zone.id) : undefined;
+    // The hub's derived value wins while it is available, so the screen cannot disagree with
+    // an automation built on the same entity. An offline derived device falls back to the
+    // geometric preview instead of presenting frozen values as current.
+    const derivedText =
+      signal && signal.occupied !== null
+        ? `Derived by the hub: ${signal.occupied ? 'target inside' : 'clear'}${signal.count !== null ? ` · ${signal.count} ${signal.count === 1 ? 'target' : 'targets'}` : ''}`
+        : '';
     return {
       zone,
-      preview: zonePreview(zone, zones, targets, online),
+      preview: derivedText || zonePreviewText(occupancy.get(zone.id), online, hasData),
       reported: expose ? formatExposeValue(expose, expose.data) : null,
       stale: !online,
     };

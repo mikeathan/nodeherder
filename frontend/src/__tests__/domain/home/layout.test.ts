@@ -78,3 +78,12 @@ test('area/card commands own proposals and reject transient reorder membership',
   expect(homeAreaNameError(current, 'Kitchen', 'kitchen')).toBeNull();
   expect(current).toEqual(before);
 });
+
+test('presence identity is the whole device, not one of its values', () => {
+  expect(homeSourceKey({ kind: 'presence', device_id: 'radar' })).not.toBe(
+    homeSourceKey({ kind: 'device', device_id: 'radar', expose: 'target_active' })
+  );
+  expect(homeSourceKey({ kind: 'presence', device_id: 'radar' })).not.toBe(
+    homeSourceKey({ kind: 'presence', device_id: 'other' })
+  );
+});

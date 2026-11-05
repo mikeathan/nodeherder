@@ -4,8 +4,15 @@
  * helpers instead of carrying geometry or bounds inline.
  */
 import type { SpatialPoint, SpatialWorkspace, SpatialZone, ZoneKind } from '@/types/spatial';
-import { ENTRY_ROLES, ROOM_OBJECT_KINDS, ZONE_COORDINATE_ROLES, ZONE_SHAPES } from '@/types/spatial';
-import type { SpatialTarget } from './index';
+import {
+  ENTRY_ROLES,
+  FIRMWARE_ROLES,
+  ROOM_OBJECT_KINDS,
+  ZONE_COORDINATE_ROLES,
+  ZONE_OFF_DELAY_ROLE,
+  ZONE_POLYGON_ROLE,
+  ZONE_SHAPES,
+} from '@/types/spatial';
 import { rotatePoint } from './radar';
 
 /** Persisted workspace schema version. */
@@ -112,6 +119,7 @@ export function createWorkspace(): SpatialWorkspace {
     objects: [],
     sensor: { x: 0, y: 0, rotation: 0, fov: 0 },
     entryEntities: { enabled: '', timeout: '', threshold: '', assumed: '', remaining: '' },
+    firmwareEntities: Object.fromEntries(FIRMWARE_ROLES.map((role) => [role, ''])) as Record<string, string>,
   };
 }
 
@@ -126,6 +134,7 @@ export function copyWorkspace(value?: SpatialWorkspace): SpatialWorkspace {
     outline: copy.outline ?? [],
     objects: copy.objects ?? [],
     entryEntities: { ...createWorkspace().entryEntities, ...copy.entryEntities },
+    firmwareEntities: { ...createWorkspace().firmwareEntities, ...copy.firmwareEntities },
   };
 }
 
@@ -221,7 +230,11 @@ function validZone(zone: SpatialZone, counts: Record<string, number>, ids: Set<s
   if (!limit || currentCount >= limit || !ZONE_SHAPES.includes(zone.shape)) return false;
   counts[zone.kind] = currentCount + 1;
   if (!validPolygon(zone.points) || (zone.shape === 'rectangle' && !isRectangle(zone.points))) return false;
-  if (!validEntityMap(zone.entities, ZONE_COORDINATE_ROLES)) return false;
+  const zoneRoles =
+    zone.shape === 'polygon'
+      ? [ZONE_POLYGON_ROLE, ZONE_OFF_DELAY_ROLE]
+      : [...ZONE_COORDINATE_ROLES, ZONE_OFF_DELAY_ROLE];
+  if (!validEntityMap(zone.entities, zoneRoles)) return false;
   if (zone.occupancyEntity && !validEntityId(zone.occupancyEntity)) return false;
   return validItem(zone.id, zone.name, ids);
 }
@@ -268,6 +281,9 @@ export function validateWorkspace(workspace: SpatialWorkspace): string {
   }
   if (!validEntityMap(workspace.entryEntities, ENTRY_ROLES)) {
     return 'Invalid entry entity mapping.';
+  }
+  if (!validEntityMap(workspace.firmwareEntities ?? {}, FIRMWARE_ROLES)) {
+    return 'Invalid firmware entity mapping.';
   }
   return '';
 }
@@ -346,31 +362,25 @@ export function containsPoint(points: readonly SpatialPoint[], point: SpatialPoi
   return inside;
 }
 
-/** Whether a fresh target currently occupies a zone after exclusion masks. */
-export function zoneIsOccupied(
+/**
+ * Whether one point lies inside a zone, honouring exclusion masks. Detection zones are
+ * masked by every exclusion overlay; other zone kinds are not. Pure geometry, so callers
+ * own freshness and hysteresis decisions.
+ */
+export function targetInsideZone(
   zone: SpatialZone,
   zones: readonly SpatialZone[],
-  targets: readonly SpatialTarget[],
-  online: boolean
+  point: SpatialPoint
 ): boolean {
-  if (!online || !targets.length) return false;
-  return targets.some(
-    (target) =>
-      containsPoint(zone.points, target) &&
-      (zone.kind !== 'detection' ||
-        !zones.some((other) => other.kind === 'exclusion' && containsPoint(other.points, target)))
-  );
+  if (!containsPoint(zone.points, point)) return false;
+  if (zone.kind !== 'detection') return true;
+  return !zones.some((other) => other.kind === 'exclusion' && containsPoint(other.points, point));
 }
 
-/** Detection previews respect exclusion overlays without modifying firmware or automations. */
-export function zonePreview(
-  zone: SpatialZone,
-  zones: readonly SpatialZone[],
-  targets: readonly SpatialTarget[],
-  online: boolean
-): string {
-  if (!online || !targets.length) return 'Unknown — no fresh targets';
-  return zoneIsOccupied(zone, zones, targets, online) ? 'Target inside' : 'No target inside';
+/** Transforms one sensor-relative point into room coordinates without display rotation. */
+export function roomPoint(point: SpatialPoint, sensor: SpatialWorkspace['sensor']): SpatialPoint {
+  const local = rotatePoint(point.x, point.y, sensor.rotation);
+  return { x: local.x + sensor.x, y: local.y + sensor.y };
 }
 
 /** Transforms sensor coordinates into room coordinates, then applies display rotation and SVG Y inversion. */
@@ -379,8 +389,7 @@ export function roomScreenPoint(
   sensor: SpatialWorkspace['sensor'],
   orientation: number
 ): SpatialPoint {
-  const local = rotatePoint(point.x, point.y, sensor.rotation);
-  return screenPoint({ x: local.x + sensor.x, y: local.y + sensor.y }, orientation);
+  return screenPoint(roomPoint(point, sensor), orientation);
 }
 
 /** Converts a room point to a rotated SVG point. */

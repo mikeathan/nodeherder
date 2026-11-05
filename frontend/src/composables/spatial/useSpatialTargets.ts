@@ -1,11 +1,14 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { store } from '@/store';
 import type { Device, DeviceUpdate } from '@/types/device';
-import { SPATIAL_FRESHNESS_TICK_MS, spatialTargetStatuses, spatialTargets, type SpatialMapping } from '@/domain/spatial';
+import { SPATIAL_FRESHNESS_TICK_MS, spatialTargets, type SpatialMapping } from '@/domain/spatial';
 
-/** Tracks arrival freshness for mapped coordinates in the current device's live
- * Vuex reports. Owns its subscription/timer; resets evidence on device/offline changes. */
-export function useSpatialTargets(device: () => Device, mappings: () => SpatialMapping[], online: () => boolean) {
+/**
+ * Tracks arrival freshness for the mapped coordinate entities of one device and exposes the
+ * sampled fallback targets. Frames are the preferred source; this path keeps the view usable
+ * with a server that does not send frames and supplies per-row mapping diagnostics.
+ */
+export function useSpatialTargets(device: () => Device, mappings: () => readonly SpatialMapping[], online: () => boolean) {
   const seen = ref(new Map<string, number>());
   const now = ref(Date.now());
   const coordinates = computed(() => new Set(mappings().flatMap((mapping) => [mapping.x, mapping.y])));
@@ -27,8 +30,5 @@ export function useSpatialTargets(device: () => Device, mappings: () => SpatialM
   onBeforeUnmount(() => { unsubscribe(); clearInterval(timer); });
 
   const targets = computed(() => spatialTargets(device().exposes, mappings(), seen.value, now.value, online()));
-  const statuses = computed(() =>
-    spatialTargetStatuses(device().exposes, mappings(), seen.value, now.value, online())
-  );
-  return { targets, statuses };
+  return { targets, seen, now };
 }

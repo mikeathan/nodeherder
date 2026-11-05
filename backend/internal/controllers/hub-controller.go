@@ -12,6 +12,7 @@ import (
 	metrics "node-herder/internal/metrics/domain"
 	"node-herder/internal/mqtt"
 	"node-herder/internal/services"
+	"node-herder/internal/spatial"
 	"node-herder/internal/ws"
 	automationmodels "node-herder/models/automations"
 	"node-herder/models/bridge"
@@ -23,6 +24,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"node-herder/utils"
@@ -65,6 +67,7 @@ type HubController struct {
 	getDeviceProcessor                       func() *services.DeviceProcessor
 	automationHandlers                       []automations.AutomationHandler
 	mcpServer                                mcpserver.MCPStatusProvider
+	presenceEngine                           atomic.Pointer[spatial.Engine]
 }
 type HubControllerOption func(*HubController)
 
@@ -696,6 +699,9 @@ func (h *HubController) RemoveProviderDevice(ctx context.Context, id string) err
 	if ctx == nil {
 		return errors.New("context is required")
 	}
+	if spatial.IsDerivedDeviceID(id) {
+		return errors.New("derived presence devices follow their source mapping and cannot be removed directly")
+	}
 	found, err := h.store.FindDeviceByIds([]string{id})
 	if err != nil {
 		return err
@@ -709,6 +715,9 @@ func (h *HubController) RemoveProviderDevice(ctx context.Context, id string) err
 	}
 	if err := h.deviceLanes.Do(ctx, device.FriendlyName, func() error { return h.getDeviceProcessor().RemoveDevice(id) }); err != nil {
 		return err
+	}
+	if engine := h.presenceEngine.Load(); engine != nil {
+		engine.Remove(id)
 	}
 	all, err := h.store.AllDevices()
 	if err != nil {
@@ -743,6 +752,9 @@ func (m *HubController) TriggerManual(ctx context.Context, automationId string, 
 // removeDevice is called from the bridge lane. Join the device's own lane before
 // retiring it so in-flight state/automation callbacks finish ahead of deletion.
 func (m *HubController) removeDevice(id string) error {
+	if spatial.IsDerivedDeviceID(id) {
+		return errors.New("derived presence devices follow their source mapping and cannot be removed directly")
+	}
 	processor := m.getDeviceProcessor()
 	key := id
 	if name, active := processor.DeviceName(id); active {
@@ -750,7 +762,15 @@ func (m *HubController) removeDevice(id string) error {
 	} else if device, err := m.registrar.LookupById(id); err == nil {
 		key = device.GetFriendlyName()
 	}
-	remove := func() error { return processor.RemoveDevice(id) }
+	remove := func() error {
+		err := processor.RemoveDevice(id)
+		if err == nil {
+			if engine := m.presenceEngine.Load(); engine != nil {
+				engine.Remove(id)
+			}
+		}
+		return err
+	}
 	if key == bridgeKey {
 		return remove()
 	} // Already on this lane; Do would wait on itself.
@@ -783,6 +803,9 @@ func (m *HubController) route(id string, payload []byte, connType string) {
 }
 
 func (m *HubController) shutdownLanes() {
+	if engine := m.presenceEngine.Load(); engine != nil {
+		engine.Close()
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), laneShutdownTimeout)
 	defer cancel()
 	// Ingress first: draining it may still hand messages to device lanes.
@@ -834,20 +857,31 @@ func (m *HubController) responseHandler(id string) handler {
 // will have to create some shared context for hub controller so i can add that thre as well with the others
 func (d *HubController) createDeviceProcessor() *services.DeviceProcessor {
 
+	var engine *spatial.Engine
 	events := devices.NewDeviceRequestEvents()
 	events.WithAvailabilityTimeout(time.Duration(d.DeviceAvailabilityTimeoutOverrideInHours) * time.Hour)
 	events.WithOnNewDevice(func(device *devices.Device) {
 		reportDeviceOutputError(device.Id, d.handleDeviceAdded(device))
+		if engine != nil {
+			// Register or refresh the derived presence device as soon as its source is known.
+			engine.Sync(device.Id)
+		}
 	})
 
 	events.WithOnDeviceUpdated(func(device *devices.Device, p *devices.UpdatePackage) {
 		reportDeviceOutputError(device.Id, d.handleDeviceUpdated(device, p))
 	})
-	events.OnSpatialObserved = func(p *devices.UpdatePackage) {
-		reportDeviceOutputError(p.Id, d.eventHub.Broadcast(ws.DeviceUpdated, p))
+	events.OnSpatialTargets = func(frame *devices.SpatialFrame) {
+		reportDeviceOutputError(frame.Id, d.eventHub.Broadcast(ws.SpatialTargets, frame))
+		if engine != nil {
+			engine.Observe(frame)
+		}
 	}
 	events.WithOnDeviceAvailabilityChanged(func(p *devices.UpdatePackage) {
 		d.handleDeviceAvailabilityChanged(p)
+		if engine != nil {
+			engine.Sync(p.Id)
+		}
 	})
 
 	events.WithOnDeviceMeasurementsUpdated(func(device *devices.Device, p map[string]interface{}) {
@@ -867,12 +901,84 @@ func (d *HubController) createDeviceProcessor() *services.DeviceProcessor {
 		Build()
 
 	appconfig := d.store.AppConfig()
+	cache := appconfig.GetDeviceConfigCache()
+	engine = spatial.NewEngine(spatial.Deps{
+		Context: d.ctx,
+		Config:  presenceConfig{cache: cache},
+		Source: func(id string) (*devices.Device, bool) {
+			device, err := d.registrar.LookupById(id)
+			if err != nil || device == nil {
+				return nil, false
+			}
+			return device, true
+		},
+		Sink:  presenceSink{processor: processor, store: d.store, eventHub: d.eventHub},
+		Clock: utils.NewRealClock(),
+	})
+	engine.Start()
+	d.presenceEngine.Store(engine)
+	// Reconcile derived devices for already stored devices after a restart, so an offline or
+	// quiet source does not keep pre-restart values.
+	if stored, err := d.store.AllDevices(); err == nil {
+		for _, device := range stored {
+			engine.Sync(device.Id)
+		}
+	}
+
 	appconfig.RegisterDeviceConfigUpdateListener(func(cfg *settings.DeviceConfig) {
 		processor.OnDeviceConfigUpdated(cfg)
+		if cfg.Id != "" {
+			// A saved mapping or zone change must reconcile its derived device immediately.
+			engine.Sync(cfg.Id)
+		}
 	})
 
 	return processor
 }
+
+// presenceSink routes derived presence reports through the normal device processor, so they
+// reach automations, history and WebSocket clients exactly like provider reports.
+type presenceSink struct {
+	processor *services.DeviceProcessor
+	store     store.AppStore
+	eventHub  ws.EventHub
+}
+
+func (s presenceSink) Register(device *devices.Device) error {
+	return s.processor.RegisterProviderDevice(device)
+}
+
+func (s presenceSink) Update(id string, payload map[string]interface{}) error {
+	return s.processor.UpdateProviderDevice(id, payload)
+}
+
+func (s presenceSink) Offline(id string) error { return s.processor.ProviderOffline(id) }
+
+// Remove retires the derived device and broadcasts the new device list, so an open browser
+// drops it instead of keeping stale presence rows after a mapping is cleared.
+func (s presenceSink) Remove(id string) error {
+	if err := s.processor.RemoveDevice(id); err != nil {
+		return err
+	}
+	all, err := s.store.AllDevices()
+	if err != nil {
+		return err
+	}
+	return s.eventHub.Broadcast(ws.DeviceList, all)
+}
+
+// presenceConfig adapts saved device settings for the presence engine. A disabled device is
+// treated as unmapped, which retires its derived device instead of freezing stale values.
+type presenceConfig struct{ cache *settings.DeviceConfigCache }
+
+func (c presenceConfig) Mapped(id string) bool {
+	if c.cache.IsDeviceDisabled(id) {
+		return false
+	}
+	return services.HasCompleteSpatialMapping(c.cache.SpatialMappings(id))
+}
+
+func (c presenceConfig) Zones(id string) []settings.SpatialZone { return c.cache.SpatialZones(id) }
 
 func (d *HubController) handleDeviceAdded(device *devices.Device) error {
 	return d.broadcastAndStoreDevice(ws.DeviceAdded, device, device)

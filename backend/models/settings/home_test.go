@@ -96,3 +96,23 @@ func TestWeatherHomeLayoutReferences(t *testing.T) {
 		t.Fatal("mixed weather/service identity accepted")
 	}
 }
+
+func TestHomePresenceCardReferencesWholeDevice(t *testing.T) {
+	layout := settings.HomeFromGroups(map[string]*settings.DashboardGroup{"Kitchen": homeGroup("Kitchen")})
+	layout.Blocks[0].Cards[0] = settings.HomeCard{ID: "presence", Kind: "presence", Panel: true, DeviceID: "device"}
+	if err := layout.Validate(); err != nil {
+		t.Fatalf("valid presence card rejected: %v", err)
+	}
+	invalid := []settings.HomeCard{
+		{ID: "presence", Kind: "presence", Panel: true},
+		{ID: "presence", Kind: "presence", Panel: true, DeviceID: "device", Expose: "temperature"},
+		{ID: "presence", Kind: "presence", Panel: true, DeviceID: "device", InstanceID: "instance"},
+	}
+	for _, card := range invalid {
+		candidate := layout.Clone()
+		candidate.Blocks[0].Cards[0] = card
+		if candidate.Validate() == nil {
+			t.Fatalf("invalid presence card accepted: %+v", card)
+		}
+	}
+}

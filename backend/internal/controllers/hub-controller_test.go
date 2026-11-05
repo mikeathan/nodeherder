@@ -14,6 +14,7 @@ import (
 	metricsquery "node-herder/internal/metrics/query"
 	metricsservice "node-herder/internal/metrics/services"
 	"node-herder/internal/services"
+	"node-herder/internal/spatial"
 	"node-herder/internal/ws"
 	"node-herder/mocks"
 	automationmodels "node-herder/models/automations"
@@ -2928,4 +2929,122 @@ func TestConfigurationConfirmationUsesConfiguredTimeout(t *testing.T) {
 	if err := h.EventHub.SetValue(map[string]any{"id": device.Id, "name": "missing", "value": float64(6)}); err == nil {
 		t.Fatal("unknown command field accepted")
 	}
+}
+
+func TestDerivedPresenceDeviceFollowsFrames(t *testing.T) {
+	h := hubharness.NewFromBridge(t, []byte(`[]`), 0)
+	source := devices.NewDevice("spatial-source")
+	source.Provider = "esphome"
+	source.ConnectionType = "esphome"
+	source.FriendlyName = "Hall radar"
+	source.PowerSource = "mains"
+	source.SetAvailability(devices.OnlineAvailability)
+	for _, entity := range []*devices.Entity{
+		presenceEntity("target_x", bridge.NumericDataType, "mm"),
+		presenceEntity("target_y", bridge.NumericDataType, "mm"),
+		presenceEntity("target_active", bridge.BinaryDataType, ""),
+	} {
+		source.Exposes[entity.Name] = entity
+	}
+
+	cfg := settings.NewDeviceConfig(source.Id)
+	cfg.Spatial = &settings.SpatialConfig{
+		Scale:    6000,
+		Mappings: []settings.SpatialMapping{{X: "target_x", Y: "target_y", Active: "target_active"}},
+		Workspace: &settings.SpatialWorkspace{
+			Version: 1,
+			Zones: []settings.SpatialZone{{
+				ID: "desk", Name: "Desk", Kind: "detection", Shape: "rectangle",
+				Points: []settings.SpatialPoint{{X: 0, Y: 1000}, {X: 1000, Y: 1000}, {X: 1000, Y: 2000}, {X: 0, Y: 2000}},
+			}},
+		},
+	}
+	require.NoError(t, h.Store.AppConfig().SetDeviceConfigOverrides(cfg))
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	require.NoError(t, h.Hub.RegisterProviderDevice(ctx, source))
+	defer func() { _ = h.Hub.RemoveProviderDevice(context.Background(), source.Id) }()
+
+	derivedID := spatial.DeviceID(source.Id)
+	// Removing the mapping must also broadcast a device list without the derived device, so an
+	// open browser drops it instead of keeping stale presence rows.
+	var listMu sync.Mutex
+	listWithoutDerived := false
+	var seenEvents []string
+	h.EventHub.OnBroadcast(func(event string, data interface{}) {
+		listMu.Lock()
+		seenEvents = append(seenEvents, event)
+		listMu.Unlock()
+		if event != ws.DeviceList {
+			return
+		}
+		list, ok := data.([]*devices.Device)
+		if !ok {
+			return
+		}
+		for _, device := range list {
+			if device.Id == derivedID {
+				return
+			}
+		}
+		listMu.Lock()
+		listWithoutDerived = true
+		listMu.Unlock()
+	})
+	require.Eventually(t, func() bool {
+		device, err := h.Store.FindDeviceById(derivedID)
+		return err == nil && device != nil
+	}, 5*time.Second, 50*time.Millisecond, "derived device was never registered")
+
+	// Frames are change-driven and rate-limited to 100 ms, so reports must be spaced like a
+	// real sensor (4 Hz) for the engine to see consecutive samples.
+	for _, point := range []struct{ x, y float64 }{{500, 1500}, {520, 1550}, {540, 1600}} {
+		require.NoError(t, h.Hub.UpdateProviderDevice(ctx, source.Id, map[string]interface{}{
+			"target_x": point.x, "target_y": point.y, "target_active": true,
+		}))
+		time.Sleep(150 * time.Millisecond)
+	}
+
+	occupied, _, _ := spatial.ZoneEntityNames("desk")
+	require.Eventually(t, func() bool {
+		device, err := h.Store.FindDeviceById(derivedID)
+		if err != nil || device == nil {
+			return false
+		}
+		entity, ok := device.GetExpose(occupied)
+		return ok && entity.Data.Value() == true
+	}, 5*time.Second, 100*time.Millisecond, "derived zone occupancy never turned true")
+
+	// Removing the whole mapping retires the derived device instead of freezing its values.
+	require.NoError(t, h.Store.AppConfig().SetDeviceConfigOverrides(settings.NewDeviceConfig(source.Id)))
+	require.Eventually(t, func() bool {
+		device, err := h.Store.FindDeviceById(derivedID)
+		return err != nil || device == nil
+	}, 5*time.Second, 100*time.Millisecond, "derived device survived mapping removal")
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) && !listWithoutDerived {
+		time.Sleep(50 * time.Millisecond)
+		listMu.Lock()
+		ready := listWithoutDerived
+		listMu.Unlock()
+		if ready {
+			break
+		}
+	}
+	listMu.Lock()
+	ready, events := listWithoutDerived, append([]string(nil), seenEvents...)
+	listMu.Unlock()
+	if !ready {
+		t.Fatalf("removal did not broadcast a fresh device list; events=%v", events)
+	}
+}
+
+func presenceEntity(name string, dataType bridge.ExposeDataType, unit string) *devices.Entity {
+	entity := devices.NewEntity(name)
+	entity.Type = dataType
+	entity.Unit = unit
+	entity.AccessMode = bridge.ReadAccessMode
+	entity.Category = bridge.MeasurementCategory
+	return entity
 }
