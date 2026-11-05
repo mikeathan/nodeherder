@@ -68,6 +68,7 @@
     jitterMm,
     duplicates,
     replayFrames,
+    recentTargets,
     showRaw,
     smoothing,
     targetStatuses,
@@ -363,7 +364,7 @@
       v-if="mode === SpatialViewIds.Calibrate"
       :device="device"
       :workspace="workspace"
-      :tracks="tracks"
+      :targets="recentTargets"
       :online="online"
       @apply="setSensor" />
 

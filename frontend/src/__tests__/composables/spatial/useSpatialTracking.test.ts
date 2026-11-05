@@ -105,6 +105,18 @@ test('changing the smoothing level replays recent history immediately', async ()
   scope.stop();
 });
 
+test('keeps the last raw position per slot after the target clears', async () => {
+  const { scope, tracking } = setup();
+  store.commit('hub/updateSpatialTargets', frame(SPATIAL_BASE_MS, true, 120, 240));
+  await nextTick();
+  store.commit('hub/updateSpatialTargets', frame(SPATIAL_BASE_MS + 3000, false));
+  jest.advanceTimersByTime(5000);
+  await nextTick();
+  // The live track may still be held briefly; the captured raw position is retained for calibration.
+  expect(tracking.recentTargets.value).toEqual([{ slot: 1, x: 120, y: 240, at: SPATIAL_BASE_MS }]);
+  scope.stop();
+});
+
 test('prefers complete frames and converts their units', async () => {
   const { scope, tracking } = setup();
   store.commit('hub/updateSpatialTargets', frame(SPATIAL_BASE_MS, true, 120, 200));

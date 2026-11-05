@@ -6,8 +6,9 @@
   import { computed, reactive, ref } from 'vue';
   import type { Device } from '@/types/device';
   import type { SpatialWorkspace } from '@/types/spatial';
-  import type { SpatialDisplayTrack } from '@/domain/spatial/tracks';
   import type { CalibrationPair } from '@/domain/spatial/calibration';
+
+  type RecentTarget = { slot: number; x: number; y: number; at: number };
   import { CALIBRATION_MAX_PAIRS, solveCalibration } from '@/domain/spatial/calibration';
   import { exposeDisplayLabel } from '@/domain/exposes';
   import { useDeviceCommand } from '@/composables/useDeviceCommand';
@@ -16,7 +17,7 @@
   const props = defineProps<{
     device: Device;
     workspace: SpatialWorkspace;
-    tracks: readonly SpatialDisplayTrack[];
+    targets: readonly RecentTarget[];
     online: boolean;
   }>();
   const emit = defineEmits<{ apply: [patch: Partial<SpatialWorkspace['sensor']>] }>();
@@ -33,11 +34,9 @@
     }))
   );
 
-  // Options keep every reported slot, including aged ones, so a selection cannot be silently
-  // dropped by the 250 ms ageing tick; staleness is reported separately and blocks applying.
-  const options = computed(() => [...props.tracks].sort((left, right) => left.slot - right.slot));
-  const isLive = (slot: number | null) =>
-    slot !== null && props.tracks.some((track) => track.slot === slot && track.state === 'live');
+  // Options come from the last raw position per slot, which survives the target clearing. A
+  // still person therefore remains selectable after the live view has aged them out.
+  const options = computed(() => [...props.targets].sort((left, right) => left.slot - right.slot));
   const angleEntity = computed(() => {
     const entity = props.device.exposes[props.workspace.firmwareEntities?.installationAngle ?? ''];
     return entity && entity.type === 'numeric' && entity.access_mode === 'readwrite' ? entity : undefined;
@@ -56,12 +55,8 @@
       }))
   );
   const solved = computed(() => solveCalibration(pairs.value));
-  const staleRows = computed(() =>
-    rows
-      .map((row, index) => ({ row, index }))
-      .filter(({ row }) => row.slot !== null && !isLive(row.slot))
-      .map(({ index }) => index + 1)
-  );
+  const capturedAge = (row: { capturedAt: number }) =>
+    row.capturedAt ? Math.max(0, Math.round((Date.now() - row.capturedAt) / 1000)) : 0;
   const busy = computed(() => (angleEntity.value ? isPending(props.device.id, angleEntity.value.name) : false));
 
   function addRow() {
@@ -72,10 +67,10 @@
   /** Captures the slot's raw position once; re-selecting the same slot refreshes the capture. */
   function capture(index: number) {
     const row = rows[index];
-    const track = props.tracks.find((item) => item.slot === row.slot);
-    row.measuredX = track?.rawX ?? null;
-    row.measuredY = track?.rawY ?? null;
-    row.capturedAt = track ? Date.now() : 0;
+    const target = props.targets.find((item) => item.slot === row.slot);
+    row.measuredX = target?.x ?? null;
+    row.measuredY = target?.y ?? null;
+    row.capturedAt = target?.at ?? 0;
     notice.value = '';
   }
   function removeRow(index: number) {
@@ -87,7 +82,7 @@
     notice.value = '';
   }
   function apply() {
-    if (solved.value.error || !solved.value.solution || staleRows.value.length) return;
+    if (solved.value.error || !solved.value.solution) return;
     emit('apply', {
       x: Math.round(solved.value.solution.x),
       y: Math.round(solved.value.solution.y),
@@ -110,22 +105,23 @@
       Stand at marked room positions and capture the live target for each. Positions are raw measured millimetres;
       room positions are the same millimetres used by the room outline. A result only changes the unsaved draft.
     </p>
-    <p v-if="staleRows.length" class="nh-muted">
-      Row {{ staleRows.join(', ') }} lost its live slot; recapture it before solving.
+    <p v-if="!targets.length" class="nh-muted">
+      No target positions recorded yet. Keep the presence tab open while the target moves once.
     </p>
     <div v-for="(row, index) in rows" :key="index" class="nh-calibration-row">
       <label>
         Live slot
         <select class="nh-input" :value="row.slot ?? ''" @change="row.slot = Number(($event.target as HTMLSelectElement).value) || null; capture(index)">
           <option value="">Not captured</option>
-          <option v-for="track in options" :key="track.slot" :value="track.slot">
-            Slot {{ track.slot }} · raw {{ Math.round(track.rawX) }}, {{ Math.round(track.rawY) }} mm
-            {{ track.state === 'live' ? '' : `(${track.state})` }}
+          <option v-for="target in options" :key="target.slot" :value="target.slot">
+            Slot {{ target.slot }} · raw {{ Math.round(target.x) }}, {{ Math.round(target.y) }} mm ·
+            {{ new Date(target.at).toLocaleTimeString() }}
           </option>
         </select>
       </label>
       <span v-if="row.capturedAt" class="nh-muted">
-        Captured {{ row.measuredX }}, {{ row.measuredY }} mm at {{ new Date(row.capturedAt).toLocaleTimeString() }}
+        Captured {{ row.measuredX }}, {{ row.measuredY }} mm at
+        {{ new Date(row.capturedAt).toLocaleTimeString() }} ({{ capturedAge(row) }} s ago)
       </span>
       <label>
         Room X (mm)
@@ -152,7 +148,7 @@
         <dd>{{ Math.round(solved.solution.rms) }} mm RMS · worst {{ Math.round(solved.solution.worst) }} mm</dd>
       </dl>
       <p v-if="solved.warning" class="nh-muted">{{ solved.warning }}</p>
-      <UiButton :disabled="staleRows.length > 0" @click="apply">Apply to room draft</UiButton>
+      <UiButton @click="apply">Apply to room draft</UiButton>
       <UiButton
         v-if="angleEntity"
         variant="ghost"
