@@ -277,6 +277,68 @@ For a mapped ESPHome/EPL source, the intended capture is:
 When "Record history" is off, neither metrics nor spatial sessions are captured. Retention remains
 separate: spatial chunks 7 days, metrics 10 days.
 
+## Integration with the existing history flow (no category remap)
+
+"Record history" already means: per-device `metricsEnabled` → change-filtered measurement rows →
+the same bbolt data directory → a maintenance task with a retention window. The recorder should
+plug into **that lifecycle**, not invent a second switch:
+
+- check the same `DeviceConfigCache.IsMetricsEnabled(sourceID)` before recording;
+- run flush/cleanup from the same maintenance-task factory and clock/shutdown pattern as the
+  metrics cleanup (`store/tasks.go`), with its own 7-day window;
+- write to the same data directory, in a dedicated `spatial` bucket (or `spatial.db`), never as
+  per-expose metric rows;
+- make the derived presence device inherit the source device's history flag, so zone history and
+  positions switch together.
+
+**Do not remap `target_x`/`target_y` from diagnostic to measurement.** That would:
+
+- change what every consumer sees (charts, automations, device UI) and make 4 Hz coordinate
+  reports eligible for history;
+- still store two independent series per point rather than an atomic pair;
+- flood metrics at the source rate instead of the recorder's 1 Hz/movement gate;
+- couple spatial sessions to per-expose metric policy and expose names.
+
+The categories are correct. The recorder is a different *representation* of history (paired
+points/sessions), not a new expose category.
+
+## Retention without a hub config
+
+Agreed: a root `hub.spatial` block is too broad. Options considered:
+
+1. **Hardcode 7 days in the spatial recorder package** (recommended for v1), expose it read-only
+   in the UI, change it only by code. No config drift.
+2. Reuse `hub.history.expireAt` capped at 7 days (`min(expire, 7d)`): no new config, but changing
+   the metrics range silently changes spatial history.
+3. A per-device field (`spatialHistoryDays`) in `DeviceConfig`: device-scoped and fits the model,
+   but adds a second thing to configure and a UI control for little value now.
+
+Pick **1**. If it ever needs to be configurable, the clean home is a device-scoped history
+setting, not a root spatial block.
+
+## Storage observability UI (new request)
+
+Add a **System** section under Settings with a read-only Storage card. It answers "how big is the
+database?" without adding another config surface.
+
+Backend: authenticated `GET /api/system/storage`, returning:
+
+- per-file sizes in the data directory: `metrics.db` (total, including the spatial bucket),
+  `spatial.db` if used, settings/config files, logs directory;
+- total data-directory bytes;
+- filesystem free/total bytes for that volume;
+- optional bbolt stats per bucket (`Alloc`, `InUse`, `FreePageN`) with a short cache, so the
+  spatial bucket can be reported separately even when sharing `metrics.db`;
+- retention labels (metrics 10 days, spatial 7 days) and `updated_at`.
+
+UI: Settings → System → "Storage" with a table/bar per store, retention and refresh. Read-only,
+authenticated, never public.
+
+Container note: the app can report its own data volume and the filesystem it sees. It cannot report
+sibling Docker containers' sizes without mounting the Docker socket, which is a security boundary
+we should not cross for a read-only card. If "per container" means the NodeHerder container/data
+volume, the card covers it; sibling containers need a deliberate Docker integration decision.
+
 ## Defaults worth agreeing
 
 | Setting | Proposed default | Why |
