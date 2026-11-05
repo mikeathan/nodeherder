@@ -10,6 +10,8 @@ export const ZONE_KINDS = ['detection', 'exclusion', 'entry'] as const;
 export const ZONE_SHAPES = ['rectangle', 'polygon'] as const;
 /** Writable firmware coordinate roles for a rectangle zone. */
 export const ZONE_COORDINATE_ROLES = ['beginX', 'beginY', 'endX', 'endY'] as const;
+/** Firmware text entity role for a polygon zone; rectangle coordinates do not apply to it. */
+export const ZONE_POLYGON_ROLE = 'polygon';
 /** Supported visual room items. */
 export const ROOM_OBJECT_KINDS = ['wall', 'door', 'furniture'] as const;
 /** Entry / assumed-presence entity roles. */
@@ -21,6 +23,8 @@ export type SpatialPoint = { x: number; y: number };
 export type ZoneKind = (typeof ZONE_KINDS)[number];
 export type ZoneShape = (typeof ZONE_SHAPES)[number];
 export type ZoneCoordinateRole = (typeof ZONE_COORDINATE_ROLES)[number];
+/** Any firmware entity role a zone can map: four rectangle bounds or one polygon text value. */
+export type ZoneEntityRole = ZoneCoordinateRole | typeof ZONE_POLYGON_ROLE;
 export type RoomObjectKind = (typeof ROOM_OBJECT_KINDS)[number];
 export type EntryRole = (typeof ENTRY_ROLES)[number];
 
@@ -30,7 +34,7 @@ export type SpatialZone = {
   kind: ZoneKind;
   shape: ZoneShape;
   points: SpatialPoint[];
-  entities?: Partial<Record<ZoneCoordinateRole, string>>;
+  entities?: Partial<Record<ZoneEntityRole, string>>;
   occupancyEntity?: string;
 };
 

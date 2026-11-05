@@ -7,7 +7,7 @@ import type {
   SpatialPoint,
   SpatialWorkspace,
   SpatialZone,
-  ZoneCoordinateRole,
+  ZoneEntityRole,
   ZoneKind,
   ZoneShape,
 } from '@/types/spatial';
@@ -125,7 +125,7 @@ export function useWorkspaceEditor(workspace: Ref<SpatialWorkspace>) {
   }
 
   /** Maps one firmware coordinate role on the selected zone. */
-  function mapZone(role: ZoneCoordinateRole, id: string) {
+  function mapZone(role: ZoneEntityRole, id: string) {
     if (!selectedZone.value) return;
     updateZone({ entities: { ...selectedZone.value.entities, [role]: id } });
   }

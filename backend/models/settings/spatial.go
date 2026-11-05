@@ -16,7 +16,7 @@ const (
 	maxSpatialZones          = 8
 	maxSpatialRoomObjects    = 40
 	maxSpatialEntryEntities  = 5
-	maxSpatialZoneEntities   = 4
+	maxSpatialZoneEntities   = 5
 	maxDetectionZones        = 4
 	maxExclusionZones        = 2
 	maxEntryZones            = 2
@@ -51,6 +51,9 @@ const (
 	entryRoleAssumed   = "assumed"
 	entryRoleRemaining = "remaining"
 
+	// zoneRolePolygon maps a polygon overlay to one firmware text entity; it is only valid for
+	// polygon shapes, exactly as the four coordinate roles are rectangle-only.
+	zoneRolePolygon      = "polygon"
 	coordinateRoleBeginX = "beginX"
 	coordinateRoleBeginY = "beginY"
 	coordinateRoleEndX   = "endX"
@@ -173,6 +176,22 @@ func validSpatialEntityMap(entities map[string]string, validRole func(string) bo
 	return true
 }
 
+// validZoneEntities accepts role names that match the zone shape: at most one polygon text
+// entity for polygon zones, and the four rectangle coordinates for rectangle zones. A role
+// from the other shape is rejected instead of being silently ignored.
+func validZoneEntities(zone SpatialZone) bool {
+	if len(zone.Entities) > maxSpatialZoneEntities {
+		return false
+	}
+	if zone.Shape == zoneShapePolygon {
+		if len(zone.Entities) > 1 {
+			return false
+		}
+		return validSpatialEntityMap(zone.Entities, func(role string) bool { return role == zoneRolePolygon })
+	}
+	return validSpatialEntityMap(zone.Entities, validCoordinateRole)
+}
+
 // validCoordinateRole reports whether role is one of the four rectangle coordinates.
 func validCoordinateRole(role string) bool {
 	switch role {
@@ -217,7 +236,7 @@ func validSpatialZone(zone SpatialZone, counts map[string]int, ids map[string]bo
 	if len(zone.OccupancyEntity) > maxSpatialEntityBytes || strings.ContainsRune(zone.OccupancyEntity, '\x00') {
 		return false
 	}
-	if len(zone.Entities) > maxSpatialZoneEntities || !validSpatialEntityMap(zone.Entities, validCoordinateRole) {
+	if !validZoneEntities(zone) {
 		return false
 	}
 	if !validSpatialIDName(zone.ID, zone.Name, ids) || !validSpatialPolygon(zone.Points) {

@@ -82,3 +82,34 @@ func TestSpatialWorkspaceCloneAndLegacyRoundTrip(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestSpatialPolygonZoneEntityRoles(t *testing.T) {
+	polygon := func() *SpatialWorkspace {
+		workspace := spatialFixture()
+		workspace.Zones[0].Shape = zoneShapePolygon
+		workspace.Zones[0].Points = []SpatialPoint{{X: 0, Y: 1000}, {X: 1000, Y: 1000}, {X: 500, Y: 2000}}
+		workspace.Zones[0].Entities = map[string]string{zoneRolePolygon: "polygon_zone_1"}
+		return workspace
+	}
+	if err := polygon().Validate(); err != nil {
+		t.Fatalf("polygon zone with a polygon entity rejected: %v", err)
+	}
+
+	rectangleRoleOnPolygon := polygon()
+	rectangleRoleOnPolygon.Zones[0].Entities = map[string]string{coordinateRoleBeginX: "begin_x"}
+	if rectangleRoleOnPolygon.Validate() == nil {
+		t.Fatal("polygon zone accepted a rectangle coordinate role")
+	}
+
+	polygonRoleOnRectangle := spatialFixture()
+	polygonRoleOnRectangle.Zones[0].Entities = map[string]string{zoneRolePolygon: "polygon_zone_1"}
+	if polygonRoleOnRectangle.Validate() == nil {
+		t.Fatal("rectangle zone accepted a polygon role")
+	}
+
+	tooManyPolygonEntities := polygon()
+	tooManyPolygonEntities.Zones[0].Entities[coordinateRoleEndX] = "end_x"
+	if tooManyPolygonEntities.Validate() == nil {
+		t.Fatal("polygon zone accepted more than one entity")
+	}
+}
