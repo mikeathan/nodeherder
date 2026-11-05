@@ -171,41 +171,74 @@ replacement for a recorder.
 Pros: zero storage, already shipped, privacy by construction.
 Cons: lost on reload/tab switch, no list, no cross-device history — the reason for this request.
 
-## Recommendation
+## Recommendation: the minimum-points technique
 
-**Option C, built on a dedicated store (not per-expose metrics).** Concretely:
+**Option C — movement-only session chunks.** Keep the smallest representation that still
+replays a useful path:
 
-- Hook the recorder to accepted frames in the controller (the same callback that broadcasts
-  `spatialTargets`), non-blocking, one worker per source.
-- Sample at most **1 Hz per slot** (2 Hz device), only when the target moved ≥ **300 mm** since
-  its last emitted point; heartbeat every **60 s** while present; close a session after **30 s**
-  with no active targets.
-- Quantize to **50 mm** and delta-encode points into **1-minute chunks** in a dedicated store.
-- Default retention **7 days** with a **5,000 points/day/device** cap and a global size guard;
-  purge daily, oldest first. Make it visible and easy to disable/clear per device.
-- Keep the existing five-minute browser buffer only as the live tail; the server becomes the
-  source of truth for older history/sessions.
-- UI: a server-backed Replay view with a session list (time, duration, slots, point count), a
-  scrubber and the heatmap derived from the same samples.
+- Hook accepted frames in the controller; one worker per source.
+- Record at most **1 point per visible target per second**.
+- On that tick, emit a point only if the target moved **≥300 mm** since its last point.
+- **No heartbeat points while still**: a stationary target adds nothing, so micro-movement never
+  becomes a cloud of dots. Presence and "still here" already come from the derived occupancy
+  entities; the replay can hold the last point for the session.
+- Close a session when derived occupancy clears, the source goes offline, or a **30-minute**
+  no-frame safety limit is reached.
+- Quantize to **50 mm** and delta-encode points into **5-minute chunks**.
+- Default **7-day** retention, **3,000 points/day/device** cap, global size guard.
 
-This is approximately **0.05–0.2 MB per active day/device**, versus ~1 MB/day for row storage and
-~2 MB/day for metrics-style pairs at the same sampling. A 7-day, 10-device install stays well
-under 20 MB.
+Why this is the best resolution-per-byte compromise: at walking speed 1 sample/s is smooth
+enough to see the route and heatmap; at rest it records zero points. One person walking for one
+hour produces at most ~3,600 points; a typical day is ~1,000–4,000; two people roughly double.
+Chunked/delta storage puts that at roughly **30–150 KB/day**, versus ~0.7 MB/day as binary rows
+and ~1.5 MB/day as metrics pairs. Raw 4 Hz would be >100× that and is excluded.
+
+### Slots answer
+
+The LD2450 exposes **three physical target slots**, not three people. One visible target
+normally occupies one active slot → one point per sample; two visible targets occupy two slots →
+two points; a ghost/reflection or duplicate can briefly occupy a third. Slots are reused over
+time, so the recorder should use the same **duplicate/merge rules as the display** (≤3 visible
+tracks, 350 mm merge) and must not treat slot numbers as identities. The daily cap therefore
+applies per device, not “3 × slots”.
+
+### Storage and purge answer
+
+- **Not per-expose metrics rows.** A dedicated `spatial` bucket with timestamp-prefixed keys and
+  chunked values; one row per 5-minute chunk, not per point.
+- Put it in **`metrics.db` but a separate bucket**, so there is still one file to back up, while
+  the spatial data can have its own purge.
+- **Use a different, shorter timeout:** positions are bulkier and more sensitive than device
+  metrics. Proposed **7 days** versus the metrics default of 10; a daily spatial-only purge that
+  removes whole chunks, oldest first. Do **not** hitch it to the global metrics prune, or the
+  retention becomes 10 days (and any user change to metrics retention silently changes recorder
+  retention).
+- If isolation matters more than one file, a separate `spatial.db` with the same purge design is
+  the cleaner alternative.
+- bbolt does not shrink after deletes; monitor file size (chunked storage makes this small).
+
+### UI answer
+
+Today the UI replay is the browser's 5-minute buffer; **nothing is fed from a backend recorder
+yet**. With this design the server becomes the source of truth: a new authenticated
+sessions/history endpoint returns session summaries and chunks, and the Replay view gets a session
+list (start/end, duration, targets, point count, capped badge), a scrubber and the persisted
+heatmap. The current browser buffer can remain as the live tail for the newest few minutes.
 
 ## Defaults worth agreeing
 
 | Setting | Proposed default | Why |
 | --- | --- | --- |
-| Enabled | **On** per mapped source, with a visible "recording" indicator and per-device off switch | Requested default-on; privacy needs an escape hatch |
-| Sample rate | max 1 Hz/slot, 2 Hz/device | Replay/heatmap need far less than 10 Hz |
-| Movement gate | 300 mm | Ignores stationary jitter and small sway |
-| Heartbeat | 60 s while present | Proves presence without a dot cloud |
-| Session gap | 30 s with no active slots | Natural recordings, bounded sessions |
-| Quantization | 50 mm | Cuts noise and size; paths stay smooth enough |
-| Retention | 7 days (configurable) | Small, predictable |
-| Daily cap | 5,000 points/device | Bound worst-case motion |
-| Global cap | e.g. 100 MB, oldest purge | Protect disk |
-| Privacy | authenticated API only; no public/MCP exposure by default | Positions reveal occupancy patterns |
+| Enabled | **On** per mapped source, visible indicator + per-device off switch | Requested default-on; privacy escape hatch |
+| Sampling | ≤1 Hz per visible target | Enough path resolution; far below 10 Hz frames |
+| Movement gate | 300 mm | Ignores stationary jitter and sway |
+| Still behaviour | No points; replay holds last position | Minimum daily points |
+| Session close | occupancy clear, source offline, or 30 min without frames | Avoids frame-silence ambiguity |
+| Quantization | 50 mm | Noise reduction and smaller deltas |
+| Retention | 7 days, spatial-only purge | Shorter and independent of metrics |
+| Daily cap | 3,000 points/device | Bounds worst-case walking |
+| Global cap | ~100 MB, oldest chunks first | Protect disk |
+| Privacy | authenticated API only; no public/MCP by default | Positions reveal occupancy patterns |
 
 ## Usability questions this raises
 
