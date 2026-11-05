@@ -387,7 +387,7 @@ test.describe('devices', () => {
 
     // A captured slot survives ageing (the 250 ms tick must not reset the selection).
     await page.getByRole('button', { name: 'Calibration', exact: true }).click();
-    const liveSlot = page.getByRole('combobox', { name: 'Live slot' }).first();
+    const liveSlot = page.getByRole('combobox', { name: 'Firmware slot (measured)' }).first();
     // Configured slots are always selectable, even before a target has reported, and their
     // labels stay static while live values update beside the control.
     await expect(liveSlot.locator('option')).toHaveCount(4);
