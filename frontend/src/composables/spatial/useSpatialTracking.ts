@@ -12,6 +12,7 @@ import {
   type SpatialTrackInput,
   type SpatialTrackState,
 } from '@/domain/spatial/tracks';
+import { appendReplayFrame, type ReplayFrame } from '@/domain/spatial/replay';
 import { SPATIAL_DEFAULT_SMOOTHING, type SpatialSmoothing } from '@/domain/spatial/smoothing';
 
 /** Recent raw samples replayed when the smoothing level changes, so the effect is immediate. */
@@ -73,6 +74,8 @@ export function useSpatialTracking(
   // Per-slot recent raw samples. A level change replays them, because a still target produces
   // no new frames and the control would otherwise appear to do nothing.
   const history = new Map<number, { x: number; y: number; at: number }[]>();
+  // Session-only replay recording; bounded by domain helpers and never persisted.
+  const replayFrames = ref<ReplayFrame[]>([]);
   let lastSource: SpatialTrackingSource | null = null;
   // Arrival time in the browser's clock. Frame timestamps come from the hub's clock; using
   // them for age would misjudge staleness on any machine with clock skew.
@@ -91,6 +94,7 @@ export function useSpatialTracking(
     slots.clear();
     filters.clear();
     history.clear();
+    replayFrames.value = [];
     clearedAt.clear();
     associator.reset();
     lastSource = null;
@@ -180,6 +184,12 @@ export function useSpatialTracking(
       return;
     }
 
+    if (useFrames && currentFrame) {
+      replayFrames.value = appendReplayFrame(replayFrames.value, {
+        at: observedAt,
+        samples: samples.map((sample) => ({ slot: sample.slot, x: sample.x, y: sample.y })),
+      });
+    }
     rememberHistory(samples);
     applySamples(samples, observedAt, nextSource);
   }
@@ -330,6 +340,7 @@ export function useSpatialTracking(
     revision: computed(() => snapshot.value.revision),
     jitterMm: computed(() => Math.round(snapshot.value.jitterMm)),
     duplicates: computed(() => snapshot.value.duplicates),
+    replayFrames,
     smoothing,
   };
 }

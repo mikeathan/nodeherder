@@ -8,6 +8,7 @@
   import type { Device } from '@/types/device';
   import { useSpatialView } from '@/composables/spatial/useSpatialView';
   import { useWorkspaceEditor } from '@/composables/spatial/useWorkspaceEditor';
+  import { useSpatialReplay } from '@/composables/spatial/useSpatialReplay';
   import { useSpatialSession } from '@/composables/spatial/useSpatialSession';
   import { useDerivedPresence } from '@/composables/spatial/useDerivedPresence';
   import { formatSpatialDistance, radarGridSpacing, spatialTrackRows } from '@/domain/spatial/radar';
@@ -43,6 +44,8 @@
   import SpatialEntryPanel from './SpatialEntryPanel.vue';
   import SpatialFirmwarePanel from './SpatialFirmwarePanel.vue';
   import SpatialCalibrationPanel from './SpatialCalibrationPanel.vue';
+  import SpatialActivityHistory from './SpatialActivityHistory.vue';
+  import SpatialReplay from './SpatialReplay.vue';
 
   const props = defineProps<{ device: Device }>();
   const {
@@ -62,6 +65,7 @@
     hasData,
     jitterMm,
     duplicates,
+    replayFrames,
     showRaw,
     smoothing,
     targetStatuses,
@@ -130,6 +134,11 @@
     }
     return merged;
   });
+  const replay = useSpatialReplay(() => replayFrames.value);
+  const displayTracks = computed(() => (mode.value === SpatialViewIds.Replay ? replay.tracks.value : tracks.value));
+  const displayOccupancy = computed(() =>
+    mode.value === SpatialViewIds.Replay ? new Map<string, { occupied: boolean }>() : canvasOccupancy.value
+  );
   const serverPresence = computed(() => {
     if (!derived.derived.value) return 'Server presence: not derived yet.';
     if (!derived.online.value) return 'Server presence: derived device offline.';
@@ -202,8 +211,8 @@
       <div class="nh-spatial-scene">
         <SpatialCanvas
           :workspace="workspace"
-          :tracks="tracks"
-          :occupancy="canvasOccupancy"
+          :tracks="displayTracks"
+          :occupancy="displayOccupancy"
           :show-raw="showRaw"
           :scale="scale"
           :orientation="orientation"
@@ -303,6 +312,21 @@
         </li>
       </ul>
     </section>
+
+    <SpatialActivityHistory
+      v-if="mode === SpatialViewIds.Activity"
+      :device="device"
+      :workspace="workspace" />
+
+    <SpatialReplay
+      v-if="mode === SpatialViewIds.Replay"
+      :frames="replayFrames"
+      :time="replay.time.value"
+      :playing="replay.playing.value"
+      :speed="replay.speed.value"
+      @seek="replay.seek"
+      @toggle="replay.playing.value ? replay.pause() : replay.play()"
+      @update:speed="replay.speed.value = $event" />
 
     <SpatialCalibrationPanel
       v-if="mode === SpatialViewIds.Calibrate"

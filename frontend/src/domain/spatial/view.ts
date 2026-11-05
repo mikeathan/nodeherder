@@ -41,6 +41,8 @@ export const SpatialViewIds = {
   Entry: 'entry',
   Firmware: 'firmware',
   Calibrate: 'calibrate',
+  Activity: 'activity',
+  Replay: 'replay',
   Heatmap: 'heatmap',
 } as const;
 
@@ -52,6 +54,8 @@ export const SPATIAL_VIEWS = [
   { id: SpatialViewIds.Entry, label: 'Entry / exit' },
   { id: SpatialViewIds.Firmware, label: 'Firmware settings' },
   { id: SpatialViewIds.Calibrate, label: 'Calibration' },
+  { id: SpatialViewIds.Activity, label: 'Zone activity' },
+  { id: SpatialViewIds.Replay, label: 'Replay' },
   { id: SpatialViewIds.Heatmap, label: 'Heatmap & analytics' },
 ] as const;
 
