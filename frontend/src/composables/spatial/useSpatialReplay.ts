@@ -1,6 +1,13 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import type { ReplayFrame } from '@/domain/spatial/replay';
-import { REPLAY_TICK_MS, frameAt, replayTracks } from '@/domain/spatial/replay';
+import {
+  REPLAY_TICK_MS,
+  firstRecordedFrame,
+  frameAt,
+  hasRecordedPositions,
+  lastRecordedFrame,
+  replayTracks,
+} from '@/domain/spatial/replay';
 
 /** Owns replay seek/playback state over a recorded session; it never touches the store. */
 export function useSpatialReplay(frames: () => readonly ReplayFrame[]) {
@@ -10,6 +17,7 @@ export function useSpatialReplay(frames: () => readonly ReplayFrame[]) {
   const bounds = computed(() => ({ first: frames()[0]?.at ?? 0, last: frames().at(-1)?.at ?? 0 }));
   const frame = computed(() => frameAt(frames(), time.value || bounds.value.last));
   const tracks = computed(() => replayTracks(frame.value));
+  const hasPositions = computed(() => hasRecordedPositions(frames()));
   let timer: ReturnType<typeof setInterval> | null = null;
 
   function stopTimer() {
@@ -33,8 +41,8 @@ export function useSpatialReplay(frames: () => readonly ReplayFrame[]) {
     }
   }
   function play() {
-    if (playing.value || !frames().length) return;
-    if (time.value >= bounds.value.last) time.value = bounds.value.first;
+    if (playing.value || !hasPositions.value) return;
+    if (time.value >= bounds.value.last) time.value = firstRecordedFrame(frames())?.at ?? bounds.value.first;
     playing.value = true;
     stopTimer();
     timer = setInterval(step, REPLAY_TICK_MS);
@@ -45,13 +53,15 @@ export function useSpatialReplay(frames: () => readonly ReplayFrame[]) {
   watch(
     frames,
     () => {
-      if (initialised || !frames().length) return;
-      time.value = bounds.value.last;
+      if (initialised) return;
+      const recorded = lastRecordedFrame(frames());
+      if (!recorded) return;
+      time.value = recorded.at;
       initialised = true;
     },
     { immediate: true }
   );
   onBeforeUnmount(pause);
 
-  return { time, playing, speed, bounds, frame, tracks, seek, play, pause };
+  return { time, playing, speed, bounds, frame, tracks, hasPositions, seek, play, pause };
 }

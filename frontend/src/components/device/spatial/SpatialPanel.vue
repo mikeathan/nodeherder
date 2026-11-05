@@ -9,6 +9,7 @@
   import { useSpatialView } from '@/composables/spatial/useSpatialView';
   import { useWorkspaceEditor } from '@/composables/spatial/useWorkspaceEditor';
   import { useSpatialReplay } from '@/composables/spatial/useSpatialReplay';
+  import { firstRecordedFrame } from '@/domain/spatial/replay';
   import { useSpatialSession } from '@/composables/spatial/useSpatialSession';
   import { useDerivedPresence } from '@/composables/spatial/useDerivedPresence';
   import { formatSpatialDistance, radarGridSpacing, spatialTrackRows } from '@/domain/spatial/radar';
@@ -168,9 +169,10 @@
   watch(mode, (next) => {
     selectedId.value = '';
     if (next === SpatialViewIds.Replay) {
-      // Enter replay paused at the oldest frame, so it is obviously not the live view.
+      // Enter replay paused at the oldest frame that actually has positions; the buffer also
+      // records empty/cleared frames, and starting on one looked like "nothing recorded".
       replay.pause();
-      replay.seek(replay.bounds.value.first);
+      replay.seek(firstRecordedFrame(replayFrames.value)?.at ?? replay.bounds.value.first);
     }
   });
 </script>
@@ -356,6 +358,7 @@
       :time="replay.time.value"
       :playing="replay.playing.value"
       :speed="replay.speed.value"
+      :has-positions="replay.hasPositions.value"
       @seek="replay.seek"
       @toggle="replay.playing.value ? replay.pause() : replay.play()"
       @update:speed="replay.speed.value = $event" />
