@@ -46,6 +46,7 @@
   import SpatialCalibrationPanel from './SpatialCalibrationPanel.vue';
   import SpatialActivityHistory from './SpatialActivityHistory.vue';
   import SpatialReplay from './SpatialReplay.vue';
+  import SpatialDiagnostics from './SpatialDiagnostics.vue';
 
   const props = defineProps<{ device: Device }>();
   const {
@@ -317,6 +318,12 @@
       v-if="mode === SpatialViewIds.Activity"
       :device="device"
       :workspace="workspace" />
+
+    <SpatialDiagnostics
+      v-if="mode === SpatialViewIds.Diagnostics"
+      :device="device"
+      :workspace="workspace"
+      :frames="replayFrames" />
 
     <SpatialReplay
       v-if="mode === SpatialViewIds.Replay"

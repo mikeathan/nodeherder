@@ -43,6 +43,7 @@ export const SpatialViewIds = {
   Calibrate: 'calibrate',
   Activity: 'activity',
   Replay: 'replay',
+  Diagnostics: 'diagnostics',
   Heatmap: 'heatmap',
 } as const;
 
@@ -56,6 +57,7 @@ export const SPATIAL_VIEWS = [
   { id: SpatialViewIds.Calibrate, label: 'Calibration' },
   { id: SpatialViewIds.Activity, label: 'Zone activity' },
   { id: SpatialViewIds.Replay, label: 'Replay' },
+  { id: SpatialViewIds.Diagnostics, label: 'Diagnostics' },
   { id: SpatialViewIds.Heatmap, label: 'Heatmap & analytics' },
 ] as const;
 

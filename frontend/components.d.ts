@@ -160,6 +160,7 @@ declare module 'vue' {
     SpatialCalibrationPanel: typeof import('./src/components/device/spatial/SpatialCalibrationPanel.vue')['default']
     SpatialCanvas: typeof import('./src/components/device/spatial/SpatialCanvas.vue')['default']
     SpatialContextHelp: typeof import('./src/components/device/spatial/SpatialContextHelp.vue')['default']
+    SpatialDiagnostics: typeof import('./src/components/device/spatial/SpatialDiagnostics.vue')['default']
     SpatialDisplayOptions: typeof import('./src/components/device/spatial/SpatialDisplayOptions.vue')['default']
     SpatialEntryPanel: typeof import('./src/components/device/spatial/SpatialEntryPanel.vue')['default']
     SpatialFirmwarePanel: typeof import('./src/components/device/spatial/SpatialFirmwarePanel.vue')['default']
