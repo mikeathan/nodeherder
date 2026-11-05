@@ -259,11 +259,29 @@ frame recorder, and the Presence Replay/Heatmap tabs. The calibration and firmwa
 depend on them. This is a deletion, not a hidden second path: no Diagnostics and no browser
 recording remain.
 
+## What gets captured when "Record history" is on
+
+For a mapped ESPHome/EPL source, the intended capture is:
+
+1. **Existing metrics** — measurement-category exposes only, filtered by the same per-expose
+   policy as today. The target coordinate entities are diagnostic, so they are not written as
+   ordinary metric rows.
+2. **Spatial sessions** — movement-only points from accepted frames: ≤1 point/s per visible track,
+   only after 300 mm movement, 50 mm quantized, grouped into 5-minute chunks. No points while
+   still; no raw frames.
+3. **Derived presence history** — `occupied`, `target_count`, zone occupied/count change events.
+   The derived device **inherits the source device's history switch** rather than needing its own
+   opt-in. `last_zone`, `empty_seconds` and dwell stay diagnostic and unrecorded.
+4. **Nothing else** — no video, no identity, no still jitter cloud, no diagnostic entities.
+
+When "Record history" is off, neither metrics nor spatial sessions are captured. Retention remains
+separate: spatial chunks 7 days, metrics 10 days.
+
 ## Defaults worth agreeing
 
 | Setting | Proposed default | Why |
 | --- | --- | --- |
-| Enabled | **On** per mapped source, visible indicator + per-device off switch | Requested default-on; privacy escape hatch |
+| Enabled | **Follows the device's existing "Record history" toggle** (no separate recorder switch, no default-on) | One simple, consistent switch per device |
 | Sampling | ≤1 Hz per visible target | Enough path resolution; far below 10 Hz frames |
 | Movement gate | 300 mm | Ignores stationary jitter and sway |
 | Still behaviour | No points; replay holds last position | Minimum daily points |
@@ -291,8 +309,8 @@ recording remain.
    recorder **and Diagnostics**, move recording into a new top-level Recordings section, add the
    per-session data-range player and the date-range persisted heatmap.
 2. Confirm the defaults table (sample rate, 300 mm gate, heartbeat, 7 days, caps).
-3. Default-on acceptable? If yes, where is the off switch and indicator (device Presence tab,
-   settings, or both)?
+3. Confirm the source device's existing "Record history" toggle is the only switch (and the
+   derived presence device inherits it).
 4. Shared `metrics.db` bucket vs separate `spatial.db` (storage/purge ownership and backups).
 5. Should the browser keep its 5-minute live tail, or is a server round-trip acceptable for all
    replay?
