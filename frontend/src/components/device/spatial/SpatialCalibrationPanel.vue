@@ -80,8 +80,7 @@
       rows.push({ slot: null, measuredX: null, measuredY: null, capturedAt: 0, roomX: '', roomY: '' });
     }
   }
-  /** Captures the slot's raw position once; re-selecting the same slot refreshes the capture. */
-  /** Commits the native select's value and captures that slot's latest position. */
+  /** Commits the select value and captures that slot's latest raw position once. */
   function choose(index: number, value: string) {
     rows[index].slot = value ? Number(value) : null;
     capture(index);
@@ -125,17 +124,41 @@
 <template>
   <section aria-label="Calibration">
     <h3>Calibration</h3>
-    <p class="nh-muted">
-      Stand at marked room positions and capture the live target for each. Positions are raw measured millimetres;
-      room positions are the same millimetres used by the room outline. A result only changes the unsaved draft.
+    <p>
+      Calibration aligns the radar's measured positions with your room plan. It solves the sensor's rotation and
+      offset from two or more known spots. <strong>It does not record presence or video</strong> and it does not
+      change zones or the room outline.
     </p>
+    <details class="nh-calibration-help" open>
+      <summary>How to calibrate (and what a slot is)</summary>
+      <ol>
+        <li>
+          Stand at a spot you can locate on the room plan. Choose the <strong>firmware slot</strong> that is reporting
+          you (1–3). Slots are firmware targets reused by different people; they are not recordings.
+        </li>
+        <li>
+          Enter that spot's <strong>room X/Y in millimetres</strong>, using the same coordinates as the room outline.
+          These are plan coordinates, not distances from you: with the sensor assumed at the room origin facing +Y,
+          a spot 2 m straight ahead is roughly <code>(0, 2000)</code>.
+        </li>
+        <li>Repeat from at least two different spots, three if you want a better fit.</li>
+        <li>
+          <strong>Apply to room draft</strong> updates the sensor position/rotation in the unsaved workspace. Review
+          it, then <strong>Save spatial settings</strong> to keep it. The zones stay where you drew them.
+        </li>
+      </ol>
+      <p class="nh-muted">
+        Measured X/Y come from the sensor and are updated continuously. A chosen slot keeps its latest captured
+        position for this session; the Capture button refreshes it.
+      </p>
+    </details>
     <p v-if="!targets.length" class="nh-muted">
       No target positions recorded yet. Every configured slot is selectable; move in front of the sensor once and
       capture again.
     </p>
     <div v-for="(row, index) in rows" :key="index" class="nh-calibration-row">
       <label>
-        Live slot
+        Firmware slot (measured)
         <select class="nh-input" :value="row.slot ?? ''" @change="choose(index, ($event.target as HTMLSelectElement).value)">
           <option value="">Not captured</option>
           <!-- Labels stay static: live coordinates in an option rebuild the native dropdown
@@ -160,11 +183,11 @@
         Capture slot {{ row.slot }}
       </UiButton>
       <label>
-        Room X (mm)
+        Known room X (mm)
         <input v-model="row.roomX" class="nh-input is-num" type="number" inputmode="numeric" />
       </label>
       <label>
-        Room Y (mm)
+        Known room Y (mm)
         <input v-model="row.roomY" class="nh-input is-num" type="number" inputmode="numeric" />
       </label>
       <UiButton v-if="rows.length > 2" size="sm" variant="ghost" @click="removeRow(index)">Remove</UiButton>
@@ -184,7 +207,7 @@
         <dd>{{ Math.round(solved.solution.rms) }} mm RMS · worst {{ Math.round(solved.solution.worst) }} mm</dd>
       </dl>
       <p v-if="solved.warning" class="nh-muted">{{ solved.warning }}</p>
-      <UiButton :disabled="missingRows.length > 0" @click="apply">Apply to room draft</UiButton>
+      <UiButton :disabled="missingRows.length > 0" @click="apply">Apply pose to room draft</UiButton>
       <UiButton
         v-if="angleEntity"
         variant="ghost"
@@ -197,6 +220,10 @@
     <p v-if="angleEntity" class="nh-muted">
       Mapped angle entity: {{ exposeDisplayLabel(angleEntity) }}. Firmware angle semantics can differ; only write it
       when you accept that.
+    </p>
+    <p class="nh-muted">
+      Two pairs are the minimum; three or more reduce the effect of one noisy reading. Residual is how far the
+      measured points sit from their room positions after alignment.
     </p>
     <UiButton size="sm" variant="ghost" @click="reset">Reset pairs</UiButton>
     <p v-if="notice" role="status">{{ notice }}</p>
@@ -214,6 +241,17 @@
   .nh-calibration-row label {
     display: grid;
     gap: 0.3rem;
+  }
+  .nh-calibration-help {
+    border: 1px solid var(--nh-border);
+    border-radius: var(--nh-radius-m);
+    padding: 0.5rem 0.75rem;
+    margin-block: 0.5rem;
+  }
+  .nh-calibration-help ol {
+    padding-inline-start: 1.25rem;
+    display: grid;
+    gap: 0.35rem;
   }
   .nh-calibration-result {
     display: grid;
