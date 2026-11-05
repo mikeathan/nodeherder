@@ -287,3 +287,41 @@ func TestEnableRemoteLoggerHook(t *testing.T) {
 	}
 
 }
+
+func TestRemoteHookFireDuringUnconfigureDoesNotPanic(t *testing.T) {
+	hook := &utils.RemoteHook{}
+	var calls atomic.Int32
+	hook.Configure(mocks.NewMockRemoteLoggerEmitter(func(string, interface{}) error {
+		calls.Add(1)
+		return nil
+	}))
+	hook.Enabled(true)
+	entry := logrus.NewEntry(logrus.New())
+	entry.Message = "shutdown race fixture"
+
+	var wg sync.WaitGroup
+	for i := 0; i < 8; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := 0; j < 200; j++ {
+				if err := hook.Fire(entry); err != nil {
+					t.Error(err)
+				}
+			}
+		}()
+	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for j := 0; j < 200; j++ {
+			hook.Configure(nil)
+			hook.Configure(mocks.NewMockRemoteLoggerEmitter(func(string, interface{}) error { return nil }))
+		}
+	}()
+	wg.Wait()
+	hook.Enabled(false)
+	if calls.Load() < 0 {
+		t.Fatal("unreachable")
+	}
+}

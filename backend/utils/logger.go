@@ -6,6 +6,7 @@ import (
 	"node-herder/models/logging"
 	"os"
 	"path/filepath"
+	"sync"
 	"sync/atomic"
 
 	"github.com/sirupsen/logrus"
@@ -121,7 +122,10 @@ func LogErrorf(format string, msg ...interface{}) {
 }
 
 type RemoteHook struct {
-	levels  []logrus.Level
+	levels []logrus.Level
+	// mu guards emitter against concurrent Configure/Remove while background goroutines log.
+	// Without it, removing the hook could clear the emitter between Fire's check and call.
+	mu      sync.RWMutex
 	emitter logging.RemoteHookEmitter
 	enabled atomic.Bool
 }
@@ -133,7 +137,9 @@ func newRemoteHook() *RemoteHook {
 }
 
 func (h *RemoteHook) Configure(emitter logging.RemoteHookEmitter) {
+	h.mu.Lock()
 	h.emitter = emitter
+	h.mu.Unlock()
 }
 func (h *RemoteHook) Levels() []logrus.Level {
 	return h.levels
@@ -145,6 +151,12 @@ func (h *RemoteHook) Enabled(enabled bool) {
 
 func (h *RemoteHook) Fire(entry *logrus.Entry) error {
 	if !h.enabled.Load() {
+		return nil
+	}
+	h.mu.RLock()
+	emitter := h.emitter
+	h.mu.RUnlock()
+	if emitter == nil {
 		return nil
 	}
 
@@ -164,7 +176,7 @@ func (h *RemoteHook) Fire(entry *logrus.Entry) error {
 		return err
 	}
 
-	err = h.emitter.Broadcast("logger", payload)
+	err = emitter.Broadcast("logger", payload)
 	if err != nil {
 		return err
 	}
@@ -180,7 +192,9 @@ func RegisterRemoteLoggerHook(emitter logging.RemoteHookEmitter) {
 }
 
 func RemoveRemoteLoggerHook() {
-	remoteHook.Configure(newRemoteHook().emitter)
+	// Disable and detach first; in-flight Fire calls hold their own snapshot and finish safely.
+	remoteHook.Enabled(false)
+	remoteHook.Configure(nil)
 	log.log.ReplaceHooks(logrus.LevelHooks{})
 
 	log.Infof("Remote hook unregistered")
