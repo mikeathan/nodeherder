@@ -111,27 +111,48 @@ func (d *DeviceConfigCache) Get(id string) (*DeviceConfig, error) {
 	return defaultConfig, nil
 }
 
-// SpatialCoordinates returns the currently configured coordinate entity names.
-func (d *DeviceConfigCache) SpatialCoordinates(id string) map[string]struct{} {
+// SpatialMappings returns the saved target mapping rows for one device. The result is an
+// owned copy: callers may read or retain it after the cache lock is released, and later
+// configuration writes cannot mutate it. Rows are returned in saved order, so row index
+// continues to identify the target slot.
+func (d *DeviceConfigCache) SpatialMappings(id string) []SpatialMapping {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
-	result := make(map[string]struct{})
 	config := d.appConfig.Hub.Devices.Overrides[id]
 	if config == nil {
 		config = d.appConfig.Hub.Devices.Defaults
 	}
-	if config == nil || config.Spatial == nil {
-		return result
+	if config == nil || config.Spatial == nil || len(config.Spatial.Mappings) == 0 {
+		return nil
 	}
-	for _, mapping := range config.Spatial.Mappings {
-		if mapping.X != "" {
-			result[mapping.X] = struct{}{}
-		}
-		if mapping.Y != "" {
-			result[mapping.Y] = struct{}{}
-		}
+	return append([]SpatialMapping(nil), config.Spatial.Mappings...)
+}
+
+// SpatialZones returns an owned copy of the saved zone overlays for one device. Presence
+// derivation reads it under the lock and keeps no reference to cache state.
+func (d *DeviceConfigCache) SpatialZones(id string) []SpatialZone {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+	config := d.appConfig.Hub.Devices.Overrides[id]
+	if config == nil {
+		config = d.appConfig.Hub.Devices.Defaults
 	}
-	return result
+	if config == nil || config.Spatial == nil || config.Spatial.Workspace == nil || len(config.Spatial.Workspace.Zones) == 0 {
+		return nil
+	}
+	zones := make([]SpatialZone, 0, len(config.Spatial.Workspace.Zones))
+	for _, zone := range config.Spatial.Workspace.Zones {
+		copied := zone
+		copied.Points = append([]SpatialPoint(nil), zone.Points...)
+		if zone.Entities != nil {
+			copied.Entities = make(map[string]string, len(zone.Entities))
+			for key, value := range zone.Entities {
+				copied.Entities[key] = value
+			}
+		}
+		zones = append(zones, copied)
+	}
+	return zones
 }
 
 func (d *DeviceConfigCache) Set(deviceConfig *DeviceConfig) error {

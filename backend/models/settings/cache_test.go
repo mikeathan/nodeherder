@@ -965,3 +965,56 @@ func TestFailedConfigurationSaveDoesNotNotifyListeners(t *testing.T) {
 		t.Fatal("failed configuration save notified consumers")
 	}
 }
+
+func TestSpatialMappingsReturnsOwnedCopy(t *testing.T) {
+	app := settings.NewAppConfig()
+	config := settings.NewDeviceConfig("spatial-copy")
+	config.Spatial = &settings.SpatialConfig{Scale: 6000, Mappings: []settings.SpatialMapping{{X: "x", Y: "y", Active: "a"}}}
+	app.AddDeviceConfig(config)
+	cache := settings.NewDeviceConfigCache(&mocks.NopSettingsrepo{}, app, &sync.RWMutex{})
+
+	mappings := cache.SpatialMappings("spatial-copy")
+	if len(mappings) != 1 || mappings[0].X != "x" || mappings[0].Active != "a" {
+		t.Fatalf("mappings = %+v", mappings)
+	}
+	mappings[0].X = "mutated"
+	if again := cache.SpatialMappings("spatial-copy"); again[0].X != "x" {
+		t.Fatal("caller mutation reached the cache")
+	}
+	if mappings := cache.SpatialMappings("unknown-device"); mappings != nil {
+		t.Fatalf("unmapped device returned %+v", mappings)
+	}
+}
+
+func TestSpatialZonesReturnsOwnedCopy(t *testing.T) {
+	app := settings.NewAppConfig()
+	config := settings.NewDeviceConfig("zones-copy")
+	config.Spatial = &settings.SpatialConfig{
+		Scale:    6000,
+		Mappings: []settings.SpatialMapping{{X: "x", Y: "y", Active: "a"}},
+		Workspace: &settings.SpatialWorkspace{
+			Version: 1,
+			Zones: []settings.SpatialZone{{
+				ID: "desk", Name: "Desk", Kind: "detection", Shape: "rectangle",
+				Points:   []settings.SpatialPoint{{X: 0, Y: 0}, {X: 100, Y: 0}, {X: 100, Y: 100}, {X: 0, Y: 100}},
+				Entities: map[string]string{"beginX": "beginX"},
+			}},
+		},
+	}
+	app.AddDeviceConfig(config)
+	cache := settings.NewDeviceConfigCache(&mocks.NopSettingsrepo{}, app, &sync.RWMutex{})
+
+	zones := cache.SpatialZones("zones-copy")
+	if len(zones) != 1 || zones[0].ID != "desk" || len(zones[0].Points) != 4 {
+		t.Fatalf("zones = %+v", zones)
+	}
+	zones[0].Points[0].X = 999
+	zones[0].Entities["beginX"] = "mutated"
+	again := cache.SpatialZones("zones-copy")
+	if again[0].Points[0].X != 0 || again[0].Entities["beginX"] != "beginX" {
+		t.Fatal("caller mutation reached the cache")
+	}
+	if got := cache.SpatialZones("unknown"); got != nil {
+		t.Fatalf("unknown device returned %+v", got)
+	}
+}

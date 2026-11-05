@@ -8,6 +8,7 @@ import (
 	"math"
 	"node-herder/internal/automations"
 	"node-herder/internal/services"
+	"node-herder/internal/spatial"
 	"node-herder/mocks"
 	"node-herder/models/bridge"
 	"node-herder/models/devices"
@@ -963,5 +964,88 @@ func TestDeviceRemovalFailureKeepsServiceOperational(t *testing.T) {
 	}
 	if ctx.active.Load() != 0 {
 		t.Fatal("successful retry retained generation")
+	}
+}
+
+func TestDerivedPresenceUpdateReachesAutomation(t *testing.T) {
+	store := utils_test.CreateStoreFromDeviceRepo(repository.NewMemoryDeviceRepo())
+	registrar := services.NewHubRegisterService(store, &mocks.MockEventHub{}, 30000)
+	source := devices.NewDevice("spatial-source")
+	source.FriendlyName = "Hall radar"
+	source.PowerSource = "mains"
+	derived := spatial.BuildDevice(source, []settings.SpatialZone{{
+		ID: "desk", Name: "Desk", Kind: "detection", Shape: "rectangle",
+		Points: []settings.SpatialPoint{{X: 0, Y: 0}, {X: 100, Y: 0}, {X: 100, Y: 100}, {X: 0, Y: 100}},
+	}})
+
+	var triggered atomic.Int32
+	events := &devices.DeviceRequestEvents{
+		AvailabilityTimeout:         time.Hour,
+		OnNewDevice:                 func(*devices.Device) {},
+		OnDeviceUpdated:             func(*devices.Device, *devices.UpdatePackage) {},
+		OnDeviceMeasurementsUpdated: func(*devices.Device, map[string]interface{}) {},
+		OnDeviceAvailabilityChanged: func(*devices.UpdatePackage) {},
+		OnDeviceAutomationTriggered: func(device *devices.Device, payload map[string]interface{}) {
+			if device.Id == derived.Id && payload[spatial.EntityOccupied] == true {
+				triggered.Add(1)
+			}
+		},
+	}
+	processor := services.NewDeviceProcessorBuilder().
+		WithRegistrar(registrar).
+		WithStore(store).
+		WithEvents(events).
+		WithAutomationQuerier(mocks.NewMockAutomationDeviceQuerierWithValues(map[string]bool{derived.Id: true})).
+		Build()
+
+	if err := processor.RegisterProviderDevice(derived); err != nil {
+		t.Fatal(err)
+	}
+	if err := processor.UpdateProviderDevice(derived.Id, map[string]interface{}{spatial.EntityOccupied: true, spatial.EntityTargetCount: 1}); err != nil {
+		t.Fatal(err)
+	}
+	if triggered.Load() != 1 {
+		t.Fatalf("automation triggers = %d, want 1", triggered.Load())
+	}
+}
+
+func TestDerivedProviderReRegistrationDoesNotReplayOccupancy(t *testing.T) {
+	store := utils_test.CreateStoreFromDeviceRepo(repository.NewMemoryDeviceRepo())
+	registrar := services.NewHubRegisterService(store, &mocks.MockEventHub{}, 30000)
+	source := devices.NewDevice("spatial-source")
+	source.FriendlyName = "Hall radar"
+	zones := []settings.SpatialZone{{
+		ID: "desk", Name: "Desk", Kind: "detection", Shape: "rectangle",
+		Points: []settings.SpatialPoint{{X: 0, Y: 0}, {X: 100, Y: 0}, {X: 100, Y: 100}, {X: 0, Y: 100}},
+	}}
+	events := &devices.DeviceRequestEvents{
+		AvailabilityTimeout:         time.Hour,
+		OnNewDevice:                 func(*devices.Device) {},
+		OnDeviceUpdated:             func(*devices.Device, *devices.UpdatePackage) {},
+		OnDeviceMeasurementsUpdated: func(*devices.Device, map[string]interface{}) {},
+		OnDeviceAvailabilityChanged: func(*devices.UpdatePackage) {},
+	}
+	processor := services.NewDeviceProcessorBuilder().
+		WithRegistrar(registrar).
+		WithStore(store).
+		WithEvents(events).
+		WithAutomationQuerier(mocks.NewMockAutomationDeviceQuerier()).
+		Build()
+
+	first := spatial.BuildDevice(source, zones)
+	if err := processor.RegisterProviderDevice(first); err != nil {
+		t.Fatal(err)
+	}
+	if err := processor.UpdateProviderDevice(first.Id, map[string]interface{}{spatial.EntityOccupied: true}); err != nil {
+		t.Fatal(err)
+	}
+	// A fresh generation carries nil data. Derived devices must not inherit the old occupancy:
+	// a still target would never publish the corrective change.
+	second := spatial.BuildDevice(source, zones)
+	if err := processor.RegisterProviderDevice(second); err != nil {
+		t.Fatal(err)
+	}
+	if value := second.Exposes[spatial.EntityOccupied].Data.Value(); value != nil {
+		t.Fatalf("derived occupancy replayed as %v", value)
 	}
 }

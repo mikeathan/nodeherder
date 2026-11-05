@@ -62,11 +62,14 @@ const (
 	StartMCP      = "startMCP"
 
 	// response
-	Automations      = "automations"
-	DeviceList       = "deviceList"
-	Device           = "device"
-	DeviceAdded      = "deviceAdded"
-	DeviceUpdated    = "deviceUpdated" // returns back updated properties of type DeviceUpdated
+	Automations   = "automations"
+	DeviceList    = "deviceList"
+	Device        = "device"
+	DeviceAdded   = "deviceAdded"
+	DeviceUpdated = "deviceUpdated" // returns back updated properties of type DeviceUpdated
+	// SpatialTargets carries a complete, synchronized snapshot of a device's mapped target
+	// slots (devices.SpatialFrame). It is additive: consumers fall back to DeviceUpdated.
+	SpatialTargets   = "spatialTargets"
 	OperationFailed  = "operationFailed"
 	OperationSuccess = "operationSuccess"
 	// DeviceConfigSaveResult carries correlated persistence results for opt-in settings saves.

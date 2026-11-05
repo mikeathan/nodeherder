@@ -1423,38 +1423,132 @@ func TestLifetimeRetirementKeepsPendingReadingOnFailure(t *testing.T) {
 	}
 }
 
-func TestSpatialFreshnessForRepeatedReports(t *testing.T) {
-	device := devices.NewDevice("spatial-device")
-	device.SetAvailable(true)
-	e := devices.NewEntity("x")
-	e.Type, e.AccessMode, e.Category = bridge.NumericDataType, bridge.ReadAccessMode, bridge.DiagnosticCategory
-	e.Data.SetValue(float64(100))
-	device.Exposes[e.Name] = e
+func TestSpatialFramesFollowAcceptedState(t *testing.T) {
+	device := devices.NewDevice("spatial-frames")
+	device.SetAvailability(devices.OnlineAvailability)
+	for _, entity := range []*devices.Entity{
+		spatialTestEntity("target_x", bridge.NumericDataType, "mm", float64(1000)),
+		spatialTestEntity("target_y", bridge.NumericDataType, "mm", float64(2000)),
+		spatialTestEntity("target_active", bridge.BinaryDataType, "", true),
+	} {
+		device.Exposes[entity.Name] = entity
+	}
 	app := settings.NewAppConfig()
 	config := settings.NewDeviceConfig(device.Id)
-	config.Spatial = &settings.SpatialConfig{Scale: 6000, Mappings: []settings.SpatialMapping{{X: "x"}}}
+	config.Spatial = &settings.SpatialConfig{Scale: 6000, Mappings: []settings.SpatialMapping{{X: "target_x", Y: "target_y", Active: "target_active"}}}
 	app.AddDeviceConfig(config)
 	cache := settings.NewDeviceConfigCache(&mocks.NopSettingsrepo{}, app, &sync.RWMutex{})
-	clock := mocks.NewMockClock(func() time.Time { return time.Date(2026, 10, 16, 0, 0, 0, 0, time.UTC) })
-	var observations []any
+	clock := mocks.NewMockClock(func() time.Time { return time.Date(2026, 11, 3, 10, 0, 0, 0, time.UTC) })
+	var frames []*devices.SpatialFrame
 	service := services.NewDeviceLifetimeService(device, &devices.DeviceRequestEvents{
-		OnSpatialObserved: func(update *devices.UpdatePackage) { observations = append(observations, update.Data["x"]) },
-	}, cache, mocks.NewMockAutomationDeviceQuerier(), clock, context.Background())
+		OnNewDevice:      func(*devices.Device) {},
+		OnSpatialTargets: func(frame *devices.SpatialFrame) { frames = append(frames, frame) },
+	}, cache, mocks.NewMockAutomationDeviceQuerier(), clock)
 	t.Cleanup(service.Close)
-	service.Update(map[string]interface{}{"x": float64(100)})
-	service.Update(map[string]interface{}{"x": float64(100)})
-	if len(observations) != 1 {
-		t.Fatalf("unbounded freshness updates: %v", observations)
+
+	service.Seed(map[string]interface{}{"target_x": float64(1000), "target_y": float64(2000), "target_active": true})
+	if len(frames) != 1 {
+		t.Fatalf("seed frames = %d, want 1", len(frames))
 	}
-	clock.Advance(249 * time.Millisecond)
-	service.Update(map[string]interface{}{"x": float64(100)})
-	if len(observations) != 1 {
-		t.Fatalf("freshness update before interval: %v", observations)
+	seeded := frames[0]
+	if seeded.Id != device.Id || len(seeded.Targets) != 1 {
+		t.Fatalf("seed frame = %+v", seeded)
 	}
-	clock.Advance(time.Millisecond)
-	service.Update(map[string]interface{}{"x": float64(100)})
-	if len(observations) != 2 || observations[1] != float64(100) {
-		t.Fatalf("missing repeated report: %v", observations)
+	if target := seeded.Targets[0]; target.ID != 1 || !target.Active || target.X == nil || target.X.Value != 1000 || target.Y == nil || target.Y.Value != 2000 {
+		t.Fatalf("seed target = %+v", seeded.Targets[0])
+	}
+
+	// A change inside the interval is deferred, not dropped.
+	service.Update(map[string]interface{}{"target_x": float64(1100)})
+	if len(frames) != 1 {
+		t.Fatalf("emitted inside the interval: %d", len(frames))
+	}
+	clock.Advance(100 * time.Millisecond)
+	if len(frames) != 2 || frames[1].Targets[0].X.Value != 1100 {
+		t.Fatalf("trailing flush = %+v", frames)
+	}
+
+	// Unchanged content stays silent, however long the device keeps reporting.
+	service.Update(map[string]interface{}{"target_x": float64(1100)})
+	clock.Advance(time.Second)
+	service.Update(map[string]interface{}{"target_x": float64(1100)})
+	if len(frames) != 2 {
+		t.Fatalf("identical reports produced frames: %d", len(frames))
+	}
+
+	// A cleared slot reports the flag without coordinates.
+	service.Update(map[string]interface{}{"target_active": false})
+	clock.Advance(100 * time.Millisecond)
+	cleared := frames[len(frames)-1].Targets[0]
+	if cleared.Active || cleared.X != nil || cleared.Y != nil {
+		t.Fatalf("cleared slot = %+v", cleared)
+	}
+}
+
+func TestSpatialFramesRequireSavedMapping(t *testing.T) {
+	device := devices.NewDevice("spatial-unmapped")
+	device.SetAvailability(devices.OnlineAvailability)
+	for _, entity := range []*devices.Entity{
+		spatialTestEntity("target_x", bridge.NumericDataType, "mm", float64(1000)),
+		spatialTestEntity("target_y", bridge.NumericDataType, "mm", float64(2000)),
+		spatialTestEntity("target_active", bridge.BinaryDataType, "", true),
+	} {
+		device.Exposes[entity.Name] = entity
+	}
+	app := settings.NewAppConfig()
+	app.AddDeviceConfig(settings.NewDeviceConfig(device.Id))
+	cache := settings.NewDeviceConfigCache(&mocks.NopSettingsrepo{}, app, &sync.RWMutex{})
+	clock := mocks.NewMockClock(func() time.Time { return time.Date(2026, 11, 3, 10, 0, 0, 0, time.UTC) })
+	frames := 0
+	service := services.NewDeviceLifetimeService(device, &devices.DeviceRequestEvents{
+		OnNewDevice:      func(*devices.Device) {},
+		OnSpatialTargets: func(*devices.SpatialFrame) { frames++ },
+	}, cache, mocks.NewMockAutomationDeviceQuerier(), clock)
+	t.Cleanup(service.Close)
+
+	service.Seed(map[string]interface{}{"target_x": float64(1000)})
+	service.Update(map[string]interface{}{"target_x": float64(1200)})
+	clock.Advance(time.Second)
+	if frames != 0 {
+		t.Fatalf("frames without a mapping = %d", frames)
+	}
+}
+
+func TestSpatialFramesStopWhenDeviceGoesOffline(t *testing.T) {
+	device := devices.NewDevice("spatial-offline")
+	device.SetAvailability(devices.OnlineAvailability)
+	for _, entity := range []*devices.Entity{
+		spatialTestEntity("target_x", bridge.NumericDataType, "mm", float64(1000)),
+		spatialTestEntity("target_y", bridge.NumericDataType, "mm", float64(2000)),
+		spatialTestEntity("target_active", bridge.BinaryDataType, "", true),
+	} {
+		device.Exposes[entity.Name] = entity
+	}
+	app := settings.NewAppConfig()
+	config := settings.NewDeviceConfig(device.Id)
+	config.Spatial = &settings.SpatialConfig{Scale: 6000, Mappings: []settings.SpatialMapping{{X: "target_x", Y: "target_y", Active: "target_active"}}}
+	app.AddDeviceConfig(config)
+	cache := settings.NewDeviceConfigCache(&mocks.NopSettingsrepo{}, app, &sync.RWMutex{})
+	clock := mocks.NewMockClock(func() time.Time { return time.Date(2026, 11, 3, 10, 0, 0, 0, time.UTC) })
+	var frames []*devices.SpatialFrame
+	service := services.NewDeviceLifetimeService(device, &devices.DeviceRequestEvents{
+		OnNewDevice:      func(*devices.Device) {},
+		OnSpatialTargets: func(frame *devices.SpatialFrame) { frames = append(frames, frame) },
+	}, cache, mocks.NewMockAutomationDeviceQuerier(), clock)
+	t.Cleanup(service.Close)
+
+	service.Update(map[string]interface{}{"target_x": float64(1000)})
+	service.Update(map[string]interface{}{"target_x": float64(1400)})
+	service.ProviderOffline()
+	clock.Advance(time.Second)
+	if len(frames) != 1 {
+		t.Fatalf("offline discard flushed pending work: %d", len(frames))
+	}
+
+	// A device that reports again is online again and must be visible immediately.
+	service.Update(map[string]interface{}{"target_x": float64(1500)})
+	if len(frames) != 2 || frames[1].Targets[0].X.Value != 1500 {
+		t.Fatalf("revived frame = %+v", frames)
 	}
 }
 
