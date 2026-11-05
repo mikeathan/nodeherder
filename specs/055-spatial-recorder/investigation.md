@@ -1,0 +1,235 @@
+# Investigation: a backend spatial recorder
+
+Status: investigation only; no decision taken and no implementation. Branch:
+`plan/backend-spatial-recorder`.
+
+## The request
+
+Move replay/recording from the browser into the backend, on by default, without collecting
+high-resolution data:
+
+- ignore micro-movement of a stationary target;
+- record only a sensible amount, bounded by area/time;
+- do not pollute the metrics database or grow it without limit;
+- reuse the existing metrics database/purge if that is the right trade-off;
+- come back with findings, options, pros/cons and usability.
+
+## Findings in the current system
+
+### Frames available on the hub
+
+- The device lifetime builds synchronized spatial frames after every accepted update and emits
+  them through `internal/services/spatial_emitter.go`. Emission is capped at **100 ms per
+  device** (`spatialFrameInterval`, line 19) and deduplicated.
+- Frames contain up to 3 firmware target slots with X/Y in millimetres plus an active flag. They
+  arrive **change-driven**: a still target produces few or no new frames, which is good for a
+  recorder (no need to filter an idle stream) but means "stillness" can also look like silence.
+- Frames are already the accepted, consistent view used by automation and the browser; a recorder
+  hooked there cannot see torn per-axis updates.
+
+### Presence signals already persisted
+
+- The derived presence device has `occupied` and `target_count` plus per-zone
+  `zone_*_occupied`/`zone_*_count` as **measurement** entities
+  (`internal/spatial/entities.go:105-114`); `last_zone`, `empty_seconds` and dwell are diagnostic.
+- Measurement storage is change-driven: `DeviceLifetimeService.Update` filters through
+  `acceptExposeReport` and per-expose thresholds before calling `attemptToStoreMetrics`
+  (`internal/services/device_lifetime.go:222-243,303-321`). Counter reports every 10 s therefore
+  do **not** write unchanged values; only real changes do.
+- So zone-level presence history already exists. A position recorder adds a different capability
+  (paths/heatmap), it does not replace zone analytics.
+
+### Metrics database
+
+- bbolt file `<data dir>/metrics.db`, root bucket `metrics`, child bucket per device id
+  (`internal/metrics/storage/metrics.go:15,30`; `utils/storage/key-value.go:40`).
+- Keys are `UTC timestamp (30 bytes, nanosecond format)_expose`; values are gob-encoded
+  (`internal/metrics/domain/key_generator.go:25-35`, `utils.AnyToByteArray`).
+- Retention: default **10 days**, cleanup every **12 hours**, both configurable
+  (`models/settings/config.go:115-118`, `store/tasks.go:46-74`).
+- `Prune` deletes expired keys in one write transaction (`utils/storage/key-value.go:232`);
+  **bbolt does not shrink its file** after deletion. The file is a high-water mark and needs
+  compaction/rotation if a large retention is ever changed downwards.
+- Query: `/metrics/query` (through the history service) requires the expose to exist on the
+  device, returns at most **10,001 points**, scans at most 250,000 rows, and allows 366-day
+  ranges (`internal/metrics/services/query_service.go:40-43,72-120`). Aggregation/binning is
+  per expose, not a spatial query.
+
+### Measured row cost
+
+Measured on this machine with 200,000 rows in a fresh bbolt file, including keys, values and
+page overhead:
+
+| Layout | File size | Per row |
+| --- | --- | --- |
+| Metrics style (timestamp+expose key, gob float value) | 42.8 MB | **214 B** |
+| Dedicated binary (timestamp+device+slot key, 16-byte X/Y value) | 36.7 MB | **183.5 B** |
+
+bbolt's page overhead dominates; packing is what makes the difference, not the encoding alone.
+
+## Data-volume arithmetic
+
+One "point" = one slot position. Two metrics rows per point if X/Y are separate exposes.
+
+| Strategy | Points/day/device | Metrics-style (10 d) | Binary row store (7 d) |
+| --- | --- | --- | --- |
+| Raw 4 Hz, 3 slots, 24 h | 1,036,800 | ~4.4 GB (10 d) | ~1.3 GB (7 d) |
+| 1 Hz while present, 3 slots, 8 h | 86,400 | ~370 MB (10 d) | ~111 MB (7 d) |
+| 1 Hz, motion-gated + 60 s heartbeat, 3 slots, 24 h presence | ~4,300–5,000 | ~18–21 MB (10 d) | ~6 MB (7 d) |
+| Chunked/simplified sessions (recommended shape) | same points | n/a | **tens of KB–~0.2 MB/day** |
+
+The raw 4 Hz row is why a recorder must not persist frames directly. Even 1 Hz continuous is
+larger than most households need; motion gating plus a heartbeat is the useful middle ground.
+
+## Options
+
+### A. Reuse per-expose metrics with synthetic coordinates
+
+Write `slot1_x`, `slot1_y`, ... as measurement metrics through the existing metrics repository,
+optionally on a dedicated "history" device so the real device entity list stays clean.
+
+Pros:
+
+- Reuses the existing purge, retention setting, backup and query path.
+- No new storage engine, migration or cleanup task.
+- Device history UI can chart X and Y immediately.
+
+Cons:
+
+- **Two rows per point** (~428 B/point): separate keys, not atomic pairs; replay must re-pair by
+  timestamps.
+- Needs synthetic exposes to satisfy query admission and to appear in `device.Exposes`; adds a
+  fake device/entities to device lists, automations and search unless special-cased.
+- No session, bounding box or path query; 10k-point limit returns a very short slice of a day at
+  1 Hz.
+- Retention is global to metrics (default 10 days); per-device "metrics disabled" or a metric
+  override can silently stop the recorder.
+- Binning/aggregation per series destroys paths; heatmap becomes a client-side join of two
+  independently binned series.
+- bbolt file still does not shrink.
+
+Usability: fine for two line charts; poor for replay and heatmaps. **Not recommended for raw
+points.**
+
+### B. Dedicated compact recorder store, one row per sample
+
+New repository/service writing `{timestamp, device, slot, x, y}` rows as binary values, with its
+own device-scoped bucket, retention and purge. Either a separate `spatial.db` or a dedicated child
+bucket in `metrics.db` with timestamp-compatible keys.
+
+Pros:
+
+- Atomic X/Y, one row per point (~183.5 B measured, less with delta encoding).
+- Independent retention, per-device caps and disable; no fake exposes or device-list pollution.
+- Purpose-built query for a time range/session, not a metrics aggregation.
+- Can share the existing bbolt file/purge **only if** keys use the same timestamp prefix and the
+  retention is intentionally shared; otherwise a small separate purge worker.
+
+Cons:
+
+- New repository, cleanup task, query endpoint and tests.
+- If separate DB: another file to back up/monitor; if shared: retention coupling and write
+  contention on bbolt's single writer.
+- Still a high-water file; high sample counts cannot be solved by retention alone.
+
+Usability: good replay/heatmap foundation, but row-oriented storage still grows with motion.
+
+### C. Session/chunked polyline recorder (recommended direction)
+
+Auto-create a **session** when targets appear, keep at most one sample per slot per second, ignore
+movement below a deadband, write fixed-size chunks (e.g. 1–5 minutes) of delta-encoded points plus
+session metadata.
+
+Pros:
+
+- Stores **tens of KB to ~0.2 MB per active day/device**; effectively immune to DB pollution.
+- Natural "recordings" list: start/end, duration, slots seen, point count, capped flag.
+- Few large bbolt writes instead of thousands of tiny ones; purge per chunk/session is trivial.
+- Stationary periods become a heartbeat in the session, not a jitter cloud.
+- Privacy: no fine-grained raw frame history by design.
+
+Cons:
+
+- Encoder/decoder (delta varint + optional simplification) and chunk lifecycle are new code.
+- A chunk must be rewritten as points arrive (small, bounded); or accept a short write delay and
+  keep the live 5-minute tail in the browser until the chunk closes.
+- Query returns coarse paths, not every frame; heatmap resolution depends on sampling.
+- Sessionization has to define gaps, slot churn and multi-target sessions.
+
+Usability: the best match for "recordings I can list and replay", and the lowest storage risk.
+
+### D. Aggregate-only grid/heatmap
+
+Store counts per coarse cell (e.g. 250 mm) per minute, no paths.
+
+Pros: smallest data, simplest query, privacy-friendly; persists the heatmap.
+Cons: no replay/path, cannot inspect a moment, limited tuning value. Complementary to C, not a
+replacement for a recorder.
+
+### E. Keep the current session-only browser buffer
+
+Pros: zero storage, already shipped, privacy by construction.
+Cons: lost on reload/tab switch, no list, no cross-device history — the reason for this request.
+
+## Recommendation
+
+**Option C, built on a dedicated store (not per-expose metrics).** Concretely:
+
+- Hook the recorder to accepted frames in the controller (the same callback that broadcasts
+  `spatialTargets`), non-blocking, one worker per source.
+- Sample at most **1 Hz per slot** (2 Hz device), only when the target moved ≥ **300 mm** since
+  its last emitted point; heartbeat every **60 s** while present; close a session after **30 s**
+  with no active targets.
+- Quantize to **50 mm** and delta-encode points into **1-minute chunks** in a dedicated store.
+- Default retention **7 days** with a **5,000 points/day/device** cap and a global size guard;
+  purge daily, oldest first. Make it visible and easy to disable/clear per device.
+- Keep the existing five-minute browser buffer only as the live tail; the server becomes the
+  source of truth for older history/sessions.
+- UI: a server-backed Replay view with a session list (time, duration, slots, point count), a
+  scrubber and the heatmap derived from the same samples.
+
+This is approximately **0.05–0.2 MB per active day/device**, versus ~1 MB/day for row storage and
+~2 MB/day for metrics-style pairs at the same sampling. A 7-day, 10-device install stays well
+under 20 MB.
+
+## Defaults worth agreeing
+
+| Setting | Proposed default | Why |
+| --- | --- | --- |
+| Enabled | **On** per mapped source, with a visible "recording" indicator and per-device off switch | Requested default-on; privacy needs an escape hatch |
+| Sample rate | max 1 Hz/slot, 2 Hz/device | Replay/heatmap need far less than 10 Hz |
+| Movement gate | 300 mm | Ignores stationary jitter and small sway |
+| Heartbeat | 60 s while present | Proves presence without a dot cloud |
+| Session gap | 30 s with no active slots | Natural recordings, bounded sessions |
+| Quantization | 50 mm | Cuts noise and size; paths stay smooth enough |
+| Retention | 7 days (configurable) | Small, predictable |
+| Daily cap | 5,000 points/device | Bound worst-case motion |
+| Global cap | e.g. 100 MB, oldest purge | Protect disk |
+| Privacy | authenticated API only; no public/MCP exposure by default | Positions reveal occupancy patterns |
+
+## Usability questions this raises
+
+- Auto-sessions vs explicit start/stop? Auto matches "default-on" and needs no user action; an
+  explicit mode could be added later for "record this walk".
+- Session list should show time, duration, slots and a "capped/coarse" badge, not imply person
+  identity. Zones remain room-level overlays.
+- Where do recordings live? Backend, so they survive reloads and tabs; the UI must say retention
+  and offer delete/disable.
+- Replay at 1 Hz may look steppy; the browser can interpolate visually without storing more.
+- Multi-sensor: one recorder per source, no cross-sensor identity, same privacy rules.
+
+## Open decisions before a spec
+
+1. Approve **Option C (session/chunked)** vs the simpler **Option B (row per sample)**.
+2. Confirm the defaults table (sample rate, 300 mm gate, heartbeat, 7 days, caps).
+3. Default-on acceptable? If yes, where is the off switch and indicator (device Presence tab,
+   settings, or both)?
+4. Shared `metrics.db` bucket vs separate `spatial.db` (storage/purge ownership and backups).
+5. Should the browser keep its 5-minute live tail, or is a server round-trip acceptable for all
+   replay?
+6. Any assistant/MCP exposure? Recommendation: none by default.
+
+## Next step
+
+Pick the option and defaults, then write the spec/plan/tasks and implement behind a per-device
+flag first, measuring the real row/chunk counts and bbolt growth before turning it on by default.
