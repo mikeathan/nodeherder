@@ -81,6 +81,12 @@
     }
   }
   /** Captures the slot's raw position once; re-selecting the same slot refreshes the capture. */
+  /** Commits the native select's value and captures that slot's latest position. */
+  function choose(index: number, value: string) {
+    rows[index].slot = value ? Number(value) : null;
+    capture(index);
+  }
+  const latestFor = (slot: number | null) => options.value.find((option) => option.slot === slot)?.target;
   function capture(index: number) {
     const row = rows[index];
     const target = props.targets.find((item) => item.slot === row.slot);
@@ -130,17 +136,17 @@
     <div v-for="(row, index) in rows" :key="index" class="nh-calibration-row">
       <label>
         Live slot
-        <select class="nh-input" :value="row.slot ?? ''" @change="row.slot = Number(($event.target as HTMLSelectElement).value) || null; capture(index)">
+        <select class="nh-input" :value="row.slot ?? ''" @change="choose(index, ($event.target as HTMLSelectElement).value)">
           <option value="">Not captured</option>
-          <option v-for="option in options" :key="option.slot" :value="option.slot">
-            Slot {{ option.slot }}
-            <template v-if="option.target">
-              · raw {{ Math.round(option.target.x) }}, {{ Math.round(option.target.y) }} mm ·
-              {{ new Date(option.target.at).toLocaleTimeString() }}
-            </template>
-            <template v-else>· no position yet</template>
-          </option>
+          <!-- Labels stay static: live coordinates in an option rebuild the native dropdown
+               while it is open and swallow the click. Latest values are shown beside it. -->
+          <option v-for="option in options" :key="option.slot" :value="option.slot">Slot {{ option.slot }}</option>
         </select>
+        <span v-if="latestFor(row.slot)" class="nh-muted">
+          Latest raw {{ Math.round(latestFor(row.slot)!.x) }}, {{ Math.round(latestFor(row.slot)!.y) }} mm at
+          {{ new Date(latestFor(row.slot)!.at).toLocaleTimeString() }}
+        </span>
+        <span v-else-if="row.slot !== null" class="nh-muted">No position recorded yet for slot {{ row.slot }}.</span>
       </label>
       <span v-if="row.capturedAt" class="nh-muted">
         Captured {{ row.measuredX }}, {{ row.measuredY }} mm at
