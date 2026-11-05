@@ -217,13 +217,40 @@ applies per device, not “3 × slots”.
   the cleaner alternative.
 - bbolt does not shrink after deletes; monitor file size (chunked storage makes this small).
 
-### UI answer
+### UI answer: replace the browser recorder with a sessions player and a heatmap
 
-Today the UI replay is the browser's 5-minute buffer; **nothing is fed from a backend recorder
-yet**. With this design the server becomes the source of truth: a new authenticated
-sessions/history endpoint returns session summaries and chunks, and the Replay view gets a session
-list (start/end, duration, targets, point count, capped badge), a scrubber and the persisted
-heatmap. The current browser buffer can remain as the live tail for the newest few minutes.
+The current browser buffer is **removed** once the backend recorder ships; keeping two recorders
+would duplicate logic and leave history trapped in a tab. The server becomes the only source of
+truth, with two distinct surfaces rather than one hybrid view:
+
+1. **Recordings / player** — a list of auto-created sessions for the selected device and range
+   (start, end, duration, visible targets, point count, capped badge). Selecting a session loads
+   its points and plays them with a scrubber, play/pause and speed over the normal room/zones.
+   This is the "playback recorded coordinates" view.
+2. **Heatmap** — a range selector (today / 7 days / custom) that aggregates recorded points into
+   a coarse grid (e.g. 250 mm cells) and shows density, with zone outlines as context. There is
+   no playback in this view; it is for tuning zones and understanding usage.
+
+The server can keep the **active session** in memory and return it as a live tail (flushed chunks
+plus the current minutes), so the player can open the session in progress without a browser-side
+buffer.
+
+Data endpoints (authenticated, no public/MCP exposure by default):
+
+- `GET /api/spatial/recordings?device&from&to` → session summaries.
+- `GET /api/spatial/recordings/{session}` → points for the player (downsampled if huge).
+- `GET /api/spatial/heatmap?device&from&to&cell=250` → aggregated cells for the heatmap.
+
+Heatmap is derived on demand from the stored chunks; there is no second copy of the data. A
+seven-day, 4,000-point/day device is only ~28,000 points to aggregate server-side.
+
+Dependency: Diagnostics currently uses the browser replay buffer for per-slot σ/overlap. Removing
+that buffer means Diagnostics must read the server's active-session tail (or keep a tiny local
+buffer solely for diagnostics, not recording). Prefer the server tail.
+
+The current Heatmap tab uses session-only cells; it is replaced by the persisted heatmap above.
+The frontend Replay/Heatmap/Diagnostics plumbing therefore needs a migration, not just a new
+endpoint.
 
 ## Defaults worth agreeing
 
@@ -253,7 +280,8 @@ heatmap. The current browser buffer can remain as the live tail for the newest f
 
 ## Open decisions before a spec
 
-1. Approve **Option C (session/chunked)** vs the simpler **Option B (row per sample)**.
+1. Confirm **Option C (session/chunked)** and the replacement scope: remove the browser
+   recorder, add a sessions player and a persisted heatmap view.
 2. Confirm the defaults table (sample rate, 300 mm gate, heartbeat, 7 days, caps).
 3. Default-on acceptable? If yes, where is the off switch and indicator (device Presence tab,
    settings, or both)?
