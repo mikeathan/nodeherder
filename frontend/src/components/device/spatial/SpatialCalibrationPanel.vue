@@ -18,6 +18,8 @@
     device: Device;
     workspace: SpatialWorkspace;
     targets: readonly RecentTarget[];
+    /** Firmware slots the saved mapping can read, even before one has reported. */
+    slotCount: number;
     online: boolean;
   }>();
   const emit = defineEmits<{ apply: [patch: Partial<SpatialWorkspace['sensor']>] }>();
@@ -34,9 +36,23 @@
     }))
   );
 
-  // Options come from the last raw position per slot, which survives the target clearing. A
-  // still person therefore remains selectable after the live view has aged them out.
-  const options = computed(() => [...props.targets].sort((left, right) => left.slot - right.slot));
+  // Every configured slot is always selectable, even before it has reported. A still target
+  // cannot empty the list, and slots that have reported keep the last raw position.
+  const options = computed(() => {
+    const targets = new Map(props.targets.map((target) => [target.slot, target]));
+    const slots = new Set<number>();
+    for (let slot = 1; slot <= Math.max(1, props.slotCount); slot++) slots.add(slot);
+    for (const target of props.targets) slots.add(target.slot);
+    return [...slots]
+      .sort((left, right) => left - right)
+      .map((slot) => ({ slot, target: targets.get(slot) }));
+  });
+  const missingRows = computed(() =>
+    rows
+      .map((row, index) => ({ row, index }))
+      .filter(({ row }) => row.slot !== null && row.measuredX === null)
+      .map(({ index }) => index + 1)
+  );
   const angleEntity = computed(() => {
     const entity = props.device.exposes[props.workspace.firmwareEntities?.installationAngle ?? ''];
     return entity && entity.type === 'numeric' && entity.access_mode === 'readwrite' ? entity : undefined;
@@ -71,7 +87,9 @@
     row.measuredX = target?.x ?? null;
     row.measuredY = target?.y ?? null;
     row.capturedAt = target?.at ?? 0;
-    notice.value = '';
+    notice.value = target
+      ? ''
+      : `Slot ${row.slot} has no recorded position yet. Move in front of the sensor, then capture again.`;
   }
   function removeRow(index: number) {
     if (rows.length > 2) rows.splice(index, 1);
@@ -82,7 +100,7 @@
     notice.value = '';
   }
   function apply() {
-    if (solved.value.error || !solved.value.solution) return;
+    if (solved.value.error || !solved.value.solution || missingRows.value.length) return;
     emit('apply', {
       x: Math.round(solved.value.solution.x),
       y: Math.round(solved.value.solution.y),
@@ -106,16 +124,21 @@
       room positions are the same millimetres used by the room outline. A result only changes the unsaved draft.
     </p>
     <p v-if="!targets.length" class="nh-muted">
-      No target positions recorded yet. Keep the presence tab open while the target moves once.
+      No target positions recorded yet. Every configured slot is selectable; move in front of the sensor once and
+      capture again.
     </p>
     <div v-for="(row, index) in rows" :key="index" class="nh-calibration-row">
       <label>
         Live slot
         <select class="nh-input" :value="row.slot ?? ''" @change="row.slot = Number(($event.target as HTMLSelectElement).value) || null; capture(index)">
           <option value="">Not captured</option>
-          <option v-for="target in options" :key="target.slot" :value="target.slot">
-            Slot {{ target.slot }} · raw {{ Math.round(target.x) }}, {{ Math.round(target.y) }} mm ·
-            {{ new Date(target.at).toLocaleTimeString() }}
+          <option v-for="option in options" :key="option.slot" :value="option.slot">
+            Slot {{ option.slot }}
+            <template v-if="option.target">
+              · raw {{ Math.round(option.target.x) }}, {{ Math.round(option.target.y) }} mm ·
+              {{ new Date(option.target.at).toLocaleTimeString() }}
+            </template>
+            <template v-else>· no position yet</template>
           </option>
         </select>
       </label>
@@ -123,6 +146,13 @@
         Captured {{ row.measuredX }}, {{ row.measuredY }} mm at
         {{ new Date(row.capturedAt).toLocaleTimeString() }} ({{ capturedAge(row) }} s ago)
       </span>
+      <UiButton
+        v-if="row.slot !== null"
+        size="sm"
+        variant="ghost"
+        @click="capture(index)">
+        Capture slot {{ row.slot }}
+      </UiButton>
       <label>
         Room X (mm)
         <input v-model="row.roomX" class="nh-input is-num" type="number" inputmode="numeric" />
@@ -148,7 +178,7 @@
         <dd>{{ Math.round(solved.solution.rms) }} mm RMS · worst {{ Math.round(solved.solution.worst) }} mm</dd>
       </dl>
       <p v-if="solved.warning" class="nh-muted">{{ solved.warning }}</p>
-      <UiButton @click="apply">Apply to room draft</UiButton>
+      <UiButton :disabled="missingRows.length > 0" @click="apply">Apply to room draft</UiButton>
       <UiButton
         v-if="angleEntity"
         variant="ghost"
