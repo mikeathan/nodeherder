@@ -381,6 +381,8 @@ test.describe('devices', () => {
     await expect(page.getByRole('heading', { name: 'Replay this session', exact: true })).toBeVisible();
     await expect(page.getByRole('img', { name: /Replay canvas/ })).toBeVisible();
     await expect(page.getByText(/recorded in this tab; live tracking is not shown/)).toBeVisible();
+    await expect(page.getByText(/frame\(s\) with positions/)).toBeVisible();
+    await expect(page.locator('circle.nh-target').first()).toBeVisible();
     await page.getByRole('button', { name: 'Play', exact: true }).click();
     await page.getByRole('button', { name: 'Pause', exact: true }).click();
     await expect(page.getByRole('img', { name: /Replay canvas/ })).toBeVisible();

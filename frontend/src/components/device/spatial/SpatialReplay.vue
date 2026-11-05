@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import { computed } from 'vue';
   import type { ReplayFrame } from '@/domain/spatial/replay';
-  import { frameAt } from '@/domain/spatial/replay';
+  import { firstRecordedFrame, frameAt, lastRecordedFrame } from '@/domain/spatial/replay';
   import UiButton from '@/components/ui/UiButton.vue';
 
   const props = defineProps<{
@@ -9,6 +9,7 @@
     time: number;
     playing: boolean;
     speed: number;
+    hasPositions: boolean;
   }>();
   const emit = defineEmits<{
     seek: [at: number];
@@ -19,30 +20,41 @@
   const label = computed(() =>
     current.value ? new Date(current.value.at).toLocaleTimeString() : 'No recorded frames'
   );
+  const recordedFrames = computed(() => props.frames.filter((frame) => frame.samples.length > 0));
+  const first = computed(() => firstRecordedFrame(props.frames));
+  const last = computed(() => lastRecordedFrame(props.frames));
+  const span = computed(() =>
+    first.value && last.value
+      ? `${new Date(first.value.at).toLocaleTimeString()}–${new Date(last.value.at).toLocaleTimeString()}`
+      : ''
+  );
 </script>
 
 <template>
   <section aria-label="Session replay">
     <h3>Replay this session</h3>
     <p class="nh-muted">
-      Recorded in this browser only (last five minutes); nothing is stored on the hub and replay never feeds
-      automations or history. The canvas shows recorded raw positions while this view is open.
+      This is a rolling five-minute buffer held in this browser tab's memory — there is no recordings list, nothing
+      is written to the hub, and reloading the page clears it. Playback never feeds automations or history.
     </p>
-    <template v-if="frames.length">
-      <p role="status">{{ label }} · {{ current?.samples.length ?? 0 }} slot(s)</p>
+    <template v-if="hasPositions">
+      <p role="status">
+        {{ label }} · {{ current?.samples.length ?? 0 }} slot(s) ·
+        {{ recordedFrames.length }} frame(s) with positions · {{ span }}
+      </p>
       <label class="nh-replay-range">
         Replay time
         <input
           class="nh-input"
           type="range"
-          :min="frames[0].at"
-          :max="frames[frames.length - 1].at"
+          :min="first?.at ?? frames[0].at"
+          :max="last?.at ?? frames[frames.length - 1].at"
           :value="time"
           step="100"
           @input="emit('seek', Number(($event.target as HTMLInputElement).value))" />
       </label>
       <div class="nh-replay-controls">
-        <UiButton size="sm" @click="emit('toggle')">{{ playing ? 'Pause' : 'Play' }}</UiButton>
+        <UiButton size="sm" :disabled="!hasPositions" @click="emit('toggle')">{{ playing ? 'Pause' : 'Play' }}</UiButton>
         <label>
           Speed
           <select
@@ -56,7 +68,12 @@
         </label>
       </div>
     </template>
-    <p v-else class="nh-muted">No frames recorded yet. Keep the presence tab open while the target moves.</p>
+    <p v-else-if="frames.length" class="nh-muted">
+      Frames have arrived, but no target positions are recorded yet. Replay is disabled until a target reports.
+    </p>
+    <p v-else class="nh-muted">
+      Nothing recorded in this tab yet. Keep the Presence tab open while the target moves once.
+    </p>
   </section>
 </template>
 

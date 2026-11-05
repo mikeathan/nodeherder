@@ -25,6 +25,24 @@ export function appendReplayFrame(
   return [...frames.filter((entry) => entry.at > cutoff), frame].slice(-maxFrames);
 }
 
+/** First frame that actually contains a target position, skipping empty/cleared frames. */
+export function firstRecordedFrame(frames: readonly ReplayFrame[]): ReplayFrame | undefined {
+  return frames.find((frame) => frame.samples.length > 0);
+}
+
+/** Newest frame that contains a target position. */
+export function lastRecordedFrame(frames: readonly ReplayFrame[]): ReplayFrame | undefined {
+  for (let index = frames.length - 1; index >= 0; index--) {
+    if (frames[index].samples.length > 0) return frames[index];
+  }
+  return undefined;
+}
+
+/** Whether the buffer holds any recorded target position at all. */
+export function hasRecordedPositions(frames: readonly ReplayFrame[]): boolean {
+  return frames.some((frame) => frame.samples.length > 0);
+}
+
 /** The newest frame at or before `at`, else the first frame; undefined when empty. */
 export function frameAt(frames: readonly ReplayFrame[], at: number): ReplayFrame | undefined {
   if (!frames.length) return undefined;

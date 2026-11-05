@@ -2,7 +2,10 @@ import {
   REPLAY_MAX_FRAMES,
   REPLAY_WINDOW_MS,
   appendReplayFrame,
+  firstRecordedFrame,
   frameAt,
+  hasRecordedPositions,
+  lastRecordedFrame,
   replayTracks,
 } from '@/domain/spatial/replay';
 import type { ReplayFrame } from '@/domain/spatial/replay';
@@ -44,4 +47,19 @@ test('replay frames become labelled slot tracks without claiming identity', () =
   expect(tracks).toHaveLength(2);
   expect(tracks[0]).toMatchObject({ slot: 1, label: 'Slot 1', rawX: 100, rawY: 2000, at: 5000, state: 'live' });
   expect(tracks[1].colorIndex).toBe(2);
+});
+
+test('empty frames are skipped when finding the recorded range', () => {
+  const frames = [
+    { at: 1000, samples: [] },
+    { at: 2000, samples: [{ slot: 1, x: 10, y: 20 }] },
+    { at: 3000, samples: [] },
+    { at: 4000, samples: [{ slot: 1, x: 30, y: 40 }] },
+    { at: 5000, samples: [] },
+  ];
+  expect(firstRecordedFrame(frames)?.at).toBe(2000);
+  expect(lastRecordedFrame(frames)?.at).toBe(4000);
+  expect(hasRecordedPositions(frames)).toBe(true);
+  expect(hasRecordedPositions([{ at: 1000, samples: [] }])).toBe(false);
+  expect(firstRecordedFrame([])).toBeUndefined();
 });
