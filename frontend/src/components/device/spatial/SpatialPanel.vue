@@ -47,6 +47,7 @@
   import SpatialActivityHistory from './SpatialActivityHistory.vue';
   import SpatialReplay from './SpatialReplay.vue';
   import SpatialDiagnostics from './SpatialDiagnostics.vue';
+  import SpatialFusionPanel from './SpatialFusionPanel.vue';
 
   const props = defineProps<{ device: Device }>();
   const {
@@ -318,6 +319,8 @@
       v-if="mode === SpatialViewIds.Activity"
       :device="device"
       :workspace="workspace" />
+
+    <SpatialFusionPanel v-if="mode === SpatialViewIds.Fusion" />
 
     <SpatialDiagnostics
       v-if="mode === SpatialViewIds.Diagnostics"
