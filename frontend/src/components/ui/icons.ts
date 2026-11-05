@@ -20,6 +20,7 @@ import {
 } from '@mdi/js';
 import { Device } from '@/types/device';
 import { ConnectionTypes } from '@/types/device.type';
+import { DERIVED_CONNECTION_TYPE } from '@/domain/devices';
 import { exposeKind } from '@/domain/exposes';
 import { DeviceIconKinds, deviceIconKind, type DeviceIconKind } from '@/domain/devices/icon';
 
@@ -164,7 +165,9 @@ export const protocolIcon = (connectionType: string): string =>
     ? mdiZigbee
     : connectionType === ConnectionTypes.Http || connectionType === ConnectionTypes.ESPHome
       ? mdiWifi
-      : mdiHelpCircleOutline;
+      : connectionType === DERIVED_CONNECTION_TYPE
+        ? mdiRadar
+        : mdiHelpCircleOutline;
 
 /** Decorative symbols for normalized weather conditions; absent or unknown data stays explicit. */
 export function weatherIcon(condition: string | undefined): string {

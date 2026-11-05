@@ -213,3 +213,35 @@ describe('connection lifecycle', () => {
   expect(store.getters['ws/getConnectionStatus']).toBe('connected');
  });
 });
+
+describe('spatial target frames', () => {
+  beforeEach(() => {
+    store.commit('hub/clear');
+  });
+
+  test('a validated frame is stored for a known device', () => {
+    const id = '0xa4c1381b6fd53fc4';
+    store.commit('hub/setDevices', (hubState.payload as any).devices);
+    store.commit('hub/updateSpatialTargets', {
+      id,
+      at: '2026-11-03T10:00:00.000Z',
+      targets: [
+        { id: 1, active: true, x: { value: 1200, unit: 'mm' }, y: { value: 2000, unit: 'mm' } },
+        { id: 2, active: false },
+      ],
+    });
+    const frame = store.getters['hub/spatialFrame'](id);
+    expect(frame.targets).toHaveLength(2);
+    expect(frame.targets[0].x).toEqual({ value: 1200, unit: 'mm' });
+    expect(frame.targets[1].x).toBeUndefined();
+  });
+
+  test('malformed payloads and unknown devices are ignored', () => {
+    store.commit('hub/setDevices', (hubState.payload as any).devices);
+    store.commit('hub/updateSpatialTargets', { id: 'missing', at: '2026-11-03T10:00:00.000Z', targets: [] });
+    expect(store.getters['hub/spatialFrame']('missing')).toBeUndefined();
+
+    store.commit('hub/updateSpatialTargets', { id: '0xa4c1381b6fd53fc4', at: 'not-a-date', targets: [] });
+    expect(store.getters['hub/spatialFrame']('0xa4c1381b6fd53fc4')).toBeUndefined();
+  });
+});

@@ -53,3 +53,23 @@ export type SpatialWorkspace = {
   sensor: { x: number; y: number; rotation: number; fov: number };
   entryEntities: Record<EntryRole, string>;
 };
+
+/*
+ * Live spatial frame contract (`spatialTargets` WebSocket event). Values are the device's
+ * own units and are converted for display; `at` is server time so a client can age a frame
+ * without depending on arrival time. Slots are mapping rows, never identities.
+ */
+export type SpatialFrameAxis = { value: number; unit: string };
+
+export type SpatialFrameTarget = {
+  id: number;
+  active: boolean;
+  x?: SpatialFrameAxis;
+  y?: SpatialFrameAxis;
+};
+
+export type SpatialFrame = {
+  id: string;
+  at: string;
+  targets: SpatialFrameTarget[];
+};

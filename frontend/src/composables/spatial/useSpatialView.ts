@@ -8,6 +8,7 @@ import {
   SPATIAL_DEFAULT_SCALE_MM,
   createSpatialMappings,
   mergeSpatialMappings,
+  hasCompleteSpatialMapping,
   isSpatialCoordinate,
   isSpatialFlag,
   spatialMappingWarning,
@@ -29,14 +30,14 @@ import { saveConfirmedDeviceSettings } from '@/services/device-settings';
 import { createDeviceConfigOverride } from '@/contracts/settings';
 import { useDeviceSettings } from '../useDeviceSettings';
 import { useHub } from '../useHub';
-import { useSpatialTargets } from './useSpatialTargets';
+import { useSpatialPresence } from './useSpatialPresence';
 
 /**
  * Owns the spatial tab's editable drafts, saved settings, selector options and
  * live targets. Components receive ready-to-render state and callbacks only.
  */
 export function useSpatialView(device: () => Device) {
-  const { isConnected, statusOf } = useHub();
+  const { isConnected } = useHub();
   const { settings, hasOverride } = useDeviceSettings(() => device().id);
 
   const mappings = ref<SpatialMapping[]>(createSpatialMappings());
@@ -52,12 +53,7 @@ export function useSpatialView(device: () => Device) {
   const scale = ref(SPATIAL_DEFAULT_SCALE_MM);
   const orientation = ref(SPATIAL_DEFAULT_ORIENTATION);
 
-  const online = computed(() => isConnected.value && statusOf(device()) === 'online');
-  const configured = computed(() =>
-    (settings.value?.spatial?.mappings ?? []).some(
-      (mapping) => !!mapping.x && !!mapping.y && !!mapping.active && mapping.x !== mapping.y
-    )
-  );
+  const configured = computed(() => hasCompleteSpatialMapping(settings.value?.spatial?.mappings ?? []));
   // Options AND warning/label callbacks must read stable metadata. Reading the
   // live device inside a callback subscribes the editor to every report and can
   // reset a native dropdown before its change event commits the pending choice.
@@ -175,11 +171,24 @@ export function useSpatialView(device: () => Device) {
     }
   }
 
-  const { targets, statuses: targetStatuses } = useSpatialTargets(
-    device,
+  const {
+    online,
+    statuses: targetStatuses,
+    tracks,
+    slots,
+    occupancy,
+    summary,
+    source,
+    hasData,
+    jitterMm,
+    duplicates,
+    smoothing,
+  } = useSpatialPresence(
+    () => device(),
     () => mappings.value,
-    () => online.value
+    () => workspace.value
   );
+  const showRaw = ref(false);
 
   return {
     mappings,
@@ -194,7 +203,16 @@ export function useSpatialView(device: () => Device) {
     configured,
     rowOptions,
     canSave,
-    targets,
+    tracks,
+    slots,
+    occupancy,
+    summary,
+    source,
+    hasData,
+    jitterMm,
+    duplicates,
+    showRaw,
+    smoothing,
     targetStatuses,
     setMapping,
     selectedLabel,

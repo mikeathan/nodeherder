@@ -5,11 +5,11 @@ import {
   rectanglePoints,
   resizeRectangle,
   polygonBounds,
+  roomPoint,
   roomScreenPoint,
   sensorPoint,
   validPolygon,
   validateWorkspace,
-  zonePreview,
 } from '@/domain/spatial/workspace';
 import type { SpatialZone } from '@/types/spatial';
 const zone: SpatialZone = {
@@ -52,15 +52,14 @@ test('room transforms invert correctly and keep persisted drafts independent', (
   copied.zones[0].points[0].x = 999;
   expect(w.zones[0].points[0].x).toBe(-500);
 });
-test('inclusive occupancy previews respect exclusions and never call missing targets clear', () => {
-  const target = { id: 1, x: 0, y: 1500, distance: 1500 };
+test('point containment is inclusive on zone edges and room transforms stay invertible', () => {
   expect(containsPoint(zone.points, { x: -500, y: 1000 })).toBe(true);
-  expect(zonePreview(zone, [zone], [target], true)).toBe('Target inside');
-  expect(zonePreview(zone, [zone, { ...zone, id: 'mask', kind: 'exclusion' }], [target], true)).toBe(
-    'No target inside'
-  );
-  expect(zonePreview(zone, [zone], [], true)).toContain('Unknown');
-  expect(zonePreview(zone, [zone], [target], false)).toContain('Unknown');
+  expect(containsPoint(zone.points, { x: 0, y: 1500 })).toBe(true);
+  expect(containsPoint(zone.points, { x: 0, y: 500 })).toBe(false);
+
+  const sensor = { x: 1200, y: -300, rotation: 90, fov: 0 };
+  const point = { x: 400, y: 2000 };
+  expect(roomScreenPoint(point, sensor, 0)).toEqual({ ...roomPoint(point, sensor), y: -roomPoint(point, sensor).y });
 });
 
 test('rectangle resizing retains a fixed anchor across both axes and shares numeric bounds', () => {

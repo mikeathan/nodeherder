@@ -32,6 +32,11 @@ export const CANVAS_OBJECT_FONT_RATIO = 0.035;
 export const CANVAS_ZONE_LABEL_OFFSET_RATIO = 0.035;
 export const CANVAS_ZONE_FONT_RATIO = 0.04;
 
+/** Heading arrow length in seconds of current velocity. */
+export const CANVAS_HEADING_SECONDS = 0.25;
+/** Speed below which no heading arrow is drawn, in millimetres per second. */
+export const CANVAS_HEADING_MIN_SPEED_MM_S = 120;
+
 /** Serializes points for an SVG polygon/polyline `points` attribute. */
 export function pointsAttribute(points: readonly SpatialPoint[]): string {
   return points.map((point) => `${point.x},${point.y}`).join(' ');

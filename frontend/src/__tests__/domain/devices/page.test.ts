@@ -7,6 +7,7 @@ import {
   deviceCategorySections,
   deviceTabLabel,
   deviceTabQuery,
+  deviceTabs,
   lastSeenLabel,
   resolveDeviceTab,
 } from '@/domain/devices/page';
@@ -18,7 +19,32 @@ describe('device page model', () => {
     expect(resolveDeviceTab('other')).toBe(DeviceTabIds.Controls);
     expect(deviceTabQuery(DeviceTabIds.Controls)).toBeUndefined();
     expect(deviceTabQuery(DeviceTabIds.About)).toBe(DeviceTabIds.About);
-    expect(adjacentDeviceTab(0, -1).id).toBe(DeviceTabIds.About);
+    expect(adjacentDeviceTab(deviceTabs(undefined), 0, -1).id).toBe(DeviceTabIds.About);
+  });
+
+  test('presence is offered only to devices that can map coordinates', () => {
+    const plain = deviceTabs(device('plain'));
+    expect(plain.map((tab) => tab.id)).not.toContain(DeviceTabIds.Presence);
+    // A withheld tab in a shared link falls back to Controls instead of an empty panel.
+    expect(resolveDeviceTab(DeviceTabIds.Presence, plain)).toBe(DeviceTabIds.Controls);
+
+    const spatial = device('radar', { provider: 'esphome' }, [
+      expose('target_x', { type: 'numeric' as never, unit: 'mm', data: 100 }),
+      expose('target_y', { type: 'numeric' as never, unit: 'mm', data: 200 }),
+      expose('target_active', { type: 'binary' as never, data: true }),
+    ]);
+    const capable = deviceTabs(spatial);
+    expect(capable.map((tab) => tab.id)).toEqual([
+      DeviceTabIds.Controls,
+      DeviceTabIds.Presence,
+      DeviceTabIds.History,
+      DeviceTabIds.Settings,
+      DeviceTabIds.About,
+    ]);
+    expect(resolveDeviceTab(DeviceTabIds.Presence, capable)).toBe(DeviceTabIds.Presence);
+    // Keyboard navigation wraps within the tabs actually shown.
+    expect(adjacentDeviceTab(capable, 4, 1).id).toBe(DeviceTabIds.Controls);
+    expect(adjacentDeviceTab(capable, 1, 1).id).toBe(DeviceTabIds.History);
   });
 
   test('ESPHome uses hub-settings wording', () => {

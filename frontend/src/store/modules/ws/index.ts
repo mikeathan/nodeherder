@@ -55,6 +55,8 @@ const actionEvents = new Map([
 const mutationEvents = new Map([
   [DEVICE_CONFIG_SAVE_RESULT, 'ws/setDeviceConfigSaveResult'],
   ['automationUpdated', 'automations/update'], ['deviceUpdated', 'hub/updateDevice'],
+  // Complete, synchronized spatial snapshots; additive to deviceUpdated (spec 040).
+  ['spatialTargets', 'hub/updateSpatialTargets'],
   ['bridgeConfig', 'hub/setBridgeSettings'], ['deviceAdded', 'hub/addDevice'],
   ['dashboardGroups', 'hub/setDashboardGroups'], ['mcpStatus', 'hub/setMCPStatus'],
 ]);

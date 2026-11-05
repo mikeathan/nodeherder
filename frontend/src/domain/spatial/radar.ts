@@ -2,7 +2,6 @@
  * Pure geometry and text helpers for the spatial radar drawing.
  * The SVG component consumes these values and contains no calculations.
  */
-import type { SpatialTarget } from './index';
 import { formatQuantity } from '@/utils/units';
 
 /** Number of subdivisions between the centre and either edge. */
@@ -45,22 +44,11 @@ export function rotatePoint(x: number, y: number, degrees: number): { x: number;
   };
 }
 
-/** Screen positions for targets after the view rotation; SVG Y grows downwards. */
-export function radarTargetPositions(
-  targets: readonly SpatialTarget[],
-  orientation: number
-): { id: number; x: number; y: number }[] {
-  return targets.map((target) => {
-    const point = rotatePoint(target.x, target.y, orientation);
-    return { id: target.id, x: point.x, y: -point.y };
-  });
-}
-
 /** Accessible text list for the radar, using the same units as the drawing. */
-export function spatialTargetRows(targets: readonly SpatialTarget[]): string[] {
-  return targets.map(
-    (target) =>
-      `Target ${target.id}: X ${formatSpatialDistance(target.x)}, Y ${formatSpatialDistance(target.y)}, distance ${formatSpatialDistance(target.distance)}`
+export function spatialTrackRows(tracks: readonly { label: string; state: string; x: number; y: number }[]): string[] {
+  return tracks.map(
+    (track) =>
+      `${track.label} (${track.state}): X ${formatSpatialDistance(track.x)}, Y ${formatSpatialDistance(track.y)}`
   );
 }
 

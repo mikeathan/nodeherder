@@ -49,6 +49,33 @@ test('explains inactive, stale and unmapped target rows without hiding mapping c
     state: 'stale',
     label: 'Waiting for fresh X/Y',
   });
+  // Frames are synchronized and validated, so a drawn slot must not be called stale only
+  // because the sampled coordinate path is throttled.
+  expect(spatialTargetStatuses(values, rows, new Map(), 10000, true, new Set([2]))[1]).toEqual({
+    id: 2,
+    state: 'active',
+    label: 'Active',
+  });
+  expect(spatialTargetStatuses(values, rows, new Map(), 10000, false, new Set([2]))[1]).toEqual({
+    id: 2,
+    state: 'offline',
+    label: 'Device offline',
+  });
+});
+
+test('reads declared binary words as active instead of guessing strict booleans', () => {
+  const values = {
+    x: expose(100, 'mm'),
+    y: expose(200, 'mm'),
+    active: { data: 'ON', unit: '', values: { on: 'ON', off: 'OFF' } } as unknown as Expose,
+  };
+  const rows = [{ x: 'x', y: 'y', active: 'active' }];
+  const seen = new Map([
+    ['x', 9000],
+    ['y', 9500],
+  ]);
+  expect(spatialTargets(values, rows, seen, 10000, true)).toEqual([{ id: 1, x: 100, y: 200, distance: Math.hypot(100, 200) }]);
+  expect(spatialTargetStatuses(values, rows, seen, 10000, true)).toEqual([{ id: 1, state: 'active', label: 'Active' }]);
 });
 
 test('requires fresh independent coordinates and an active signal', () => {
