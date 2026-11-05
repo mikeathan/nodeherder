@@ -23,6 +23,29 @@ test('layout parsing owns references and preserves false panel choices and empty
   expect(parseHomeLayout({ version: 1, revision: 0, etag: '', blocks: [] }).blocks).toEqual([]);
 });
 
+test('presence cards decode with a device reference and no expose', () => {
+  const raw = valid();
+  raw.blocks[0].cards.push({ id: 'presence', kind: 'presence', panel: true, device_id: 'radar' } as never);
+  const layout = parseHomeLayout(raw);
+  expect(layout.blocks[0].cards[1]).toEqual({ id: 'presence', panel: true, kind: 'presence', device_id: 'radar' });
+});
+
+test('presence cards reject mixed device, expose and integration references', () => {
+  const base = { version: 1, revision: 0, etag: '', blocks: [{ id: 'b', kind: 'group', name: 'Area', cards: [] }] };
+  for (const extra of [
+    { expose: 'occupied' },
+    { instance_id: 'instance' },
+    { resource_id: 'resource' },
+    { service_id: 'service' },
+  ]) {
+    const raw = {
+      ...base,
+      blocks: [{ ...base.blocks[0], cards: [{ id: 'p', kind: 'presence', panel: true, device_id: 'radar', ...extra }] }],
+    };
+    expect(() => parseHomeLayout(raw)).toThrow();
+  }
+});
+
 test('text ingress uses server byte bounds and full Unicode control checks', () => {
   const raw = valid();
   raw.blocks[0].name = '🏠'.repeat(60);
