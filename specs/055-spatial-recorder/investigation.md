@@ -219,17 +219,27 @@ applies per device, not “3 × slots”.
 
 ### UI answer: replace the browser recorder with a sessions player and a heatmap
 
-The current browser buffer is **removed** once the backend recorder ships; keeping two recorders
-would duplicate logic and leave history trapped in a tab. The server becomes the only source of
-truth, with two distinct surfaces rather than one hybrid view:
+The current browser buffer and the in-Presence **Diagnostics** view are **removed**; diagnostics
+are explicitly out of scope now. Keeping two recorders or a diagnostics pipeline that depends on
+them would duplicate logic and leave history trapped in a tab. The server becomes the only source
+of truth.
 
-1. **Recordings / player** — a list of auto-created sessions for the selected device and range
-   (start, end, duration, visible targets, point count, capped badge). Selecting a session loads
-   its points and plays them with a scrubber, play/pause and speed over the normal room/zones.
-   This is the "playback recorded coordinates" view.
-2. **Heatmap** — a range selector (today / 7 days / custom) that aggregates recorded points into
-   a coarse grid (e.g. 250 mm cells) and shows density, with zone outlines as context. There is
-   no playback in this view; it is for tuning zones and understanding usage.
+Recording and playback move out of the Presence tab into a new top-level **Recordings** section
+(sidebar entry), with a device picker and a date/time range shared by two tabs:
+
+1. **Player** — the range filters a list of auto-created sessions for the chosen device (start,
+   end, duration, visible targets, point count, capped badge). Selecting one loads its points and
+   plays them with a scrubber, play/pause and speed over the normal room/zones. This is the
+   "data-range player": choose the range, pick the session within it, play the recorded
+   coordinates.
+2. **Heatmap** — the same date range aggregates recorded points into a coarse grid (e.g. 250 mm
+   cells) and shows density with zone outlines. No playback in this view.
+
+Playing every session in a range concatenated would be ambiguous across gaps; the range selects
+which sessions are offered, and playback is per session. The heatmap is the across-range view.
+
+Presence keeps Live, Zones, Room, Entry/Exit, Firmware, Calibration and Multi-sensor. Diagnostics,
+the session-only heatmap and the browser Replay view are deleted rather than left as duplicates.
 
 The server can keep the **active session** in memory and return it as a live tail (flushed chunks
 plus the current minutes), so the player can open the session in progress without a browser-side
@@ -237,20 +247,17 @@ buffer.
 
 Data endpoints (authenticated, no public/MCP exposure by default):
 
-- `GET /api/spatial/recordings?device&from&to` → session summaries.
+- `GET /api/spatial/recordings?device&from&to` → session summaries for the date range.
 - `GET /api/spatial/recordings/{session}` → points for the player (downsampled if huge).
 - `GET /api/spatial/heatmap?device&from&to&cell=250` → aggregated cells for the heatmap.
 
 Heatmap is derived on demand from the stored chunks; there is no second copy of the data. A
 seven-day, 4,000-point/day device is only ~28,000 points to aggregate server-side.
 
-Dependency: Diagnostics currently uses the browser replay buffer for per-slot σ/overlap. Removing
-that buffer means Diagnostics must read the server's active-session tail (or keep a tiny local
-buffer solely for diagnostics, not recording). Prefer the server tail.
-
-The current Heatmap tab uses session-only cells; it is replaced by the persisted heatmap above.
-The frontend Replay/Heatmap/Diagnostics plumbing therefore needs a migration, not just a new
-endpoint.
+Removal scope: the Diagnostics view, its domain helpers/tests, `useSpatialReplay`, the browser
+frame recorder, and the Presence Replay/Heatmap tabs. The calibration and firmware views do not
+depend on them. This is a deletion, not a hidden second path: no Diagnostics and no browser
+recording remain.
 
 ## Defaults worth agreeing
 
@@ -281,7 +288,8 @@ endpoint.
 ## Open decisions before a spec
 
 1. Confirm **Option C (session/chunked)** and the replacement scope: remove the browser
-   recorder, add a sessions player and a persisted heatmap view.
+   recorder **and Diagnostics**, move recording into a new top-level Recordings section, add the
+   per-session data-range player and the date-range persisted heatmap.
 2. Confirm the defaults table (sample rate, 300 mm gate, heartbeat, 7 days, caps).
 3. Default-on acceptable? If yes, where is the off switch and indicator (device Presence tab,
    settings, or both)?
