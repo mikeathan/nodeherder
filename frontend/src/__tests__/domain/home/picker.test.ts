@@ -122,3 +122,15 @@ test('value filters keep their identity while the available groups stay the same
   expect(stableHomePickerFilters(first, homePickerChoices('device:lamp', warmer, new Map(), []))).toBe(first);
   expect(stableHomePickerFilters(first, [])).not.toBe(first);
 });
+
+test('a spatial-capable device offers one whole-device presence choice', () => {
+  const radar = device('radar', { provider: 'esphome', connection_type: 'esphome' }, [
+    expose('target_x', { unit: 'mm', data: 500 }),
+    expose('target_y', { unit: 'mm', data: 1500 }),
+    expose('target_active', { type: 'binary', data: true }),
+  ]);
+  const [presence] = homePickerChoices('device:radar', [radar], new Map(), []);
+  expect(presence.reference).toEqual({ kind: 'presence', device_id: 'radar' });
+  expect(presence.label).toBe('Presence');
+  expect(homePickerChoices('device:lamp', [lamp], new Map(), []).some((item) => item.reference.kind === 'presence')).toBe(false);
+});

@@ -96,6 +96,7 @@ declare module 'vue' {
     HomeBlockHeader: typeof import('./src/components/home/HomeBlockHeader.vue')['default']
     HomeCardItem: typeof import('./src/components/home/HomeCardItem.vue')['default']
     HomeCardList: typeof import('./src/components/home/HomeCardList.vue')['default']
+    HomePresenceCard: typeof import('./src/components/home/HomePresenceCard.vue')['default']
     HomeStandaloneCard: typeof import('./src/components/home/HomeStandaloneCard.vue')['default']
     Icon: typeof import('./src/components/controls/Icon.vue')['default']
     InputBox: typeof import('./src/components/input/InputBox.vue')['default']

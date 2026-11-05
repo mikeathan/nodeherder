@@ -163,6 +163,18 @@ func validateHomeSources(proposal, current settings.HomeLayout, devices HomeDevi
 				}
 				continue
 			}
+			if card.Kind == "presence" {
+				// Presence placement only needs the source device to exist; its derived
+				// entities are created by the spatial engine at runtime.
+				if devices == nil {
+					return homeFailure("invalid_input", "That presence device is unavailable.")
+				}
+				device, err := devices.FindDeviceById(card.DeviceID)
+				if err != nil || device == nil {
+					return homeFailure("invalid_input", "That presence device is unavailable.")
+				}
+				continue
+			}
 			if !loaded {
 				if connections == nil {
 					return homeFailure("service_unavailable", "Integrations are unavailable. Existing device areas still work.")

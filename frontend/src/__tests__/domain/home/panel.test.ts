@@ -45,3 +45,13 @@ test('panel keeps mixed card order while retaining existing device control selec
   ).toEqual(['lamp']);
   expect(homePanelItems(block, { name: 'Kitchen', climate: null, humidity: null, buttons: [] })).toEqual([]);
 });
+
+test('presence cards stay on Home and never become panel buttons', () => {
+  const block = {
+    id: 'b',
+    kind: 'card' as const,
+    name: '',
+    cards: [{ id: 'p', kind: 'presence' as const, device_id: 'radar', panel: true }],
+  };
+  expect(homePanelItems(block, { name: 'Kitchen', climate: null, humidity: null, buttons: [] })).toEqual([]);
+});

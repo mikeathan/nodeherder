@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { homeIntegrationCard, homeIntegrationSources } from '@/domain/home/cards';
+import { homeCardTitle, homeIntegrationCard, homeIntegrationSources } from '@/domain/home/cards';
 import { homeSourceKey } from '@/domain/home/layout';
 import { homePickerChoices } from '@/domain/home/picker';
 import type { ConnectionInstance, WasteSchedule } from '@/types/integrations';
@@ -96,4 +96,8 @@ test('bin picker offers the full schedule while existing service cards remain av
   const service = [...sources.values()].find((source) => source.reference.kind === 'waste_service')!;
   const card: HomeCard = { ...service.reference, id: 'existing', panel: true };
   expect(homeIntegrationCard(card, sources).title).toBe(service.title);
+});
+
+test('presence cards have a stable title without a source presentation', () => {
+  expect(homeCardTitle({ id: 'p', kind: 'presence', device_id: 'radar', panel: true }, new Map())).toBe('Presence');
 });

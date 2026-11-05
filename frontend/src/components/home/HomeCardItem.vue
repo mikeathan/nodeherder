@@ -4,6 +4,7 @@
   import EntityTile from '@/components/entity/EntityTile.vue';
   import UiButton from '@/components/ui/UiButton.vue';
   import IntegrationTile from './IntegrationTile.vue';
+  import HomePresenceCard from './HomePresenceCard.vue';
 
   defineProps<{
     card: HomeCard;
@@ -18,12 +19,18 @@
 <template>
   <div
     class="nh-home-card"
-    :class="{ 'is-integration': card.kind !== 'device' }"
+    :class="{ 'is-integration': card.kind !== 'device' && card.kind !== 'presence', 'is-presence': card.kind === 'presence' }"
     :data-card-id="card.id">
     <EntityTile
       v-if="card.kind === 'device'"
       :device-id="card.device_id"
       :expose="card.expose"
+      :editing="editing"
+      :busy="busy"
+      @remove="$emit('remove')" />
+    <HomePresenceCard
+      v-else-if="card.kind === 'presence'"
+      :card="card"
       :editing="editing"
       :busy="busy"
       @remove="$emit('remove')" />
@@ -55,6 +62,14 @@
   }
   .nh-home-card.is-integration {
     grid-column: 1 / -1;
+  }
+  .nh-home-card.is-presence {
+    grid-column: span 2;
+  }
+  @media (max-width: 640px) {
+    .nh-home-card.is-presence {
+      grid-column: 1 / -1;
+    }
   }
   .nh-card-layout-tools {
     position: absolute;

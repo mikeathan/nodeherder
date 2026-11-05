@@ -12,6 +12,7 @@ export function homePanelItems(block: HomeBlock, room: PanelRoom): HomePanelItem
   const items: HomePanelItem[] = [];
   for (const card of block.cards) {
     if (!card.panel) continue;
+    if (card.kind === 'presence') continue; // Presence stays on Home; Panel has no presence surface.
     if (card.kind !== 'device') {
       items.push({ kind: 'integration', id: card.id, card });
       continue;

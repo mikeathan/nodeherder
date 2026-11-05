@@ -14,6 +14,7 @@ export const HOME_LAYOUT_LIMITS = {
 /** Source identity excludes placement ID, visibility, current value and translated labels. */
 export function homeSourceKey(card: HomeCardSource): string {
   if (card.kind === 'device') return JSON.stringify([card.kind, card.device_id, card.expose]);
+  if (card.kind === 'presence') return JSON.stringify([card.kind, card.device_id]);
   return JSON.stringify([
     card.kind,
     card.instance_id,

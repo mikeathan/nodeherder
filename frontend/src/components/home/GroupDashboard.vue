@@ -126,7 +126,7 @@
         <template #item="{ element, index }">
           <div
             class="nh-home-block"
-            :class="{ 'is-area': element.kind === 'group', 'is-integration': element.kind === 'card' && element.cards[0]?.kind !== 'device' }"
+            :class="{ 'is-area': element.kind === 'group', 'is-integration': element.kind === 'card' && !['device', 'presence'].includes(element.cards[0]?.kind ?? '') }"
             :data-home-block="element.id">
             <div class="nh-home-block-content">
               <AreaCard

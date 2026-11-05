@@ -15,9 +15,12 @@ const EMPTY_VALUES: DerivedPresenceValues = { occupied: null, targetCount: null,
  * tab uses it as the authority for zone occupancy and counts; when the hub has not derived
  * anything the caller falls back to the geometric preview and labels it as an overlay.
  */
-export function useDerivedPresence(device: () => Device) {
+export function useDerivedPresence(device: () => Device | undefined) {
   const { findDevice, statusOf, isConnected } = useHub();
-  const derived = computed<Device | undefined>(() => findDevice(derivedPresenceDeviceId(device().id)));
+  const derived = computed<Device | undefined>(() => {
+    const source = device();
+    return source ? findDevice(derivedPresenceDeviceId(source.id)) : undefined;
+  });
   const online = computed(() => !!derived.value && isConnected.value && statusOf(derived.value) === 'online');
   const zones = computed(() => derivedZoneSignals(derived.value));
   const values = computed(() => (derived.value ? derivedPresenceValues(derived.value) : EMPTY_VALUES));
