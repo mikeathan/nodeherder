@@ -41,6 +41,7 @@
   import SpatialZoneEditor from './SpatialZoneEditor.vue';
   import SpatialRoomBuilder from './SpatialRoomBuilder.vue';
   import SpatialEntryPanel from './SpatialEntryPanel.vue';
+  import SpatialFirmwarePanel from './SpatialFirmwarePanel.vue';
 
   const props = defineProps<{ device: Device }>();
   const {
@@ -85,6 +86,7 @@
     updateSensor,
     mapEntry,
     mapZone,
+    mapFirmware,
     setOutline,
     removeSelected,
     moveSelected,
@@ -299,6 +301,13 @@
         </li>
       </ul>
     </section>
+
+    <SpatialFirmwarePanel
+      v-if="mode === SpatialViewIds.Firmware"
+      :device="device"
+      :workspace="workspace"
+      :online="online"
+      @map="mapFirmware" />
 
     <SpatialEntryPanel
       v-if="mode === SpatialViewIds.Entry"

@@ -1,5 +1,11 @@
-import { serializeZonePolygon, zoneCommandPlan, zonePolygonPlan } from '@/domain/spatial/device-zones';
-import { rectanglePoints } from '@/domain/spatial/workspace';
+import {
+  firmwareCommandPlan,
+  serializeZonePolygon,
+  zoneCommandPlan,
+  zoneOffDelayPlan,
+  zonePolygonPlan,
+} from '@/domain/spatial/device-zones';
+import { createWorkspace, rectanglePoints } from '@/domain/spatial/workspace';
 import type { SpatialZone } from '@/types/spatial';
 import type { Expose } from '@/types/device';
 const coordinate = (name: string, unit = 'mm') =>
@@ -99,4 +105,65 @@ test('a polygon needs its own text entity and accepts no rectangle roles', () =>
   expect(zonePolygonPlan({ ...polygonZone, shape: 'rectangle' }, polygonFields).error).toContain('polygon zones');
   // The rectangle path still refuses polygon-shaped zones.
   expect(zoneCommandPlan(polygonZone, polygonFields).commands).toEqual([]);
+});
+
+const angle = (name: string) =>
+  ({
+    name,
+    description: '',
+    data: 0,
+    category: 'config',
+    values: {},
+    type: 'numeric',
+    unit: '°',
+    access_mode: 'readwrite',
+    attributes: { min: -45, max: 45, step: 1 },
+  }) as Expose;
+const toggle = (name: string) =>
+  ({
+    name,
+    description: '',
+    data: false,
+    category: 'config',
+    values: {},
+    type: 'binary',
+    unit: '',
+    access_mode: 'readwrite',
+    attributes: {},
+  }) as Expose;
+const firmwareWorkspace = (overrides: Partial<Record<string, string>> = {}) => ({
+  ...createWorkspace(),
+  firmwareEntities: { ...createWorkspace().firmwareEntities, ...overrides },
+});
+
+test('plans mapped firmware settings with native-unit validation', () => {
+  const workspace = firmwareWorkspace({ installationAngle: 'angle', inverseMounting: 'inverse', polygonMode: 'polygon' });
+  const fields = { angle: angle('angle'), inverse: toggle('inverse'), polygon: toggle('polygon') };
+  const plan = firmwareCommandPlan(workspace, fields, { installationAngle: 20, inverseMounting: true, polygonMode: false });
+  expect(plan.error).toBe('');
+  expect(plan.commands).toEqual([
+    { role: 'installationAngle', entity: 'angle', value: 20 },
+    { role: 'inverseMounting', entity: 'inverse', value: true },
+    { role: 'polygonMode', entity: 'polygon', value: false },
+  ]);
+  expect(firmwareCommandPlan(workspace, fields, { installationAngle: 50, inverseMounting: true, polygonMode: false }).error).toContain('bounds');
+  expect(firmwareCommandPlan(workspace, fields, { installationAngle: 20.5, inverseMounting: true, polygonMode: false }).error).toContain('step');
+  expect(firmwareCommandPlan(workspace, fields, { inverseMounting: true, polygonMode: false }).error).toContain('Enter a value');
+  expect(firmwareCommandPlan(workspace, { ...fields, angle: { ...fields.angle, access_mode: 'read' } }, { installationAngle: 20 }).error).toContain('writable');
+});
+
+test('unmapped firmware roles are skipped, not invented', () => {
+  expect(firmwareCommandPlan(firmwareWorkspace({}), {}, {})).toEqual({ error: '', commands: [] });
+});
+
+test('plans a per-zone off delay only when mapped', () => {
+  const timer = { ...angle('zone_off'), unit: 's', attributes: { min: 0, max: 3600, step: 1 } };
+  const mapped = { ...polygonZone, entities: { polygon: 'poly', offDelay: 'zone_off' } };
+  expect(zoneOffDelayPlan(mapped, { zone_off: timer }, 30)).toEqual({
+    error: '',
+    commands: [{ role: 'offDelay', entity: 'zone_off', value: 30 }],
+  });
+  expect(zoneOffDelayPlan({ ...mapped, entities: { polygon: 'poly' } }, { zone_off: timer }, 30).commands).toEqual([]);
+  expect(zoneOffDelayPlan(mapped, { zone_off: { ...timer, access_mode: 'read' } }, 30).error).toContain('writable');
+  expect(zoneOffDelayPlan(mapped, { zone_off: timer }, 5000).error).toContain('bounds');
 });

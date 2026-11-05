@@ -84,3 +84,37 @@ test('rectangle resizing retains a fixed anchor across both axes and shares nume
   });
   expect(anchor).toEqual({ x: 1000, y: 1000 });
 });
+
+test('firmware setting mappings default empty, reject unknown roles and copy independently', () => {
+  const workspace = createWorkspace();
+  expect(workspace.firmwareEntities).toEqual({
+    installationAngle: '',
+    inverseMounting: '',
+    maxDistance: '',
+    occupancyOffDelay: '',
+    polygonMode: '',
+  });
+  workspace.zones = [zone];
+  workspace.firmwareEntities = { installationAngle: 'angle' };
+  expect(validateWorkspace(workspace)).toBe('');
+
+  workspace.firmwareEntities = { unknown: 'entity' } as never;
+  expect(validateWorkspace(workspace)).toContain('firmware');
+
+  const source = { ...createWorkspace(), firmwareEntities: { installationAngle: 'angle' } };
+  const copied = copyWorkspace(source);
+  copied.firmwareEntities!.installationAngle = 'other';
+  expect(source.firmwareEntities!.installationAngle).toBe('angle');
+
+  const polygon = {
+    ...zone,
+    shape: 'polygon' as const,
+    points: [
+      { x: 0, y: 1000 },
+      { x: 1000, y: 1000 },
+      { x: 500, y: 2000 },
+    ],
+    entities: { polygon: 'polygon_zone' },
+  };
+  expect(validateWorkspace({ ...createWorkspace(), zones: [polygon] })).toBe('');
+});

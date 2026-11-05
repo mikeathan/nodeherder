@@ -8,7 +8,7 @@
   import { computed, ref, watch } from 'vue';
   import type { Device } from '@/types/device';
   import type { SpatialZone, ZoneEntityRole } from '@/types/spatial';
-  import { ZONE_COORDINATE_ROLES, ZONE_POLYGON_ROLE } from '@/types/spatial';
+  import { ZONE_COORDINATE_ROLES, ZONE_OFF_DELAY_ROLE, ZONE_POLYGON_ROLE } from '@/types/spatial';
   import {
     ZONE_APPLY_MESSAGES,
     occupancyFlagOptions,
@@ -16,6 +16,8 @@
     zoneCommandPlan,
     zoneCommandRows,
     zoneCoordinateOptions,
+    zoneNumericOptions,
+    zoneOffDelayPlan,
     zonePolygonOptions,
     zonePolygonPlan,
   } from '@/domain/spatial/device-zones';
@@ -37,6 +39,21 @@
   const polygonValue = computed(() => serializeZonePolygon(props.zone.points));
   const busy = computed(() => plan.value.commands.some((command) => isPending(props.device.id, command.entity)));
   const notice = ref('');
+  const numeric = computed(() => zoneNumericOptions(props.device.exposes));
+  const delayEntity = computed(() => props.device.exposes[props.zone.entities?.[ZONE_OFF_DELAY_ROLE] ?? '']);
+  const delaySeconds = ref<number | null>(null);
+  const delayPlan = computed(() =>
+    delaySeconds.value === null
+      ? { error: '', commands: [] }
+      : zoneOffDelayPlan(props.zone, props.device.exposes, delaySeconds.value)
+  );
+  watch(
+    () => [props.zone.entities?.[ZONE_OFF_DELAY_ROLE], delayEntity.value?.data] as const,
+    () => {
+      if (typeof delayEntity.value?.data === 'number') delaySeconds.value = delayEntity.value.data;
+    },
+    { immediate: true }
+  );
   watch(
     () => JSON.stringify(props.zone),
     () => { notice.value = ''; }
@@ -121,6 +138,47 @@
       <p class="nh-muted">
         Value to send: <code>{{ polygonValue.error || polygonValue.value }}</code>
       </p>
+    </template>
+
+    <h4>Zone off delay</h4>
+    <label>
+      Off-delay entity
+      <select
+        class="nh-input"
+        :value="zone.entities?.[ZONE_OFF_DELAY_ROLE] ?? ''"
+        @change="emit('map', ZONE_OFF_DELAY_ROLE, ($event.target as HTMLSelectElement).value)">
+        <option value="">Not mapped</option>
+        <option
+          v-if="zone.entities?.[ZONE_OFF_DELAY_ROLE] && !delayEntity"
+          :value="zone.entities[ZONE_OFF_DELAY_ROLE]"
+          disabled>
+          Unavailable: {{ zone.entities[ZONE_OFF_DELAY_ROLE] }}
+        </option>
+        <option v-for="expose in numeric" :key="expose.name" :value="expose.name">{{ exposeDisplayLabel(expose) }}</option>
+      </select>
+    </label>
+    <template v-if="delayEntity">
+      <label>
+        Off delay ({{ delayEntity.unit || 'native' }})
+        <input
+          class="nh-input is-num"
+          type="number"
+          :value="delaySeconds ?? ''"
+          :step="delayEntity.attributes?.step ?? 'any'"
+          @input="delaySeconds = Number(($event.target as HTMLInputElement).value)" />
+      </label>
+      <p class="nh-muted">Reported: {{ formatExposeValue(delayEntity) }}</p>
+      <p v-if="delayPlan.error" class="nh-muted">{{ delayPlan.error }}</p>
+      <UiButton
+        :disabled="!!delayPlan.error || !delayPlan.commands.length || !online || !canControl(device)"
+        @click="
+          delayPlan.commands.forEach((command) => {
+            if (!send(device, command.entity, command.value)) notice = ZONE_APPLY_MESSAGES.partial;
+            else notice = ZONE_APPLY_MESSAGES.requested;
+          })
+        ">
+        Apply off delay
+      </UiButton>
     </template>
 
     <p v-if="plan.error" class="nh-muted">{{ plan.error }}</p>

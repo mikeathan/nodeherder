@@ -4,10 +4,10 @@
  * support for a drawn overlay.
  */
 import type { Device, Expose } from '@/types/device';
-import type { SpatialPoint, SpatialZone, ZoneCoordinateRole, ZoneEntityRole } from '@/types/spatial';
-import { ZONE_COORDINATE_ROLES, ZONE_POLYGON_ROLE } from '@/types/spatial';
+import type { FirmwareRole, SpatialPoint, SpatialWorkspace, SpatialZone, ZoneCoordinateRole, ZoneEntityRole } from '@/types/spatial';
+import { ZONE_COORDINATE_ROLES, ZONE_OFF_DELAY_ROLE, ZONE_POLYGON_ROLE } from '@/types/spatial';
 import { exposeRange, invalidRange, numericStep } from '@/domain/controls';
-import { exposeControlUnavailable, exposeDisplayLabel } from '@/domain/exposes';
+import { exposeControlUnavailable, exposeDisplayLabel, formatExposeValue } from '@/domain/exposes';
 import { formatWithUnit } from '@/utils/units';
 import { LENGTH_TO_MM } from './index';
 import { isRectangle, validPolygon } from './workspace';
@@ -57,6 +57,16 @@ export function isZoneCoordinate(expose: Expose): boolean {
     !exposeControlUnavailable(expose) &&
     !!LENGTH_TO_MM[expose.unit?.trim().toLowerCase()]
   );
+}
+
+/** Writable numeric entities usable for non-coordinate zone settings such as off delay. */
+export function zoneNumericOptions(exposes: Record<string, Expose>): Expose[] {
+  return Object.values(exposes)
+    .filter(
+      (expose) =>
+        expose.type === 'numeric' && expose.access_mode === 'readwrite' && !exposeControlUnavailable(expose)
+    )
+    .sort((left, right) => exposeDisplayLabel(left).localeCompare(exposeDisplayLabel(right)));
 }
 
 /** Coordinate entities offered by the zone editor, ordered by display label. */
@@ -110,17 +120,104 @@ export function zonePolygonPlan(
   return { error: '', commands: [{ role: ZONE_POLYGON_ROLE, entity: entity.name, value: serialized.value }] };
 }
 
+/** Firmware settings the workspace can map, in display order, with the control they need. */
+export const FIRMWARE_SETTINGS: readonly { role: FirmwareRole; label: string; kind: 'number' | 'switch' }[] = [
+  { role: 'installationAngle', label: 'Installation angle', kind: 'number' },
+  { role: 'inverseMounting', label: 'Inverse mounting', kind: 'switch' },
+  { role: 'maxDistance', label: 'Maximum distance', kind: 'number' },
+  { role: 'occupancyOffDelay', label: 'Occupancy off delay', kind: 'number' },
+  { role: 'polygonMode', label: 'Polygon zone mode', kind: 'switch' },
+];
+
+/** Writable entities offered for one firmware setting role. */
+export function firmwareEntityOptions(exposes: Record<string, Expose>, role: FirmwareRole): Expose[] {
+  const kind = FIRMWARE_SETTINGS.find((setting) => setting.role === role)?.kind;
+  return Object.values(exposes)
+    .filter(
+      (expose) =>
+        expose.access_mode === 'readwrite' &&
+        !exposeControlUnavailable(expose) &&
+        (kind === 'switch' ? expose.type === 'binary' : expose.type === 'numeric')
+    )
+    .sort((left, right) => exposeDisplayLabel(left).localeCompare(exposeDisplayLabel(right)));
+}
+
+/** Validates one numeric firmware value against its entity's advertised range and step. */
+function firmwareNumber(
+  role: string,
+  entity: Expose,
+  value: number
+): { error: string; command?: { role: string; entity: string; value: number } } {
+  if (!Number.isFinite(value)) return { error: `Enter a finite value for ${role}.` };
+  const range = exposeRange(entity);
+  if (invalidRange(entity) || !range || value < range.min || value > range.max) {
+    return { error: `${role} is outside the entity’s advertised bounds.` };
+  }
+  const steps = (value - range.min) / numericStep(entity);
+  if (Math.abs(steps - Math.round(steps)) > ZONE_STEP_TOLERANCE) {
+    return { error: `${role} does not align with the entity’s advertised step.` };
+  }
+  return { error: '', command: { role, entity: entity.name, value } };
+}
+
+/** Plans the mapped firmware settings from user-entered native-unit values. */
+export function firmwareCommandPlan(
+  workspace: SpatialWorkspace,
+  exposes: Record<string, Expose>,
+  values: Partial<Record<FirmwareRole, number | boolean>>
+): { error: string; commands: { role: FirmwareRole; entity: string; value: number | boolean }[] } {
+  const commands: { role: FirmwareRole; entity: string; value: number | boolean }[] = [];
+  for (const setting of FIRMWARE_SETTINGS) {
+    const entityName = workspace.firmwareEntities?.[setting.role];
+    if (!entityName) continue;
+    const entity = exposes[entityName];
+    if (!entity || entity.access_mode !== 'readwrite' || exposeControlUnavailable(entity)) {
+      return { error: `Map ${setting.label} to an available writable entity.`, commands: [] };
+    }
+    const value = values[setting.role];
+    if (setting.kind === 'switch') {
+      if (entity.type !== 'binary') return { error: `${setting.label} needs a binary switch entity.`, commands: [] };
+      if (typeof value !== 'boolean') return { error: `Choose on or off for ${setting.label}.`, commands: [] };
+      commands.push({ role: setting.role, entity: entityName, value });
+      continue;
+    }
+    if (entity.type !== 'numeric') return { error: `${setting.label} needs a numeric entity.`, commands: [] };
+    if (typeof value !== 'number') return { error: `Enter a value for ${setting.label}.`, commands: [] };
+    const planned = firmwareNumber(setting.label, entity, value);
+    if (planned.error) return { error: planned.error, commands: [] };
+    commands.push({ role: setting.role, entity: entityName, value });
+  }
+  return { error: '', commands };
+}
+
+/** Plans the optional per-zone off-delay number. */
+export function zoneOffDelayPlan(
+  zone: SpatialZone,
+  exposes: Record<string, Expose>,
+  seconds: number
+): { error: string; commands: { role: ZoneEntityRole; entity: string; value: number }[] } {
+  const entityName = zone.entities?.[ZONE_OFF_DELAY_ROLE];
+  if (!entityName) return { error: '', commands: [] };
+  const entity = exposes[entityName];
+  if (!entity || entity.type !== 'numeric' || entity.access_mode !== 'readwrite' || exposeControlUnavailable(entity)) {
+    return { error: 'Map the off delay to an available writable numeric entity.', commands: [] };
+  }
+  const planned = firmwareNumber('Zone off delay', entity, seconds);
+  if (planned.error) return { error: planned.error, commands: [] };
+  return { error: '', commands: [{ role: ZONE_OFF_DELAY_ROLE, entity: entityName, value: seconds }] };
+}
+
 /** Read-only binary entities offered as reported occupancy sources. */
 export function occupancyFlagOptions(device: Device): Expose[] {
   return Object.values(device.exposes).filter((expose) => expose.type === 'binary' && expose.access_mode !== 'write');
 }
 
 /** One formatted request/report row for the physical-zone editor. */
-export type ZoneCommandRow = { role: ZoneEntityRole; entity: string; request: string; reported: string };
+export type ZoneCommandRow = { role: string; entity: string; request: string; reported: string };
 
 /** Formats requested and currently reported values; text is shown verbatim, numbers with units. */
 export function zoneCommandRows(
-  commands: readonly { role: ZoneEntityRole; entity: string; value: number | string }[],
+  commands: readonly { role: string; entity: string; value: number | string | boolean }[],
   exposes: Record<string, Expose>
 ): ZoneCommandRow[] {
   return commands.map((command) => {
@@ -128,9 +225,18 @@ export function zoneCommandRows(
     return {
       role: command.role,
       entity: command.entity,
-      request: typeof command.value === 'number' ? formatWithUnit(command.value, expose.unit) : command.value,
+      request:
+        typeof command.value === 'number'
+          ? formatWithUnit(command.value, expose.unit)
+          : typeof command.value === 'boolean'
+            ? command.value
+              ? 'on'
+              : 'off'
+            : command.value,
       reported:
-        typeof command.value === 'number' ? formatWithUnit(expose.data, expose.unit) : String(expose.data ?? ''),
+        typeof command.value === 'number'
+          ? formatWithUnit(expose.data, expose.unit)
+          : formatExposeValue(expose, expose.data),
     };
   });
 }

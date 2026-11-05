@@ -1,6 +1,6 @@
 # Spec: Firmware zone write-back
 
-ID: 042 | Status: Implemented (unreviewed, P5b pending) | Owner: unreviewed draft | Updated: 2026-11-05
+ID: 042 | Status: Implemented (unreviewed) | Owner: unreviewed draft | Updated: 2026-11-05
 Constitution: 1.0.0 (proposed) | Components: backend and frontend
 
 ## Problem, scope, exclusions
@@ -11,15 +11,32 @@ polygon zone cannot be applied at all, even though Everything Presence Lite v1.5
 `x:y;x:y;...` (integers, at most 20 points). Users who draw a polygon are told, incorrectly,
 that firmware cannot accept it.
 
-In scope, this increment: map a polygon zone to one firmware text entity, serialise and
-validate the points, send one command, and show requested versus reported values with the
-firmware-mode caveat.
+In scope: map a polygon zone to one firmware text entity, serialise and validate the points,
+send one command, and show requested versus reported values with the firmware-mode caveat. Also
+in scope: explicit mappings and writes for installation angle, inverse mounting, maximum
+distance, occupancy off delay, polygon mode, and a per-zone off delay.
 
-Exclusions, each a later increment in the same roadmap: installation angle, inverse mounting,
-max distance, occupancy/per-zone off delays and guided firmware-mode toggles (P5b); calibration
-(P6); replay (P7); diagnostics (P8); Home block; fusion.
+Exclusions, each a later increment in the same roadmap: calibration (P6); replay (P7);
+diagnostics (P8); Home block; fusion.
 
 ## Scenarios and acceptance
+
+### US-02 — Write firmware settings with read-back (priority P1)
+
+- AC-09: Given the Firmware settings view, when it renders, then each of the five setting roles
+  has an explicit entity mapping (numeric for angle/distance/off delay, binary for
+  inverse mounting/polygon mode); nothing is inferred from names.
+- AC-10: Given a mapped numeric setting, when a value is entered, then it is validated against
+  the entity's advertised bounds and step in its own unit and applied as one command.
+- AC-11: Given a mapped switch, when on/off is chosen, then exactly one boolean command is sent.
+- AC-12: Given an unmapped role, then it is skipped and no default value is written.
+- AC-13: Given a zone with an off-delay entity mapped, then the zone editor writes that number
+  only when a value is entered; a polygon or rectangle zone both accept the role.
+- AC-14: Given a saved workspace with firmware mappings, when the backend validates it, then
+  known roles within the limit are accepted and unknown roles are rejected; cloning keeps the
+  mapping independent.
+- AC-15: Requested versus reported values are shown for every applied setting; writes remain
+  non-atomic and are not presented as persistence proof.
 
 ### US-01 — Apply a drawn polygon to firmware (priority P1)
 
@@ -53,6 +70,9 @@ max distance, occupancy/per-zone off delays and guided firmware-mode toggles (P5
   requested-versus-reported state. Acceptance: AC-04, AC-05.
 - FR-04: Guidance MUST state the firmware polygon mode requirement and non-atomic write.
   Acceptance: AC-04.
+- FR-05: Firmware setting roles MUST be explicitly mapped and validated in native units, with
+  requested-versus-reported feedback. Acceptance: AC-09–AC-13, AC-15.
+- FR-06: The backend MUST validate and clone the firmware mapping additively. Acceptance: AC-14.
 - NFR-01: No new persistence field beyond the existing zone entity map; no inferred firmware
   capability from entity names.
 - NFR-02: Polygon editor remains keyboard operable and verified at 375/768/1440 px.

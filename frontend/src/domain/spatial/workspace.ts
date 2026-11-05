@@ -4,7 +4,15 @@
  * helpers instead of carrying geometry or bounds inline.
  */
 import type { SpatialPoint, SpatialWorkspace, SpatialZone, ZoneKind } from '@/types/spatial';
-import { ENTRY_ROLES, ROOM_OBJECT_KINDS, ZONE_COORDINATE_ROLES, ZONE_SHAPES } from '@/types/spatial';
+import {
+  ENTRY_ROLES,
+  FIRMWARE_ROLES,
+  ROOM_OBJECT_KINDS,
+  ZONE_COORDINATE_ROLES,
+  ZONE_OFF_DELAY_ROLE,
+  ZONE_POLYGON_ROLE,
+  ZONE_SHAPES,
+} from '@/types/spatial';
 import { rotatePoint } from './radar';
 
 /** Persisted workspace schema version. */
@@ -111,6 +119,7 @@ export function createWorkspace(): SpatialWorkspace {
     objects: [],
     sensor: { x: 0, y: 0, rotation: 0, fov: 0 },
     entryEntities: { enabled: '', timeout: '', threshold: '', assumed: '', remaining: '' },
+    firmwareEntities: Object.fromEntries(FIRMWARE_ROLES.map((role) => [role, ''])) as Record<string, string>,
   };
 }
 
@@ -125,6 +134,7 @@ export function copyWorkspace(value?: SpatialWorkspace): SpatialWorkspace {
     outline: copy.outline ?? [],
     objects: copy.objects ?? [],
     entryEntities: { ...createWorkspace().entryEntities, ...copy.entryEntities },
+    firmwareEntities: { ...createWorkspace().firmwareEntities, ...copy.firmwareEntities },
   };
 }
 
@@ -220,7 +230,11 @@ function validZone(zone: SpatialZone, counts: Record<string, number>, ids: Set<s
   if (!limit || currentCount >= limit || !ZONE_SHAPES.includes(zone.shape)) return false;
   counts[zone.kind] = currentCount + 1;
   if (!validPolygon(zone.points) || (zone.shape === 'rectangle' && !isRectangle(zone.points))) return false;
-  if (!validEntityMap(zone.entities, ZONE_COORDINATE_ROLES)) return false;
+  const zoneRoles =
+    zone.shape === 'polygon'
+      ? [ZONE_POLYGON_ROLE, ZONE_OFF_DELAY_ROLE]
+      : [...ZONE_COORDINATE_ROLES, ZONE_OFF_DELAY_ROLE];
+  if (!validEntityMap(zone.entities, zoneRoles)) return false;
   if (zone.occupancyEntity && !validEntityId(zone.occupancyEntity)) return false;
   return validItem(zone.id, zone.name, ids);
 }
@@ -267,6 +281,9 @@ export function validateWorkspace(workspace: SpatialWorkspace): string {
   }
   if (!validEntityMap(workspace.entryEntities, ENTRY_ROLES)) {
     return 'Invalid entry entity mapping.';
+  }
+  if (!validEntityMap(workspace.firmwareEntities ?? {}, FIRMWARE_ROLES)) {
+    return 'Invalid firmware entity mapping.';
   }
   return '';
 }

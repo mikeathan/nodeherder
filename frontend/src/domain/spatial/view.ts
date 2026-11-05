@@ -39,6 +39,7 @@ export const SpatialViewIds = {
   Zones: 'zones',
   Room: 'room',
   Entry: 'entry',
+  Firmware: 'firmware',
   Heatmap: 'heatmap',
 } as const;
 
@@ -48,6 +49,7 @@ export const SPATIAL_VIEWS = [
   { id: SpatialViewIds.Zones, label: 'Zone editor' },
   { id: SpatialViewIds.Room, label: 'Room builder' },
   { id: SpatialViewIds.Entry, label: 'Entry / exit' },
+  { id: SpatialViewIds.Firmware, label: 'Firmware settings' },
   { id: SpatialViewIds.Heatmap, label: 'Heatmap & analytics' },
 ] as const;
 

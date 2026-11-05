@@ -7,6 +7,7 @@ import type {
   SpatialPoint,
   SpatialWorkspace,
   SpatialZone,
+  FirmwareRole,
   ZoneEntityRole,
   ZoneKind,
   ZoneShape,
@@ -130,6 +131,12 @@ export function useWorkspaceEditor(workspace: Ref<SpatialWorkspace>) {
     updateZone({ entities: { ...selectedZone.value.entities, [role]: id } });
   }
 
+  /** Maps one firmware setting role to an explicitly chosen writable entity. */
+  function mapFirmware(role: FirmwareRole, id: string) {
+    checkpoint();
+    workspace.value.firmwareEntities = { ...(workspace.value.firmwareEntities ?? {}), [role]: id };
+  }
+
   /** Removes the selected overlay only, with immediate undo available until saved/reloaded. */
   function removeSelected() {
     checkpoint();
@@ -187,6 +194,7 @@ export function useWorkspaceEditor(workspace: Ref<SpatialWorkspace>) {
     updateSensor,
     mapEntry,
     mapZone,
+    mapFirmware,
     setOutline,
     removeSelected,
     moveSelected,

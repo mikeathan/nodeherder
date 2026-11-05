@@ -12,9 +12,10 @@ entity names, `backend/models/settings/spatial.go` validates the roles, and
 
 Polygon support reuses every part of that path and adds one role.
 
-- `backend/models/settings/spatial.go`: `maxSpatialZoneEntities` 5; a shape-aware validator
-  accepts a single `polygon` role for polygon zones and the four coordinate roles for
-  rectangle zones, rejecting cross-shape mappings. Tests in `spatial_test.go`.
+- `backend/models/settings/spatial.go`: `maxSpatialZoneEntities` 5; `FirmwareEntities` with
+  five known roles and a bound; per-zone `offDelay` accepted for both shapes; a shape-aware
+  validator rejects cross-shape mappings. Cloning copies the firmware map. Tests in
+  `spatial_test.go`.
 - `frontend/src/types/spatial.ts`: `ZONE_POLYGON_ROLE = 'polygon'`, `ZoneEntityRole`, and the
   zone entity map widened. `ZoneCoordinateRole` stays rectangle-only.
 - `frontend/src/domain/spatial/device-zones.ts`: `isZonePolygonEntity` (text, read-write,
@@ -23,8 +24,15 @@ Polygon support reuses every part of that path and adds one role.
   that format numbers with units and text verbatim. Remove the obsolete "polygon unsupported"
   message; add polygon-mode guidance.
 - `SpatialZoneDevice.vue`: branch on shape — polygon mapping select plus serialised preview;
-  rectangle branch unchanged. `useWorkspaceEditor.mapZone` and the panel event accept the
-  wider role.
+  rectangle branch unchanged; both shapes expose an optional off-delay entity and value.
+  `useWorkspaceEditor.mapZone` and the panel event accept the wider role.
+- `types/spatial.ts`, `workspace.ts`: `FIRMWARE_ROLES`, optional `firmwareEntities`, defaults,
+  copy and validation.
+- `domain/spatial/device-zones.ts`: `FIRMWARE_SETTINGS` (label/kind),
+  `firmwareEntityOptions`, `firmwareCommandPlan` (range/step in native units, switches),
+  `zoneOffDelayPlan`, `zoneNumericOptions`.
+- `SpatialFirmwarePanel.vue`: explicit role mapping, value input or switch, reported value,
+  one apply action; wired as a sixth spatial view with help text.
 
 ## Constitution Check
 
@@ -51,7 +59,9 @@ Polygon support reuses every part of that path and adds one role.
 | FR-02, AC-02, AC-03, SC-01 | `types/spatial.ts`, `domain/spatial/device-zones.ts` | `device-zones.test.ts`: serialisation order, bounds, point count, plan blocking, shape isolation | pass |
 | FR-01, AC-07, SC-02 | `backend/models/settings/spatial.go` | `spatial_test.go`: polygon role accepted for polygon, rejected for rectangle and vice versa, and more than one entity rejected | pass |
 | FR-03, FR-04, AC-04–AC-06, AC-08 | `SpatialZoneDevice.vue`, `useWorkspaceEditor.ts`, `SpatialPanel.vue` | type-check/build; Playwright devices spec exercises the zone editor and rectangle path at 375/768/1440 | pass for rectangle regression; polygon editor is type-checked and unit-tested, not yet browser-driven |
-| SC-03 | all | `go test ./...`, `npm test` (721 tests), build, lint (0 errors), `type-check:e2e`, `devices.spec.ts` (18 passed) | pass |
+| FR-05, AC-09–AC-13, AC-15 | `SpatialFirmwarePanel.vue`, `SpatialZoneDevice.vue`, `device-zones.ts` | `device-zones.test.ts` covers native-unit bounds/step, switches, unmapped roles, off-delay; type-check/build; view renders in the existing devices spec | pass |
+| FR-06, AC-14 | `models/settings/spatial.go`, `workspace.ts` | Go validation/clone test; `workspace.test.ts` defaults, unknown role, independent copy, polygon+offDelay admission | pass |
+| SC-03 | all | `go test ./...`, `npm test` (725 tests), build, lint (0 errors), `type-check:e2e`, `devices.spec.ts` (18 passed) | pass |
 
 ## Risks, debt, excluded
 
@@ -62,6 +72,7 @@ Polygon support reuses every part of that path and adds one role.
 
 ## Completion
 
-Implemented and checked for polygon write-back. Firmware settings (installation angle, inverse
-mounting, max distance, off delays, polygon-mode toggle) remain P5b in this spec and are not
-implemented. Q-01 (firmware envelope/parser) is still an assumption until a real EPL pass.
+Implemented and checked for polygon write-back and firmware settings: explicit mappings,
+native-unit validation, switches, per-zone off delay, requested-versus-reported display and
+additive backend persistence. Q-01 (firmware envelope/parser) and the exact setting entity
+units remain assumptions until a real EPL pass, so no real-device claim is made.
