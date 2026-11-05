@@ -155,7 +155,23 @@
     zonePreviewRows(props.device, workspace.value.zones, occupancy.value, online.value, hasData.value, derived.zones.value, derived.online.value)
   );
   const inactiveTargets = computed(() => targetStatuses.value.filter((status) => status.state !== 'active'));
-  watch(mode, () => { selectedId.value = ''; });
+  // Content-only views do not need the live canvas, and hiding it makes the switch visible
+  // instead of leaving a live scene above the selected content.
+  const contentOnlyViews: SpatialViewId[] = [
+    SpatialViewIds.Activity,
+    SpatialViewIds.Firmware,
+    SpatialViewIds.Fusion,
+    SpatialViewIds.Diagnostics,
+  ];
+  const showCanvas = computed(() => !contentOnlyViews.includes(mode.value));
+  watch(mode, (next) => {
+    selectedId.value = '';
+    if (next === SpatialViewIds.Replay) {
+      // Enter replay paused at the oldest frame, so it is obviously not the live view.
+      replay.pause();
+      replay.seek(replay.bounds.value.first);
+    }
+  });
 </script>
 <template>
   <UiCard title="Presence" icon="signal">
@@ -209,8 +225,13 @@
       <UiButton v-if="isSpatialEditView(mode)" :disabled="!undoStack.length" @click="undo">Undo last edit</UiButton>
     </div>
 
+    <p v-if="mode === SpatialViewIds.Replay" class="nh-replay-banner" role="status">
+      Replay · {{ replay.time.value ? new Date(replay.time.value).toLocaleTimeString() : 'no frame selected' }} ·
+      recorded in this tab; live tracking is not shown in this view.
+    </p>
+
     <div class="nh-spatial-workspace" :class="{ 'has-editor': isSpatialEditView(mode) }">
-      <div class="nh-spatial-scene">
+      <div v-if="showCanvas" class="nh-spatial-scene">
         <SpatialCanvas
           :workspace="workspace"
           :tracks="displayTracks"
@@ -430,6 +451,13 @@
   }
   .nh-presence-head .nh-spatial-status {
     flex: 1 1 16rem;
+  }
+  .nh-replay-banner {
+    margin-block: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--nh-accent);
+    border-radius: var(--nh-radius-m);
+    background: var(--nh-surface-2);
   }
   .nh-spatial-nav,
   .nh-spatial-status {

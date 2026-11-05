@@ -39,10 +39,15 @@ export function useSpatialReplay(frames: () => readonly ReplayFrame[]) {
     stopTimer();
     timer = setInterval(step, REPLAY_TICK_MS);
   }
+  // Follow the newest frame only until the recorder has data; after that the scrubber owns the
+  // time. Otherwise live frames would keep moving the canvas while replay is paused.
+  let initialised = false;
   watch(
     frames,
     () => {
-      if (!playing.value) time.value = bounds.value.last;
+      if (initialised || !frames().length) return;
+      time.value = bounds.value.last;
+      initialised = true;
     },
     { immediate: true }
   );
