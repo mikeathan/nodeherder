@@ -372,6 +372,30 @@ test.describe('devices', () => {
     await expect(page.getByRole('img', { name: /Live room canvas/ })).toBeVisible();
     await page.getByLabel('Raw', { exact: true }).uncheck();
 
+    // Content views replace the live scene instead of leaving it above the content.
+    await page.getByRole('button', { name: 'Zone activity', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Zone activity', exact: true })).toBeVisible();
+    await expect(page.getByRole('img', { name: /Live room canvas/ })).toHaveCount(0);
+
+    await page.getByRole('button', { name: 'Replay', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Replay this session', exact: true })).toBeVisible();
+    await expect(page.getByRole('img', { name: /Replay canvas/ })).toBeVisible();
+    await expect(page.getByText(/recorded in this tab; live tracking is not shown/)).toBeVisible();
+    await page.getByRole('button', { name: 'Play', exact: true }).click();
+    await page.getByRole('button', { name: 'Pause', exact: true }).click();
+    await expect(page.getByRole('img', { name: /Replay canvas/ })).toBeVisible();
+
+    // A captured slot survives ageing (the 250 ms tick must not reset the selection).
+    await page.getByRole('button', { name: 'Calibration', exact: true }).click();
+    const liveSlot = page.getByRole('combobox', { name: 'Live slot' }).first();
+    await liveSlot.selectOption('1');
+    await expect(liveSlot).toHaveValue('1');
+    await page.waitForTimeout(3500);
+    await expect(liveSlot).toHaveValue('1');
+    await expect(page.getByText(/lost its live slot/)).toBeVisible();
+
+    await page.getByRole('button', { name: 'Live dashboard', exact: true }).click();
+
     await page.getByRole('button', {name:'Create your first zone',exact:true}).click();
     await page.getByRole('button', {name:'Add detection zone',exact:true}).click();
     await page.getByLabel('Zone name',{exact:true}).fill('Desk');

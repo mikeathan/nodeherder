@@ -23,46 +23,67 @@
   const { send, isPending, canControl } = useDeviceCommand();
   const notice = ref('');
   const rows = reactive(
-    Array.from({ length: 2 }, () => ({ slot: null as number | null, roomX: '', roomY: '' }))
+    Array.from({ length: 2 }, () => ({
+      slot: null as number | null,
+      measuredX: null as number | null,
+      measuredY: null as number | null,
+      capturedAt: 0,
+      roomX: '',
+      roomY: '',
+    }))
   );
 
-  const options = computed(() => props.tracks.filter((track) => track.state === 'live'));
+  // Options keep every reported slot, including aged ones, so a selection cannot be silently
+  // dropped by the 250 ms ageing tick; staleness is reported separately and blocks applying.
+  const options = computed(() => [...props.tracks].sort((left, right) => left.slot - right.slot));
+  const isLive = (slot: number | null) =>
+    slot !== null && props.tracks.some((track) => track.slot === slot && track.state === 'live');
   const angleEntity = computed(() => {
     const entity = props.device.exposes[props.workspace.firmwareEntities?.installationAngle ?? ''];
     return entity && entity.type === 'numeric' && entity.access_mode === 'readwrite' ? entity : undefined;
   });
 
+  // The measured position is captured when the slot is chosen; later ageing must not rewrite it.
   const pairs = computed<CalibrationPair[]>(() =>
     rows
       .filter((row) => row.slot !== null)
-      .map((row) => {
-        const track = props.tracks.find((item) => item.slot === row.slot);
-        return {
-          slot: row.slot,
-          measuredX: track?.rawX ?? Number.NaN,
-          measuredY: track?.rawY ?? Number.NaN,
-          roomX: Number(row.roomX),
-          roomY: Number(row.roomY),
-        };
-      })
+      .map((row) => ({
+        slot: row.slot,
+        measuredX: row.measuredX ?? Number.NaN,
+        measuredY: row.measuredY ?? Number.NaN,
+        roomX: Number(row.roomX),
+        roomY: Number(row.roomY),
+      }))
   );
   const solved = computed(() => solveCalibration(pairs.value));
   const staleRows = computed(() =>
     rows
       .map((row, index) => ({ row, index }))
-      .filter(({ row }) => row.slot !== null && !options.value.some((track) => track.slot === row.slot))
+      .filter(({ row }) => row.slot !== null && !isLive(row.slot))
       .map(({ index }) => index + 1)
   );
   const busy = computed(() => (angleEntity.value ? isPending(props.device.id, angleEntity.value.name) : false));
 
   function addRow() {
-    if (rows.length < CALIBRATION_MAX_PAIRS) rows.push({ slot: null, roomX: '', roomY: '' });
+    if (rows.length < CALIBRATION_MAX_PAIRS) {
+      rows.push({ slot: null, measuredX: null, measuredY: null, capturedAt: 0, roomX: '', roomY: '' });
+    }
+  }
+  /** Captures the slot's raw position once; re-selecting the same slot refreshes the capture. */
+  function capture(index: number) {
+    const row = rows[index];
+    const track = props.tracks.find((item) => item.slot === row.slot);
+    row.measuredX = track?.rawX ?? null;
+    row.measuredY = track?.rawY ?? null;
+    row.capturedAt = track ? Date.now() : 0;
+    notice.value = '';
   }
   function removeRow(index: number) {
     if (rows.length > 2) rows.splice(index, 1);
   }
   function reset() {
-    rows.splice(0, rows.length, { slot: null, roomX: '', roomY: '' }, { slot: null, roomX: '', roomY: '' });
+    const empty = () => ({ slot: null, measuredX: null, measuredY: null, capturedAt: 0, roomX: '', roomY: '' });
+    rows.splice(0, rows.length, empty(), empty());
     notice.value = '';
   }
   function apply() {
@@ -95,13 +116,17 @@
     <div v-for="(row, index) in rows" :key="index" class="nh-calibration-row">
       <label>
         Live slot
-        <select v-model="row.slot" class="nh-input">
-          <option :value="null">Not captured</option>
+        <select class="nh-input" :value="row.slot ?? ''" @change="row.slot = Number(($event.target as HTMLSelectElement).value) || null; capture(index)">
+          <option value="">Not captured</option>
           <option v-for="track in options" :key="track.slot" :value="track.slot">
             Slot {{ track.slot }} · raw {{ Math.round(track.rawX) }}, {{ Math.round(track.rawY) }} mm
+            {{ track.state === 'live' ? '' : `(${track.state})` }}
           </option>
         </select>
       </label>
+      <span v-if="row.capturedAt" class="nh-muted">
+        Captured {{ row.measuredX }}, {{ row.measuredY }} mm at {{ new Date(row.capturedAt).toLocaleTimeString() }}
+      </span>
       <label>
         Room X (mm)
         <input v-model="row.roomX" class="nh-input is-num" type="number" inputmode="numeric" />
