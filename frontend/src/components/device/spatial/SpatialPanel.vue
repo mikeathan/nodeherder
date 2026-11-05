@@ -365,6 +365,7 @@
       :device="device"
       :workspace="workspace"
       :targets="recentTargets"
+      :slot-count="mappings.length"
       :online="online"
       @apply="setSensor" />
 
