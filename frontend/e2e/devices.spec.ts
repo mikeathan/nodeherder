@@ -392,7 +392,7 @@ test.describe('devices', () => {
     await expect(liveSlot).toHaveValue('1');
     await page.waitForTimeout(3500);
     await expect(liveSlot).toHaveValue('1');
-    await expect(page.getByText(/lost its live slot/)).toBeVisible();
+    await expect(page.getByText(/Captured .* mm at/)).toBeVisible();
 
     await page.getByRole('button', { name: 'Live dashboard', exact: true }).click();
 

@@ -76,6 +76,9 @@ export function useSpatialTracking(
   const history = new Map<number, { x: number; y: number; at: number }[]>();
   // Session-only replay recording; bounded by domain helpers and never persisted.
   const replayFrames = ref<ReplayFrame[]>([]);
+  // Latest raw position per slot, kept after a target clears so calibration can still offer
+  // the spot the person just stood at instead of an empty list.
+  const recentTargets = ref<{ slot: number; x: number; y: number; at: number }[]>([]);
   let lastSource: SpatialTrackingSource | null = null;
   // Arrival time in the browser's clock. Frame timestamps come from the hub's clock; using
   // them for age would misjudge staleness on any machine with clock skew.
@@ -95,6 +98,7 @@ export function useSpatialTracking(
     filters.clear();
     history.clear();
     replayFrames.value = [];
+    recentTargets.value = [];
     clearedAt.clear();
     associator.reset();
     lastSource = null;
@@ -190,6 +194,11 @@ export function useSpatialTracking(
         samples: samples.map((sample) => ({ slot: sample.slot, x: sample.x, y: sample.y })),
       });
     }
+    const latest = new Map(recentTargets.value.map((target) => [target.slot, target]));
+    for (const sample of samples) {
+      latest.set(sample.slot, { slot: sample.slot, x: sample.x, y: sample.y, at: sample.at });
+    }
+    recentTargets.value = [...latest.values()].sort((left, right) => left.slot - right.slot);
     rememberHistory(samples);
     applySamples(samples, observedAt, nextSource);
   }
@@ -341,6 +350,7 @@ export function useSpatialTracking(
     jitterMm: computed(() => Math.round(snapshot.value.jitterMm)),
     duplicates: computed(() => snapshot.value.duplicates),
     replayFrames,
+    recentTargets,
     smoothing,
   };
 }

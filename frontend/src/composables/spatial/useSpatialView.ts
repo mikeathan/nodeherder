@@ -183,6 +183,7 @@ export function useSpatialView(device: () => Device) {
     jitterMm,
     duplicates,
     replayFrames,
+    recentTargets,
     smoothing,
   } = useSpatialPresence(
     () => device(),
@@ -213,6 +214,7 @@ export function useSpatialView(device: () => Device) {
     jitterMm,
     duplicates,
     replayFrames,
+    recentTargets,
     showRaw,
     smoothing,
     targetStatuses,
