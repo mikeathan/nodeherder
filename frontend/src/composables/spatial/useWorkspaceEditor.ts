@@ -113,6 +113,12 @@ export function useWorkspaceEditor(workspace: Ref<SpatialWorkspace>) {
     workspace.value.sensor[key] = value;
   }
 
+  /** Replaces the sensor pose from a calibration result in one undoable step. */
+  function setSensor(patch: Partial<SpatialWorkspace['sensor']>) {
+    checkpoint();
+    workspace.value.sensor = { ...workspace.value.sensor, ...patch };
+  }
+
   /** Maps one entry/assumed-presence entity to its role. */
   function mapEntry(role: EntryRole, id: string) {
     checkpoint();
@@ -192,6 +198,7 @@ export function useWorkspaceEditor(workspace: Ref<SpatialWorkspace>) {
     updateZone,
     updateObject,
     updateSensor,
+    setSensor,
     mapEntry,
     mapZone,
     mapFirmware,

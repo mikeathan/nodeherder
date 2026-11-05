@@ -42,6 +42,7 @@
   import SpatialRoomBuilder from './SpatialRoomBuilder.vue';
   import SpatialEntryPanel from './SpatialEntryPanel.vue';
   import SpatialFirmwarePanel from './SpatialFirmwarePanel.vue';
+  import SpatialCalibrationPanel from './SpatialCalibrationPanel.vue';
 
   const props = defineProps<{ device: Device }>();
   const {
@@ -84,6 +85,7 @@
     updateZone,
     updateObject,
     updateSensor,
+    setSensor,
     mapEntry,
     mapZone,
     mapFirmware,
@@ -301,6 +303,14 @@
         </li>
       </ul>
     </section>
+
+    <SpatialCalibrationPanel
+      v-if="mode === SpatialViewIds.Calibrate"
+      :device="device"
+      :workspace="workspace"
+      :tracks="tracks"
+      :online="online"
+      @apply="setSensor" />
 
     <SpatialFirmwarePanel
       v-if="mode === SpatialViewIds.Firmware"

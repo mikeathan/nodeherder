@@ -155,6 +155,8 @@ declare module 'vue' {
     Settings: typeof import('./src/components/hub/settings/Settings.vue')['default']
     SetValuesAction: typeof import('./src/components/automations/editor/actions/SetValuesAction.vue')['default']
     Sidebar: typeof import('primevue/sidebar')['default']
+    Slider: typeof import('primevue/slider')['default']
+    SpatialCalibrationPanel: typeof import('./src/components/device/spatial/SpatialCalibrationPanel.vue')['default']
     SpatialCanvas: typeof import('./src/components/device/spatial/SpatialCanvas.vue')['default']
     SpatialContextHelp: typeof import('./src/components/device/spatial/SpatialContextHelp.vue')['default']
     SpatialDisplayOptions: typeof import('./src/components/device/spatial/SpatialDisplayOptions.vue')['default']
