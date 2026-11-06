@@ -17,6 +17,7 @@ import (
 	metrics "node-herder/internal/metrics/services"
 	"node-herder/internal/mqtt"
 	"node-herder/internal/ratelimiter"
+	"node-herder/internal/spatialhistory"
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
 	"node-herder/store"
@@ -71,6 +72,13 @@ func newRouter(port int, ws ws.EventHub, hub *controllers.HubController, store s
 	// api routing
 	// protected routes
 	router.POST("/api/metrics/query", api.NewMetricsQueryHandler(ratelimiter.NewWindowRateLimiter(4, 1*time.Second), store))
+	router.GET("/api/spatial/history", api.NewSpatialHistoryHandler(func() api.SpatialHistorySource {
+		if service := hub.SpatialHistoryService(); service != nil {
+			return service
+		}
+		return nil
+	}))
+	router.GET("/api/system/storage", api.NewSystemStorageHandler(10))
 	router.POST("/api/collect", api.NewDataCollectorHandler(hub))
 	router.POST("/api/logfile", api.NewLogFileHandler(fservice))
 	router.POST("/api/automation/trigger", api.NewAutomationTriggerHandler(hub, 1*time.Second))
@@ -126,6 +134,13 @@ func Register(port int, store store.AppStore, ctx context.Context, options ...Op
 		controllers.WithAutomationHandlers(automationHandlers),
 	}
 	controllerOpts = append(controllerOpts, controllers.WithMCPServer(mcpServer))
+	if repo, err := spatialhistory.NewStore(); err != nil {
+		utils.LogErrorf("spatial history: open store: %v", err)
+	} else {
+		recorder := spatialhistory.NewRecorder(repo, store.AppConfig().GetDeviceConfigCache().IsMetricsEnabled, utils.NewRealClock())
+		recorder.Start()
+		controllerOpts = append(controllerOpts, controllers.WithSpatialRecorder(recorder))
+	}
 	hub := controllers.RegisterHubController(ws, store, mqtt, controllerOpts...)
 	if hub == nil {
 		return nil, fmt.Errorf("failed to register hub controller")

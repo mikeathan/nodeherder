@@ -13,6 +13,7 @@ import (
 	"node-herder/internal/mqtt"
 	"node-herder/internal/services"
 	"node-herder/internal/spatial"
+	"node-herder/internal/spatialhistory"
 	"node-herder/internal/ws"
 	automationmodels "node-herder/models/automations"
 	"node-herder/models/bridge"
@@ -68,6 +69,7 @@ type HubController struct {
 	automationHandlers                       []automations.AutomationHandler
 	mcpServer                                mcpserver.MCPStatusProvider
 	presenceEngine                           atomic.Pointer[spatial.Engine]
+	spatialRecorder                          atomic.Pointer[spatialhistory.Recorder]
 }
 type HubControllerOption func(*HubController)
 
@@ -79,6 +81,15 @@ func WithContext(ctx context.Context) HubControllerOption {
 func WithAutomationHandlers(handlers []automations.AutomationHandler) HubControllerOption {
 	return func(h *HubController) {
 		h.automationHandlers = handlers
+	}
+}
+
+// WithSpatialRecorder injects the historical recorder owned by the hub composition root.
+func WithSpatialRecorder(recorder *spatialhistory.Recorder) HubControllerOption {
+	return func(h *HubController) {
+		if recorder != nil {
+			h.spatialRecorder.Store(recorder)
+		}
 	}
 }
 
@@ -802,7 +813,20 @@ func (m *HubController) route(id string, payload []byte, connType string) {
 	}
 }
 
+// SpatialHistoryService exposes the read side of the recorder; it lazily creates the device
+// processor so a fresh boot can serve history once the recorder exists.
+func (m *HubController) SpatialHistoryService() *spatialhistory.Service {
+	_ = m.getDeviceProcessor()
+	if recorder := m.spatialRecorder.Load(); recorder != nil {
+		return recorder.Service()
+	}
+	return nil
+}
+
 func (m *HubController) shutdownLanes() {
+	if recorder := m.spatialRecorder.Load(); recorder != nil {
+		recorder.Close()
+	}
 	if engine := m.presenceEngine.Load(); engine != nil {
 		engine.Close()
 	}
@@ -875,6 +899,9 @@ func (d *HubController) createDeviceProcessor() *services.DeviceProcessor {
 		reportDeviceOutputError(frame.Id, d.eventHub.Broadcast(ws.SpatialTargets, frame))
 		if engine != nil {
 			engine.Observe(frame)
+		}
+		if recorder := d.spatialRecorder.Load(); recorder != nil {
+			recorder.Observe(frame)
 		}
 	}
 	events.WithOnDeviceAvailabilityChanged(func(p *devices.UpdatePackage) {
