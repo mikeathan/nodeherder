@@ -15,7 +15,7 @@ func NewService(repo Repository) *Service { return &Service{repo: repo} }
 func (s *Service) Sessions(device string, from, to time.Time) ([]Session, error) {
 	// A chunk that started before the requested range can still contain points inside it (an
 	// ongoing session); look back one chunk interval and filter sessions by overlap.
-	chunks, err := s.repo.Chunks(device, from.Add(-chunkInterval), to)
+	chunks, err := s.repo.Chunks(device, from.Add(-sourceIdleClose), to)
 	if err != nil {
 		return nil, err
 	}

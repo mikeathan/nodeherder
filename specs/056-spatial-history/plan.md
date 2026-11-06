@@ -29,6 +29,15 @@ Spec: [spec.md](spec.md) | Status: Implemented (unreviewed) | Updated: 2026-11-0
 - Remove dead modules/tests; add domain/API/UI tests; update e2e.
 - Version 0.16.0 in package.json/package-lock.
 
+## Review corrections
+
+The first review found and fixed: stalled still-target chunk flush, sessions starting before the
+range being omitted, failed chunk writes dropping data, unreadable active targets closing a
+session, history reads initialising device processing, hardcoded metrics retention in storage,
+Home overview placement, stale Heatmap help, canvas labelling in Positions, out-of-range session
+counts, test-file ownership, and dead replay/analytics/fusion/help code. The investigation doc now
+lives under this spec; ADR-001 records the storage and sampling decision.
+
 ## Verification (recorded)
 
 - Backend: `go build ./...`, `go vet ./...`, `go test ./...` pass; `-race` over

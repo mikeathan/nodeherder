@@ -415,6 +415,13 @@ test.describe('devices', () => {
     await page.getByRole('button', {name:'Remove zone',exact:true}).click();
     await page.getByRole('button', {name:'Undo last edit',exact:true}).click();
     await expect(page.getByRole('combobox',{name:'Zone slots',exact:true}).getByRole('option',{name:'Desk · detection'})).toHaveCount(1);
+    await page.getByRole('tab',{name:'History',exact:true}).click();
+    await page.getByRole('button',{name:'Positions',exact:true}).click();
+    await expect(page.getByText(/points/)).toBeVisible();
+    await page.getByRole('button',{name:'Play',exact:true}).click();
+    await expect(page.getByRole('button',{name:'Pause',exact:true})).toBeVisible();
+    await page.getByRole('tab',{name:'Presence',exact:true}).click();
+    await page.getByRole('button',{name:'Draw',exact:true}).click();
     await page.getByRole('button',{name:'Room',exact:true}).click();
     await page.getByRole('button',{name:'Add room outline',exact:true}).click();
     await page.getByRole('button',{name:'Add furniture',exact:true}).click();

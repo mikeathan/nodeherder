@@ -42,10 +42,14 @@
       if (point.at > at) break;
       latest.set(point.slot, point);
     }
-    return [...latest.entries()].map(([slot, point]) => ({
+    return [...latest.entries()]
+      // A cleared target produces no further point; hide it after a short linger instead of
+      // leaving a stale dot until the session ends.
+      .filter(([, point]) => at - point.at <= 30_000)
+      .map(([slot, point]) => ({
       id: slot, label: `Slot ${slot}`, slot, x: point.x, y: point.y, rawX: point.x, rawY: point.y,
-      vx: 0, vy: 0, at: point.at, colorIndex: (slot - 1) % 4, state: 'live' as const,
-    }));
+        vx: 0, vy: 0, at: point.at, colorIndex: (slot - 1) % 4, state: 'live' as const,
+      }));
   });
   const timeLabel = computed(() => (time.value ? new Date(time.value).toLocaleTimeString() : '—'));
 

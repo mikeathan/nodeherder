@@ -39,6 +39,34 @@ export function registerRoutes(app) {
   const randomString = (len = 32) =>
     base64Url(Buffer.from(Array.from({ length: len }, () => Math.floor(Math.random() * 256))));
   // Register HTTP GET route for /hubstate
+
+  // Recorded spatial history fixture: one session with two points and simple heat cells.
+  app.get('/api/spatial/history', (req, res) => {
+    const now = Date.now();
+    const mode = String(req.query.mode ?? 'sessions');
+    if (mode === 'sessions') {
+      return res.json([{ id: 'mock-session', from: now - 600_000, to: now - 540_000, points: 2, slots: [1], capped: false }]);
+    }
+    if (mode === 'points') {
+      return res.json([
+        { at: now - 600_000, slot: 1, x: 0, y: 2000 },
+        { at: now - 540_000, slot: 1, x: 500, y: 2000 },
+      ]);
+    }
+    return res.json([{ x: 0, y: 2000, count: 2 }]);
+  });
+  app.get('/api/system/storage', (_req, res) => res.json({
+    entries: [
+      { label: 'Metrics database', bytes: 1024 * 1024, retentionDays: 10 },
+      { label: 'Spatial history', bytes: 64 * 1024, retentionDays: 7 },
+      { label: 'Logs', bytes: 2 * 1024 },
+    ],
+    dataDirBytes: 2 * 1024 * 1024,
+    diskFreeBytes: 10 * 1024 ** 3,
+    diskTotalBytes: 100 * 1024 ** 3,
+    metricsRetentionDays: 10,
+    positionsRetentionDays: 7,
+  }));
   app.get('/api/hubstate', (req, res) => {
     console.log('hubstate GET request');
     res.json(hubStatePayload);

@@ -153,6 +153,10 @@ func (s *appStore) derivedHistoryEnabled(id string) bool {
 	if err != nil || device == nil || device.Provider != provider {
 		return false
 	}
+	// An explicit derived-device configuration (including metrics off) wins over inheritance.
+	if s.config.GetDeviceConfigCache().HasOverride(id) {
+		return false
+	}
 	source, err := s.config.GetDeviceConfig(id[len(prefix):])
 	return err == nil && source.MetricsEnabled
 }

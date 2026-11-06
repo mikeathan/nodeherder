@@ -370,7 +370,7 @@
   }
   .state-selection {
     position: absolute;
-    z-index: 0;
+    z-index: 2;
     background: color-mix(in srgb, var(--nh-accent) 22%, transparent);
     border-inline: 1px solid var(--nh-accent);
     pointer-events: none;

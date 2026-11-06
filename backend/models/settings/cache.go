@@ -74,6 +74,14 @@ func NewDeviceConfigCache(store Repository, appconfig *AppConfig, mutex *sync.RW
 	}
 }
 
+// HasOverride reports whether this device has an explicit saved configuration. Used to respect
+// an explicit derived-device choice instead of inheriting the source history flag.
+func (d *DeviceConfigCache) HasOverride(id string) bool {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+	return d.appConfig != nil && d.appConfig.Hub != nil && d.appConfig.Hub.Devices.Overrides != nil && d.appConfig.Hub.Devices.Overrides[id] != nil
+}
+
 func (d *DeviceConfigCache) Size() int {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()

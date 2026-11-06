@@ -6,6 +6,9 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync"
+	"syscall"
+	"time"
 
 	"node-herder/internal/spatialhistory"
 	"node-herder/utils"
@@ -18,15 +21,28 @@ type storageEntry struct {
 }
 
 type storageUsage struct {
-	Entries       []storageEntry `json:"entries"`
-	DataDirBytes  int64          `json:"dataDirBytes"`
-	MetricsDays   int            `json:"metricsRetentionDays"`
-	PositionsDays int            `json:"positionsRetentionDays"`
+	Entries        []storageEntry `json:"entries"`
+	DataDirBytes   int64          `json:"dataDirBytes"`
+	DiskFreeBytes  int64          `json:"diskFreeBytes"`
+	DiskTotalBytes int64          `json:"diskTotalBytes"`
+	MetricsDays    int            `json:"metricsRetentionDays"`
+	PositionsDays  int            `json:"positionsRetentionDays"`
 }
 
 // NewSystemStorageHandler reports read-only data-directory usage. It never exposes file contents.
 func NewSystemStorageHandler(metricsRetentionDays int) http.Handler {
+	var mutex sync.Mutex
+	var cached storageUsage
+	var cachedAt time.Time
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mutex.Lock()
+		if time.Since(cachedAt) < 15*time.Second {
+			usage := cached
+			mutex.Unlock()
+			writeStorageJSON(w, usage)
+			return
+		}
+		mutex.Unlock()
 		dataDir := utils.GetDataDir()
 		usage := storageUsage{
 			MetricsDays:   metricsRetentionDays,
@@ -38,9 +54,21 @@ func NewSystemStorageHandler(metricsRetentionDays int) http.Handler {
 			},
 		}
 		usage.DataDirBytes = dirBytes(dataDir)
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(usage)
+		var stat syscall.Statfs_t
+		if err := syscall.Statfs(dataDir, &stat); err == nil {
+			usage.DiskFreeBytes = int64(stat.Bavail) * int64(stat.Bsize)
+			usage.DiskTotalBytes = int64(stat.Blocks) * int64(stat.Bsize)
+		}
+		mutex.Lock()
+		cached, cachedAt = usage, time.Now()
+		mutex.Unlock()
+		writeStorageJSON(w, usage)
 	})
+}
+
+func writeStorageJSON(w http.ResponseWriter, usage storageUsage) {
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(usage)
 }
 
 func fileBytes(path string) int64 {

@@ -4,7 +4,7 @@
   import UiButton from '@/components/ui/UiButton.vue';
 
   type Entry = { label: string; bytes: number; retentionDays?: number };
-  type Usage = { entries: Entry[]; dataDirBytes: number; metricsRetentionDays: number; positionsRetentionDays: number };
+  type Usage = { entries: Entry[]; dataDirBytes: number; diskFreeBytes: number; diskTotalBytes: number; metricsRetentionDays: number; positionsRetentionDays: number };
   const usage = ref<Usage | null>(null);
   const error = ref('');
   const loading = ref(false);
@@ -41,6 +41,7 @@
           <td>{{ entry.retentionDays ? `${entry.retentionDays} days` : '—' }}</td>
         </tr>
         <tr><th scope="row">Data directory total</th><td>{{ size(usage.dataDirBytes) }}</td><td>—</td></tr>
+        <tr v-if="usage.diskTotalBytes"><th scope="row">Disk</th><td>{{ size(usage.diskFreeBytes) }} free of {{ size(usage.diskTotalBytes) }}</td><td>—</td></tr>
       </tbody>
     </table>
     <UiButton size="sm" variant="ghost" :disabled="loading" @click="load">Refresh</UiButton>

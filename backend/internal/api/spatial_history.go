@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+	"unicode/utf8"
 
 	"node-herder/internal/spatialhistory"
 )
@@ -16,6 +17,13 @@ type SpatialHistorySource interface {
 	Heatmap(device string, from, to time.Time, cellMM int) ([]spatialhistory.Cell, error)
 }
 
+const (
+	maxSpatialSessions = 500
+	maxSpatialPoints   = 5000
+	maxSpatialCells    = 5000
+	maxSpatialDevice   = 256
+)
+
 // NewSpatialHistoryHandler serves the authenticated recordings API. One endpoint keeps routing
 // and the client contract small: mode=sessions|points|heatmap.
 func NewSpatialHistoryHandler(source func() SpatialHistorySource) http.Handler {
@@ -26,8 +34,8 @@ func NewSpatialHistoryHandler(source func() SpatialHistorySource) http.Handler {
 			return
 		}
 		device := r.URL.Query().Get("device")
-		if device == "" {
-			writeJSONError(w, http.StatusBadRequest, "A device is required.")
+		if device == "" || len(device) > maxSpatialDevice || !utf8.ValidString(device) {
+			writeJSONError(w, http.StatusBadRequest, "A valid device is required.")
 			return
 		}
 		from, to := historyRange(r)
@@ -40,6 +48,9 @@ func NewSpatialHistoryHandler(source func() SpatialHistorySource) http.Handler {
 		switch mode {
 		case "sessions":
 			payload, err = history.Sessions(device, from, to)
+			if sessions, ok := payload.([]spatialhistory.Session); ok && len(sessions) > maxSpatialSessions {
+				payload = sessions[:maxSpatialSessions]
+			}
 		case "points":
 			session := r.URL.Query().Get("session")
 			if session == "" {
@@ -47,9 +58,15 @@ func NewSpatialHistoryHandler(source func() SpatialHistorySource) http.Handler {
 				return
 			}
 			payload, err = history.Points(device, session, from, to)
+			if points, ok := payload.([]spatialhistory.Point); ok && len(points) > maxSpatialPoints {
+				payload = points[:maxSpatialPoints]
+			}
 		case "heatmap":
 			cell, _ := strconv.Atoi(r.URL.Query().Get("cell"))
 			payload, err = history.Heatmap(device, from, to, cell)
+			if cells, ok := payload.([]spatialhistory.Cell); ok && len(cells) > maxSpatialCells {
+				payload = cells[:maxSpatialCells]
+			}
 		default:
 			writeJSONError(w, http.StatusBadRequest, "Unknown history mode.")
 			return
