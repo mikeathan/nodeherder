@@ -24,6 +24,7 @@
   const error = ref('');
   const time = ref(0);
   const playing = ref(false);
+  const showPath = ref(true);
   const speed = ref(1);
   let timer: ReturnType<typeof setInterval> | null = null;
   const spans = { '1h': 3_600_000, '24h': 86_400_000, '7d': 604_800_000 } as const;
@@ -31,6 +32,27 @@
   const from = computed(() => to.value - spans[preset.value]);
   const currentSession = computed(() => sessions.value.find((session) => session.id === selected.value));
   const cellCount = computed(() => cells.value.length);
+  const trails = computed(() => {
+    const at = time.value || (currentSession.value?.to ?? 0);
+    const bySlot = new Map<number, { id: number; x: number; y: number; distance: number }[]>();
+    for (const point of points.value) {
+      if (point.at > at) break;
+      const list = bySlot.get(point.slot) ?? [];
+      list.push({ id: point.slot, x: point.x, y: point.y, distance: 0 });
+      bySlot.set(point.slot, list);
+    }
+    return [...bySlot.entries()].map(([slot, targets]) => ({ id: slot, targets }));
+  });
+  const distanceMm = computed(() => {
+    let total = 0;
+    const last = new Map<number, SpatialPoint>();
+    for (const point of points.value) {
+      const previous = last.get(point.slot);
+      if (previous) total += Math.hypot(point.x - previous.x, point.y - previous.y);
+      last.set(point.slot, point);
+    }
+    return Math.round(total);
+  });
   const heat = computed<HeatCell[]>(() => {
     const max = Math.max(1, ...cells.value.map((cell) => cell.count));
     return cells.value.map((cell) => ({ ...cell, intensity: cell.count / max }));
@@ -86,7 +108,9 @@
     loading.value = true; error.value = '';
     try {
       points.value = await spatialHistoryApi.points(props.deviceId, selected.value, from.value, to.value);
-      time.value = currentSession.value?.from ?? 0;
+      // The session summary and points are separate requests; start on the first actual point,
+      // otherwise a slightly later point timestamp leaves the first frame empty.
+      time.value = points.value[0]?.at ?? currentSession.value?.from ?? 0;
     } catch (cause) { error.value = (cause as Error).message; }
     finally { loading.value = false; }
   }
@@ -122,7 +146,8 @@
     <template v-else>
       <SpatialCanvas :workspace="workspace" :tracks="view === 'player' ? tracks : []" :occupancy="new Map()"
         :scale="SPATIAL_DEFAULT_SCALE_MM" :orientation="SPATIAL_DEFAULT_ORIENTATION" :online="true"
-        :mode="view === 'heatmap' ? SpatialViewIds.Heatmap : SpatialViewIds.Live" selected-id="" :trails="[]"
+        :mode="view === 'heatmap' ? SpatialViewIds.Heatmap : SpatialViewIds.Live" selected-id=""
+        :trails="showPath ? trails : []"
         :label="view === 'heatmap' ? 'Recorded heatmap canvas' : 'Recorded positions canvas'"
         :cells="view === 'heatmap' ? heat : []" :show-grid="true" :show-room-context="true" />
       <template v-if="view === 'player'">
@@ -139,6 +164,8 @@
         <template v-else-if="currentSession">
           <div class="nh-player-controls">
             <UiButton size="sm" :disabled="!points.length" @click="playing ? stop() : play()">{{ playing ? 'Pause' : 'Play' }}</UiButton>
+            <label class="nh-presence-toggle"><input v-model="showPath" type="checkbox" /> Path</label>
+            <span class="nh-muted">{{ distanceMm }} mm travelled</span>
             <label>Speed
               <select class="nh-input" :value="speed" @change="speed = Number(($event.target as HTMLSelectElement).value)">
                 <option :value="1">1×</option><option :value="2">2×</option><option :value="4">4×</option>

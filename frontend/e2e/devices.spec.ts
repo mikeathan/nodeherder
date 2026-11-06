@@ -418,6 +418,11 @@ test.describe('devices', () => {
     await page.getByRole('tab',{name:'History',exact:true}).click();
     await page.getByRole('button',{name:'Positions',exact:true}).click();
     await expect(page.getByText(/points/)).toBeVisible();
+    await expect(page.locator('circle.nh-target').first()).toBeVisible();
+    await expect(page.locator('polyline.nh-trail')).toHaveCount(1);
+    await page.getByLabel('Path', { exact: true }).uncheck();
+    await expect(page.locator('polyline.nh-trail')).toHaveCount(0);
+    await page.getByLabel('Path', { exact: true }).check();
     await page.getByRole('button',{name:'Play',exact:true}).click();
     await expect(page.getByRole('button',{name:'Pause',exact:true})).toBeVisible();
     await page.getByRole('tab',{name:'Presence',exact:true}).click();
