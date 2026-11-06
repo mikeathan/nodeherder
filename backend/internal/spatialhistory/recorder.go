@@ -193,7 +193,9 @@ func (r *Recorder) flush(device string, state *sourceState) {
 		Capped:  state.capped,
 	}
 	if err := r.repo.SaveChunk(device, chunk); err != nil {
+		// Keep the buffer so the next tick can retry instead of silently losing the session slice.
 		utils.LogErrorf("spatial history: save %s: %v", device, err)
+		return
 	}
 	state.buffer = nil
 	state.chunkStart = time.Now().UTC()
