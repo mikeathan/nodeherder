@@ -1,6 +1,6 @@
 {
   "name": "frontend",
-  "version": "0.15.0",
+  "version": "0.16.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -44,7 +44,11 @@
     "globals": {
       "ts-jest": {
         "tsconfig": {
-          "types": ["vite/client", "jest", "node"]
+          "types": [
+            "vite/client",
+            "jest",
+            "node"
+          ]
         },
         "diagnostics": {
           "ignoreCodes": [
