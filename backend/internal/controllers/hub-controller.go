@@ -813,10 +813,9 @@ func (m *HubController) route(id string, payload []byte, connType string) {
 	}
 }
 
-// SpatialHistoryService exposes the read side of the recorder; it lazily creates the device
-// processor so a fresh boot can serve history once the recorder exists.
+// SpatialHistoryService exposes the read side of the recorder without initialising device
+// processing as a side effect of reading history.
 func (m *HubController) SpatialHistoryService() *spatialhistory.Service {
-	_ = m.getDeviceProcessor()
 	if recorder := m.spatialRecorder.Load(); recorder != nil {
 		return recorder.Service()
 	}
