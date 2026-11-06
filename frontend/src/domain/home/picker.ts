@@ -30,6 +30,9 @@ export interface HomePickerChoice {
 /** List source selectors without changing devices or integration configuration. */
 export function homePickerOptions(devices: readonly Device[]): HomePickerOption[] {
   const options = [{ value: 'integrations', label: 'Integration results' }];
+  if (devices.some((device) => supportsSpatialMapping(device))) {
+    options.push({ value: 'presence', label: 'Presence overview' });
+  }
   for (const device of devices) options.push({ value: `device:${device.id}`, label: device.friendly_name });
   return options;
 }
@@ -109,6 +112,11 @@ export function homePickerChoices(
   existingCards: readonly HomeCard[]
 ): HomePickerChoice[] {
   const existing = new Set(existingCards.map(homeSourceKey));
+  if (source === 'presence') {
+    if (!devices.some((device) => supportsSpatialMapping(device))) return [];
+    const reference: HomeCardSource = { kind: 'presence_overview' };
+    return [choice(reference, 'Presence overview', 'All spatial sensors', existing)];
+  }
   if (source === 'integrations') return integrationChoices(sources, existing);
   if (!source?.startsWith('device:')) return [];
   const deviceId = source.slice('device:'.length);
@@ -161,6 +169,7 @@ export function selectedHomeCards(choices: readonly HomePickerChoice[], selected
 
 /** Explain an empty source selection without conflating absent results and device configuration. */
 export function homePickerEmptyMessage(source: string | null): string {
+  if (source === 'presence') return 'No spatial sensors are available yet. Save a spatial mapping on a device first.';
   if (source === 'integrations')
     return 'No saved integration results are available. Configure an integration on the Integrations page first.';
   if (source) return 'This device has no readings to show yet. Values appear here once the device has reported them.';

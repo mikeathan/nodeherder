@@ -16,7 +16,6 @@
   import AddTilesDialog from './AddTilesDialog.vue';
   import MoveCardDialog from './MoveCardDialog.vue';
   import HomeStandaloneCard from './HomeStandaloneCard.vue';
-  import HomePresenceOverview from './HomePresenceOverview.vue';
 
   const editing = ref(false);
   const home = useHomeLayout({ pauseRefresh: editing });
@@ -91,7 +90,6 @@
           @change="importSelectedFile" />
       </template>
     </UiPageHeader>
-    <HomePresenceOverview v-if="!editing" />
     <div v-if="feedback" class="nh-alert is-danger" role="alert">
       {{ feedback }}
       <UiButton size="sm" :disabled="busy || loading" @click="home.load">Reload layout</UiButton>
@@ -128,7 +126,7 @@
         <template #item="{ element, index }">
           <div
             class="nh-home-block"
-            :class="{ 'is-area': element.kind === 'group', 'is-integration': element.kind === 'card' && !['device', 'presence'].includes(element.cards[0]?.kind ?? '') }"
+            :class="{ 'is-area': element.kind === 'group', 'is-integration': element.kind === 'card' && !['device', 'presence', 'presence_overview'].includes(element.cards[0]?.kind ?? '') }"
             :data-home-block="element.id">
             <div class="nh-home-block-content">
               <AreaCard

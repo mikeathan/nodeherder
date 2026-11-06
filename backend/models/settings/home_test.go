@@ -116,3 +116,16 @@ func TestHomePresenceCardReferencesWholeDevice(t *testing.T) {
 		}
 	}
 }
+
+func TestHomePresenceOverviewCardHasNoSourceReference(t *testing.T) {
+	layout := settings.HomeFromGroups(map[string]*settings.DashboardGroup{"Kitchen": homeGroup("Kitchen")})
+	layout.Blocks[0].Cards = append(layout.Blocks[0].Cards, settings.HomeCard{ID: "overview", Kind: "presence_overview", Panel: true})
+	if err := layout.Validate(); err != nil {
+		t.Fatalf("valid presence overview rejected: %v", err)
+	}
+	invalid := layout.Clone()
+	invalid.Blocks[0].Cards[len(invalid.Blocks[0].Cards)-1].DeviceID = "radar"
+	if invalid.Validate() == nil {
+		t.Fatal("presence overview accepted a device reference")
+	}
+}

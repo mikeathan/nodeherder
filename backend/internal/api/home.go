@@ -163,6 +163,9 @@ func validateHomeSources(proposal, current settings.HomeLayout, devices HomeDevi
 				}
 				continue
 			}
+			if card.Kind == "presence_overview" {
+				continue
+			}
 			if card.Kind == "presence" {
 				// Presence placement only needs the source device to exist; its derived
 				// entities are created by the spatial engine at runtime.

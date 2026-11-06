@@ -15,6 +15,7 @@ export const HOME_LAYOUT_LIMITS = {
 export function homeSourceKey(card: HomeCardSource): string {
   if (card.kind === 'device') return JSON.stringify([card.kind, card.device_id, card.expose]);
   if (card.kind === 'presence') return JSON.stringify([card.kind, card.device_id]);
+  if (card.kind === 'presence_overview') return JSON.stringify([card.kind]);
   return JSON.stringify([
     card.kind,
     card.instance_id,

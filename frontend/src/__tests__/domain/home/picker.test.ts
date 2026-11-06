@@ -134,3 +134,15 @@ test('a spatial-capable device offers one whole-device presence choice', () => {
   expect(presence.label).toBe('Presence');
   expect(homePickerChoices('device:lamp', [lamp], new Map(), []).some((item) => item.reference.kind === 'presence')).toBe(false);
 });
+
+test('a presence overview is offered globally when a spatial sensor exists', () => {
+  const radar = device('radar', { provider: 'esphome', connection_type: 'esphome' }, [
+    expose('target_x', { unit: 'mm', data: 500 }),
+    expose('target_y', { unit: 'mm', data: 1500 }),
+    expose('target_active', { type: 'binary', data: true }),
+  ]);
+  expect(homePickerOptions([radar])).toContainEqual({ value: 'presence', label: 'Presence overview' });
+  const [overview] = homePickerChoices('presence', [radar], new Map(), []);
+  expect(overview.reference).toEqual({ kind: 'presence_overview' });
+  expect(homePickerChoices('presence', [lamp], new Map(), [])).toEqual([]);
+});
