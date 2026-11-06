@@ -60,6 +60,11 @@
     viewBox?: string;
     /** Draw unfiltered source positions instead of filtered ones (evidence view). */
     showRaw?: boolean;
+    label?: string;
+    /** Preview surfaces hide per-slot labels because a slot is not an identity. */
+    showTargetLabels?: boolean;
+    /** Preview dots need to stay legible in a small fitted view. */
+    targetScale?: number;
   }>();
   const emit = defineEmits<{
     select: [id: string];
@@ -77,10 +82,8 @@
   const fov = computed(() => fovPolygon(props.scale, props.workspace.sensor, props.orientation));
   const editable = computed(() => isSpatialEditView(props.mode));
   const heatmap = computed(() => props.mode === SpatialViewIds.Heatmap);
-  const canvasLabel = computed(() =>
-    props.mode === SpatialViewIds.Replay
-      ? 'Replay canvas with recorded target positions. Live tracking is not shown in this view.'
-      : 'Live room canvas with sensor, zones and target positions. Numeric editing controls and target list follow.'
+  const canvasLabel = computed(
+    () => props.label ?? 'Live room canvas with sensor, zones and target positions. Numeric editing controls and target list follow.'
   );
   // Heatmap keeps only room context (outline, furniture, sensor) by default;
   // zones, targets, trails and handles would obscure the activity cells.
@@ -227,9 +230,9 @@
     <g v-for="track in renderedTracks" :key="track.key" :transform="`translate(${track.point.x} ${track.point.y})`">
       <line v-if="track.heading" :x1="0" :y1="0" :x2="track.heading.x" :y2="track.heading.y" class="nh-heading" />
       <circle
-        :r="scale * CANVAS_TARGET_RADIUS_RATIO"
+        :r="scale * CANVAS_TARGET_RADIUS_RATIO * (targetScale ?? 1)"
         :class="['nh-target', `is-${track.state}`, `is-color-${track.colorIndex}`, { 'is-raw': showRaw }]" />
-      <text :x="scale * CANVAS_TARGET_LABEL_X_RATIO" :y="scale * CANVAS_TARGET_LABEL_Y_RATIO" :font-size="scale * CANVAS_TARGET_FONT_RATIO">
+      <text v-if="showTargetLabels !== false" :x="scale * CANVAS_TARGET_LABEL_X_RATIO" :y="scale * CANVAS_TARGET_LABEL_Y_RATIO" :font-size="scale * CANVAS_TARGET_FONT_RATIO">
         {{ track.label }}
       </text>
     </g>

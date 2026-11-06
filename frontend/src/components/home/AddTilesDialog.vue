@@ -24,12 +24,18 @@
     sources: ReadonlyMap<string, HomeSourcePresentation>;
     busy: boolean;
     sourceError?: string | null;
+    /** Global presence overview is a standalone card, not an area tile. */
+    allowOverview?: boolean;
   }>();
   const emit = defineEmits<{ close: []; add: [cards: HomeCard[]] }>();
   const { devices } = useHub();
   const source = ref<string | null>(null);
   const picked = ref<string[]>([]);
-  const options = computed<HomePickerOption[]>((previous) => stableHomePickerOptions(previous, devices.value));
+  const options = computed<HomePickerOption[]>((previous) =>
+    stableHomePickerOptions(previous, devices.value).filter(
+      (option) => props.allowOverview !== false || option.value !== 'presence'
+    )
+  );
   const filter = ref<string>(HOME_FILTER_MAIN);
   const allChoices = computed(() => homePickerChoices(source.value, devices.value, props.sources, props.existing));
   const filters = computed<HomePickerOption[]>((previous) => stableHomePickerFilters(previous, allChoices.value));

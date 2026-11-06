@@ -67,6 +67,11 @@
     focusRange.value = { from: activity.value.from, to: activity.value.to };
     announcement.value = `Activity detail shown: ${focusRangeLabel.value}. Selected range unchanged: ${fullRangeLabel.value}.`;
   }
+  function selectRange(from: number, to: number) {
+    if (!(to - from > 0) || to - from < (props.series.to - props.series.from) * 0.005) return;
+    focusRange.value = { from, to };
+    announcement.value = `Focused ${formatHistoryMoment(from)} – ${formatHistoryMoment(to)}. Selected range unchanged: ${fullRangeLabel.value}.`;
+  }
   function resetFocus() {
     if (!focusRange.value) return;
     focusRange.value = null;
@@ -109,6 +114,7 @@
       :expose="expose"
       :from="series.from"
       :to="series.to"
+      @select-range="selectRange"
       :view-from="viewFrom"
       :view-to="viewTo"
       @plot-width="plotWidth = $event" />

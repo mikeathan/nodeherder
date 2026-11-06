@@ -74,6 +74,14 @@ func NewDeviceConfigCache(store Repository, appconfig *AppConfig, mutex *sync.RW
 	}
 }
 
+// HasOverride reports whether this device has an explicit saved configuration. Used to respect
+// an explicit derived-device choice instead of inheriting the source history flag.
+func (d *DeviceConfigCache) HasOverride(id string) bool {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+	return d.appConfig != nil && d.appConfig.Hub != nil && d.appConfig.Hub.Devices.Overrides != nil && d.appConfig.Hub.Devices.Overrides[id] != nil
+}
+
 func (d *DeviceConfigCache) Size() int {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
@@ -438,6 +446,16 @@ func (s *AppConfigCache) LoadLoggerConfig() (*LoggerConfig, error) {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 	return s.appConfig.Hub.Logger, nil
+}
+
+// HistoryRetention returns the configured metrics retention, falling back to the default.
+func (s *AppConfigCache) HistoryRetention() time.Duration {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+	if s.appConfig == nil || s.appConfig.Hub == nil || s.appConfig.Hub.History == nil || s.appConfig.Hub.History.ExpireAt == nil {
+		return DefaultHistoryConfig().ExpireAt.Duration()
+	}
+	return s.appConfig.Hub.History.ExpireAt.Duration()
 }
 
 // SaveHistoryConfig persists history settings and returns the public configuration projection.

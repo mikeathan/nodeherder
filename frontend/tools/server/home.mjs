@@ -44,7 +44,12 @@ function validFixtureLayout(layout) {
     if (block.kind === 'card' && block.cards.length !== 1) return false;
     blockIds.add(block.id);
     for (const card of block.cards) {
-      if (!card?.id || cardIds.has(card.id) || card.kind !== 'device') return false;
+      if (!card?.id || cardIds.has(card.id)) return false;
+      if (card.kind === 'presence_overview') {
+        if (card.device_id || card.expose || card.instance_id || card.resource_id || card.service_id) return false;
+      } else if (card.kind === 'presence') {
+        if (!card.device_id) return false;
+      } else if (card.kind !== 'device') return false;
       cardIds.add(card.id);
       if (cardIds.size > 500) return false;
     }
@@ -58,6 +63,7 @@ function deviceAreaProjection(layout) {
     if (block.kind !== 'group') continue;
     const group = { name: block.name, order: Object.keys(groups).length, deviceGroup: Object.create(null) };
     for (const card of block.cards) {
+      if (!card.device_id) continue;
       const device = group.deviceGroup[card.device_id] ?? { deviceId: card.device_id, exposes: [] };
       if (!device.exposes.includes(card.expose)) device.exposes.push(card.expose);
       group.deviceGroup[card.device_id] = device;

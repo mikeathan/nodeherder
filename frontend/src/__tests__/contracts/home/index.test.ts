@@ -30,6 +30,15 @@ test('presence cards decode with a device reference and no expose', () => {
   expect(layout.blocks[0].cards[1]).toEqual({ id: 'presence', panel: true, kind: 'presence', device_id: 'radar' });
 });
 
+test('presence overview cards decode without any source reference', () => {
+  const raw = {
+    version: 1, revision: 0, etag: '', blocks: [{ id: 'b', kind: 'group', name: 'Area', cards: [
+      { id: 'overview', kind: 'presence_overview', panel: true },
+    ] }],
+  };
+  expect(parseHomeLayout(raw).blocks[0].cards[0]).toEqual({ id: 'overview', panel: true, kind: 'presence_overview' });
+});
+
 test('presence cards reject mixed device, expose and integration references', () => {
   const base = { version: 1, revision: 0, etag: '', blocks: [{ id: 'b', kind: 'group', name: 'Area', cards: [] }] };
   for (const extra of [

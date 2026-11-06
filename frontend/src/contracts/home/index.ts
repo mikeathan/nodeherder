@@ -48,6 +48,9 @@ function readHomeCard(value: unknown): HomeCard {
       // integration references rejected a server-accepted card and broke every Home read.
       rejectMixedReferences(raw, ['expose', 'instance_id', 'resource_id', 'service_id']);
       return { id, panel, kind: 'presence', device_id: readReference(raw.device_id) };
+    case 'presence_overview':
+      rejectMixedReferences(raw, ['device_id', 'expose', 'instance_id', 'resource_id', 'service_id']);
+      return { id, panel, kind: 'presence_overview' };
     default: {
       rejectMixedReferences(raw, ['device_id', 'expose']);
       readReference(raw.instance_id);

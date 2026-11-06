@@ -105,6 +105,11 @@ func (layout HomeLayout) Validate() error {
 				if !homeIdentifier(card.DeviceID) || card.Expose != "" || card.InstanceID != "" || card.ResourceID != "" || card.ServiceID != "" {
 					return invalidHome()
 				}
+			case "presence_overview":
+				// One global overview card; no device, expose or integration reference.
+				if card.DeviceID != "" || card.Expose != "" || card.InstanceID != "" || card.ResourceID != "" || card.ServiceID != "" {
+					return invalidHome()
+				}
 			default:
 				if !homeIdentifier(card.Kind) || !integration || card.DeviceID != "" || card.Expose != "" || (card.ServiceID != "" && !homeIdentifier(card.ServiceID)) {
 					return invalidHome()

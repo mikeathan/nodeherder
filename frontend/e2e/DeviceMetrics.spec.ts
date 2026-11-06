@@ -349,13 +349,20 @@ test('binary history aggregates 10,000 samples within the responsive pixel budge
   await expect(chart.locator('.state-tooltip')).toContainText('transition');
   await expect(chart.locator('.state-tooltip')).toContainText('known');
   if (info.project.name === 'mobile') {
-    expect(await target.evaluate((node) => getComputedStyle(node).touchAction)).toBe('auto');
+    expect(await target.evaluate((node) => getComputedStyle(node).touchAction)).toBe('pan-y');
     const box = (await target.boundingBox())!;
     await target.tap({ position: { x: box.width / 2, y: box.height / 2 } });
     await expect(chart.locator('.state-tooltip')).toBeVisible();
   } else {
     await target.hover({ position: { x: 20, y: 20 } });
     await expect(chart.locator('.state-tooltip')).toBeVisible();
+    const box = (await target.boundingBox())!;
+    await page.mouse.move(box.x + box.width * 0.25, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width * 0.65, box.y + box.height / 2);
+    await page.mouse.up();
+    await expect(page.getByRole('button', { name: 'Back to full range' })).toBeVisible();
+    await page.getByRole('button', { name: 'Back to full range' }).click();
   }
   expect(queryCount).toBe(1);
   expect(ws.sentOf('deviceSetValue')).toHaveLength(0);

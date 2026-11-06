@@ -11,7 +11,10 @@ export interface HomePresenceSource {
   kind: 'presence';
   device_id: string;
 }
-export type HomeCardSource = HomeDeviceSource | HomePresenceSource | IntegrationSourceReference;
+export interface HomePresenceOverviewSource {
+  kind: 'presence_overview';
+}
+export type HomeCardSource = HomeDeviceSource | HomePresenceSource | HomePresenceOverviewSource | IntegrationSourceReference;
 export type HomeBlockKind = 'group' | 'card';
 
 /** An accepted or proposed placement; source readings remain in their existing stores. */
@@ -22,6 +25,7 @@ export interface HomeCardPlacement {
 export type HomeCard = HomeCardSource & HomeCardPlacement;
 export type HomeIntegrationCard = IntegrationSourceReference & HomeCardPlacement;
 export type HomePresenceCard = HomePresenceSource & HomeCardPlacement;
+export type HomePresenceOverviewCard = HomePresenceOverviewSource & HomeCardPlacement;
 
 /** Ordered named area, or a standalone block containing exactly one placement. */
 export interface HomeBlock {

@@ -13,7 +13,6 @@ export const SpatialHelpTopics = {
   Zones: 'zones',
   Room: 'room',
   Entry: 'entry',
-  Heatmap: 'heatmap',
 } as const;
 export type SpatialHelpTopic = (typeof SpatialHelpTopics)[keyof typeof SpatialHelpTopics];
 
@@ -22,7 +21,6 @@ export const SPATIAL_CONTEXT_HELP_LABELS: Readonly<Record<SpatialHelpTopic, stri
   zones: 'How to create zones',
   room: 'Help with Room Builder',
   entry: 'Help with Entry / Exit & Assumed Presence',
-  heatmap: 'Help with Heatmap & Analytics',
 };
 
 /** Accessible descriptions for the small help illustrations. */
@@ -30,7 +28,6 @@ export const SPATIAL_HELP_ILLUSTRATIONS: Readonly<Record<SpatialHelpTopic, strin
   zones: 'Diagram of detection, exclusion and entry zone shapes around a sensor',
   room: 'Diagram of a room outline with sensor, field of view and furniture',
   entry: 'Diagram of a doorway entry zone with an assumed-presence hold',
-  heatmap: 'Diagram of a heat grid from cool blue to hot red activity cells',
 };
 
 /** Stable spatial tab view ids. */
@@ -41,29 +38,11 @@ export const SpatialViewIds = {
   Entry: 'entry',
   Firmware: 'firmware',
   Calibrate: 'calibrate',
-  Activity: 'activity',
-  Replay: 'replay',
-  Diagnostics: 'diagnostics',
-  Fusion: 'fusion',
   Heatmap: 'heatmap',
 } as const;
 
-/** Spatial tab views in display order. */
-export const SPATIAL_VIEWS = [
-  { id: SpatialViewIds.Live, label: 'Live dashboard' },
-  { id: SpatialViewIds.Zones, label: 'Zone editor' },
-  { id: SpatialViewIds.Room, label: 'Room builder' },
-  { id: SpatialViewIds.Entry, label: 'Entry / exit' },
-  { id: SpatialViewIds.Firmware, label: 'Firmware settings' },
-  { id: SpatialViewIds.Calibrate, label: 'Calibration' },
-  { id: SpatialViewIds.Activity, label: 'Zone activity' },
-  { id: SpatialViewIds.Replay, label: 'Replay' },
-  { id: SpatialViewIds.Diagnostics, label: 'Diagnostics' },
-  { id: SpatialViewIds.Fusion, label: 'Multi-sensor' },
-  { id: SpatialViewIds.Heatmap, label: 'Heatmap & analytics' },
-] as const;
-
-export type SpatialViewId = (typeof SPATIAL_VIEWS)[number]['id'];
+/** Spatial tab view identifiers. Heatmap is used by the recorded-positions canvas. */
+export type SpatialViewId = 'live' | 'zones' | 'room' | 'entry' | 'firmware' | 'calibrate' | 'heatmap';
 
 /** Default tab view. */
 export const DEFAULT_SPATIAL_VIEW: SpatialViewId = SpatialViewIds.Live;
@@ -71,28 +50,6 @@ export const DEFAULT_SPATIAL_VIEW: SpatialViewId = SpatialViewIds.Live;
 export const SPATIAL_EDIT_VIEWS: readonly SpatialViewId[] = [SpatialViewIds.Zones, SpatialViewIds.Room];
 /** Views that show live target/zone context. */
 export const SPATIAL_LIVE_VIEWS: readonly SpatialViewId[] = [SpatialViewIds.Live, SpatialViewIds.Zones];
-
-/** Prompt shown before discarding session-only observations. */
-export const SPATIAL_CLEAR_PROMPT = 'Discard this tab’s collected positions? Saved room layouts and zones remain.';
-/** Observation-window option label. */
-export function observationWindowLabel(minutes: number): string {
-  return `Last ${minutes} minutes`;
-}
-
-/** Session start in the browser's local time. */
-export function formatSessionStart(at: number): string {
-  return new Date(at).toLocaleTimeString();
-}
-
-/** Count label for sampled seconds. */
-export function sampleCountLabel(count: number): string {
-  return `${count} target-second sample${count === 1 ? '' : 's'}`;
-}
-
-/** Count label for observed one-second frames. */
-export function frameCountLabel(count: number): string {
-  return `${count} one-second frame${count === 1 ? '' : 's'} with fresh targets in this window`;
-}
 
 /** Plain-language source label; "sampled" is not live frames and must say so. */
 export function sourceLabel(source: 'frames' | 'sampled' | 'none'): string {

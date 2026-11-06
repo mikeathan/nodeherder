@@ -5,6 +5,7 @@
   import UiButton from '@/components/ui/UiButton.vue';
   import IntegrationTile from './IntegrationTile.vue';
   import HomePresenceCard from './HomePresenceCard.vue';
+  import HomePresenceOverviewCard from './HomePresenceOverviewCard.vue';
 
   defineProps<{
     card: HomeCard;
@@ -19,12 +20,17 @@
 <template>
   <div
     class="nh-home-card"
-    :class="{ 'is-integration': card.kind !== 'device' && card.kind !== 'presence', 'is-presence': card.kind === 'presence' }"
+    :class="{ 'is-integration': card.kind !== 'device' && card.kind !== 'presence' && card.kind !== 'presence_overview', 'is-presence': card.kind === 'presence', 'is-presence-overview': card.kind === 'presence_overview' }"
     :data-card-id="card.id">
     <EntityTile
       v-if="card.kind === 'device'"
       :device-id="card.device_id"
       :expose="card.expose"
+      :editing="editing"
+      :busy="busy"
+      @remove="$emit('remove')" />
+    <HomePresenceOverviewCard
+      v-else-if="card.kind === 'presence_overview'"
       :editing="editing"
       :busy="busy"
       @remove="$emit('remove')" />
@@ -63,8 +69,15 @@
   .nh-home-card.is-integration {
     grid-column: 1 / -1;
   }
-  .nh-home-card.is-presence {
-    grid-column: span 2;
+  .nh-home-card.is-presence,
+  .nh-home-card.is-presence-overview {
+    grid-column: 1 / -1;
+  }
+  .nh-home-card.is-presence-overview {
+    display: block;
+  }
+  .nh-home-card.is-presence-overview > .nh-overview-card {
+    width: 100%;
   }
   @media (max-width: 640px) {
     .nh-home-card.is-presence {

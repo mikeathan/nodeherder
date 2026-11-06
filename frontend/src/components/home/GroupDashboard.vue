@@ -126,7 +126,7 @@
         <template #item="{ element, index }">
           <div
             class="nh-home-block"
-            :class="{ 'is-area': element.kind === 'group', 'is-integration': element.kind === 'card' && !['device', 'presence'].includes(element.cards[0]?.kind ?? '') }"
+            :class="{ 'is-area': element.kind === 'group', 'is-overview': element.kind === 'card' && element.cards[0]?.kind === 'presence_overview', 'is-integration': element.kind === 'card' && !['device', 'presence', 'presence_overview'].includes(element.cards[0]?.kind ?? '') }"
             :data-home-block="element.id">
             <div class="nh-home-block-content">
               <AreaCard
@@ -177,6 +177,7 @@
     <AddTilesDialog
       :open="!!addDialog"
       :area-name="addDestination?.name ?? 'Home'"
+      :allow-overview="!addDestination || addDestination.kind === 'card'"
       :existing="addDestination?.cards ?? []"
       :sources="sources"
       :source-error="sourceError"
@@ -213,6 +214,12 @@
     min-width: 0;
     align-self: start;
     grid-row: auto / span 6;
+  }
+  .nh-home-block.is-overview {
+    grid-column: span 2;
+  }
+  @media (max-width: 640px) {
+    .nh-home-block.is-overview { grid-column: 1 / -1; }
   }
   .nh-home-block-content {
     padding-bottom: var(--nh-gap);

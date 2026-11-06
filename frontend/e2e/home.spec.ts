@@ -636,4 +636,42 @@ test.describe('home dashboard', () => {
     await source.dispatchEvent('change');
     await expect(emptyResults).toBeVisible();
   });
+
+  test('presence overview card renders with its own preview and links', async ({ page }) => {
+    await page.route('**/api/hubstate', async (route) => {
+      const response = await route.fetch();
+      const body = await response.json();
+      const light = body.devices.find((device: { id: string }) => device.id === MOCK.livingRoomLight.id);
+      light.provider = 'esphome';
+      const numeric = light.exposes.brightness ?? Object.values(light.exposes)[0];
+      const binary = light.exposes.state ?? Object.values(light.exposes)[0];
+      light.exposes.target_x = { ...numeric, name: 'target_x', unit: 'mm', data: 0, type: 'numeric' };
+      light.exposes.target_y = { ...numeric, name: 'target_y', unit: 'mm', data: 1500, type: 'numeric' };
+      light.exposes.target_active = { ...binary, name: 'target_active', data: true, type: 'binary' };
+      await route.fulfill({ response, json: body });
+    });
+    await signIn(page, ui.home.path);
+    const original = (await (await page.request.get(`${HUB_API}/home/layout`)).json()).data;
+    const headers = { Origin: 'http://localhost:4100', 'X-NodeHerder-Request': '1', 'If-Match': original.etag };
+    const added = { ...original, blocks: [
+      ...original.blocks,
+      { id: 'overview-block', kind: 'card', name: '', cards: [{ id: 'overview-test', kind: 'presence_overview', panel: true }] },
+    ] };
+    try {
+      expect((await page.request.put(`${HUB_API}/home/layout`, { headers, data: added })).status()).toBe(200);
+      await page.goto(ui.home.path);
+      const overview = page.locator('.nh-overview-card');
+      await expect(overview).toBeVisible();
+      await expect(overview).toContainText('Presence');
+      await expect(overview).toContainText('Living room light');
+      await expect(overview.getByRole('link', { name: 'Open live', exact: true })).toBeVisible();
+      await expect(overview.getByRole('link', { name: 'History', exact: true })).toBeVisible();
+    } finally {
+      const latest = (await (await page.request.get(`${HUB_API}/home/layout`)).json()).data;
+      await page.request.put(`${HUB_API}/home/layout`, {
+        headers: { ...headers, 'If-Match': latest.etag },
+        data: { ...original, revision: latest.revision, etag: latest.etag },
+      });
+    }
+  });
 });

@@ -12,7 +12,6 @@ import {
   type SpatialTrackInput,
   type SpatialTrackState,
 } from '@/domain/spatial/tracks';
-import { appendReplayFrame, type ReplayFrame } from '@/domain/spatial/replay';
 import { SPATIAL_DEFAULT_SMOOTHING, type SpatialSmoothing } from '@/domain/spatial/smoothing';
 
 /** Recent raw samples replayed when the smoothing level changes, so the effect is immediate. */
@@ -74,8 +73,6 @@ export function useSpatialTracking(
   // Per-slot recent raw samples. A level change replays them, because a still target produces
   // no new frames and the control would otherwise appear to do nothing.
   const history = new Map<number, { x: number; y: number; at: number }[]>();
-  // Session-only replay recording; bounded by domain helpers and never persisted.
-  const replayFrames = ref<ReplayFrame[]>([]);
   // Latest raw position per slot, kept after a target clears so calibration can still offer
   // the spot the person just stood at instead of an empty list.
   const recentTargets = ref<{ slot: number; x: number; y: number; at: number }[]>([]);
@@ -97,7 +94,6 @@ export function useSpatialTracking(
     slots.clear();
     filters.clear();
     history.clear();
-    replayFrames.value = [];
     recentTargets.value = [];
     clearedAt.clear();
     associator.reset();
@@ -188,12 +184,6 @@ export function useSpatialTracking(
       return;
     }
 
-    if (useFrames && currentFrame) {
-      replayFrames.value = appendReplayFrame(replayFrames.value, {
-        at: observedAt,
-        samples: samples.map((sample) => ({ slot: sample.slot, x: sample.x, y: sample.y })),
-      });
-    }
     const latest = new Map(recentTargets.value.map((target) => [target.slot, target]));
     for (const sample of samples) {
       latest.set(sample.slot, { slot: sample.slot, x: sample.x, y: sample.y, at: sample.at });
@@ -349,7 +339,6 @@ export function useSpatialTracking(
     revision: computed(() => snapshot.value.revision),
     jitterMm: computed(() => Math.round(snapshot.value.jitterMm)),
     duplicates: computed(() => snapshot.value.duplicates),
-    replayFrames,
     recentTargets,
     smoothing,
   };

@@ -33,7 +33,7 @@
     viewFrom: number;
     viewTo: number;
   }>();
-  const emit = defineEmits<{ 'plot-width': [value: number] }>();
+  const emit = defineEmits<{ 'plot-width': [value: number]; 'select-range': [from: number, to: number] }>();
 
   const activeLabel = computed(() => formatExposeValue(props.expose, binaryOnValue(props.expose)));
   const inactiveLabel = computed(() => formatExposeValue(props.expose, binaryOffValue(props.expose)));
@@ -119,6 +119,9 @@
   onMounted(observe);
   onBeforeUnmount(stopObserving);
 
+  // Drag a time range to focus it. Vertical touch movement still scrolls the page.
+  const selection = ref<{ left: number; width: number } | null>(null);
+  let selecting: { id: number; startX: number } | null = null;
   const cursor = { segment: 0, bin: 0 };
   let pinned = false;
   let frame = 0;
@@ -210,9 +213,50 @@
     if (event.pointerType === 'mouse') pinned = false;
     queueInspection(event, false);
   }
+  function plotX(clientX: number): number {
+    const root = host.value;
+    if (!root) return 0;
+    const rect = root.getBoundingClientRect();
+    return bounded(clientX - rect.left - layout.value.padLeft, 0, layout.value.plotWidth);
+  }
+  function timeAt(clientX: number): number {
+    const ratio = plotWidth() ? plotX(clientX) / plotWidth() : 0;
+    return props.viewFrom + ratio * (props.viewTo - props.viewFrom);
+  }
+  function plotWidth(): number {
+    return layout.value.plotWidth;
+  }
   function onPointerDown(event: PointerEvent) {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
     queueInspection(event, event.pointerType !== 'mouse');
+    selecting = { id: event.pointerId, startX: event.clientX };
+    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+  }
+  function onPointerMoveSelect(event: PointerEvent) {
+    onPointerMove(event);
+    if (!selecting || selecting.id !== event.pointerId) return;
+    const left = Math.min(plotX(selecting.startX), plotX(event.clientX));
+    const width = Math.abs(plotX(event.clientX) - plotX(selecting.startX));
+    selection.value = width >= 8 ? { left, width } : null;
+  }
+  function onPointerUp(event: PointerEvent) {
+    if (!selecting || selecting.id !== event.pointerId) return;
+    const start = selecting.startX;
+    const width = Math.abs(plotX(event.clientX) - plotX(start));
+    selecting = null;
+    selection.value = null;
+    if (width >= 8) {
+      const a = timeAt(start);
+      const b = timeAt(event.clientX);
+      emit('select-range', Math.min(a, b), Math.max(a, b));
+    }
+    const target = event.currentTarget as HTMLElement;
+    if (target.hasPointerCapture(event.pointerId)) target.releasePointerCapture(event.pointerId);
+  }
+  function onPointerCancelSelect() {
+    selecting = null;
+    selection.value = null;
+    hideInspection();
   }
   function onPointerLeave() {
     if (!pinned) hideInspection();
@@ -290,13 +334,16 @@
         width: `${layout.plotWidth}px`,
         height: `${layout.plotHeight}px`,
       }"
-      @pointermove="onPointerMove"
+      @pointermove="onPointerMoveSelect"
       @pointerdown="onPointerDown"
+      @pointerup="onPointerUp"
       @pointerleave="onPointerLeave"
-      @pointercancel="hideInspection"
+      @pointercancel="onPointerCancelSelect"
       @focus="onFocus"
       @blur="hideInspection"
       @keydown="onKeydown" />
+    <div v-if="selection" class="state-selection" aria-hidden="true"
+      :style="{ left: `${layout.padLeft + selection.left}px`, width: `${selection.width}px`, top: `${layout.plotTop}px`, height: `${layout.plotHeight}px` }" />
     <div ref="tooltip" :id="tooltipId" class="state-tooltip" role="status" aria-live="off" />
   </div>
 </template>
@@ -315,11 +362,18 @@
     cursor: crosshair;
     background: transparent;
     outline: none;
-    touch-action: auto;
+    touch-action: pan-y;
   }
   .state-inspect-target:focus {
     outline: 2px solid var(--nh-focus);
     outline-offset: 1px;
+  }
+  .state-selection {
+    position: absolute;
+    z-index: 2;
+    background: color-mix(in srgb, var(--nh-accent) 22%, transparent);
+    border-inline: 1px solid var(--nh-accent);
+    pointer-events: none;
   }
   .state-tooltip {
     position: absolute;

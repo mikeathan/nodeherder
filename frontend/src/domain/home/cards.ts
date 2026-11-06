@@ -44,5 +44,6 @@ export function homeCardTitle(
   if (!card) return 'Card unavailable';
   if (card.kind === 'device') return exposeLabel(card.expose);
   if (card.kind === 'presence') return 'Presence';
+  if (card.kind === 'presence_overview') return 'Presence overview';
   return homeIntegrationCard(card, sources).title;
 }

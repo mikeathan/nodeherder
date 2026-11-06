@@ -131,11 +131,34 @@ func (s *appStore) StoreMetrics(friendlyName string, data map[string]any) error 
 	}
 
 	if !config.MetricsEnabled {
-		utils.LogTracef("StoreMetrics: metrics disabled for id=%s, skipping", id)
-		return nil
+		// Derived presence devices follow the source device's history switch; requiring a second
+		// opt-in for the projection would make zone history look broken.
+		if !s.derivedHistoryEnabled(id) {
+			utils.LogTracef("StoreMetrics: metrics disabled for id=%s, skipping", id)
+			return nil
+		}
 	}
 
 	return s.metrics.Store(id, data)
+}
+
+// derivedHistoryEnabled reports whether a derived presence device should record because its
+// source sensor has history enabled.
+func (s *appStore) derivedHistoryEnabled(id string) bool {
+	const prefix, provider = "presence-", "presence"
+	if len(id) <= len(prefix) || id[:len(prefix)] != prefix {
+		return false
+	}
+	device, err := s.FindDeviceById(id)
+	if err != nil || device == nil || device.Provider != provider {
+		return false
+	}
+	// An explicit derived-device configuration (including metrics off) wins over inheritance.
+	if s.config.GetDeviceConfigCache().HasOverride(id) {
+		return false
+	}
+	source, err := s.config.GetDeviceConfig(id[len(prefix):])
+	return err == nil && source.MetricsEnabled
 }
 
 func (s *appStore) RemoveDeviceById(id string) error {
