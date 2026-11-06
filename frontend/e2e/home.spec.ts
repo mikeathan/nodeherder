@@ -664,7 +664,7 @@ test.describe('home dashboard', () => {
       await expect(overview).toBeVisible();
       await expect(overview).toContainText('Presence');
       await expect(overview).toContainText('Living room light');
-      await expect(overview.getByRole('link', { name: 'Live', exact: true })).toBeVisible();
+      await expect(overview.getByRole('link', { name: 'Open live', exact: true })).toBeVisible();
       await expect(overview.getByRole('link', { name: 'History', exact: true })).toBeVisible();
     } finally {
       const latest = (await (await page.request.get(`${HUB_API}/home/layout`)).json()).data;

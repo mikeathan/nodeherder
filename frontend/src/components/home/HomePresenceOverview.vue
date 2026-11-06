@@ -21,18 +21,7 @@
   .nh-presence-rail-wrap { min-width: 0; }
   .nh-presence-rail {
     display: grid;
-    gap: 0.4rem;
+    gap: 0.25rem;
   }
   .nh-presence-rail > * { min-width: 0; }
-  @container (min-width: 34rem) {
-    .nh-presence-rail {
-      grid-auto-flow: column;
-      grid-auto-columns: minmax(15rem, 1fr);
-      overflow-x: auto;
-      overscroll-behavior-inline: contain;
-      scroll-snap-type: inline mandatory;
-      padding-block-end: 0.25rem;
-    }
-    .nh-presence-rail > * { scroll-snap-align: start; }
-  }
 </style>

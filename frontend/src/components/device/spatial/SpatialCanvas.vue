@@ -63,6 +63,8 @@
     label?: string;
     /** Preview surfaces hide per-slot labels because a slot is not an identity. */
     showTargetLabels?: boolean;
+    /** Preview dots need to stay legible in a small fitted view. */
+    targetScale?: number;
   }>();
   const emit = defineEmits<{
     select: [id: string];
@@ -228,7 +230,7 @@
     <g v-for="track in renderedTracks" :key="track.key" :transform="`translate(${track.point.x} ${track.point.y})`">
       <line v-if="track.heading" :x1="0" :y1="0" :x2="track.heading.x" :y2="track.heading.y" class="nh-heading" />
       <circle
-        :r="scale * CANVAS_TARGET_RADIUS_RATIO"
+        :r="scale * CANVAS_TARGET_RADIUS_RATIO * (targetScale ?? 1)"
         :class="['nh-target', `is-${track.state}`, `is-color-${track.colorIndex}`, { 'is-raw': showRaw }]" />
       <text v-if="showTargetLabels !== false" :x="scale * CANVAS_TARGET_LABEL_X_RATIO" :y="scale * CANVAS_TARGET_LABEL_Y_RATIO" :font-size="scale * CANVAS_TARGET_FONT_RATIO">
         {{ track.label }}
