@@ -18,7 +18,7 @@
 </script>
 
 <template>
-  <section class="device-history-modes" aria-label="Device history">
+  <section class="device-history-modes" aria-label="History views">
     <div v-if="spatial" class="nh-history-modes" role="group" aria-label="History view">
       <UiButton size="sm" :variant="mode === 'charts' ? 'primary' : 'ghost'" :pressed="mode === 'charts'" @click="mode = 'charts'">Charts</UiButton>
       <UiButton size="sm" :variant="mode === 'activity' ? 'primary' : 'ghost'" :pressed="mode === 'activity'" @click="mode = 'activity'">Zone activity</UiButton>

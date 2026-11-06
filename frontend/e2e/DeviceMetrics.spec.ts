@@ -349,7 +349,7 @@ test('binary history aggregates 10,000 samples within the responsive pixel budge
   await expect(chart.locator('.state-tooltip')).toContainText('transition');
   await expect(chart.locator('.state-tooltip')).toContainText('known');
   if (info.project.name === 'mobile') {
-    expect(await target.evaluate((node) => getComputedStyle(node).touchAction)).toBe('auto');
+    expect(await target.evaluate((node) => getComputedStyle(node).touchAction)).toBe('pan-y');
     const box = (await target.boundingBox())!;
     await target.tap({ position: { x: box.width / 2, y: box.height / 2 } });
     await expect(chart.locator('.state-tooltip')).toBeVisible();
