@@ -44,18 +44,8 @@ export const SpatialViewIds = {
   Heatmap: 'heatmap',
 } as const;
 
-/** Spatial tab views in display order. */
-export const SPATIAL_VIEWS = [
-  { id: SpatialViewIds.Live, label: 'Live dashboard' },
-  { id: SpatialViewIds.Zones, label: 'Zone editor' },
-  { id: SpatialViewIds.Room, label: 'Room builder' },
-  { id: SpatialViewIds.Entry, label: 'Entry / exit' },
-  { id: SpatialViewIds.Firmware, label: 'Firmware settings' },
-  { id: SpatialViewIds.Calibrate, label: 'Calibration' },
-  { id: SpatialViewIds.Heatmap, label: 'Heatmap & analytics' },
-] as const;
-
-export type SpatialViewId = (typeof SPATIAL_VIEWS)[number]['id'];
+/** Spatial tab view identifiers. Heatmap is used by the recorded-positions canvas. */
+export type SpatialViewId = 'live' | 'zones' | 'room' | 'entry' | 'firmware' | 'calibrate' | 'heatmap';
 
 /** Default tab view. */
 export const DEFAULT_SPATIAL_VIEW: SpatialViewId = SpatialViewIds.Live;
@@ -64,7 +54,6 @@ export const SPATIAL_EDIT_VIEWS: readonly SpatialViewId[] = [SpatialViewIds.Zone
 /** Views that show live target/zone context. */
 export const SPATIAL_LIVE_VIEWS: readonly SpatialViewId[] = [SpatialViewIds.Live, SpatialViewIds.Zones];
 
-/** Prompt shown before discarding session-only observations. */
 /** Plain-language source label; "sampled" is not live frames and must say so. */
 export function sourceLabel(source: 'frames' | 'sampled' | 'none'): string {
   if (source === 'frames') return 'Live frames';

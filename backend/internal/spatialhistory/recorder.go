@@ -19,6 +19,7 @@ type job struct {
 	device   string
 	at       time.Time
 	targets  []rawTarget
+	active   bool
 	disabled bool
 }
 
@@ -84,7 +85,11 @@ func (r *Recorder) Observe(frame *devices.SpatialFrame) {
 	}
 	disabled := r.enabled == nil || !r.enabled(frame.Id)
 	targets := make([]rawTarget, 0, len(frame.Targets))
+	active := false
 	for _, target := range frame.Targets {
+		if target.Active {
+			active = true
+		}
 		if !target.Active || target.X == nil || target.Y == nil {
 			continue
 		}
@@ -96,7 +101,7 @@ func (r *Recorder) Observe(frame *devices.SpatialFrame) {
 		targets = append(targets, rawTarget{slot: target.ID, x: x, y: y, active: true})
 	}
 	select {
-	case r.queue <- job{device: frame.Id, at: frame.At, targets: targets, disabled: disabled}:
+	case r.queue <- job{device: frame.Id, at: frame.At, targets: targets, active: active, disabled: disabled}:
 	default:
 	}
 }
@@ -137,8 +142,11 @@ func (r *Recorder) handle(frame job) {
 		return
 	}
 	if len(frame.targets) == 0 {
-		// A complete frame with no active target is the firmware clearing the slots.
-		r.closeSession(frame.device)
+		// A complete frame with no active flag set is the firmware clearing the slots. An active
+		// target with unreadable coordinates must not end the session.
+		if !frame.active {
+			r.closeSession(frame.device)
+		}
 		return
 	}
 	if state == nil || state.session == "" {
@@ -209,6 +217,11 @@ func (r *Recorder) flushAll() {
 func (r *Recorder) tick() {
 	now := r.clock.Now()
 	for device, state := range r.sources {
+		// A still target stops producing frames; flush its buffered chunk on time instead of
+		// leaving recent points unqueryable until the session eventually closes.
+		if len(state.buffer) > 0 && now.Sub(state.chunkStart) >= chunkInterval {
+			r.flush(device, state)
+		}
 		if now.Sub(state.lastSeen) >= sourceIdleClose {
 			r.closeSession(device)
 		}

@@ -119,6 +119,7 @@
       <SpatialCanvas :workspace="workspace" :tracks="view === 'player' ? tracks : []" :occupancy="new Map()"
         :scale="SPATIAL_DEFAULT_SCALE_MM" :orientation="SPATIAL_DEFAULT_ORIENTATION" :online="true"
         :mode="view === 'heatmap' ? SpatialViewIds.Heatmap : SpatialViewIds.Live" selected-id="" :trails="[]"
+        :label="view === 'heatmap' ? 'Recorded heatmap canvas' : 'Recorded positions canvas'"
         :cells="view === 'heatmap' ? heat : []" :show-grid="true" :show-room-context="true" />
       <template v-if="view === 'player'">
         <ul class="nh-session-list" aria-label="Recorded sessions">

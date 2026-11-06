@@ -99,9 +99,9 @@
         </figure>
       </UiCard>
       <p>
-        Use Zone editor to place detection, exclusion and entry overlays; Room Builder for walls, doors, furniture and
-        sensor placement; Entry / exit for reported assumed presence; and Heatmap &amp; analytics for session
-        observations. Each tool has its own help. A zone overlay does not configure your device.
+        Use Draw → Zones to place detection, exclusion and entry overlays; Draw → Room for walls, doors, furniture and
+        sensor placement; Draw → Entry / exit for reported assumed presence; and the device History tab for
+        recorded positions and heatmaps. Each tool has its own help. A zone overlay does not configure your device.
       </p>
       <p>
         <a

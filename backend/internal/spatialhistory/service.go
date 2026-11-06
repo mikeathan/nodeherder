@@ -13,7 +13,9 @@ func NewService(repo Repository) *Service { return &Service{repo: repo} }
 
 // Sessions groups chunks by session id and summarises them.
 func (s *Service) Sessions(device string, from, to time.Time) ([]Session, error) {
-	chunks, err := s.repo.Chunks(device, from, to)
+	// A chunk that started before the requested range can still contain points inside it (an
+	// ongoing session); look back one chunk interval and filter sessions by overlap.
+	chunks, err := s.repo.Chunks(device, from.Add(-chunkInterval), to)
 	if err != nil {
 		return nil, err
 	}
@@ -32,14 +34,20 @@ func (s *Service) Sessions(device string, from, to time.Time) ([]Session, error)
 		if chunk.To > entry.To {
 			entry.To = chunk.To
 		}
-		entry.Points += len(chunk.Points)
 		entry.Capped = entry.Capped || chunk.Capped
+		entry.To = max(entry.To, chunk.To)
 		for _, point := range chunk.Points {
-			slots[chunk.Session][point.Slot] = true
+			if point.At >= from.UnixMilli() && point.At <= to.UnixMilli() {
+				entry.Points++
+				slots[chunk.Session][point.Slot] = true
+			}
 		}
 	}
 	sessions := make([]Session, 0, len(byID))
 	for id, entry := range byID {
+		if entry.To < from.UnixMilli() {
+			continue
+		}
 		for slot := range slots[id] {
 			entry.Slots = append(entry.Slots, slot)
 		}

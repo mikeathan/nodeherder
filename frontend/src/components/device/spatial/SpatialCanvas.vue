@@ -60,6 +60,7 @@
     viewBox?: string;
     /** Draw unfiltered source positions instead of filtered ones (evidence view). */
     showRaw?: boolean;
+    label?: string;
   }>();
   const emit = defineEmits<{
     select: [id: string];
@@ -77,8 +78,9 @@
   const fov = computed(() => fovPolygon(props.scale, props.workspace.sensor, props.orientation));
   const editable = computed(() => isSpatialEditView(props.mode));
   const heatmap = computed(() => props.mode === SpatialViewIds.Heatmap);
-  const canvasLabel =
-    'Live room canvas with sensor, zones and target positions. Numeric editing controls and target list follow.';
+  const canvasLabel = computed(
+    () => props.label ?? 'Live room canvas with sensor, zones and target positions. Numeric editing controls and target list follow.'
+  );
   // Heatmap keeps only room context (outline, furniture, sensor) by default;
   // zones, targets, trails and handles would obscure the activity cells.
   const contextVisible = computed(() => !heatmap.value || props.showRoomContext);

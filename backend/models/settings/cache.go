@@ -440,6 +440,16 @@ func (s *AppConfigCache) LoadLoggerConfig() (*LoggerConfig, error) {
 	return s.appConfig.Hub.Logger, nil
 }
 
+// HistoryRetention returns the configured metrics retention, falling back to the default.
+func (s *AppConfigCache) HistoryRetention() time.Duration {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+	if s.appConfig == nil || s.appConfig.Hub == nil || s.appConfig.Hub.History == nil || s.appConfig.Hub.History.ExpireAt == nil {
+		return DefaultHistoryConfig().ExpireAt.Duration()
+	}
+	return s.appConfig.Hub.History.ExpireAt.Duration()
+}
+
 // SaveHistoryConfig persists history settings and returns the public configuration projection.
 func (s *AppConfigCache) SaveHistoryConfig(historyConfig *HistoryConfig) (*AppConfig, error) {
 	s.mutex.Lock()

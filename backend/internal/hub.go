@@ -78,7 +78,7 @@ func newRouter(port int, ws ws.EventHub, hub *controllers.HubController, store s
 		}
 		return nil
 	}))
-	router.GET("/api/system/storage", api.NewSystemStorageHandler(10))
+	router.GET("/api/system/storage", api.NewSystemStorageHandler(int(store.AppConfig().HistoryRetention().Hours()/24)))
 	router.POST("/api/collect", api.NewDataCollectorHandler(hub))
 	router.POST("/api/logfile", api.NewLogFileHandler(fservice))
 	router.POST("/api/automation/trigger", api.NewAutomationTriggerHandler(hub, 1*time.Second))

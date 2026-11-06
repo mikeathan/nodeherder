@@ -69,7 +69,6 @@
 
 <template>
   <div class="nh-home" :class="{ 'is-editing': editing }">
-    <HomePresenceOverview v-if="!editing" />
     <UiPageHeader title="Home" :subtitle="`${areaCount} areas · ${tileCount} tiles`">
       <template #actions>
         <template v-if="editing">
@@ -92,6 +91,7 @@
           @change="importSelectedFile" />
       </template>
     </UiPageHeader>
+    <HomePresenceOverview v-if="!editing" />
     <div v-if="feedback" class="nh-alert is-danger" role="alert">
       {{ feedback }}
       <UiButton size="sm" :disabled="busy || loading" @click="home.load">Reload layout</UiButton>
