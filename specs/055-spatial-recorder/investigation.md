@@ -224,14 +224,16 @@ are explicitly out of scope now. Keeping two recorders or a diagnostics pipeline
 them would duplicate logic and leave history trapped in a tab. The server becomes the only source
 of truth.
 
-Recording and playback move out of the Presence tab into a new top-level **Recordings** section
-(sidebar entry), with a device picker and a date/time range shared by two tabs:
+Recording and playback move out of the Presence tab into the device's existing **History** tab.
+There is no new top-level section and no separate device picker: the History tab already has the
+device context, range controls and chart/export conventions. For devices that support spatial
+mapping, History gets a mode switch — **Charts** (existing metrics) and **Positions** — with the
+Positions mode containing the two views below and a device-scoped date/time range:
 
-1. **Player** — the range filters a list of auto-created sessions for the chosen device (start,
-   end, duration, visible targets, point count, capped badge). Selecting one loads its points and
-   plays them with a scrubber, play/pause and speed over the normal room/zones. This is the
-   "data-range player": choose the range, pick the session within it, play the recorded
-   coordinates.
+1. **Player** — the range filters a list of auto-created sessions for this device (start, end,
+   duration, visible targets, point count, capped badge). Selecting one loads its points and plays
+   them with a scrubber, play/pause and speed over the normal room/zones. This is the "data-range
+   player": choose the range, pick the session within it, play the recorded coordinates.
 2. **Heatmap** — the same date range aggregates recorded points into a coarse grid (e.g. 250 mm
    cells) and shows density with zone outlines. No playback in this view.
 
@@ -240,6 +242,11 @@ which sessions are offered, and playback is per session. The heatmap is the acro
 
 Presence keeps Live, Zones, Room, Entry/Exit, Firmware, Calibration and Multi-sensor. Diagnostics,
 the session-only heatmap and the browser Replay view are deleted rather than left as duplicates.
+
+Why the device History tab: sessions are per-device history, the device is already selected, and
+the existing Charts mode stays where users look for history. A global Recordings page would need
+a device picker and duplicate the history navigation for no gain. A cross-device heatmap can be a
+later addition if it is ever needed.
 
 The server can keep the **active session** in memory and return it as a live tail (flushed chunks
 plus the current minutes), so the player can open the session in progress without a browser-side
