@@ -32,14 +32,15 @@
     </header>
     <div v-if="preview.hasFrame.value" class="nh-rail-preview">
       <SpatialCanvas :workspace="preview.workspace.value" :tracks="preview.tracks.value" :occupancy="new Map()"
-        :view-box="preview.viewBox.value" :scale="4000" :orientation="0" :online="preview.online.value" :mode="SpatialViewIds.Live"
-        selected-id="" :trails="[]" :cells="[]" :show-grid="false" :show-room-context="false"
+        :view-box="preview.viewBox.value" :scale="preview.scale.value" :orientation="0" :online="preview.online.value" :mode="SpatialViewIds.Live"
+        selected-id="" :trails="[]" :cells="[]" :show-grid="true" :show-room-context="true" :show-target-labels="false"
         :label="`${device.friendly_name} preview`" />
     </div>
     <p v-if="preview.hasFrame.value" class="nh-rail-state">
       <strong :class="{ 'is-occupied': values.occupied }">{{ state }}</strong>
       <span v-if="values.targetCount !== null"> · {{ values.targetCount }} target{{ values.targetCount === 1 ? '' : 's' }}</span>
       <span v-if="values.lastZone"> · {{ values.lastZone }}</span>
+      <span v-if="preview.targetDistanceMm.value !== null"> · {{ (preview.targetDistanceMm.value / 1000).toFixed(1) }} m</span>
     </p>
     <p v-else class="nh-rail-state nh-muted">Waiting for a position…</p>
     <div class="nh-rail-actions">
@@ -79,7 +80,7 @@
   header strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   header .nh-muted { flex: none; font-size: 0.75rem; text-transform: capitalize; }
   .nh-rail-preview { grid-area: preview; width: 4.5rem; height: 4.5rem; overflow: hidden; border-radius: var(--nh-radius-s); background: var(--nh-surface); }
-  .nh-rail-preview :deep(svg) { display: block; width: 100%; height: 100%; }
+  .nh-rail-preview :deep(svg) { display: block; width: 100%; height: 100%; aspect-ratio: auto; max-height: none; }
   .nh-rail-state { grid-area: state; margin: 0; font-size: 0.85rem; }
   .nh-rail-state .is-occupied { color: var(--nh-accent); }
   .nh-rail-actions { grid-area: actions; display: flex; gap: 0.75rem; font-size: 0.8rem; }
@@ -95,7 +96,7 @@
       background: transparent;
     }
     .nh-rail-tile + .nh-rail-tile { border-top: 0; }
-    .nh-rail-preview { width: 100%; height: auto; max-height: 9rem; background: var(--nh-surface-2); }
-    .nh-rail-preview :deep(svg) { width: 100%; height: auto; }
+    .nh-rail-preview { width: 100%; height: 9rem; background: var(--nh-surface-2); }
+    .nh-rail-preview :deep(svg) { width: 100%; height: 9rem; }
   }
 </style>

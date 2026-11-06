@@ -20,7 +20,7 @@ export function useSpatialPreview(deviceId: () => string, active: () => boolean)
   const workspace = computed(() => {
     const value = copyWorkspace(settings.value.spatial?.workspace);
     // A card preview shows the sensor and targets, not a full room-scene render.
-    return { ...value, zones: [], outline: [], objects: [] };
+    return { ...value, zones: [], objects: [] };
   });
   const samples = ref<{ slot: number; x: number; y: number }[]>([]);
   const updatedAt = ref(0);
@@ -40,7 +40,7 @@ export function useSpatialPreview(deviceId: () => string, active: () => boolean)
   watch(frame, capture, { immediate: true });
   watch(active, (on) => { if (on) { lastUpdate = 0; capture(); } });
 
-  const viewBox = computed(() => {
+  const frameBox = computed(() => {
     const projected = samples.value.map((sample) => sensorProjectedPoint(sample, workspace.value.sensor, 0));
     const points = [{ x: 0, y: 0 }, ...projected];
     const xs = points.map((point) => point.x);
@@ -50,8 +50,17 @@ export function useSpatialPreview(deviceId: () => string, active: () => boolean)
     const minY = Math.min(...ys);
     const maxY = Math.max(...ys);
     const pad = Math.max(750, Math.max(maxX - minX, maxY - minY) * 0.2);
-    return `${minX - pad} ${minY - pad} ${Math.max(2000, maxX - minX + pad * 2)} ${Math.max(2000, maxY - minY + pad * 2)}`;
+    return {
+      x: minX - pad,
+      y: minY - pad,
+      width: Math.max(2000, maxX - minX + pad * 2),
+      height: Math.max(2000, maxY - minY + pad * 2),
+    };
   });
+  const viewBox = computed(() => `${frameBox.value.x} ${frameBox.value.y} ${frameBox.value.width} ${frameBox.value.height}`);
+  // Canvas labels, target radii and grid spacing are computed from this scale, so it must match
+  // the fitted view box rather than the full-room scale.
+  const scale = computed(() => Math.max(frameBox.value.width, frameBox.value.height) / 2);
 
   const tracks = computed<SpatialDisplayTrack[]>(() =>
     samples.value.map((sample) => ({
@@ -73,9 +82,14 @@ export function useSpatialPreview(deviceId: () => string, active: () => boolean)
   return {
     workspace,
     viewBox,
+    scale,
     tracks,
     updatedAt,
     online: computed(() => !!device.value && statusOf(device.value) === 'online'),
     hasFrame: computed(() => tracks.value.length > 0),
+    targetDistanceMm: computed(() => {
+      const target = samples.value[0];
+      return target ? Math.round(Math.hypot(target.x, target.y)) : null;
+    }),
   };
 }
