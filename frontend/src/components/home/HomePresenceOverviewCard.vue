@@ -17,7 +17,7 @@
     <header class="nh-overview-head">
       <span class="nh-overview-icon"><UiIcon name="presence" /></span>
       <span class="nh-overview-title">
-        <strong>Presence overview</strong>
+        <strong>Presence</strong>
         <span class="nh-muted">{{ count }} sensor{{ count === 1 ? '' : 's' }}</span>
       </span>
       <UiButton v-if="editing" size="sm" variant="ghost" icon="delete" label="Remove presence overview"

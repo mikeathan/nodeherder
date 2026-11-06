@@ -27,7 +27,7 @@
   @container (min-width: 34rem) {
     .nh-presence-rail {
       grid-auto-flow: column;
-      grid-auto-columns: minmax(14rem, 1fr);
+      grid-auto-columns: minmax(15rem, 1fr);
       overflow-x: auto;
       overscroll-behavior-inline: contain;
       scroll-snap-type: inline mandatory;

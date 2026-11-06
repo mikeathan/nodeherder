@@ -60,9 +60,12 @@
     align-items: center;
     row-gap: 0.1rem;
     min-width: 0;
-    padding: 0.45rem 0.5rem;
-    border-radius: var(--nh-radius);
-    background: var(--nh-surface-2);
+    padding: 0.45rem 0;
+    border-radius: 0;
+    background: transparent;
+  }
+  .nh-rail-tile + .nh-rail-tile {
+    border-top: 1px solid var(--nh-border);
   }
   .nh-rail-tile.has-preview {
     grid-template-columns: 4.5rem minmax(0, 1fr);
@@ -87,9 +90,12 @@
       grid-template-areas: 'header' 'preview' 'state' 'actions';
       align-items: stretch;
       gap: 0.4rem;
-      padding: 0.6rem;
+      padding: 0;
+      border-radius: 0;
+      background: transparent;
     }
-    .nh-rail-preview { width: 100%; height: auto; max-height: 8rem; background: transparent; }
+    .nh-rail-tile + .nh-rail-tile { border-top: 0; }
+    .nh-rail-preview { width: 100%; height: auto; max-height: 9rem; background: var(--nh-surface-2); }
     .nh-rail-preview :deep(svg) { width: 100%; height: auto; }
   }
 </style>

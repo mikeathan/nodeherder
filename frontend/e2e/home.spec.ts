@@ -653,14 +653,16 @@ test.describe('home dashboard', () => {
     await signIn(page, ui.home.path);
     const original = (await (await page.request.get(`${HUB_API}/home/layout`)).json()).data;
     const headers = { Origin: 'http://localhost:4100', 'X-NodeHerder-Request': '1', 'If-Match': original.etag };
-    const added = { ...original, blocks: original.blocks.map((block: { cards: unknown[] }, index: number) =>
-      index === 0 ? { ...block, cards: [...block.cards, { id: 'overview-test', kind: 'presence_overview', panel: true }] } : block) };
+    const added = { ...original, blocks: [
+      ...original.blocks,
+      { id: 'overview-block', kind: 'card', name: '', cards: [{ id: 'overview-test', kind: 'presence_overview', panel: true }] },
+    ] };
     try {
       expect((await page.request.put(`${HUB_API}/home/layout`, { headers, data: added })).status()).toBe(200);
       await page.goto(ui.home.path);
       const overview = page.locator('.nh-overview-card');
       await expect(overview).toBeVisible();
-      await expect(overview).toContainText('Presence overview');
+      await expect(overview).toContainText('Presence');
       await expect(overview).toContainText('Living room light');
       await expect(overview.getByRole('link', { name: 'Live', exact: true })).toBeVisible();
       await expect(overview.getByRole('link', { name: 'History', exact: true })).toBeVisible();
