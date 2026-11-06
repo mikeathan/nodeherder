@@ -49,18 +49,18 @@ export function useSpatialPreview(deviceId: () => string, active: () => boolean)
     const maxX = Math.max(...xs);
     const minY = Math.min(...ys);
     const maxY = Math.max(...ys);
-    const pad = Math.max(750, Math.max(maxX - minX, maxY - minY) * 0.2);
-    return {
-      x: minX - pad,
-      y: minY - pad,
-      width: Math.max(2000, maxX - minX + pad * 2),
-      height: Math.max(2000, maxY - minY + pad * 2),
-    };
+    const pad = Math.max(500, Math.max(maxX - minX, maxY - minY) * 0.15);
+    const height = Math.max(1200, maxY - minY + pad * 2);
+    // Match the 5:3 preview frame so the fitted room fills the card instead of letterboxing.
+    const width = Math.max(height * (5 / 3), maxX - minX + pad * 2);
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+    return { x: centerX - width / 2, y: centerY - height / 2, width, height };
   });
   const viewBox = computed(() => `${frameBox.value.x} ${frameBox.value.y} ${frameBox.value.width} ${frameBox.value.height}`);
   // Canvas labels, target radii and grid spacing are computed from this scale, so it must match
   // the fitted view box rather than the full-room scale.
-  const scale = computed(() => Math.max(frameBox.value.width, frameBox.value.height) / 2);
+  const scale = computed(() => frameBox.value.width / 2);
 
   const tracks = computed<SpatialDisplayTrack[]>(() =>
     samples.value.map((sample) => ({

@@ -62,9 +62,8 @@
 <style scoped>
   .nh-sensor-panel {
     display: grid;
-    grid-template-columns: 13rem minmax(0, 1fr);
-    align-items: center;
-    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.55rem;
     min-width: 0;
     padding: 0.35rem 0;
   }
@@ -74,8 +73,9 @@
     padding-top: 0.85rem;
   }
   .nh-sensor-preview {
-    width: 13rem;
-    height: 13rem;
+    width: 100%;
+    aspect-ratio: 5 / 3;
+    height: auto;
     min-width: 0;
     border-radius: var(--nh-radius);
     overflow: hidden;
@@ -106,7 +106,6 @@
   .nh-sensor-reference { margin: 0; }
   .nh-sensor-actions { display: flex; gap: 0.75rem; margin-top: 0.2rem; }
   @media (max-width: 640px) {
-    .nh-sensor-panel { grid-template-columns: 8.5rem minmax(0, 1fr); gap: 0.7rem; }
-    .nh-sensor-preview { width: 8.5rem; height: 8.5rem; }
+    .nh-sensor-preview { aspect-ratio: 5 / 3; height: auto; }
   }
 </style>

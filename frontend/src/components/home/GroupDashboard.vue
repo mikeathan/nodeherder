@@ -216,10 +216,7 @@
     grid-row: auto / span 6;
   }
   .nh-home-block.is-overview {
-    grid-column: span 3;
-  }
-  @media (max-width: 900px) {
-    .nh-home-block.is-overview { grid-column: span 2; }
+    grid-column: span 2;
   }
   @media (max-width: 640px) {
     .nh-home-block.is-overview { grid-column: 1 / -1; }
