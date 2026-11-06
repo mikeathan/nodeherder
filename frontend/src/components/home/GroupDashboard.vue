@@ -16,6 +16,7 @@
   import AddTilesDialog from './AddTilesDialog.vue';
   import MoveCardDialog from './MoveCardDialog.vue';
   import HomeStandaloneCard from './HomeStandaloneCard.vue';
+  import HomePresenceOverview from './HomePresenceOverview.vue';
 
   const editing = ref(false);
   const home = useHomeLayout({ pauseRefresh: editing });
@@ -68,6 +69,7 @@
 
 <template>
   <div class="nh-home" :class="{ 'is-editing': editing }">
+    <HomePresenceOverview v-if="!editing" />
     <UiPageHeader title="Home" :subtitle="`${areaCount} areas · ${tileCount} tiles`">
       <template #actions>
         <template v-if="editing">

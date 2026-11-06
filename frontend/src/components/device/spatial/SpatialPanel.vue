@@ -8,36 +8,25 @@
   import type { Device } from '@/types/device';
   import { useSpatialView } from '@/composables/spatial/useSpatialView';
   import { useWorkspaceEditor } from '@/composables/spatial/useWorkspaceEditor';
-  import { useSpatialReplay } from '@/composables/spatial/useSpatialReplay';
-  import { firstRecordedFrame } from '@/domain/spatial/replay';
-  import { useSpatialSession } from '@/composables/spatial/useSpatialSession';
   import { useDerivedPresence } from '@/composables/spatial/useDerivedPresence';
   import { formatSpatialDistance, radarGridSpacing, spatialTrackRows } from '@/domain/spatial/radar';
   import { SPATIAL_SMOOTHING_OPTIONS } from '@/domain/spatial/smoothing';
   import {
     DEFAULT_SPATIAL_VIEW,
-    SPATIAL_CLEAR_PROMPT,
-    SPATIAL_VIEWS,
     SpatialViewIds,
     connectionLabel,
-    formatSessionStart,
-    frameCountLabel,
     isSpatialEditView,
     isSpatialLiveView,
-    observationWindowLabel,
-    sampleCountLabel,
     sourceLabel,
     zoneOverlayLabel,
     zonePreviewRows,
     type SpatialViewId,
   } from '@/domain/spatial/view';
-  import { OBSERVATION_WINDOW_MINUTES } from '@/domain/spatial/analytics';
   import UiCard from '@/components/ui/UiCard.vue';
   import UiButton from '@/components/ui/UiButton.vue';
   import SpatialMappingEditor from './SpatialMappingEditor.vue';
   import SpatialDisplayOptions from './SpatialDisplayOptions.vue';
   import SpatialHelp from './SpatialHelp.vue';
-  import SpatialContextHelp from './SpatialContextHelp.vue';
   import SpatialCanvas from './SpatialCanvas.vue';
   import SpatialZoneDevice from './SpatialZoneDevice.vue';
   import SpatialZoneEditor from './SpatialZoneEditor.vue';
@@ -45,10 +34,6 @@
   import SpatialEntryPanel from './SpatialEntryPanel.vue';
   import SpatialFirmwarePanel from './SpatialFirmwarePanel.vue';
   import SpatialCalibrationPanel from './SpatialCalibrationPanel.vue';
-  import SpatialActivityHistory from './SpatialActivityHistory.vue';
-  import SpatialReplay from './SpatialReplay.vue';
-  import SpatialDiagnostics from './SpatialDiagnostics.vue';
-  import SpatialFusionPanel from './SpatialFusionPanel.vue';
 
   const props = defineProps<{ device: Device }>();
   const {
@@ -61,14 +46,12 @@
     rowOptions,
     canSave,
     tracks,
-    slots,
     occupancy,
     summary,
     source,
     hasData,
     jitterMm,
     duplicates,
-    replayFrames,
     recentTargets,
     showRaw,
     smoothing,
@@ -104,21 +87,6 @@
     endGesture,
     setVertex,
   } = useWorkspaceEditor(workspace);
-  const {
-    minutes,
-    showTrails,
-    cells,
-    activity,
-    trails,
-    started,
-    observedFrames,
-    clearRequested,
-    clear,
-  } = useSpatialSession(
-    () => `${props.device.id}:${JSON.stringify(mappings.value)}:${JSON.stringify(workspace.value.sensor)}`,
-    () => slots.value,
-    () => online.value
-  );
   const mode = ref<SpatialViewId>(DEFAULT_SPATIAL_VIEW);
   const helpOpen = ref(false);
   const showGrid = ref(true);
@@ -138,11 +106,32 @@
     }
     return merged;
   });
-  const replay = useSpatialReplay(() => replayFrames.value);
-  const displayTracks = computed(() => (mode.value === SpatialViewIds.Replay ? replay.tracks.value : tracks.value));
-  const displayOccupancy = computed(() =>
-    mode.value === SpatialViewIds.Replay ? new Map<string, { occupied: boolean }>() : canvasOccupancy.value
-  );
+  const primaryMode = computed<'live' | 'draw' | 'setup'>(() => {
+    const drawViews: SpatialViewId[] = [SpatialViewIds.Zones, SpatialViewIds.Room, SpatialViewIds.Entry];
+    const setupViews: SpatialViewId[] = [SpatialViewIds.Firmware, SpatialViewIds.Calibrate];
+    if (drawViews.includes(mode.value)) return 'draw';
+    if (setupViews.includes(mode.value)) return 'setup';
+    return 'live';
+  });
+  const PRIMARY_MODES = [
+    { id: 'live' as const, label: 'Live' },
+    { id: 'draw' as const, label: 'Draw' },
+    { id: 'setup' as const, label: 'Setup' },
+  ];
+  const DRAW_VIEWS = [
+    { id: SpatialViewIds.Zones, label: 'Zones' },
+    { id: SpatialViewIds.Room, label: 'Room' },
+    { id: SpatialViewIds.Entry, label: 'Entry / exit' },
+  ];
+  const SETUP_VIEWS = [
+    { id: SpatialViewIds.Firmware, label: 'Firmware' },
+    { id: SpatialViewIds.Calibrate, label: 'Calibration' },
+  ];
+  function selectPrimary(id: 'live' | 'draw' | 'setup') {
+    mode.value = id === 'live' ? SpatialViewIds.Live : id === 'draw' ? SpatialViewIds.Zones : SpatialViewIds.Firmware;
+  }
+  // Setup panels are forms, not a scene; live and drawing keep the canvas.
+  const showCanvas = computed(() => primaryMode.value !== 'setup');
   const serverPresence = computed(() => {
     if (!derived.derived.value) return 'Server presence: not derived yet.';
     if (!derived.online.value) return 'Server presence: derived device offline.';
@@ -157,24 +146,7 @@
     zonePreviewRows(props.device, workspace.value.zones, occupancy.value, online.value, hasData.value, derived.zones.value, derived.online.value)
   );
   const inactiveTargets = computed(() => targetStatuses.value.filter((status) => status.state !== 'active'));
-  // Content-only views do not need the live canvas, and hiding it makes the switch visible
-  // instead of leaving a live scene above the selected content.
-  const contentOnlyViews: SpatialViewId[] = [
-    SpatialViewIds.Activity,
-    SpatialViewIds.Firmware,
-    SpatialViewIds.Fusion,
-    SpatialViewIds.Diagnostics,
-  ];
-  const showCanvas = computed(() => !contentOnlyViews.includes(mode.value));
-  watch(mode, (next) => {
-    selectedId.value = '';
-    if (next === SpatialViewIds.Replay) {
-      // Enter replay paused at the oldest frame that actually has positions; the buffer also
-      // records empty/cleared frames, and starting on one looked like "nothing recorded".
-      replay.pause();
-      replay.seek(firstRecordedFrame(replayFrames.value)?.at ?? replay.bounds.value.first);
-    }
-  });
+  watch(mode, () => { selectedId.value = ''; });
 </script>
 <template>
   <UiCard title="Presence" icon="signal">
@@ -194,59 +166,53 @@
       Y and Active entities, then select <strong>Save spatial settings</strong>.
     </p>
 
-    <nav class="nh-spatial-nav" aria-label="Presence view">
-      <UiButton
-        v-for="view in SPATIAL_VIEWS"
-        :key="view.id"
-        :pressed="mode === view.id"
-        :variant="mode === view.id ? 'primary' : 'default'"
-        @click="mode = view.id">
-        {{ view.label }}
+    <nav class="nh-spatial-nav" aria-label="Presence mode">
+      <UiButton v-for="primary in PRIMARY_MODES" :key="primary.id" :pressed="primaryMode === primary.id"
+        :variant="primaryMode === primary.id ? 'primary' : 'default'" @click="selectPrimary(primary.id)">
+        {{ primary.label }}
       </UiButton>
     </nav>
+    <nav v-if="primaryMode === 'draw'" class="nh-spatial-subnav" aria-label="Drawing view">
+      <UiButton v-for="view in DRAW_VIEWS" :key="view.id" size="sm" :pressed="mode === view.id"
+        :variant="mode === view.id ? 'primary' : 'ghost'" @click="mode = view.id">{{ view.label }}</UiButton>
+    </nav>
+    <nav v-else-if="primaryMode === 'setup'" class="nh-spatial-subnav" aria-label="Setup view">
+      <UiButton v-for="view in SETUP_VIEWS" :key="view.id" size="sm" :pressed="mode === view.id"
+        :variant="mode === view.id ? 'primary' : 'ghost'" @click="mode = view.id">{{ view.label }}</UiButton>
+    </nav>
 
-    <div class="nh-presence-controls">
-      <label class="nh-field">
-        <span class="nh-label">Smoothing</span>
-        <select v-model="smoothing" class="nh-input">
-          <option v-for="option in SPATIAL_SMOOTHING_OPTIONS" :key="option.value" :value="option.value">
-            {{ option.label }}
-          </option>
-        </select>
-      </label>
-      <SpatialDisplayOptions
-        :scale="scale"
-        :orientation="orientation"
-        @update:scale="scale = $event"
-        @update:orientation="orientation = $event" />
-      <label class="nh-presence-toggle"><input v-model="showRaw" type="checkbox" /> Raw</label>
-      <label class="nh-presence-toggle"><input v-model="showGrid" type="checkbox" /> Grid</label>
-      <label v-if="mode === SpatialViewIds.Heatmap" class="nh-presence-toggle">
-        <input v-model="showRoomContext" type="checkbox" /> Room context
-      </label>
-      <label v-else class="nh-presence-toggle"><input v-model="showTrails" type="checkbox" /> Trails</label>
-      <UiButton v-if="isSpatialEditView(mode)" :disabled="!undoStack.length" @click="undo">Undo last edit</UiButton>
+    <div v-if="isSpatialEditView(mode)" class="nh-edit-actions">
+      <UiButton size="sm" variant="ghost" :disabled="!undoStack.length" @click="undo">Undo last edit</UiButton>
     </div>
-
-    <p v-if="mode === SpatialViewIds.Replay" class="nh-replay-banner" role="status">
-      Replay · {{ replay.time.value ? new Date(replay.time.value).toLocaleTimeString() : 'no frame selected' }} ·
-      recorded in this tab; live tracking is not shown in this view.
-    </p>
+    <details v-if="primaryMode !== 'setup'" class="nh-display-options">
+      <summary>Display</summary>
+      <div class="nh-presence-controls">
+        <label class="nh-field">
+          <span class="nh-label">Smoothing</span>
+          <select v-model="smoothing" class="nh-input">
+            <option v-for="option in SPATIAL_SMOOTHING_OPTIONS" :key="option.value" :value="option.value">{{ option.label }}</option>
+          </select>
+        </label>
+        <SpatialDisplayOptions :scale="scale" :orientation="orientation" @update:scale="scale = $event" @update:orientation="orientation = $event" />
+        <label class="nh-presence-toggle"><input v-model="showRaw" type="checkbox" /> Raw</label>
+        <label class="nh-presence-toggle"><input v-model="showGrid" type="checkbox" /> Grid</label>
+      </div>
+    </details>
 
     <div class="nh-spatial-workspace" :class="{ 'has-editor': isSpatialEditView(mode) }">
       <div v-if="showCanvas" class="nh-spatial-scene">
         <SpatialCanvas
           :workspace="workspace"
-          :tracks="displayTracks"
-          :occupancy="displayOccupancy"
+          :tracks="tracks"
+          :occupancy="canvasOccupancy"
           :show-raw="showRaw"
           :scale="scale"
           :orientation="orientation"
           :online="online"
           :mode="mode"
           :selected-id="selectedId"
-          :trails="trails"
-          :cells="mode === SpatialViewIds.Heatmap ? cells : []"
+          :trails="[]"
+          :cells="[]"
           :show-grid="showGrid"
           :show-room-context="showRoomContext"
           @select="selectedId = $event"
@@ -339,30 +305,6 @@
       </ul>
     </section>
 
-    <SpatialActivityHistory
-      v-if="mode === SpatialViewIds.Activity"
-      :device="device"
-      :workspace="workspace" />
-
-    <SpatialFusionPanel v-if="mode === SpatialViewIds.Fusion" />
-
-    <SpatialDiagnostics
-      v-if="mode === SpatialViewIds.Diagnostics"
-      :device="device"
-      :workspace="workspace"
-      :frames="replayFrames" />
-
-    <SpatialReplay
-      v-if="mode === SpatialViewIds.Replay"
-      :frames="replayFrames"
-      :time="replay.time.value"
-      :playing="replay.playing.value"
-      :speed="replay.speed.value"
-      :has-positions="replay.hasPositions.value"
-      @seek="replay.seek"
-      @toggle="replay.playing.value ? replay.pause() : replay.play()"
-      @update:speed="replay.speed.value = $event" />
-
     <SpatialCalibrationPanel
       v-if="mode === SpatialViewIds.Calibrate"
       :device="device"
@@ -385,49 +327,6 @@
       :workspace="workspace"
       :online="online"
       @map="mapEntry" />
-
-    <section v-if="mode === SpatialViewIds.Heatmap" aria-label="Heatmap and analytics">
-      <h3>Heatmap & analytics</h3>
-      <SpatialContextHelp topic="heatmap" />
-      <label>
-        Observation window
-        <select v-model.number="minutes" class="nh-input">
-          <option v-for="option in OBSERVATION_WINDOW_MINUTES" :key="option" :value="option">
-            {{ observationWindowLabel(option) }}
-          </option>
-        </select>
-      </label>
-      <p>
-        Session collection started {{ formatSessionStart(started) }} (browser local time).
-        {{ frameCountLabel(observedFrames) }}.
-      </p>
-      <p v-if="!cells.length" role="status">
-        No observed positions in this window. Keep this Presence tab open while fresh target updates arrive.
-      </p>
-      <p class="nh-heat-legend">
-        Low activity <span aria-hidden="true" /> High activity · relative target-second samples
-      </p>
-      <h4>Activity by hour (local time)</h4>
-      <ul>
-        <li v-for="hour in activity" :key="hour.label">
-          {{ hour.label }}: {{ sampleCountLabel(hour.count) }}
-        </li>
-      </ul>
-      <details v-if="cells.length">
-        <summary>Heatmap cell counts (sensor coordinates)</summary>
-        <ul>
-          <li v-for="cell in cells" :key="`${cell.x}:${cell.y}`">
-            X {{ formatSpatialDistance(cell.x) }}, Y {{ formatSpatialDistance(cell.y) }}: {{ sampleCountLabel(cell.count) }}
-          </li>
-        </ul>
-      </details>
-      <UiButton @click="clearRequested = true">Clear session observations</UiButton>
-      <div v-if="clearRequested" role="group" aria-label="Confirm clearing session observations">
-        <p>{{ SPATIAL_CLEAR_PROMPT }}</p>
-        <UiButton variant="danger" @click="clear">Confirm clear observations</UiButton>
-        <UiButton @click="clearRequested = false">Cancel</UiButton>
-      </div>
-    </section>
 
     <details class="nh-presence-setup">
       <summary>Target mapping</summary>

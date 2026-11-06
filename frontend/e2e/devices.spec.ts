@@ -362,7 +362,8 @@ test.describe('devices', () => {
     await expect(page.getByText('Live frames')).toBeVisible();
     await expect(page.getByText(/Track 1 \(live\): X/)).toBeVisible();
 
-    // Smoothing and raw evidence remain available and never hide the live canvas.
+    // Display options are grouped behind a disclosure to keep the tab calm.
+    await page.locator('summary').filter({ hasText: /^Display$/ }).click();
     const smoothing = page.getByRole('combobox', { name: 'Smoothing' });
     await smoothing.selectOption('off');
     await expect(smoothing).toHaveValue('off');
@@ -372,22 +373,8 @@ test.describe('devices', () => {
     await expect(page.getByRole('img', { name: /Live room canvas/ })).toBeVisible();
     await page.getByLabel('Raw', { exact: true }).uncheck();
 
-    // Content views replace the live scene instead of leaving it above the content.
-    await page.getByRole('button', { name: 'Zone activity', exact: true }).click();
-    await expect(page.getByRole('heading', { name: 'Zone activity', exact: true })).toBeVisible();
-    await expect(page.getByRole('img', { name: /Live room canvas/ })).toHaveCount(0);
-
-    await page.getByRole('button', { name: 'Replay', exact: true }).click();
-    await expect(page.getByRole('heading', { name: 'Replay this session', exact: true })).toBeVisible();
-    await expect(page.getByRole('img', { name: /Replay canvas/ })).toBeVisible();
-    await expect(page.getByText(/recorded in this tab; live tracking is not shown/)).toBeVisible();
-    await expect(page.getByText(/frame\(s\) with positions/)).toBeVisible();
-    await expect(page.locator('circle.nh-target').first()).toBeVisible();
-    await page.getByRole('button', { name: 'Play', exact: true }).click();
-    await page.getByRole('button', { name: 'Pause', exact: true }).click();
-    await expect(page.getByRole('img', { name: /Replay canvas/ })).toBeVisible();
-
     // A captured slot survives ageing (the 250 ms tick must not reset the selection).
+    await page.getByRole('button', { name: 'Setup', exact: true }).click();
     await page.getByRole('button', { name: 'Calibration', exact: true }).click();
     const liveSlot = page.getByRole('combobox', { name: 'Firmware slot (measured)' }).first();
     // Configured slots are always selectable, even before a target has reported, and their
@@ -401,7 +388,7 @@ test.describe('devices', () => {
     await expect(liveSlot).toHaveValue('1');
     await expect(page.getByText(/Captured .* mm at/)).toBeVisible();
 
-    await page.getByRole('button', { name: 'Live dashboard', exact: true }).click();
+    await page.getByRole('button', { name: 'Live', exact: true }).click();
 
     await page.getByRole('button', {name:'Create your first zone',exact:true}).click();
     await page.getByRole('button', {name:'Add detection zone',exact:true}).click();
@@ -428,7 +415,7 @@ test.describe('devices', () => {
     await page.getByRole('button', {name:'Remove zone',exact:true}).click();
     await page.getByRole('button', {name:'Undo last edit',exact:true}).click();
     await expect(page.getByRole('combobox',{name:'Zone slots',exact:true}).getByRole('option',{name:'Desk · detection'})).toHaveCount(1);
-    await page.getByRole('button',{name:'Room builder',exact:true}).click();
+    await page.getByRole('button',{name:'Room',exact:true}).click();
     await page.getByRole('button',{name:'Add room outline',exact:true}).click();
     await page.getByRole('button',{name:'Add furniture',exact:true}).click();
     await page.getByLabel('Item name',{exact:true}).fill('Reading sofa');
@@ -440,23 +427,9 @@ test.describe('devices', () => {
     const entryHelp=page.locator('summary').filter({hasText:'Help with Entry / Exit'});
     await entryHelp.focus();await entryHelp.press('Enter');
     await expect(page.getByText('It is not a people counter',{exact:false})).toBeVisible();
-    await page.getByRole('button',{name:'Heatmap & analytics',exact:true}).click();
-    await expect(page.getByText('Session collection started',{exact:false})).toBeVisible();
-    const roomContext=page.getByLabel('Room context',{exact:true});
-    await expect(roomContext).toBeChecked();
-    await expect(page.locator('polygon.nh-outline')).toHaveCount(1);
-    await roomContext.uncheck();
-    await expect(page.locator('polygon.nh-outline')).toHaveCount(0);
-    await expect(page.locator('polygon.nh-zone')).toHaveCount(0);
-    await expect(page.locator('circle.nh-sensor')).toHaveCount(0);
-    await roomContext.check();
-    await expect(page.locator('polygon.nh-outline')).toHaveCount(1);
-    sendUpdate!({ id: MOCK.livingRoomLight.id, data: {target_x:100,target_y:200,target3_active:true} });
-    await page.getByRole('button',{name:'Clear session observations',exact:true}).click();
-    await page.getByRole('button',{name:'Confirm clear observations',exact:true}).click();
-    await expect(page.getByText('No observed positions in this window.',{exact:false})).toBeVisible();
     await page.locator('summary').filter({hasText:/^Target mapping$/}).click();
-    await page.getByRole('button',{name:'Zone editor',exact:true}).click();
+    await page.getByRole('button',{name:'Draw',exact:true}).click();
+    await page.getByRole('button',{name:'Zones',exact:true}).click();
     await page.getByRole('combobox',{name:'Zone slots',exact:true}).selectOption({label:'Desk · detection'});
     await page.locator('circle.nh-handle').first().scrollIntoViewIfNeeded();
     const canvasPoint=async(x:number,y:number)=>page.locator('svg.nh-spatial-canvas').evaluate((element,point)=>{
@@ -473,7 +446,8 @@ test.describe('devices', () => {
     await page.getByRole('button',{name:'Undo last edit',exact:true}).click();
     for (const width of widths) {
       await page.setViewportSize({width,height:900});
-      await page.getByRole('button',{name:'Zone editor',exact:true}).click();
+      await page.getByRole('button',{name:'Draw',exact:true}).click();
+      await page.getByRole('button',{name:'Zones',exact:true}).click();
       await expect(page.getByRole('heading',{name:'Zone editor',exact:true})).toBeVisible();
       await page.getByRole('combobox',{name:'Zone slots',exact:true}).selectOption({label:'Desk · detection'});
       await page.locator('svg.nh-spatial-canvas').scrollIntoViewIfNeeded();

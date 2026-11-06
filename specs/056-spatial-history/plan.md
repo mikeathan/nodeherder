@@ -1,6 +1,6 @@
 # Plan: Spatial history recorder and recordings UI
 
-Spec: [spec.md](spec.md) | Status: In progress | Updated: 2026-11-05
+Spec: [spec.md](spec.md) | Status: Implemented (unreviewed) | Updated: 2026-11-05
 
 ## Backend
 
@@ -29,7 +29,15 @@ Spec: [spec.md](spec.md) | Status: In progress | Updated: 2026-11-05
 - Remove dead modules/tests; add domain/API/UI tests; update e2e.
 - Version 0.16.0 in package.json/package-lock.
 
-## Verification
+## Verification (recorded)
 
-Backend build/vet/test, frontend test/build/lint/type-check, devices/home browser specs, manual
-375 px review. Evidence recorded before review.
+- Backend: `go build ./...`, `go vet ./...`, `go test ./...` pass; `-race` over
+  spatialhistory/api/store passes; recorder/store/API handler tests added.
+- Frontend: `npm test` **741 passed**; `npm run build` pass; lint 0 errors (28 pre-existing
+  warnings); `npm run type-check:e2e` pass.
+- Browser: `devices.spec.ts` + `home.spec.ts` desktop and mobile **38 passed**, including the
+  grouped Presence navigation and device History modes.
+- Version: `frontend/package.json` and lock at **0.16.0**.
+
+Not covered by automation: live Positions playback against a real hub, brush selection on a
+touch device, and storage numbers with a non-empty spatial DB. These need review/manual checks.

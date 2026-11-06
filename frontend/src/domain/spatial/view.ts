@@ -41,10 +41,6 @@ export const SpatialViewIds = {
   Entry: 'entry',
   Firmware: 'firmware',
   Calibrate: 'calibrate',
-  Activity: 'activity',
-  Replay: 'replay',
-  Diagnostics: 'diagnostics',
-  Fusion: 'fusion',
   Heatmap: 'heatmap',
 } as const;
 
@@ -56,10 +52,6 @@ export const SPATIAL_VIEWS = [
   { id: SpatialViewIds.Entry, label: 'Entry / exit' },
   { id: SpatialViewIds.Firmware, label: 'Firmware settings' },
   { id: SpatialViewIds.Calibrate, label: 'Calibration' },
-  { id: SpatialViewIds.Activity, label: 'Zone activity' },
-  { id: SpatialViewIds.Replay, label: 'Replay' },
-  { id: SpatialViewIds.Diagnostics, label: 'Diagnostics' },
-  { id: SpatialViewIds.Fusion, label: 'Multi-sensor' },
   { id: SpatialViewIds.Heatmap, label: 'Heatmap & analytics' },
 ] as const;
 
@@ -73,27 +65,6 @@ export const SPATIAL_EDIT_VIEWS: readonly SpatialViewId[] = [SpatialViewIds.Zone
 export const SPATIAL_LIVE_VIEWS: readonly SpatialViewId[] = [SpatialViewIds.Live, SpatialViewIds.Zones];
 
 /** Prompt shown before discarding session-only observations. */
-export const SPATIAL_CLEAR_PROMPT = 'Discard this tab’s collected positions? Saved room layouts and zones remain.';
-/** Observation-window option label. */
-export function observationWindowLabel(minutes: number): string {
-  return `Last ${minutes} minutes`;
-}
-
-/** Session start in the browser's local time. */
-export function formatSessionStart(at: number): string {
-  return new Date(at).toLocaleTimeString();
-}
-
-/** Count label for sampled seconds. */
-export function sampleCountLabel(count: number): string {
-  return `${count} target-second sample${count === 1 ? '' : 's'}`;
-}
-
-/** Count label for observed one-second frames. */
-export function frameCountLabel(count: number): string {
-  return `${count} one-second frame${count === 1 ? '' : 's'} with fresh targets in this window`;
-}
-
 /** Plain-language source label; "sampled" is not live frames and must say so. */
 export function sourceLabel(source: 'frames' | 'sampled' | 'none'): string {
   if (source === 'frames') return 'Live frames';

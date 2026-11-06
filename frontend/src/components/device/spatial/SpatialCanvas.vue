@@ -77,11 +77,8 @@
   const fov = computed(() => fovPolygon(props.scale, props.workspace.sensor, props.orientation));
   const editable = computed(() => isSpatialEditView(props.mode));
   const heatmap = computed(() => props.mode === SpatialViewIds.Heatmap);
-  const canvasLabel = computed(() =>
-    props.mode === SpatialViewIds.Replay
-      ? 'Replay canvas with recorded target positions. Live tracking is not shown in this view.'
-      : 'Live room canvas with sensor, zones and target positions. Numeric editing controls and target list follow.'
-  );
+  const canvasLabel =
+    'Live room canvas with sensor, zones and target positions. Numeric editing controls and target list follow.';
   // Heatmap keeps only room context (outline, furniture, sensor) by default;
   // zones, targets, trails and handles would obscure the activity cells.
   const contextVisible = computed(() => !heatmap.value || props.showRoomContext);

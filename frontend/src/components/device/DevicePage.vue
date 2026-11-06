@@ -30,7 +30,6 @@
   import ESPHomeManageDialog from './esphome/ESPHomeManageDialog.vue';
   import ProviderEntitySection from './provider/ProviderEntitySection.vue';
 
-  const DeviceMetrics = defineAsyncComponent(() => import('./DeviceMetrics.vue'));
   const DeviceSettings = defineAsyncComponent(() => import('./DeviceSettings.vue'));
   const SpatialPanel = defineAsyncComponent(() => import('./spatial/SpatialPanel.vue'));
 

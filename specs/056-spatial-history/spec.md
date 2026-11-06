@@ -1,6 +1,6 @@
 # Spec: Spatial history recorder and recordings UI
 
-ID: 056 | Status: In progress | Updated: 2026-11-05
+ID: 056 | Status: Implemented (unreviewed) | Updated: 2026-11-05
 Constitution: 1.0.0 (proposed) | Components: backend + frontend
 
 ## Problem and scope
