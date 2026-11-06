@@ -22,6 +22,13 @@ export const settingsTabComponents: TabContent[] = [
     ),
   },
   {
+    title: 'System',
+    value: 'system',
+    content: defineAsyncComponent(
+      () => import('../components/hub/settings/SystemSettings.vue')
+    ),
+  },
+  {
     title: 'Logger',
     value: '2',
     content: defineAsyncComponent(

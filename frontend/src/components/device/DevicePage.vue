@@ -20,6 +20,7 @@
   import UiIcon from '@/components/ui/UiIcon.vue';
   import UiButton from '@/components/ui/UiButton.vue';
   import SpatialPresenceChip from './spatial/SpatialPresenceChip.vue';
+  import DeviceHistory from './DeviceHistory.vue';
   import RelativeTime from '@/components/ui/RelativeTime.vue';
   import ExposeRow from '@/components/entity/ExposeRow.vue';
   import DeviceChips from '@/components/entity/DeviceChips.vue';
@@ -120,7 +121,7 @@
         </div>
       </template>
       <SpatialPanel v-else-if="tab === DeviceTabIds.Presence" :device="device" />
-      <DeviceMetrics v-else-if="tab === DeviceTabIds.History" :id="device.id" />
+      <DeviceHistory v-else-if="tab === DeviceTabIds.History" :id="device.id" />
       <UiCard v-else-if="tab === DeviceTabIds.Settings" title="Settings on this hub" icon="settings">
         <UiButton v-if="device.connection_type === ConnectionTypes.ESPHome" icon="settings" @click="showESPHomeSettings = true">Manage ESPHome connection</UiButton>
         <DeviceSettings :id="device.id" />
