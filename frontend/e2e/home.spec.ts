@@ -637,7 +637,7 @@ test.describe('home dashboard', () => {
     await expect(emptyResults).toBeVisible();
   });
 
-  test('presence overview card renders as a full-width Home card', async ({ page }) => {
+  test('presence overview card renders with its own preview and links', async ({ page }) => {
     await page.route('**/api/hubstate', async (route) => {
       const response = await route.fetch();
       const body = await response.json();
