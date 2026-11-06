@@ -21,13 +21,18 @@
   .nh-presence-rail-wrap { min-width: 0; }
   .nh-presence-rail {
     display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(13rem, 16rem);
-    gap: 0.6rem;
-    overflow-x: auto;
-    overscroll-behavior-inline: contain;
-    scroll-snap-type: inline mandatory;
-    padding-block-end: 0.25rem;
+    gap: 0.4rem;
   }
-  .nh-presence-rail > * { scroll-snap-align: start; }
+  .nh-presence-rail > * { min-width: 0; }
+  @container (min-width: 34rem) {
+    .nh-presence-rail {
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(14rem, 1fr);
+      overflow-x: auto;
+      overscroll-behavior-inline: contain;
+      scroll-snap-type: inline mandatory;
+      padding-block-end: 0.25rem;
+    }
+    .nh-presence-rail > * { scroll-snap-align: start; }
+  }
 </style>

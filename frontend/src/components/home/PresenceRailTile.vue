@@ -25,14 +25,14 @@
 </script>
 
 <template>
-  <section ref="root" class="nh-rail-tile" :aria-label="`${device.friendly_name} presence`">
+  <section ref="root" class="nh-rail-tile" :class="{ 'has-preview': preview.hasFrame.value }" :aria-label="`${device.friendly_name} presence`">
     <header>
       <strong>{{ device.friendly_name }}</strong>
       <span class="nh-muted">{{ statusOf(device) }}</span>
     </header>
     <div v-if="preview.hasFrame.value" class="nh-rail-preview">
       <SpatialCanvas :workspace="preview.workspace.value" :tracks="preview.tracks.value" :occupancy="new Map()"
-        :scale="4000" :orientation="0" :online="preview.online.value" :mode="SpatialViewIds.Live"
+        :view-box="preview.viewBox.value" :scale="4000" :orientation="0" :online="preview.online.value" :mode="SpatialViewIds.Live"
         selected-id="" :trails="[]" :cells="[]" :show-grid="false" :show-room-context="false"
         :label="`${device.friendly_name} preview`" />
     </div>
@@ -50,10 +50,46 @@
 </template>
 
 <style scoped>
-  .nh-rail-tile { display: grid; gap: 0.35rem; padding: 0.6rem; border: 1px solid var(--nh-border); border-radius: var(--nh-radius); background: var(--nh-surface); min-width: 0; }
-  header { display: flex; justify-content: space-between; gap: 0.4rem; align-items: baseline; }
-  .nh-rail-preview :deep(svg) { width: 100%; height: auto; max-height: 8rem; }
-  .nh-rail-state { margin: 0; font-size: 0.85rem; }
+  .nh-rail-tile {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'header'
+      'state'
+      'actions';
+    align-items: center;
+    row-gap: 0.1rem;
+    min-width: 0;
+    padding: 0.45rem 0.5rem;
+    border-radius: var(--nh-radius);
+    background: var(--nh-surface-2);
+  }
+  .nh-rail-tile.has-preview {
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+    grid-template-areas:
+      'preview header'
+      'preview state'
+      'preview actions';
+    column-gap: 0.6rem;
+  }
+  header { grid-area: header; display: flex; justify-content: space-between; gap: 0.4rem; align-items: baseline; min-width: 0; }
+  header strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  header .nh-muted { flex: none; font-size: 0.75rem; text-transform: capitalize; }
+  .nh-rail-preview { grid-area: preview; width: 4.5rem; height: 4.5rem; overflow: hidden; border-radius: var(--nh-radius-s); background: var(--nh-surface); }
+  .nh-rail-preview :deep(svg) { display: block; width: 100%; height: 100%; }
+  .nh-rail-state { grid-area: state; margin: 0; font-size: 0.85rem; }
   .nh-rail-state .is-occupied { color: var(--nh-accent); }
-  .nh-rail-actions { display: flex; gap: 0.75rem; font-size: 0.85rem; }
+  .nh-rail-actions { grid-area: actions; display: flex; gap: 0.75rem; font-size: 0.8rem; }
+  @container (min-width: 34rem) {
+    .nh-rail-tile,
+    .nh-rail-tile.has-preview {
+      grid-template-columns: 1fr;
+      grid-template-areas: 'header' 'preview' 'state' 'actions';
+      align-items: stretch;
+      gap: 0.4rem;
+      padding: 0.6rem;
+    }
+    .nh-rail-preview { width: 100%; height: auto; max-height: 8rem; background: transparent; }
+    .nh-rail-preview :deep(svg) { width: 100%; height: auto; }
+  }
 </style>

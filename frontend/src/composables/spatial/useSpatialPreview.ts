@@ -4,6 +4,7 @@ import { findDevice, statusOf } from '@/composables/useHub';
 import { useDeviceSettings } from '@/composables/useDeviceSettings';
 import { copyWorkspace } from '@/domain/spatial/workspace';
 import { frameSamples } from '@/domain/spatial/frames';
+import { sensorProjectedPoint } from '@/domain/spatial/canvas';
 import type { SpatialDisplayTrack } from '@/domain/spatial/tracks';
 
 const PREVIEW_INTERVAL_MS = 500;
@@ -39,6 +40,19 @@ export function useSpatialPreview(deviceId: () => string, active: () => boolean)
   watch(frame, capture, { immediate: true });
   watch(active, (on) => { if (on) { lastUpdate = 0; capture(); } });
 
+  const viewBox = computed(() => {
+    const projected = samples.value.map((sample) => sensorProjectedPoint(sample, workspace.value.sensor, 0));
+    const points = [{ x: 0, y: 0 }, ...projected];
+    const xs = points.map((point) => point.x);
+    const ys = points.map((point) => point.y);
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
+    const pad = Math.max(750, Math.max(maxX - minX, maxY - minY) * 0.2);
+    return `${minX - pad} ${minY - pad} ${Math.max(2000, maxX - minX + pad * 2)} ${Math.max(2000, maxY - minY + pad * 2)}`;
+  });
+
   const tracks = computed<SpatialDisplayTrack[]>(() =>
     samples.value.map((sample) => ({
       id: sample.slot,
@@ -58,6 +72,7 @@ export function useSpatialPreview(deviceId: () => string, active: () => boolean)
 
   return {
     workspace,
+    viewBox,
     tracks,
     updatedAt,
     online: computed(() => !!device.value && statusOf(device.value) === 'online'),

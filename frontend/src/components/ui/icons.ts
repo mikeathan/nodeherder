@@ -29,6 +29,7 @@ export const ICONS = {
   overview: mdiViewDashboardOutline,
   home: mdiHomeOutline,
   devices: mdiDevices,
+  presence: mdiMotionSensor,
   list: mdiFormatListBulleted,
   automation: mdiRobotOutline,
   assistant: mdiCreationOutline,

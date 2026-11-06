@@ -73,6 +73,12 @@
   .nh-home-card.is-presence-overview {
     grid-column: 1 / -1;
   }
+  .nh-home-card.is-presence-overview {
+    display: block;
+  }
+  .nh-home-card.is-presence-overview > .nh-overview-card {
+    width: 100%;
+  }
   @media (max-width: 640px) {
     .nh-home-card.is-presence {
       grid-column: 1 / -1;
