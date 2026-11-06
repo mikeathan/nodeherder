@@ -13,7 +13,6 @@ export const SpatialHelpTopics = {
   Zones: 'zones',
   Room: 'room',
   Entry: 'entry',
-  Heatmap: 'heatmap',
 } as const;
 export type SpatialHelpTopic = (typeof SpatialHelpTopics)[keyof typeof SpatialHelpTopics];
 
@@ -22,7 +21,6 @@ export const SPATIAL_CONTEXT_HELP_LABELS: Readonly<Record<SpatialHelpTopic, stri
   zones: 'How to create zones',
   room: 'Help with Room Builder',
   entry: 'Help with Entry / Exit & Assumed Presence',
-  heatmap: 'Help with Heatmap & Analytics',
 };
 
 /** Accessible descriptions for the small help illustrations. */
@@ -30,7 +28,6 @@ export const SPATIAL_HELP_ILLUSTRATIONS: Readonly<Record<SpatialHelpTopic, strin
   zones: 'Diagram of detection, exclusion and entry zone shapes around a sensor',
   room: 'Diagram of a room outline with sensor, field of view and furniture',
   entry: 'Diagram of a doorway entry zone with an assumed-presence hold',
-  heatmap: 'Diagram of a heat grid from cool blue to hot red activity cells',
 };
 
 /** Stable spatial tab view ids. */

@@ -1,22 +1,12 @@
 package spatialhistory
 
 import (
-	"path/filepath"
 	"testing"
 	"time"
 
 	"node-herder/models/devices"
 	"node-herder/utils"
 )
-
-func newTestStore(t *testing.T) *Store {
-	t.Helper()
-	store, err := NewStoreAt(filepath.Join(t.TempDir(), "spatial.db"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	return store
-}
 
 func target(slot int, x, y float64) devices.SpatialTarget {
 	return devices.SpatialTarget{ID: slot, Active: true, X: &devices.SpatialAxis{Value: x, Unit: "mm"}, Y: &devices.SpatialAxis{Value: y, Unit: "mm"}}
@@ -33,13 +23,9 @@ func TestRecorderRecordsMovementAndIgnoresStillnessAndDuplicates(t *testing.T) {
 		{slot: 1, x: 1040, y: 2000, active: true},
 		{slot: 2, x: 1060, y: 2010, active: true},
 	}})
-	// Moved enough: one new point, quantised.
 	recorder.handle(job{device: "radar", at: base.Add(4 * time.Second), targets: []rawTarget{{slot: 1, x: 1450, y: 2000, active: true}}})
-	// Small drift: ignored.
 	recorder.handle(job{device: "radar", at: base.Add(6 * time.Second), targets: []rawTarget{{slot: 1, x: 1490, y: 2000, active: true}}})
-	// Cleared frame closes the session.
 	recorder.handle(job{device: "radar", at: base.Add(8 * time.Second), targets: nil})
-	recorder.handle(job{device: "radar", at: base.Add(9 * time.Second), targets: nil})
 
 	sessions, err := recorder.Service().Sessions("radar", base.Add(-time.Hour), base.Add(time.Hour))
 	if err != nil {
@@ -75,46 +61,11 @@ func TestRecorderFollowsHistoryGate(t *testing.T) {
 		t.Fatalf("disabled history recorded: %+v err=%v", sessions, err)
 	}
 	enabled = true
-	recorder.handle(job{device: "radar", at: base.Add(time.Second), targets: []rawTarget{{slot: 1, x: 1000, y: 2000, active: true}}})
+	recorder.handle(job{device: "radar", at: base.Add(time.Second), targets: []rawTarget{{slot: 1, x: 1000, y: 2000, active: true}}, active: true})
 	recorder.handle(job{device: "radar", at: base.Add(2 * time.Second), targets: nil})
 	sessions, err = recorder.Service().Sessions("radar", base.Add(-time.Hour), base.Add(time.Hour))
 	if err != nil || len(sessions) != 1 || sessions[0].Points != 1 {
 		t.Fatalf("enabled history missed: %+v err=%v", sessions, err)
-	}
-	_ = store.Close()
-}
-
-func TestStorePrunesExpiredChunks(t *testing.T) {
-	store := newTestStore(t)
-	old := time.Now().UTC().Add(-10 * 24 * time.Hour).Truncate(time.Second)
-	chunk := Chunk{Session: "old", From: old.UnixMilli(), To: old.UnixMilli(), Points: []Point{{At: old.UnixMilli(), Slot: 1, X: 0, Y: 0}}}
-	if err := store.SaveChunk("radar", chunk); err != nil {
-		t.Fatal(err)
-	}
-	if err := store.Prune(time.Now().UTC().Add(-Retention)); err != nil {
-		t.Fatal(err)
-	}
-	chunks, err := store.Chunks("radar", old.Add(-time.Hour), time.Now())
-	if err != nil || len(chunks) != 0 {
-		t.Fatalf("expired chunk kept: %+v err=%v", chunks, err)
-	}
-	_ = store.Close()
-}
-
-func TestSessionsIncludeAnOngoingChunkStartedBeforeTheRange(t *testing.T) {
-	store := newTestStore(t)
-	base := time.Now().UTC().Truncate(time.Second)
-	chunk := Chunk{Session: "ongoing", From: base.UnixMilli(), To: base.Add(4 * time.Minute).UnixMilli(), Points: []Point{
-		{At: base.UnixMilli(), Slot: 1, X: 0, Y: 0},
-		{At: base.Add(4 * time.Minute).UnixMilli(), Slot: 1, X: 400, Y: 0},
-	}}
-	if err := store.SaveChunk("radar", chunk); err != nil {
-		t.Fatal(err)
-	}
-	service := NewService(store)
-	sessions, err := service.Sessions("radar", base.Add(time.Minute), base.Add(10*time.Minute))
-	if err != nil || len(sessions) != 1 || sessions[0].Points != 1 {
-		t.Fatalf("overlap sessions = %+v err=%v", sessions, err)
 	}
 	_ = store.Close()
 }

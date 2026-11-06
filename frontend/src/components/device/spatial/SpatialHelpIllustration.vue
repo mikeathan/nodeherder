@@ -40,29 +40,6 @@
       <text x="238" y="70" class="label small">hold</text>
       <text x="42" y="116" class="label small">Doorway</text>
     </svg>
-    <svg v-else viewBox="0 0 340 132" role="img" :aria-label="SPATIAL_HELP_ILLUSTRATIONS.heatmap">
-      <rect x="8" y="8" width="324" height="116" rx="14" class="frame" />
-      <defs>
-        <linearGradient id="heat-scale" x1="0" x2="1" y1="0" y2="0">
-          <stop offset="0%" stop-color="#3f6fb5" />
-          <stop offset="45%" stop-color="#4f8bd8" />
-          <stop offset="70%" stop-color="#e0b44a" />
-          <stop offset="100%" stop-color="#d95a4e" />
-        </linearGradient>
-      </defs>
-      <g class="heat">
-        <rect x="38" y="34" width="38" height="38" rx="4" />
-        <rect x="78" y="34" width="38" height="38" rx="4" class="warm" />
-        <rect x="118" y="34" width="38" height="38" rx="4" class="hot" />
-        <rect x="38" y="74" width="38" height="38" rx="4" class="cool" />
-        <rect x="78" y="74" width="38" height="38" rx="4" />
-        <rect x="118" y="74" width="38" height="38" rx="4" class="warm" />
-      </g>
-      <rect x="196" y="58" width="112" height="14" rx="7" fill="url(#heat-scale)" />
-      <text x="198" y="48" class="label small">Low</text>
-      <text x="278" y="48" class="label small">High</text>
-      <text x="196" y="98" class="label small">Target-seconds</text>
-    </svg>
     <figcaption>Illustration only. Overlays never change firmware or automations.</figcaption>
   </figure>
 </template>
