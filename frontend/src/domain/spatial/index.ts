@@ -15,6 +15,8 @@ export const SPATIAL_MAX_AGE_MS = 5000;
 export const SPATIAL_FRESHNESS_TICK_MS = 1000;
 /** Default graphical range in millimetres. */
 export const SPATIAL_DEFAULT_SCALE_MM = 6000;
+/** Illustrative cone used when a device has no configured field-of-view angle. */
+export const SPATIAL_ILLUSTRATIVE_FOV = 90;
 /** Default view rotation in degrees. */
 export const SPATIAL_DEFAULT_ORIENTATION = 0;
 

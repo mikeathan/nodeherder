@@ -40,18 +40,48 @@ export function registerRoutes(app) {
     base64Url(Buffer.from(Array.from({ length: len }, () => Math.floor(Math.random() * 256))));
   // Register HTTP GET route for /hubstate
 
-  // Recorded spatial history fixture: one session with two points and simple heat cells.
+  // Recorded spatial history fixture: three sessions separated by gaps, so the range timeline,
+  // movement episodes, next-movement and the recordings rail all have something to show.
+  const spatialOffsets = {
+    'mock-session-morning': [0, 1_000, 2_000, 3_000, 143_000, 144_000],
+    'mock-session-afternoon': [0, 1_000, 2_000],
+    'mock-session-evening': [0, 1_000, 2_000, 3_000, 4_000],
+  };
+  const spatialBases = (now) => ({
+    'mock-session-morning': now - 7_200_000,
+    'mock-session-afternoon': now - 3_600_000,
+    'mock-session-evening': now - 900_000,
+  });
+  const spatialSessions = (now) => {
+    const bases = spatialBases(now);
+    return Object.entries(spatialOffsets).map(([id, offsets]) => ({
+      id,
+      from: bases[id],
+      to: bases[id] + offsets[offsets.length - 1],
+      points: offsets.length,
+      slots: [1],
+      capped: false,
+    }));
+  };
+  const spatialPoints = (now, session) => {
+    const base = spatialBases(now)[session];
+    const offsets = spatialOffsets[session];
+    if (base === undefined || !offsets) return [];
+    return offsets.map((offset, index) => ({
+      at: base + offset,
+      slot: 1,
+      x: index * 400,
+      y: 2000,
+    }));
+  };
   app.get('/api/spatial/history', (req, res) => {
     const now = Date.now();
     const mode = String(req.query.mode ?? 'sessions');
     if (mode === 'sessions') {
-      return res.json([{ id: 'mock-session', from: now - 600_000, to: now - 540_000, points: 2, slots: [1], capped: false }]);
+      return res.json(spatialSessions(now));
     }
     if (mode === 'points') {
-      return res.json([
-        { at: now - 600_000, slot: 1, x: 0, y: 2000 },
-        { at: now - 540_000, slot: 1, x: 500, y: 2000 },
-      ]);
+      return res.json(spatialPoints(now, String(req.query.session ?? '')));
     }
     return res.json([{ x: 0, y: 2000, count: 2 }]);
   });

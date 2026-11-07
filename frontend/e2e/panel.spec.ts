@@ -223,7 +223,7 @@ test('room keyboard focus follows selection and modal controls never change room
   await expect(tabs.nth(1)).toHaveAttribute('aria-selected', 'true');
 });
 
-test('panel disconnect notices leave the dock usable in narrow and short viewports', async ({ page }, testInfo) => {
+test('panel disconnect status leaves the dock usable in narrow and short viewports', async ({ page }, testInfo) => {
   let disconnected = false;
   let disconnect: (() => Promise<void>) | undefined;
   await page.routeWebSocket('ws://localhost:4110/ws', (socket) => {
@@ -232,13 +232,12 @@ test('panel disconnect notices leave the dock usable in narrow and short viewpor
   });
   await signIn(page, '/panel');
   disconnected = true; await disconnect?.();
-  const notice = page.getByRole('complementary', { name: 'Connection notices' });
-  await expect(notice).toBeVisible();
+  const chip = page.locator('.nh-conn:not([aria-hidden="true"])');
+  await expect(chip).toHaveClass(/is-reconnecting/);
+  await expect(chip).toHaveClass(/is-attention/);
   for (const viewport of [{ width: 320, height: 844 }, { width: 844, height: 390 }]) {
     await page.setViewportSize(viewport);
     const dock = (await page.getByRole('navigation', { name: 'Panel', exact: true }).boundingBox())!;
-    const bounds = (await notice.boundingBox())!;
-    expect(bounds.y + bounds.height).toBeLessThanOrEqual(dock.y);
     expect(dock.y + dock.height).toBeLessThanOrEqual(viewport.height);
     await page.getByRole('button', { name: 'Status', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Status', exact: true })).toHaveAttribute('aria-pressed', 'true');
@@ -246,8 +245,11 @@ test('panel disconnect notices leave the dock usable in narrow and short viewpor
   }
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: testInfo.outputPath('panel-notice-clear-of-dock.png'), fullPage: true, scale: 'css' });
-  await notice.getByRole('button', { name: 'Dismiss connection notices' }).click();
-  await expect(notice).toBeHidden();
+  await chip.click();
+  await expect(page.getByRole('dialog', { name: 'Connection' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog', { name: 'Connection' })).toHaveCount(0);
+  await expect(chip).toHaveClass(/is-reconnecting/);
   await page.getByRole('navigation', { name: 'Panel', exact: true }).getByRole('link', { name: 'Exit panel', exact: true }).click();
   await expect(page).toHaveURL(/\/groupdashboard$/);
 });

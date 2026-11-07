@@ -9,7 +9,8 @@
   import { useSpatialView } from '@/composables/spatial/useSpatialView';
   import { useWorkspaceEditor } from '@/composables/spatial/useWorkspaceEditor';
   import { useDerivedPresence } from '@/composables/spatial/useDerivedPresence';
-  import { formatSpatialDistance, radarGridSpacing, spatialTrackRows } from '@/domain/spatial/radar';
+  import { formatSpatialDistance, radarGridSpacing, radarViewBox, spatialTrackRows } from '@/domain/spatial/radar';
+  import { SPATIAL_ILLUSTRATIVE_FOV } from '@/domain/spatial';
   import { SPATIAL_SMOOTHING_OPTIONS } from '@/domain/spatial/smoothing';
   import {
     DEFAULT_SPATIAL_VIEW,
@@ -28,6 +29,7 @@
   import SpatialDisplayOptions from './SpatialDisplayOptions.vue';
   import SpatialHelp from './SpatialHelp.vue';
   import SpatialCanvas from './SpatialCanvas.vue';
+  import SpatialViewer from './SpatialViewer.vue';
   import SpatialZoneDevice from './SpatialZoneDevice.vue';
   import SpatialZoneEditor from './SpatialZoneEditor.vue';
   import SpatialRoomBuilder from './SpatialRoomBuilder.vue';
@@ -90,7 +92,12 @@
   const mode = ref<SpatialViewId>(DEFAULT_SPATIAL_VIEW);
   const helpOpen = ref(false);
   const showGrid = ref(true);
+  const showFov = ref(false);
+  const zoom = ref(1);
   const showRoomContext = ref(true);
+  const displayFov = computed(() =>
+    workspace.value.sensor.fov > 0 ? workspace.value.sensor.fov : SPATIAL_ILLUSTRATIVE_FOV
+  );
   const rows = computed(() => spatialTrackRows(tracks.value));
   const derived = useDerivedPresence(() => props.device);
   // The hub is authoritative for zone occupancy once it derives it; the client map remains
@@ -184,42 +191,54 @@
     <div v-if="isSpatialEditView(mode)" class="nh-edit-actions">
       <UiButton size="sm" variant="ghost" :disabled="!undoStack.length" @click="undo">Undo last edit</UiButton>
     </div>
-    <details v-if="primaryMode !== 'setup'" class="nh-display-options">
-      <summary>Display</summary>
-      <div class="nh-presence-controls">
-        <label class="nh-field">
-          <span class="nh-label">Smoothing</span>
-          <select v-model="smoothing" class="nh-input">
-            <option v-for="option in SPATIAL_SMOOTHING_OPTIONS" :key="option.value" :value="option.value">{{ option.label }}</option>
-          </select>
-        </label>
-        <SpatialDisplayOptions :scale="scale" :orientation="orientation" @update:scale="scale = $event" @update:orientation="orientation = $event" />
-        <label class="nh-presence-toggle"><input v-model="showRaw" type="checkbox" /> Raw</label>
-        <label class="nh-presence-toggle"><input v-model="showGrid" type="checkbox" /> Grid</label>
-      </div>
-    </details>
 
     <div class="nh-spatial-workspace" :class="{ 'has-editor': isSpatialEditView(mode) }">
       <div v-if="showCanvas" class="nh-spatial-scene">
-        <SpatialCanvas
-          :workspace="workspace"
-          :tracks="tracks"
-          :occupancy="canvasOccupancy"
-          :show-raw="showRaw"
-          :scale="scale"
-          :orientation="orientation"
-          :online="online"
-          :mode="mode"
-          :selected-id="selectedId"
-          :trails="[]"
-          :cells="[]"
-          :show-grid="showGrid"
-          :show-room-context="showRoomContext"
-          @select="selectedId = $event"
-          @gesture-start="beginGesture"
-          @gesture-end="endGesture"
-          @move="moveSelected"
-          @vertex="setVertex" />
+        <SpatialViewer
+          v-model:zoom="zoom"
+          v-model:show-grid="showGrid"
+          v-model:show-fov="showFov"
+          :base-view-box="radarViewBox(scale)"
+          :fov-angle="displayFov"
+          :edit-mode="isSpatialEditView(mode)"
+          :reset-key="mode">
+          <template #default="{ viewBox, panMode }">
+            <SpatialCanvas
+              :workspace="workspace"
+              :tracks="tracks"
+              :occupancy="canvasOccupancy"
+              :show-raw="showRaw"
+              :scale="scale"
+              :orientation="orientation"
+              :online="online"
+              :mode="mode"
+              :selected-id="selectedId"
+              :trails="[]"
+              :cells="[]"
+              :view-box="viewBox"
+              :pan-mode="panMode"
+              :show-grid="showGrid"
+              :show-fov="showFov"
+              :fov-angle="displayFov"
+              :ui-scale="zoom"
+              :show-room-context="showRoomContext"
+              @select="selectedId = $event"
+              @gesture-start="beginGesture"
+              @gesture-end="endGesture"
+              @move="moveSelected"
+              @vertex="setVertex" />
+          </template>
+          <template #extra>
+            <label class="nh-field">
+              <span class="nh-label">Smoothing</span>
+              <select v-model="smoothing" class="nh-input">
+                <option v-for="option in SPATIAL_SMOOTHING_OPTIONS" :key="option.value" :value="option.value">{{ option.label }}</option>
+              </select>
+            </label>
+            <SpatialDisplayOptions :scale="scale" :orientation="orientation" @update:scale="scale = $event" @update:orientation="orientation = $event" />
+            <label class="nh-presence-toggle"><input v-model="showRaw" type="checkbox" /> Raw</label>
+          </template>
+        </SpatialViewer>
         <div class="nh-presence-readout">
           <p class="nh-muted">{{ serverPresence }}</p>
           <p class="nh-muted">
@@ -377,16 +396,6 @@
     background: var(--nh-surface-2);
     border-radius: var(--nh-radius-m);
   }
-  .nh-presence-controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem 1rem;
-    align-items: flex-end;
-    margin-block: 0.75rem;
-    padding: 0.6rem 0.75rem;
-    border: 1px solid var(--nh-border);
-    border-radius: var(--nh-radius-m);
-  }
   /* Checkboxes sit on the same baseline as the select controls without a stacked label. */
   .nh-presence-toggle {
     display: inline-flex;
@@ -395,9 +404,6 @@
     height: var(--nh-ctl-h);
     font-size: 0.9rem;
     white-space: nowrap;
-  }
-  .nh-presence-controls > :deep(.nh-spatial-options) {
-    margin: 0;
   }
   .nh-spatial-workspace {
     display: grid;

@@ -40,6 +40,7 @@
   import { screenPoint, sensorPoint } from '@/domain/spatial/workspace';
   import { radarGridOffsets, radarViewBox, rotatePoint } from '@/domain/spatial/radar';
   import { SpatialViewIds, isSpatialEditView, type SpatialViewId } from '@/domain/spatial/view';
+  import { ICONS } from '@/components/ui/icons';
 
   const props = defineProps<{
     workspace: SpatialWorkspace;
@@ -56,6 +57,22 @@
     cells: HeatCell[];
     showGrid: boolean;
     showRoomContext: boolean;
+    /** Trailing path segment drawn brighter than `trails`; omitted by live surfaces. */
+    recentTrails?: { id: number; targets: SpatialTarget[] }[];
+    /** Connectors between the previous and current sample, explained as a jump. */
+    hopLinks?: { from: SpatialPoint; to: SpatialPoint }[];
+    /** Timestamp of the current sample; a new value restarts the pulse ring. */
+    pulseAt?: number;
+    /** Divides labels and markers so a zoomed viewBox keeps them readable. */
+    uiScale?: number;
+    /** Text halo width in view units; the zoomed Positions surface scales it with uiScale. */
+    labelStroke?: number;
+    /** Hide the illustrative field-of-view cone without changing the saved angle. */
+    showFov?: boolean;
+    /** Display-only FOV angle, used when the device has no configured angle. */
+    fovAngle?: number;
+    /** Panning suspends editing so the drag cannot also move a zone or handle. */
+    panMode?: boolean;
     /** Explicit view box for auto-fitted surfaces; the panel range selector omits it. */
     viewBox?: string;
     /** Draw unfiltered source positions instead of filtered ones (evidence view). */
@@ -78,9 +95,35 @@
   const displayViewBox = computed(() => props.viewBox ?? radarViewBox(props.scale));
   const offsets = computed(() => radarGridOffsets(props.scale));
   const selected = computed(() => props.workspace.zones.find((zone) => zone.id === props.selectedId));
+  // Positions zoom shrinks the viewBox; dividing symbols keeps labels and dots legible.
+  const symbolScale = computed(() => props.uiScale ?? 1);
+  const labelStrokeWidth = computed(() => props.labelStroke ?? 8);
+  // Device marker: fixed on-screen size, with the presence glyph inside a filled disc.
+  const deviceRadius = computed(
+    () => (props.scale * CANVAS_SENSOR_RADIUS_RATIO) / symbolScale.value
+  );
+  const deviceIcon = ICONS.presence;
   const sensor = computed(() => screenPoint(props.workspace.sensor, props.orientation));
-  const fov = computed(() => fovPolygon(props.scale, props.workspace.sensor, props.orientation));
-  const editable = computed(() => isSpatialEditView(props.mode));
+  /** Clamps the device to the visible edge so zooming never makes it vanish silently. */
+  const devicePoint = computed(() => {
+    const [x, y, width, height] = displayViewBox.value.split(' ').map(Number);
+    const margin = Math.min(width, height) * 0.06;
+    const point = {
+      x: Math.min(Math.max(sensor.value.x, x + margin), x + width - margin),
+      y: Math.min(Math.max(sensor.value.y, y + margin), y + height - margin),
+    };
+    return { ...point, offscreen: point.x !== sensor.value.x || point.y !== sensor.value.y };
+  });
+  const fov = computed(() =>
+    fovPolygon(
+      props.scale,
+      props.fovAngle === undefined
+        ? props.workspace.sensor
+        : { ...props.workspace.sensor, fov: props.fovAngle },
+      props.orientation
+    )
+  );
+  const editable = computed(() => isSpatialEditView(props.mode) && !props.panMode);
   const heatmap = computed(() => props.mode === SpatialViewIds.Heatmap);
   const canvasLabel = computed(
     () => props.label ?? 'Live room canvas with sensor, zones and target positions. Numeric editing controls and target list follow.'
@@ -92,6 +135,16 @@
   const zones = computed(() => (heatmap.value ? [] : props.workspace.zones));
   const tracks = computed(() => (heatmap.value ? [] : props.tracks));
   const trails = computed(() => (heatmap.value ? [] : props.trails));
+  // Optional Position-player cues; live surfaces pass none, so nothing changes for them.
+  const recentTrails = computed(() => (heatmap.value ? [] : props.recentTrails ?? []));
+  const hopLinks = computed(() =>
+    heatmap.value
+      ? []
+      : (props.hopLinks ?? []).map((link) => ({
+          from: projected(link.from),
+          to: projected(link.to),
+        }))
+  );
 
   function projected(point: SpatialPoint) {
     return sensorProjectedPoint(point, props.workspace.sensor, props.orientation);
@@ -116,7 +169,7 @@
         });
         heading = { x: ahead.x - point.x, y: ahead.y - point.y };
       }
-      return { key: track.id, label: track.label, state: track.state, colorIndex: track.colorIndex, point, heading };
+      return { key: track.id, label: track.label, state: track.state, colorIndex: track.colorIndex, at: track.at, point, heading };
     })
   );
   function zonePoints(points: readonly SpatialPoint[]) {
@@ -173,6 +226,7 @@
     ref="svg"
     class="nh-spatial-canvas"
     :class="{ 'is-editable': editable }"
+    :style="{ '--nh-label-stroke': labelStrokeWidth }"
     :viewBox="displayViewBox"
     role="img"
     :aria-label="canvasLabel"
@@ -187,7 +241,6 @@
       </template>
     </g>
     <polygon v-if="contextVisible && workspace.outline.length" :points="outlinePoints(workspace.outline)" class="nh-outline" />
-    <polygon v-if="contextVisible && !heatmap && fov" :points="fov" class="nh-fov" />
     <g
       v-for="item in objects"
       :key="item.id"
@@ -195,8 +248,8 @@
       <polygon :points="objectPoints(item)" :class="['nh-object', item.kind, { 'is-selected': selectedId === item.id, 'is-context': heatmap }]" />
       <text
         :x="screenPoint(item, orientation).x"
-        :y="screenPoint(item, orientation).y + scale * CANVAS_OBJECT_LABEL_OFFSET_RATIO"
-        :font-size="scale * CANVAS_OBJECT_FONT_RATIO">
+        :y="screenPoint(item, orientation).y + scale * CANVAS_OBJECT_LABEL_OFFSET_RATIO / symbolScale"
+        :font-size="scale * CANVAS_OBJECT_FONT_RATIO / symbolScale">
         {{ item.name }}
       </text>
     </g>
@@ -208,6 +261,8 @@
       :opacity="HEAT_CELL_OPACITY">
       <title>{{ cell.count }} target-second samples</title>
     </polygon>
+    <!-- Above heat cells so the illustrative cone is visible on the heatmap as well. -->
+    <polygon v-if="contextVisible && showFov !== false && fov" :points="fov" class="nh-fov" />
     <g v-for="zone in zones" :key="zone.id" @pointerdown="mode === SpatialViewIds.Zones && start($event, zone.id)">
       <polygon
         :points="zonePoints(zone.points)"
@@ -221,27 +276,50 @@
         ]" />
       <text
         :x="projected(zone.points[0]).x"
-        :y="projected(zone.points[0]).y - scale * CANVAS_ZONE_LABEL_OFFSET_RATIO"
-        :font-size="scale * CANVAS_ZONE_FONT_RATIO">
+        :y="projected(zone.points[0]).y - scale * CANVAS_ZONE_LABEL_OFFSET_RATIO / symbolScale"
+        :font-size="scale * CANVAS_ZONE_FONT_RATIO / symbolScale">
         {{ zone.name }} · {{ zone.kind }}
       </text>
     </g>
     <polyline v-for="(trail, index) in trails" :key="index" :points="trailPoints(trail.targets)" class="nh-trail" />
+    <polyline v-for="(trail, index) in recentTrails" :key="`recent-${index}`" :points="trailPoints(trail.targets)" class="nh-trail is-recent" />
+    <line
+      v-for="(link, index) in hopLinks"
+      :key="`hop-${index}`"
+      :x1="link.from.x"
+      :y1="link.from.y"
+      :x2="link.to.x"
+      :y2="link.to.y"
+      class="nh-hop" />
     <g v-for="track in renderedTracks" :key="track.key" :transform="`translate(${track.point.x} ${track.point.y})`">
+      <circle
+        v-if="pulseAt && track.at === pulseAt"
+        :key="`pulse-${pulseAt}`"
+        :r="scale * CANVAS_TARGET_RADIUS_RATIO * (targetScale ?? 1) / symbolScale"
+        class="nh-pulse" />
       <line v-if="track.heading" :x1="0" :y1="0" :x2="track.heading.x" :y2="track.heading.y" class="nh-heading" />
       <circle
-        :r="scale * CANVAS_TARGET_RADIUS_RATIO * (targetScale ?? 1)"
+        :r="scale * CANVAS_TARGET_RADIUS_RATIO * (targetScale ?? 1) / symbolScale"
         :class="['nh-target', `is-${track.state}`, `is-color-${track.colorIndex}`, { 'is-raw': showRaw }]" />
-      <text v-if="showTargetLabels !== false" :x="scale * CANVAS_TARGET_LABEL_X_RATIO" :y="scale * CANVAS_TARGET_LABEL_Y_RATIO" :font-size="scale * CANVAS_TARGET_FONT_RATIO">
+      <text v-if="showTargetLabels !== false" :x="scale * CANVAS_TARGET_LABEL_X_RATIO / symbolScale" :y="scale * CANVAS_TARGET_LABEL_Y_RATIO / symbolScale" :font-size="scale * CANVAS_TARGET_FONT_RATIO / symbolScale">
         {{ track.label }}
       </text>
     </g>
     <template v-if="contextVisible">
-      <circle :cx="sensor.x" :cy="sensor.y" :r="scale * CANVAS_SENSOR_RADIUS_RATIO" class="nh-sensor" />
+      <g
+        :transform="`translate(${devicePoint.x} ${devicePoint.y})`"
+        :class="['nh-device', { 'is-offscreen': devicePoint.offscreen }]">
+        <title>{{ devicePoint.offscreen ? 'Sensor (off-screen)' : 'Sensor' }}</title>
+        <circle :r="deviceRadius" class="nh-device-bg" />
+        <g :transform="`scale(${deviceRadius / 15}) translate(-12 -12)`">
+          <path :d="deviceIcon" class="nh-device-icon" />
+        </g>
+      </g>
       <text
-        :x="sensor.x + scale * CANVAS_SENSOR_LABEL_X_RATIO"
-        :y="sensor.y + scale * CANVAS_SENSOR_LABEL_Y_RATIO"
-        :font-size="scale * CANVAS_SENSOR_FONT_RATIO">
+        v-if="!devicePoint.offscreen"
+        :x="devicePoint.x + scale * CANVAS_SENSOR_LABEL_X_RATIO / symbolScale"
+        :y="devicePoint.y + scale * CANVAS_SENSOR_LABEL_Y_RATIO / symbolScale"
+        :font-size="scale * CANVAS_SENSOR_FONT_RATIO / symbolScale">
         Sensor
       </text>
     </template>
@@ -372,14 +450,26 @@
     stroke-linecap: round;
     pointer-events: none;
   }
-  .nh-sensor {
+  .nh-device {
+    pointer-events: none;
+  }
+  .nh-device-bg {
     fill: var(--nh-text);
+  }
+  .nh-device-icon {
+    fill: var(--nh-surface);
+  }
+  .nh-device.is-offscreen .nh-device-bg {
+    fill: var(--nh-surface-2);
+  }
+  .nh-device.is-offscreen .nh-device-icon {
+    fill: var(--nh-text-muted);
   }
   text {
     fill: var(--nh-text);
     paint-order: stroke;
     stroke: var(--nh-surface);
-    stroke-width: 8;
+    stroke-width: var(--nh-label-stroke, 8);
     pointer-events: none;
   }
   .nh-trail {
@@ -388,6 +478,42 @@
     stroke-opacity: 0.35;
     stroke-width: 3;
     pointer-events: none;
+  }
+  .nh-trail.is-recent {
+    stroke-opacity: 0.95;
+    stroke-width: 6;
+  }
+  .nh-hop {
+    stroke: var(--nh-text-muted);
+    stroke-width: 5;
+    stroke-dasharray: 14 10;
+    stroke-opacity: 0.75;
+    pointer-events: none;
+  }
+  .nh-pulse {
+    fill: none;
+    stroke: var(--nh-accent);
+    stroke-width: 4;
+    pointer-events: none;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: nh-target-pulse 900ms ease-out;
+  }
+  @keyframes nh-target-pulse {
+    from {
+      opacity: 0.9;
+      transform: scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: scale(2.6);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .nh-pulse {
+      animation: none;
+      opacity: 0.5;
+    }
   }
   .nh-handle {
     fill: var(--nh-surface);

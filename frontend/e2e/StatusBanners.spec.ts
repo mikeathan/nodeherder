@@ -1,7 +1,7 @@
 import { test, expect, signIn, HUB_API } from './support/fixtures';
 import { ui } from './support/ui';
 
-// Production owner: src/components/shell/StatusBanners.vue.
+// Production owner: src/components/shell/ConnectionStatus.vue.
 async function observeWarnings(page: import('@playwright/test').Page) {
   await page.addInitScript(() => {
     const seen: string[] = [];
@@ -25,17 +25,17 @@ for (const flow of ['OAuth', 'cookie']) {
       await page.goto('/');
     }
     await expect(ui.home.groupTitles(page).first()).toBeVisible();
-    await expect(page.locator('.nh-conn.is-connected')).toBeVisible();
+    await expect(page.locator('.nh-conn:not([aria-hidden="true"]).is-connected')).toBeVisible();
     expect(await page.evaluate(() => Reflect.get(window, 'startupWarnings'))).toEqual([]);
     await page.reload();
-    await expect(page.locator('.nh-conn.is-connected')).toBeVisible();
+    await expect(page.locator('.nh-conn:not([aria-hidden="true"]).is-connected')).toBeVisible();
     expect(await page.evaluate(() => Reflect.get(window, 'startupWarnings'))).toEqual([]);
   });
 }
 
 test('delayed successful session validation has no outage warning', async ({ page }) => {
   await signIn(page);
-  await expect(page.locator('.nh-conn.is-connected')).toBeVisible();
+  await expect(page.locator('.nh-conn:not([aria-hidden="true"]).is-connected')).toBeVisible();
   let release!: () => void;
   const gate = new Promise<void>((resolve) => { release = resolve; });
   await page.route(`${HUB_API}/auth/me`, async (route) => { await gate; await route.continue(); });
@@ -44,7 +44,7 @@ test('delayed successful session validation has no outage warning', async ({ pag
     await expect(page.locator('#nh-content')).toBeAttached();
     await expect(page.locator('.nh-banner.is-danger,.nh-banner.is-warn')).toHaveCount(0);
     release();
-    await expect(page.locator('.nh-conn.is-connected')).toBeVisible();
+    await expect(page.locator('.nh-conn:not([aria-hidden="true"]).is-connected')).toBeVisible();
   } finally { release(); }
 });
 
@@ -57,12 +57,15 @@ test('snapshot failure and retry preserve socket truth and content position', as
   });
   try {
     await signIn(page);
-    await expect(page.locator('.nh-conn.is-connected')).toBeVisible();
+    const chip = page.locator('.nh-conn:not([aria-hidden="true"])');
+    await expect(chip).toHaveClass(/is-connected/);
     const before = await page.locator('#nh-content').boundingBox();
     release();
+    await expect(chip).toHaveClass(/is-attention/);
+    await chip.click();
     const retry = page.getByRole('button', { name: 'Retry loading home' });
     await expect(retry).toBeVisible();
-    await expect(page.locator('.nh-conn.is-connected')).toBeVisible();
+    await expect(chip).toHaveClass(/is-connected/);
     expect((await page.locator('#nh-content').boundingBox())?.y).toBe(before?.y);
     await page.screenshot({ path: testInfo.outputPath('snapshot-failure.png') });
     await retry.focus();
@@ -70,14 +73,16 @@ test('snapshot failure and retry preserve socket truth and content position', as
     await page.unroute(`${HUB_API}/hubstate`);
     await page.keyboard.press('Enter');
     await expect(retry).toHaveCount(0);
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog', { name: 'Connection' })).toHaveCount(0);
     await expect(ui.home.groupTitles(page).first()).toBeVisible();
-    await expect(page.locator('.nh-conn.is-connected')).toBeVisible();
+    await expect(chip).toHaveClass(/is-connected/);
     expect((await page.locator('#nh-content').boundingBox())?.y).toBe(before?.y);
   } finally { release(); }
 });
 
 for (const path of ['/groupdashboard', '/panel']) {
-  test(`actual connection loss on ${path} does not move content and can be dismissed`, async ({ page }, testInfo) => {
+  test(`actual connection loss on ${path} keeps content stable and opens the header status`, async ({ page }, testInfo) => {
     let unavailable = false;
     let close!: () => void;
     await page.routeWebSocket('ws://localhost:4110/ws', (socket) => {
@@ -86,25 +91,26 @@ for (const path of ['/groupdashboard', '/panel']) {
       close = () => socket.close({ code: 1012 });
     });
     await signIn(page, path);
-    await expect(page.locator('.nh-conn.is-connected')).toBeVisible();
+    const chip = page.locator('.nh-conn:not([aria-hidden="true"])');
+    await expect(chip).toHaveClass(/is-connected/);
     const content = page.locator('#nh-content');
     const before = await content.boundingBox();
     unavailable = true;
     close();
-    await expect(page.getByText('Reconnecting.', { exact: true })).toBeVisible();
+    await expect(chip).toHaveClass(/is-reconnecting/);
+    await expect(chip).toHaveClass(/is-attention/);
     expect((await content.boundingBox())?.y).toBe(before?.y);
+    await chip.click();
+    await expect(page.getByText('Reconnecting.', { exact: true })).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath('connection-loss.png') });
-    const dismiss = page.getByRole('button', { name: 'Dismiss connection notices' });
-    await dismiss.focus();
-    await page.keyboard.press('Enter');
-    await expect(page.getByText('Reconnecting.', { exact: true })).toHaveCount(0);
-    await expect(page.locator('.nh-conn')).toBeFocused();
-    await expect(page.locator('.nh-conn.is-reconnecting')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog', { name: 'Connection' })).toHaveCount(0);
+    await expect(chip).toHaveClass(/is-reconnecting/);
     unavailable = false;
-    await expect(page.locator('.nh-conn.is-connected')).toBeVisible({ timeout: 10000 });
+    await expect(chip).toHaveClass(/is-connected/, { timeout: 10000 });
     unavailable = true;
     close();
-    await expect(page.getByText('Reconnecting.', { exact: true })).toBeVisible();
+    await expect(chip).toHaveClass(/is-reconnecting/);
     unavailable = false;
     expect((await content.boundingBox())?.y).toBe(before?.y);
   });
@@ -117,7 +123,7 @@ test('permit countdown survives panel navigation and resets for the next confirm
     send = (permitJoin) => socket.send(JSON.stringify({ type: 'bridgeConfig', payload: { permitJoin, maxTimeAllowed: { value: 120, unit: 'seconds' } } }));
   });
   await signIn(page, '/groupdashboard');
-  await expect(page.locator('.nh-conn.is-connected')).toBeVisible();
+  await expect(page.locator('.nh-conn:not([aria-hidden="true"]).is-connected')).toBeVisible();
   send(true);
   const banner = page.getByRole('status').filter({ hasText: 'Permit join is open' });
   await expect(banner).toContainText('2:00 left');

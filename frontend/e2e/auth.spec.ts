@@ -112,12 +112,16 @@ test.describe('sign in', () => {
     await expect(ui.home.groupTitles(page).first()).toBeVisible();
     await page.route(`${HUB_API}/auth/me`, (route) => route.fulfill({ status: 503, json: {} }));
     await page.reload();
+    const chip = page.locator('.nh-conn:not([aria-hidden="true"])');
+    await expect(chip).toHaveClass(/is-attention/);
+    await chip.click();
     const retry = page.getByRole('button', { name: 'Retry session check' });
     await expect(retry).toBeVisible();
     await expect(ui.login.signInButton(page)).toHaveCount(0);
     await page.unroute(`${HUB_API}/auth/me`);
     await retry.click();
     await expect(retry).toHaveCount(0);
+    await page.keyboard.press('Escape');
     await expect(ui.home.groupTitles(page).first()).toBeVisible();
     await page.route(`${HUB_API}/auth/me`, (route) => route.fulfill({ status: 401, json: {} }));
     await page.reload();
@@ -129,10 +133,15 @@ test.describe('sign in', () => {
     await expect(ui.home.groupTitles(page).first()).toBeVisible();
     await page.route(`${HUB_API}/auth/me`, (route) => route.abort('failed'));
     await page.reload();
-    await expect(page.getByRole('button', { name: 'Retry session check' })).toBeVisible();
+    const chip = page.locator('.nh-conn:not([aria-hidden="true"])');
+    await expect(chip).toHaveClass(/is-attention/);
+    await chip.click();
+    const retry = page.getByRole('button', { name: 'Retry session check' });
+    await expect(retry).toBeVisible();
     await page.unroute(`${HUB_API}/auth/me`);
     await page.evaluate(() => window.dispatchEvent(new Event('online')));
-    await expect(page.getByRole('button', { name: 'Retry session check' })).toHaveCount(0);
+    await expect(retry).toHaveCount(0);
+    await page.keyboard.press('Escape');
     await expect(ui.home.groupTitles(page).first()).toBeVisible();
   });
 

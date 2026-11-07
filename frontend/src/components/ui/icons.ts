@@ -52,6 +52,7 @@ export const ICONS = {
   back: mdiArrowLeft,
   menu: mdiMenu,
   more: mdiDotsVertical,
+  tune: mdiTune,
   drag: mdiDragVertical,
   moveUp: mdiArrowUp,
   moveDown: mdiArrowDown,
