@@ -17,6 +17,7 @@
     POSITIONS_IDLE_GAP_MS,
     POSITIONS_LAST_KNOWN_MS,
     clock,
+    idleSpans,
     playedDistanceMm,
     sessionSegments,
     trailGroups,
@@ -257,6 +258,21 @@
     return latest;
   });
 
+  /**
+   * Gaps without a recorded sample, including the head and tail of the session. These are the
+   * same spans the transport draws as stripes, so the target indicator and the idle label
+   * cover the whole gap instead of only the part past the 10 s threshold.
+   */
+  const idleGaps = computed(() =>
+    activeSession.value
+      ? idleSpans(points.value, activeSession.value.from, activeSession.value.to)
+      : []
+  );
+  const activeIdleGap = computed(() => {
+    const at = time.value;
+    return idleGaps.value.find((gap) => at >= gap.from && at < gap.to) ?? null;
+  });
+
   const tracks = computed<SpatialDisplayTrack[]>(() => {
     const at = time.value;
     if (!at) return [];
@@ -265,8 +281,11 @@
       if (point.at > at) break;
       latest.set(point.slot, point);
     }
+    const inGap = activeIdleGap.value !== null;
     return [...latest.entries()].map(([slot, point]): SpatialDisplayTrack => {
-      const stale = at - point.at > POSITIONS_LAST_KNOWN_MS;
+      const silentMs = at - point.at;
+      const stale = silentMs > POSITIONS_LAST_KNOWN_MS;
+      const idle = !stale && inGap;
       return {
         id: slot,
         label: stale ? `Slot ${slot} · last seen ${clock(point.at)}` : `Slot ${slot}`,
@@ -279,7 +298,7 @@
         vy: 0,
         at: point.at,
         colorIndex: (slot - 1) % 4,
-        state: stale ? 'held' : 'live',
+        state: stale ? 'held' : idle ? 'idle' : 'live',
       };
     });
   });
@@ -315,9 +334,9 @@
     playedDistanceMm(points.value, Number.POSITIVE_INFINITY)
   );
   const idleForMs = computed(() => {
-    if (!time.value || !currentSampleAt.value) return 0;
-    const gap = time.value - currentSampleAt.value;
-    return gap > POSITIONS_IDLE_GAP_MS ? gap : 0;
+    const gap = activeIdleGap.value;
+    if (!gap || !currentSampleAt.value) return 0;
+    return Math.max(0, time.value - gap.from);
   });
 
   function toTrail(slot: number, points: SpatialPoint[]) {

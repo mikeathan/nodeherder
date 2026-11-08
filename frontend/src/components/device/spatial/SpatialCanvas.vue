@@ -429,8 +429,12 @@
     stroke-dasharray: 4 3;
     stroke-width: 6;
   }
+  /* No recorded sample for this target: a hollow dashed ring instead of a solid dot. */
   .nh-target.is-idle {
-    fill-opacity: 0.55;
+    fill: var(--nh-surface);
+    stroke: var(--nh-text-muted);
+    stroke-width: 6;
+    stroke-dasharray: 6 5;
   }
   .nh-target.is-predicted {
     fill-opacity: 0.6;
