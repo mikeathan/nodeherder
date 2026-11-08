@@ -29,8 +29,8 @@
 
 <style scoped>
   .reporting-input { display: flex; flex-direction: column; gap: .4rem; min-width: 0; font-size: .85rem; }
-  .reporting-number { display: flex; align-items: center; border: 1px solid var(--nh-border); border-radius: var(--nh-radius-s); background: var(--nh-surface); }
-  input { width: 100%; min-width: 0; min-height: 2.75rem; padding: .65rem; color: var(--nh-text); background: transparent; border: 0; border-radius: inherit; font: inherit; }
+  .reporting-number { display: flex; align-items: center; border: var(--nh-border-w) solid var(--nh-border-strong); border-radius: var(--nh-radius-s); background: var(--nh-surface); }
+  input { width: 100%; min-width: 0; min-height: var(--nh-touch-h); padding: .65rem; color: var(--nh-text); background: transparent; border: 0; border-radius: inherit; font: inherit; }
   .reporting-number > span { padding-right: .75rem; color: var(--nh-text-muted); }
   .reporting-error { color: var(--nh-danger); }
   small { color: var(--nh-text-muted); line-height: 1.5; }

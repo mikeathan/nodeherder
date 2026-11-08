@@ -126,4 +126,15 @@ describe('test appconfig module', () => {
     expect(loggerSetting.enableRemoteLogger).toEqual(true);
     expect(loggerSetting.level).toEqual('debug');
   });
+
+  test('a live MCP status survives the initial HTTP snapshot and logout clears it', () => {
+    const status = { running: true, enabled: true, name: 'MCP', version: '1', connectedClients: 2 };
+    // The socket can answer loadMCPStatus before the snapshot request finishes.
+    store.commit('hub/setMCPStatus', status);
+    store.dispatch('hub/init', { devices: [], config: mockAppconfig });
+    expect(store.getters['hub/mcpStatus']()).toEqual(status);
+
+    store.commit('hub/clear');
+    expect(store.getters['hub/mcpStatus']()).toBeNull();
+  });
 });

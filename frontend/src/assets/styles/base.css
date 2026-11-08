@@ -351,6 +351,25 @@ textarea.nh-input {
   gap: 0.6rem 1rem;
   margin-bottom: var(--nh-space);
 }
+/* One topic per settings section: a single heading, then cards owned by that topic. */
+.nh-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nh-space);
+  min-width: 0;
+}
+.nh-section > .nh-card + .nh-card {
+  margin-top: 0;
+}
+.nh-section-head h2 {
+  font-size: 1.15rem;
+  font-weight: 650;
+  margin: 0;
+}
+.nh-section-head .nh-help {
+  margin: 0.3rem 0 0;
+  max-width: 60ch;
+}
 .nh-alert {
   display: flex;
   align-items: center;

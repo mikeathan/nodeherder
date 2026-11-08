@@ -122,8 +122,8 @@
       <small>A custom interval limits update frequency and keeps the latest reading. Individual sensor adjustments take priority. Events and command confirmations stay immediate.</small>
     </section>
 
-    <fieldset class="reporting-card" aria-describedby="field-help">
-      <legend>Sensor adjustments</legend>
+    <section class="reporting-card" role="group" aria-labelledby="adjustments-heading" aria-describedby="field-help">
+      <h3 id="adjustments-heading">Sensor adjustments</h3>
       <p id="field-help">Ignore small fluctuations in selected sensors. All other sensors keep their current rules.</p>
       <p v-if="!fields.length" class="empty">No individual adjustments. Category rules above still apply.</p>
       <article v-for="name in fields" :key="`${id}:${name}`" class="reporting-field">
@@ -151,7 +151,7 @@
         </details>
       </article>
       <ReportingSensorPicker :key="`${id}:live-picker`" label="Sensor to adjust" :options="available(fields)" :manual="!id" :disabled="offline" @add="addField($event)" />
-    </fieldset>
+    </section>
 
     <details class="reporting-card history-settings">
       <summary>History recording <span>Chart storage{{ historyFields.length ? ` · ${historyFields.length} sensor ${historyFields.length === 1 ? 'adjustment' : 'adjustments'}` : '' }}</span></summary>
@@ -164,11 +164,11 @@
           @change="saveInterval('defaultDebounceByCategory', category.name, $event)" />
       </div>
       <p>Measurements are included by default. Diagnostics are excluded unless you choose to record a sensor below.</p>
-      <fieldset class="history-fields">
-        <legend>History sensor adjustments</legend>
+      <div class="history-fields" role="group" aria-labelledby="history-fields-heading">
+        <h4 id="history-fields-heading" class="history-fields-heading">History sensor adjustments</h4>
         <article v-for="name in historyFields" :key="`${id}:${name}`" class="reporting-field">
           <div class="reporting-heading">
-            <h4>{{ label(name) }}</h4>
+            <h5>{{ label(name) }}</h5>
             <UiButton variant="ghost" size="sm" :disabled="offline" @click="removeField(name, true)">Reset {{ label(name) }} history</UiButton>
           </div>
           <div class="reporting-field-grid">
@@ -186,7 +186,7 @@
           <small>{{ formatLiveInterval(intervalSeconds(historyInterval(name).value)) }} · {{ historyInterval(name).source }}</small>
         </article>
         <ReportingSensorPicker :key="`${id}:history-picker`" label="History sensor" :options="available(historyFields)" :manual="!id" :disabled="offline" @add="addField($event, true)" />
-      </fieldset>
+      </div>
     </details>
 
     <details class="reporting-card">
@@ -206,24 +206,26 @@
 
 <style scoped>
   .reporting-settings { display: grid; gap: 1rem; min-width: 0; }
-  .reporting-card { min-width: 0; margin: 0; padding: 1.25rem; border: 1px solid var(--nh-border); border-radius: var(--nh-radius-m); background: var(--nh-surface); }
-  h3, h4 { margin: 0; font-size: 1rem; font-weight: 600; }
+  .reporting-card { min-width: 0; margin: 0; padding: 1.25rem; border: var(--nh-border-w) solid var(--nh-border); border-radius: var(--nh-radius-l); background: var(--nh-surface); box-shadow: var(--nh-shadow-1); }
+  h3, h4, h5 { margin: 0; font-size: 1rem; font-weight: 600; }
+  h5 { font-size: .92rem; }
   p { color: var(--nh-text-muted); font-size: .85rem; line-height: 1.6; margin: .65rem 0 1rem; }
   small, .empty, summary span { color: var(--nh-text-muted); font-size: .78rem; line-height: 1.5; }
-  .reporting-category { display: grid; grid-template-columns: minmax(0, 1fr) minmax(12rem, 19rem); gap: 1rem; padding: 1rem 0; border-top: 1px solid var(--nh-border); align-items: start; }
+  .reporting-category { display: grid; grid-template-columns: minmax(0, 1fr) minmax(12rem, 19rem); gap: 1rem; padding: 1rem 0; border-top: var(--nh-border-w) solid var(--nh-border); align-items: start; }
   .reporting-category p { margin: .3rem 0; }
   .reporting-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem; }
-  .reporting-field { border-top: 1px solid var(--nh-border); padding: 1rem 0; }
+  .reporting-field { border-top: var(--nh-border-w) solid var(--nh-border); padding: 1rem 0; }
   .threshold { max-width: 28rem; margin-top: .8rem; }
   .field-advanced { margin-top: 1rem; }
   .field-advanced > div { max-width: 28rem; margin-top: .75rem; }
   .field-advanced > small { display: block; margin-top: .5rem; }
   .reporting-field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin: .75rem 0; }
   label { display: grid; gap: .4rem; min-width: 0; font-size: .85rem; }
-  input, select { width: 100%; min-width: 0; min-height: 2.75rem; padding: .65rem; border: 1px solid var(--nh-border); border-radius: var(--nh-radius-s); background: var(--nh-surface); color: var(--nh-text); font: inherit; }
-  legend, summary { font-size: 1rem; font-weight: 600; }
-  legend { padding: 0 .35rem; } summary { cursor: pointer; } summary span { font-weight: 400; margin-left: .5rem; }
-  .history-fields { border: 0; padding: 0; min-width: 0; }
+  input, select { width: 100%; min-width: 0; min-height: var(--nh-touch-h); padding: .65rem; border: var(--nh-border-w) solid var(--nh-border-strong); border-radius: var(--nh-radius-s); background: var(--nh-surface); color: var(--nh-text); font: inherit; }
+  summary { font-size: 1rem; font-weight: 600; cursor: pointer; }
+  summary span { font-weight: 400; margin-left: .5rem; }
+  .history-fields { min-width: 0; margin-top: 1rem; }
+  .history-fields-heading { margin: 0 0 .5rem; font-size: .9rem; font-weight: 600; }
   .reporting-error { color: var(--nh-danger); }
   @media (max-width: 640px) {
     .reporting-card { padding: 1rem; }

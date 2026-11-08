@@ -33,6 +33,6 @@
 
 <style scoped>
   .rate-control, label { display: grid; gap: .4rem; min-width: 0; font-size: .85rem; }
-  select { width: 100%; min-height: 2.75rem; padding: .65rem; border: 1px solid var(--nh-border); border-radius: var(--nh-radius-s); background: var(--nh-surface); color: var(--nh-text); font: inherit; }
+  select { width: 100%; min-height: var(--nh-touch-h); padding: .65rem; border: var(--nh-border-w) solid var(--nh-border-strong); border-radius: var(--nh-radius-s); background: var(--nh-surface); color: var(--nh-text); font: inherit; }
   small { color: var(--nh-danger); }
 </style>

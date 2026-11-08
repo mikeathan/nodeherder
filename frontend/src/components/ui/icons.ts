@@ -6,15 +6,15 @@
  */
 import {
   mdiAccessPointNetwork, mdiAccountCircleOutline, mdiAirFilter, mdiAlarmLight, mdiAlertCircleOutline, mdiAlertOutline,
-  mdiArrowDown, mdiArrowLeft, mdiArrowUp, mdiBattery, mdiBatteryAlertVariantOutline, mdiBlur, mdiBrightness6, mdiCalendarClock,
+  mdiApi, mdiArrowDown, mdiArrowLeft, mdiArrowUp, mdiBattery, mdiBatteryAlertVariantOutline, mdiBlur, mdiBrightness6, mdiCalendarClock,
   mdiCancel, mdiChartLine, mdiCheck, mdiChevronDown, mdiChevronLeft, mdiChevronRight, mdiChevronUp, mdiClockOutline,
   mdiClose, mdiCodeJson, mdiCogOutline, mdiCompassOutline, mdiConsoleLine, mdiContentCopy, mdiCreationOutline, mdiCubeOutline, mdiDevices,
-  mdiDoorOpen, mdiDotsVertical, mdiDragVertical, mdiExportVariant, mdiEyeOutline, mdiFlashOutline, mdiFlower, mdiFormatListBulleted, mdiGasStation, mdiGauge, mdiGestureTapButton,
-  mdiGoogle, mdiHelpCircleOutline, mdiHomeOutline, mdiImport, mdiInformationOutline, mdiLanDisconnect, mdiLeaf,
+  mdiDatabaseClock, mdiDoorOpen, mdiDotsVertical, mdiDragVertical, mdiExportVariant, mdiEyeOutline, mdiFlashOutline, mdiFlower, mdiFormatListBulleted, mdiGasStation, mdiGauge, mdiGestureTapButton,
+  mdiGoogle, mdiHarddisk, mdiHelpCircleOutline, mdiHistory, mdiHomeOutline, mdiImport, mdiInformationOutline, mdiLanDisconnect, mdiLeaf,
   mdiLinkVariant, mdiLightbulbOnOutline, mdiLightbulbOutline, mdiLightningBolt, mdiLockOutline, mdiLogout, mdiMagnify, mdiMenu, mdiMinus,
   mdiMotionSensor, mdiPaletteOutline, mdiPencilOutline, mdiPlay, mdiPlus, mdiPowerPlugOutline, mdiRadar, mdiRefresh,
-  mdiPin, mdiPinOutline, mdiPower, mdiRemote, mdiRobotOutline, mdiShieldCheckOutline, mdiSignal, mdiSmokeDetectorVariant, mdiSync, mdiTabletDashboard,
-  mdiThermometer, mdiTimerOutline, mdiTrashCanOutline, mdiTune, mdiViewDashboardOutline, mdiVolumeHigh, mdiWater,
+  mdiPin, mdiPinOutline, mdiPower, mdiRemote, mdiRobotOutline, mdiServerNetwork, mdiShieldCheckOutline, mdiSignal, mdiSmokeDetectorVariant, mdiSync, mdiTabletDashboard,
+  mdiTextBoxOutline, mdiThermometer, mdiTimerOutline, mdiToggleSwitchVariant, mdiTrashCanOutline, mdiTune, mdiViewDashboardOutline, mdiVolumeHigh, mdiWater,
   mdiWaterPercent, mdiWeatherNight, mdiWeatherRainy, mdiWeatherSnowy, mdiWeatherSunny, mdiWeatherSunsetDown,
   mdiWeatherSunsetUp, mdiWeatherWindy, mdiWeatherWindyVariant, mdiWhiteBalanceSunny, mdiWifi, mdiZigbee,
 } from '@mdi/js';
@@ -82,6 +82,14 @@ export const ICONS = {
   dark: mdiWeatherNight,
   light: mdiWhiteBalanceSunny,
   palette: mdiPaletteOutline,
+  // settings sections (distinct from navigation and integration glyphs)
+  settingsDevices: mdiToggleSwitchVariant,
+  settingsStorage: mdiDatabaseClock,
+  settingsUsage: mdiHarddisk,
+  settingsLogger: mdiTextBoxOutline,
+  settingsServer: mdiServerNetwork,
+  settingsAssistant: mdiApi,
+  settingsRetention: mdiHistory,
   // identity
   user: mdiAccountCircleOutline,
   google: mdiGoogle,

@@ -23,13 +23,13 @@
           }
         },
         "history": {
-          "sleeptTmeout": { "value": 12, "unit": "hours" },
+          "sleepTimeout": { "value": 12, "unit": "hours" },
           "expireAt": { "value": 10, "unit": "days" }
         },
         "assistant": {
           "url": "http://localhost:4001/api/conversation"
         },
-        "logger": { "enableRemoteLogger": false },
+        "logger": { "enableRemoteLogger": false, "level": "info" },
         "mcp": { "enabled": false },
         "dashboardGroups": {
           "living room group": {

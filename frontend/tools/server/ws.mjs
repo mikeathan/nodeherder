@@ -133,7 +133,7 @@ export function registerWebsocket(app, server) {
           break;
         }
         case 'saveHistoryConfig':
-          appConfig.history = obj.payload;
+          appConfig.hub.history = obj.payload;
           sendOperationSuccess(ws);
           break;
         case 'saveAssistantConfig':

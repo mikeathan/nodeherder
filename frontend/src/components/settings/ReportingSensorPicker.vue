@@ -27,6 +27,6 @@
 <style scoped>
   .sensor-picker { display: flex; align-items: end; gap: .75rem; margin-top: 1rem; }
   label { display: grid; gap: .4rem; flex: 1; min-width: 0; font-size: .85rem; }
-  input, select { width: 100%; min-height: 2.75rem; padding: .65rem; border: 1px solid var(--nh-border); border-radius: var(--nh-radius-s); background: var(--nh-surface); color: var(--nh-text); font: inherit; }
+  input, select { width: 100%; min-height: var(--nh-touch-h); padding: .65rem; border: var(--nh-border-w) solid var(--nh-border-strong); border-radius: var(--nh-radius-s); background: var(--nh-surface); color: var(--nh-text); font: inherit; }
   @media (max-width: 640px) { .sensor-picker { align-items: stretch; flex-direction: column; } }
 </style>

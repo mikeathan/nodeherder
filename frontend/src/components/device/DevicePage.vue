@@ -121,10 +121,10 @@
       </template>
       <SpatialPanel v-else-if="tab === DeviceTabIds.Presence" :device="device" />
       <DeviceHistory v-else-if="tab === DeviceTabIds.History" :id="device.id" />
-      <UiCard v-else-if="tab === DeviceTabIds.Settings" title="Settings on this hub" icon="settings">
+      <div v-else-if="tab === DeviceTabIds.Settings">
         <UiButton v-if="device.connection_type === ConnectionTypes.ESPHome" icon="settings" @click="showESPHomeSettings = true">Manage ESPHome connection</UiButton>
         <DeviceSettings :id="device.id" />
-      </UiCard>
+      </div>
       <DeviceAbout v-else :device="device" />
     </div>
     <ESPHomeManageDialog :open="showESPHomeSettings" @close="showESPHomeSettings = false" />

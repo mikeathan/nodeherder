@@ -214,6 +214,14 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
     setMCPStatus(state, mcpStatus: MCPStatusType) {
       state.mcpStatus = mcpStatus;
     },
+    /** Reset the snapshot-owned state, leaving live transport state (MCP status) intact. */
+    resetSnapshot(state) {
+      state.deviceMap = {};
+      state.spatialFrames = {};
+      state.appConfig = createAppconfig();
+      state.initialized = false;
+      state.loadStatus = 'idle';
+    },
     clear(state) {
       state.deviceMap = {};
       state.spatialFrames = {};
@@ -237,7 +245,9 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
       commit('setInitialized', true);
     },
     init({ commit }, payload: HubStateSnapshot) {
-      commit('clear');
+      // The socket may report MCP status before this HTTP snapshot lands, so init resets
+      // only snapshot-owned state; logout still clears everything via `hub/clear`.
+      commit('resetSnapshot');
       commit('setAppConfig', payload.config);
       commit('setDevices', payload.devices);
       commit('setInitialized', true);
