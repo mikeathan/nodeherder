@@ -257,22 +257,23 @@ test.describe('devices', () => {
     await expect(page.getByRole('heading', { name: 'Presence', exact: true })).toBeVisible();
     await expect(page.getByRole('img', { name: /Live room canvas/ })).toHaveCount(1);
     await expect(page.getByText(/Server presence: occupied · 1 target · last zone Desk/)).toBeVisible();
-    // Controls share one baseline on wide layouts: label-above fields and bare checkboxes must
-    // not drift, which is the misalignment this row had when it mixed two field layouts.
+    // The shared view panel groups the display controls on one baseline.
     if (page.viewportSize()!.width >= 900) {
+      const viewControls = page.getByRole('button', { name: 'View controls' });
+      if ((await viewControls.getAttribute('aria-expanded')) !== 'true') {
+        await viewControls.click();
+      }
       const selects = await page
-        .locator('.nh-presence-controls select')
+        .locator('.nh-view-body select')
         .evaluateAll((nodes) =>
           nodes.map((node) => {
             const box = node.getBoundingClientRect();
-            return { bottom: box.bottom, center: box.top + box.height / 2 };
+            return { bottom: box.bottom };
           })
         );
       expect(selects.length).toBeGreaterThanOrEqual(3);
       const bottoms = selects.map((select) => select.bottom);
       expect(Math.max(...bottoms) - Math.min(...bottoms)).toBeLessThanOrEqual(1);
-      const checkbox = await page.locator('.nh-presence-controls input[type="checkbox"]').first().boundingBox();
-      expect(Math.abs(checkbox!.y + checkbox!.height / 2 - selects[0].center)).toBeLessThanOrEqual(4);
     }
     const help = page.locator('summary').filter({ hasText: 'Help with the presence view' });
     await help.focus();
@@ -362,8 +363,11 @@ test.describe('devices', () => {
     await expect(page.getByText('Live frames')).toBeVisible();
     await expect(page.getByText(/Track 1 \(live\): X/)).toBeVisible();
 
-    // Display options are grouped behind a disclosure to keep the tab calm.
-    await page.locator('summary').filter({ hasText: /^Display$/ }).click();
+    // View controls are grouped in the shared viewer panel; open it at narrow widths.
+    const viewControls = page.getByRole('button', { name: 'View controls' });
+    if ((await viewControls.getAttribute('aria-expanded')) !== 'true') {
+      await viewControls.click();
+    }
     const smoothing = page.getByRole('combobox', { name: 'Smoothing' });
     await smoothing.selectOption('off');
     await expect(smoothing).toHaveValue('off');
@@ -415,16 +419,196 @@ test.describe('devices', () => {
     await page.getByRole('button', {name:'Remove zone',exact:true}).click();
     await page.getByRole('button', {name:'Undo last edit',exact:true}).click();
     await expect(page.getByRole('combobox',{name:'Zone slots',exact:true}).getByRole('option',{name:'Desk · detection'})).toHaveCount(1);
+    const viewerViewport = page.viewportSize()!;
+    const appMain = page.locator('.nh-app-main');
+    await page.setViewportSize({ width: 1280, height: 600 });
     await page.getByRole('tab',{name:'History',exact:true}).click();
     await page.getByRole('button',{name:'Positions',exact:true}).click();
-    await expect(page.getByText(/points/)).toBeVisible();
+    await expect(page.locator('.nh-session-row')).toHaveCount(3);
+    const fovToggle = page.getByLabel('Field of view', { exact: true });
+    await expect(fovToggle).toBeEnabled();
+    await expect(fovToggle).not.toBeChecked();
+    await fovToggle.check();
+    await expect(page.locator('polygon.nh-fov')).toHaveCount(1);
+    await fovToggle.uncheck();
+    await expect(page.locator('polygon.nh-fov')).toHaveCount(0);
     await expect(page.locator('circle.nh-target').first()).toBeVisible();
-    await expect(page.locator('polyline.nh-trail')).toHaveCount(1);
+    await expect(page.locator('polyline.nh-trail:not(.is-recent)')).toHaveCount(1);
     await page.getByLabel('Path', { exact: true }).uncheck();
     await expect(page.locator('polyline.nh-trail')).toHaveCount(0);
     await page.getByLabel('Path', { exact: true }).check();
     await page.getByRole('button',{name:'Play',exact:true}).click();
     await expect(page.getByRole('button',{name:'Pause',exact:true})).toBeVisible();
+    await page.getByRole('button',{name:'Pause',exact:true}).click();
+
+    // AC-17: tablet and desktop widths keep the player in flow without sideways overflow.
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await expect(page.locator('.nh-transport')).toBeVisible();
+    expect(await page.locator('html').evaluate((html) => html.scrollWidth <= html.clientWidth)).toBe(true);
+
+    // AC-21: the recordings rail collapses and restores without changing the selection.
+    await expect(page.locator('.nh-positions-rail')).toBeVisible();
+    const mainBefore = await page.locator('.nh-positions-main').boundingBox();
+    const canvasBefore = await page.locator('.nh-spatial-canvas').boundingBox();
+    await page.getByRole('button', { name: 'Hide recordings', exact: true }).click();
+    await expect(page.locator('.nh-positions-rail')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Show recordings (3)', exact: true })).toBeVisible();
+    await expect(page.locator('.nh-coverage-segment[data-session-id="mock-session-evening"]')).toHaveAttribute('aria-pressed', 'true');
+    const canvasExpanded = await page.locator('.nh-spatial-canvas').boundingBox();
+    expect(canvasExpanded!.width).toBeGreaterThan(canvasBefore!.width);
+    expect(Math.abs(canvasExpanded!.height - canvasBefore!.height)).toBeLessThanOrEqual(1);
+    await page.getByRole('button', { name: 'Show recordings (3)', exact: true }).click();
+    await expect(page.locator('.nh-positions-rail')).toBeVisible();
+
+    // AC-22: the viewer is wide and short, and zoom scales only its contents.
+    const canvasRestored = await page.locator('.nh-spatial-canvas').boundingBox();
+    expect(Math.abs(canvasRestored!.width - mainBefore!.width)).toBeLessThanOrEqual(2);
+    expect(canvasRestored!.height).toBeGreaterThanOrEqual(16 * 16 - 1);
+    expect(canvasRestored!.height).toBeLessThanOrEqual(24 * 16 + 1);
+    const viewBoxWidth = async () =>
+      Number((await page.locator('.nh-spatial-canvas').getAttribute('viewBox'))!.split(' ')[2]);
+    const canvasBox = await page.locator('.nh-spatial-canvas').boundingBox();
+    const currentView = (await page.locator('.nh-spatial-canvas').getAttribute('viewBox'))!.split(' ').map(Number);
+    expect(Math.abs(currentView[2] / currentView[3] - canvasBox!.width / canvasBox!.height)).toBeLessThan(0.05);
+    const wideView = await viewBoxWidth();
+    await page.getByRole('button', { name: '2×', exact: true }).click();
+    await expect(page.getByRole('button', { name: '2×', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    const zoomedView = await viewBoxWidth();
+    expect(zoomedView).toBeLessThan(wideView * 0.7);
+    // The pinned device stays visible at the edge and the active point stays in frame.
+    await expect(page.locator('.nh-device-bg')).toBeVisible();
+    await expect(page.locator('circle.nh-target').first()).toBeVisible();
+    await page.getByRole('button', { name: '5×', exact: true }).click();
+    await expect(page.getByRole('button', { name: '5×', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('.nh-device-bg')).toBeVisible();
+    await expect(page.locator('circle.nh-target').first()).toBeVisible();
+    await page.getByRole('button', { name: '1×', exact: true }).click();
+    await expect(page.getByRole('button', { name: '1×', exact: true })).toHaveAttribute('aria-pressed', 'true');
+
+    // Dragging pans the reader; Reset view restores the fitted view.
+    const fittedView = await page.locator('.nh-spatial-canvas').getAttribute('viewBox');
+    const panBox = await page.locator('.nh-spatial-canvas').boundingBox();
+    await page.mouse.move(panBox!.x + panBox!.width / 2, panBox!.y + panBox!.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(panBox!.x + panBox!.width / 2 + 80, panBox!.y + panBox!.height / 2 + 30);
+    await page.mouse.up();
+    expect(await page.locator('.nh-spatial-canvas').getAttribute('viewBox')).not.toBe(fittedView);
+    await page.getByRole('button', { name: 'Reset view', exact: true }).click();
+    await expect.poll(async () => page.locator('.nh-spatial-canvas').getAttribute('viewBox')).toBe(fittedView);
+
+    // The field-of-view cone is available on the heatmap canvas too.
+    await page.getByRole('button', { name: 'Heatmap', exact: true }).click();
+    await expect(page.getByRole('img', { name: 'Recorded heatmap canvas' })).toBeVisible();
+    const heatFov = page.getByLabel('Field of view', { exact: true });
+    await heatFov.check();
+    await expect(page.locator('polygon.nh-fov')).toHaveCount(1);
+    await heatFov.uncheck();
+    await expect(page.locator('polygon.nh-fov')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Player', exact: true }).click();
+    await expect(page.locator('.nh-coverage-segment[data-session-id="mock-session-evening"]')).toHaveAttribute('aria-pressed', 'true');
+
+    await page.setViewportSize({ width: 768, height: 1024 });
+    expect(await page.locator('html').evaluate((html) => html.scrollWidth <= html.clientWidth)).toBe(true);
+    await page.setViewportSize({ width: 1280, height: 600 });
+
+    // Spec 057 AC-01: choosing a recording re-renders in place and never moves the page.
+    const range = page.getByLabel('Playback position');
+    await range.scrollIntoViewIfNeeded();
+    const beforeScroll = await appMain.evaluate((element) => element.scrollTop);
+    expect(beforeScroll).toBeGreaterThan(0);
+    await page.locator('.nh-session-row[data-session-id="mock-session-morning"]').click();
+    await expect(page.locator('.nh-session-row[data-session-id="mock-session-morning"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('.nh-coverage-segment[data-session-id="mock-session-morning"]')).toHaveAttribute('aria-pressed', 'true');
+    expect(Math.abs((await appMain.evaluate((element) => element.scrollTop)) - beforeScroll)).toBeLessThanOrEqual(2);
+
+    // AC-10/AC-12: movement episodes skip the recorded pause and mark the jump.
+    await expect(page.locator('line.nh-hop')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Next movement', exact: true }).click();
+    await expect(page.locator('line.nh-hop')).toHaveCount(1);
+    await expect(page.locator('circle.nh-pulse')).toHaveCount(1);
+
+    // AC-11: a playhead inside the pause says what the missing samples mean.
+    const sessionStart = Number(await range.getAttribute('min'));
+    await range.evaluate((element, value) => {
+      const input = element as HTMLInputElement;
+      input.value = String(value);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    }, sessionStart + 100_000);
+    await expect(page.getByText(/No movement recorded for/)).toBeVisible();
+
+    // Playback must advance even when the playhead is inside a recorded gap.
+    const idleTime = Number(await range.inputValue());
+    await page.getByRole('button', { name: 'Play', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Pause', exact: true })).toBeVisible();
+    await expect.poll(async () => Number(await range.inputValue())).toBeGreaterThan(idleTime);
+    await page.getByRole('button', { name: 'Pause', exact: true }).click();
+
+    // AC-05/AC-20: a failed switch keeps the confirmed recording and explains the failure.
+    await page.route('**/api/spatial/history**', async (route) => {
+      const mode = new URL(route.request().url()).searchParams.get('mode');
+      if (mode === 'points') {
+        await route.fulfill({ status: 500, contentType: 'application/json', body: '{}' });
+        return;
+      }
+      await route.continue();
+    });
+    await page.locator('.nh-session-row[data-session-id="mock-session-afternoon"]').click();
+    await expect(page.getByRole('alert').filter({ hasText: 'Spatial history could not be loaded.' })).toBeVisible();
+    await expect(page.locator('.nh-coverage-segment[data-session-id="mock-session-morning"]')).toHaveAttribute('aria-pressed', 'true');
+    await page.unroute('**/api/spatial/history**');
+
+    // AC-19: a session with no recorded points is explicit and offers nothing to play.
+    await page.route('**/api/spatial/history**', async (route) => {
+      const mode = new URL(route.request().url()).searchParams.get('mode');
+      if (mode === 'points') {
+        await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+        return;
+      }
+      await route.continue();
+    });
+    await page.locator('.nh-session-row[data-session-id="mock-session-afternoon"]').click();
+    await expect(page.getByText('No recorded positions in this session.')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeDisabled();
+    await page.unroute('**/api/spatial/history**');
+
+    // AC-07/FE-04: segments are buttons, activate from the keyboard, and the scrubber steps.
+    await page.locator('.nh-coverage-segment[data-session-id="mock-session-evening"]').focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.nh-coverage-segment[data-session-id="mock-session-evening"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('.nh-session-row[data-session-id="mock-session-evening"]')).toHaveAttribute('aria-pressed', 'true');
+    await range.focus();
+    const beforeKey = Number(await range.inputValue());
+    await page.keyboard.press('ArrowRight');
+    await expect.poll(async () => Number(await range.inputValue())).toBeGreaterThan(beforeKey);
+
+    // AC-15/AC-16: recordings move into the bottom sheet without losing the selection.
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(page.locator('.nh-positions-rail')).toBeHidden();
+    const openRecordings = page.getByRole('button', { name: /Recordings \(3\)/ });
+    await openRecordings.click();
+    const sheet = page.getByRole('dialog', { name: 'Recordings' });
+    await expect(sheet).toBeVisible();
+    await sheet.locator('.nh-session-row[data-session-id="mock-session-afternoon"]').click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(page.locator('.nh-coverage-segment[data-session-id="mock-session-afternoon"]')).toHaveAttribute('aria-pressed', 'true');
+    expect(await page.locator('html').evaluate((html) => html.scrollWidth <= html.clientWidth)).toBe(true);
+    await page.setViewportSize(viewerViewport);
+
+    // AC-18: an empty range explains itself and leaves nothing to play.
+    await page.route('**/api/spatial/history**', async (route) => {
+      const mode = new URL(route.request().url()).searchParams.get('mode');
+      if (mode === 'sessions') {
+        await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+        return;
+      }
+      await route.continue();
+    });
+    await page.getByRole('button', { name: 'Refresh', exact: true }).click();
+    await expect(page.locator('.nh-coverage-empty')).toContainText('No recordings in this range');
+    await expect(page.getByRole('button', { name: 'Play', exact: true })).toHaveCount(0);
+    await page.unroute('**/api/spatial/history**');
+
     await page.getByRole('tab',{name:'Presence',exact:true}).click();
     await page.getByRole('button',{name:'Draw',exact:true}).click();
     await page.getByRole('button',{name:'Room',exact:true}).click();
