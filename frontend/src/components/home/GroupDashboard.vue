@@ -28,7 +28,10 @@
   const dragging = ref(false);
   // Only this interaction copy is mutable by the drag library. Accepted membership stays in Vuex.
   const blocks = ref<HomeBlock[]>([]);
-  watch([layout, busy], synchronizeBlockOrder, { immediate: true });
+  // Keep the interaction copy stable while a drag or save is in progress; the result syncs after.
+  watch([layout, busy], () => {
+    if (!dragging.value && !busy.value) synchronizeBlockOrder();
+  }, { immediate: true });
   const gridChanges = computed(() => [blocks.value, editing.value, dragging.value]);
   const gridRoot = useHomeGrid(gridChanges);
   const tileCount = computed(() => blocks.value.reduce((total, block) => total + block.cards.length, 0));

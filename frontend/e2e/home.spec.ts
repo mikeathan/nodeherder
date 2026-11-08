@@ -567,13 +567,13 @@ test.describe('home dashboard', () => {
 
   test('dragging an area by its handle reorders and saves', async ({ page }) => {
     await signIn(page, ui.home.path);
-    // Keep both areas visible on a phone while retaining real cards in the drag preview.
+    // Keep both areas short on a phone while retaining a real card in the drag preview.
     const original = (await (await page.request.get(`${HUB_API}/home/layout`)).json()).data;
     const compact = await page.request.put(`${HUB_API}/home/layout`, {
       headers: { Origin: 'http://localhost:4100', 'X-NodeHerder-Request': '1', 'If-Match': original.etag },
       data: {
         ...original,
-        blocks: original.blocks.map((block: { cards: unknown[] }) => ({ ...block, cards: block.cards.slice(0, 2) })),
+        blocks: original.blocks.map((block: { cards: unknown[] }) => ({ ...block, cards: block.cards.slice(0, 1) })),
       },
     });
     expect(compact.status()).toBe(200);
@@ -581,14 +581,19 @@ test.describe('home dashboard', () => {
       await page.reload();
       const titles = ui.home.groupTitles(page);
       await expect(titles).toHaveCount(MOCK.groups.length);
+      // The compact PUT can trigger a normalising save; dragging is disabled while it runs.
+      await expect(page.getByText('Saving Home layout')).toHaveCount(0);
       const before = await titles.allTextContents();
       await ui.home.editLayout(page);
       const handle = ui.home.dragHandle(page, before[0]);
       const target = ui.home.area(page, before[1]);
+      await expect(handle).toBeEnabled();
+      await expect(page.getByText('Saving Home layout')).toHaveCount(0);
       await handle.evaluate((element) => element.scrollIntoView({ block: 'start' }));
       const from = (await handle.boundingBox())!;
       const to = (await target.boundingBox())!;
       const start = { x: from.x + from.width / 2, y: from.y + from.height / 2 };
+      // Drop over the target's lower half so the dragged area lands after it.
       const end = { x: to.x + to.width * 0.5, y: to.y + to.height * 0.6 };
       const saving = page.waitForRequest(
         (request) => request.url().endsWith('/api/home/layout') && request.method() === 'PUT'
