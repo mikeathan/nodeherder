@@ -36,6 +36,10 @@
     'update:showPath': [value: boolean];
   }>();
 
+  const speedModel = computed<number>({
+    get: () => props.speed,
+    set: (value) => emit('update:speed', value),
+  });
   const episodes = computed(() => movementEpisodes(props.points));
   const spans = computed(() => idleSpans(props.points, props.session.from, props.session.to));
   // Marks are decorative; cap them so a dense session cannot create thousands of nodes.
@@ -74,7 +78,7 @@
 <template>
   <div class="nh-transport" role="group" aria-label="Playback controls">
     <div class="nh-transport-row">
-      <UiButton size="sm" :disabled="!hasPoints" @click="emit('toggle')">
+      <UiButton class="nh-transport-play" size="sm" :disabled="!hasPoints" @click="emit('toggle')">
         {{ playing ? 'Pause' : 'Play' }}
       </UiButton>
       <UiButton
@@ -87,10 +91,7 @@
       </UiButton>
       <span class="nh-transport-clock">{{ clock(time) }}</span>
       <label class="nh-transport-speed">Speed
-        <select
-          class="nh-input"
-          :value="speed"
-          @change="emit('update:speed', Number(($event.target as HTMLSelectElement).value))">
+        <select v-model.number="speedModel" class="nh-input">
           <option :value="1">1×</option>
           <option :value="2">2×</option>
           <option :value="4">4×</option>
@@ -106,7 +107,7 @@
       <span class="nh-muted">{{ distanceLabel }} travelled</span>
       <span v-if="totalDistanceMm > distanceMm" class="nh-muted">of {{ totalLabel }}</span>
     </div>
-    <p v-if="idleText" class="nh-transport-idle">{{ idleText }}</p>
+    <p class="nh-transport-idle" aria-live="polite">{{ idleText }}</p>
     <div class="nh-transport-scrub">
       <div class="nh-transport-marks" aria-hidden="true">
         <span
@@ -161,12 +162,21 @@
     align-items: center;
     gap: 0.3rem;
   }
+  /* Fixed width stops Play ↔ Pause from shifting the rest of the row. */
+  .nh-transport-play {
+    min-width: 4.5rem;
+    justify-content: center;
+  }
   .nh-transport-clock {
     font-weight: 600;
     font-variant-numeric: tabular-nums;
+    min-width: 8.5rem;
   }
+  /* Always present so the idle notice can appear without reflowing the transport. */
   .nh-transport-idle {
     margin: 0;
+    min-height: 1rem;
+    line-height: 1rem;
     color: var(--nh-text-muted);
     font-size: 0.8rem;
   }
