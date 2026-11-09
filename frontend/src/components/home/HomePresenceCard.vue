@@ -79,7 +79,7 @@
           <SpatialCanvas v-if="preview.hasFrame.value" :workspace="preview.workspace.value" :tracks="preview.tracks.value"
             :occupancy="new Map()" :scale="4000" :orientation="0" :online="preview.online.value"
             :mode="SpatialViewIds.Live" selected-id="" :trails="[]" :cells="[]" :show-grid="false"
-            :show-room-context="false" label="Presence preview" />
+            :show-room-context="false" :show-target-labels="false" label="Presence preview" />
           <p v-else class="nh-muted">Waiting for a position…</p>
           <span v-if="updatedLabel" class="nh-muted">Live preview · {{ updatedLabel }}</span>
         </div>

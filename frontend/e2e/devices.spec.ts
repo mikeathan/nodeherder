@@ -377,6 +377,19 @@ test.describe('devices', () => {
     await expect(page.getByRole('img', { name: /Live room canvas/ })).toBeVisible();
     await page.getByLabel('Raw', { exact: true }).uncheck();
 
+    // Distance labels: derived from the position actually drawn (hypot(1000, 2000) ≈ 2.2 m),
+    // quantised to 0.1 m so filter noise cannot rewrite the text every frame.
+    const distance = page.getByLabel('Distance', { exact: true });
+    await expect(distance).not.toBeChecked();
+    await expect(page.locator('text.nh-target-label').first()).toHaveText('Track 1');
+    await distance.focus();
+    await expect(distance).toBeFocused();
+    await distance.check();
+    await expect(distance).toBeChecked();
+    await expect(page.locator('text.nh-target-label').first()).toHaveText(/^Track 1 · 2\.2 m$/);
+    await distance.uncheck();
+    await expect(page.locator('text.nh-target-label').first()).toHaveText('Track 1');
+
     // A captured slot survives ageing (the 250 ms tick must not reset the selection).
     await page.getByRole('button', { name: 'Setup', exact: true }).click();
     await page.getByRole('button', { name: 'Calibration', exact: true }).click();
@@ -424,6 +437,9 @@ test.describe('devices', () => {
     await page.setViewportSize({ width: 1280, height: 600 });
     await page.getByRole('tab',{name:'History',exact:true}).click();
     await page.getByRole('button',{name:'Positions',exact:true}).click();
+    // The replay viewer keeps its own options: no Distance checkbox, since only the live
+    // panel wires that value into its canvas.
+    await expect(page.getByLabel('Distance', { exact: true })).toHaveCount(0);
     await expect(page.locator('.nh-session-row')).toHaveCount(3);
     const fovToggle = page.getByLabel('Field of view', { exact: true });
     await expect(fovToggle).toBeEnabled();

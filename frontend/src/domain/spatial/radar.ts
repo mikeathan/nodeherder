@@ -60,3 +60,26 @@ export function formatSpatialDistance(millimetres: number | null | undefined): s
     { digits: 3 }
   );
 }
+
+/**
+ * Distance label step in millimetres: displayed distances are quantised to 0.1 m so a
+ * filtered position hovering within centimetres does not rewrite the text every frame.
+ */
+export const SPATIAL_DISTANCE_LABEL_STEP_MM = 100;
+
+/**
+ * Label for one target, including its distance from the sensor.
+ *
+ * The caller passes the millimetres of the position actually drawn, so the text can never
+ * disagree with the dot. A missing coordinate leaves the name alone rather than printing a
+ * placeholder next to a target that has no readable position.
+ */
+export function spatialTargetLabel(
+  label: string,
+  millimetres: number | null | undefined
+): string {
+  if (millimetres == null || !Number.isFinite(millimetres)) return label;
+  const stepped = Math.round(millimetres / SPATIAL_DISTANCE_LABEL_STEP_MM) * SPATIAL_DISTANCE_LABEL_STEP_MM;
+  const metres = stepped / MILLIMETRES_PER_METRE;
+  return `${label} · ${formatQuantity(metres, 'distance', { digits: 1 })}`;
+}
