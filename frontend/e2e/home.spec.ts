@@ -82,11 +82,30 @@ async function showThreeServiceSchedule(page: Page) {
 /** Let responsive sidebar/theme transitions finish before measuring or capturing the view. */
 async function settleHomeView(page: Page) {
   await page.evaluate(async () => {
-    await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+    const raf = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    await raf();
+    await raf();
     const transitions = document
       .getAnimations()
       .filter((animation) => Number.isFinite(animation.effect?.getComputedTiming().endTime));
     await Promise.allSettled(transitions.map((animation) => animation.finished));
+  });
+  // The masonry writes row spans from ResizeObserver callbacks and re-checks the result on a
+  // later frame, so blocks can still move after the transition wait. Hold until two
+  // consecutive frames agree; a fixed frame count races the reflow on a loaded runner.
+  await page.evaluate(async () => {
+    const raf = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    const signature = () =>
+      Array.from(document.querySelectorAll<HTMLElement>('.nh-home-block'))
+        .map((block) => `${block.style.gridRowEnd}|${block.classList.contains('is-first-row')}`)
+        .join(',');
+    let previous = signature();
+    for (let frame = 0; frame < 30; frame++) {
+      await raf();
+      const current = signature();
+      if (current === previous) return;
+      previous = current;
+    }
   });
 }
 
@@ -201,26 +220,38 @@ test('standalone cards align with the neighboring area tile rows', async ({ page
     for (const width of [1280, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       await settleHomeView(page);
-      const spacing = await page.evaluate(() => {
-        const living = document.querySelectorAll<HTMLElement>('[data-area="Living room"] .nh-home-card');
-        const garden = document.querySelector<HTMLElement>('[data-area="Garden"] .nh-home-card')!;
-        const summary = document.querySelector<HTMLElement>('[data-card-id="bins-card"]')!;
-        const [first, second] = Array.from(living, card => card.getBoundingClientRect());
-        const adjacent = garden.getBoundingClientRect();
-        const standalone = summary.getBoundingClientRect();
-        const preceding = Array.from(document.querySelectorAll<HTMLElement>('.nh-area .nh-home-card'))
-          .map((card) => card.getBoundingClientRect())
-          .filter((card) =>
-            card.bottom <= standalone.top && Math.min(card.right, standalone.right) - Math.max(card.left, standalone.left) > 1
-          );
-        return {
-          tileGap: second.left - first.right,
-          areaGap: adjacent.left - second.right,
-          verticalGap: standalone.top - Math.max(...preceding.map((card) => card.bottom)),
-        };
-      });
-      expect(Math.abs(spacing.areaGap - spacing.tileGap)).toBeLessThanOrEqual(1);
-      expect(Math.abs(spacing.verticalGap - spacing.tileGap)).toBeLessThanOrEqual(2);
+      // The masonry assigns row spans over successive frames, so a single sample can catch
+      // it mid-reflow; poll until the gaps match the tile gap.
+      await expect
+        .poll(
+          () => page.evaluate(() => {
+            const living = document.querySelectorAll<HTMLElement>('[data-area="Living room"] .nh-home-card');
+            const garden = document.querySelector<HTMLElement>('[data-area="Garden"] .nh-home-card')!;
+            const [first, second] = Array.from(living, card => card.getBoundingClientRect());
+            return Math.abs(garden.getBoundingClientRect().left - second.right - (second.left - first.right));
+          }),
+          { message: `area gap matches the tile gap (${density}, ${width}px)` }
+        )
+        .toBeLessThanOrEqual(1);
+      await expect
+        .poll(
+          () => page.evaluate(() => {
+            const living = document.querySelectorAll<HTMLElement>('[data-area="Living room"] .nh-home-card');
+            const summary = document.querySelector<HTMLElement>('[data-card-id="bins-card"]')!;
+            const [first, second] = Array.from(living, card => card.getBoundingClientRect());
+            const standalone = summary.getBoundingClientRect();
+            const preceding = Array.from(document.querySelectorAll<HTMLElement>('.nh-area .nh-home-card'))
+              .map((card) => card.getBoundingClientRect())
+              .filter((card) =>
+                card.bottom <= standalone.top
+                && Math.min(card.right, standalone.right) - Math.max(card.left, standalone.left) > 1
+              );
+            const verticalGap = standalone.top - Math.max(...preceding.map((card) => card.bottom));
+            return Math.abs(verticalGap - (second.left - first.right));
+          }),
+          { message: `standalone cards align with the tile rows (${density}, ${width}px)` }
+        )
+        .toBeLessThanOrEqual(2);
     }
   }
   await page.setViewportSize({ width: 2000, height: 900 });
