@@ -4,6 +4,7 @@ import { createMockToken } from './utils.mjs';
 import { registerHistoryRoute } from './history.mjs';
 import { getMetricsForDevice } from './metrics-mock.mjs';
 import { registerHomeRoutes } from './home.mjs';
+import { CORS_ORIGIN } from './config.mjs';
 
 export function registerRoutes(app) {
   registerHomeRoutes(app, () => hubStatePayload);
@@ -172,7 +173,7 @@ export function registerRoutes(app) {
     res.cookie('oauthpkce', '', { httpOnly: true, sameSite: 'lax', secure: false, path: '/', maxAge: 0 });
 
     // Redirect back to frontend with success flag
-    res.redirect('http://localhost:4100/?auth=success');
+    res.redirect(`${CORS_ORIGIN}/?auth=success`);
   });
 
   // Register HTTP GET route for /auth/me - returns current user session

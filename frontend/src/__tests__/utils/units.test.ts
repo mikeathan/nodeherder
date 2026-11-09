@@ -1,4 +1,4 @@
-import { formatDistance, formatQuantity, formatWithUnit } from '@/utils/units';
+import { formatBytes, formatDistance, formatQuantity, formatWithUnit } from '@/utils/units';
 
 test('temperature uses its canonical unit and a compact short form', () => {
   expect(formatQuantity(14, 'temperature')).toBe('14°C');
@@ -23,6 +23,19 @@ test('other quantities use one owner for unit and precision', () => {
 test('distance converts metres to kilometres above 1000', () => {
   expect(formatDistance(850)).toBe('850 m');
   expect(formatDistance(1240)).toBe('1.2 km');
+});
+
+test('bytes pick the largest binary unit and share the quantity formatter', () => {
+  expect(formatBytes(512)).toBe('512 B');
+  expect(formatBytes(1024)).toBe('1 KB');
+  expect(formatBytes(1536)).toBe('2 KB');
+  expect(formatBytes(1024 ** 2)).toBe('1 MB');
+  expect(formatBytes(1.5 * 1024 ** 2)).toBe('1.5 MB');
+  expect(formatBytes(1024 ** 3)).toBe('1 GB');
+  expect(formatBytes(10 * 1024 ** 4)).toBe('10 TB');
+  expect(formatQuantity(2048, 'bytes')).toBe('2 KB');
+  expect(formatBytes(0)).toBe('0 B');
+  expect(formatBytes(null)).toBe('—');
 });
 
 test('missing and non-finite values use an explicit placeholder, never zero', () => {

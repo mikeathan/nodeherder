@@ -18,6 +18,8 @@
   --nh-font-mono: ui-monospace, 'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace;
 
   --nh-border-w: 1px;
+  /* Smallest comfortable touch target (44 px); larger than a dense control height. */
+  --nh-touch-h: 2.75rem;
   --nh-nav-w: 15.5rem;
   --nh-area-w: 18rem;
   --nh-motion: 160ms;

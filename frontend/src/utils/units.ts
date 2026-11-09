@@ -19,7 +19,8 @@ export type QuantityKind =
   | 'aqi'
   | 'pollutant'
   | 'pollen'
-  | 'distance';
+  | 'distance'
+  | 'bytes';
 
 /** Formatting overrides; every field has a documented default for the quantity. */
 export interface QuantityOptions {
@@ -40,7 +41,7 @@ interface UnitSpec {
   spaced?: boolean;
 }
 
-const QUANTITIES: Record<Exclude<QuantityKind, 'distance'>, UnitSpec> = {
+const QUANTITIES: Record<Exclude<QuantityKind, 'distance' | 'bytes'>, UnitSpec> = {
   temperature: { unit: '°C', shortUnit: '°', digits: 0 },
   percent: { unit: '%', digits: 0 },
   speed: { unit: 'km/h', digits: 0, spaced: true },
@@ -61,7 +62,8 @@ const QUANTITIES: Record<Exclude<QuantityKind, 'distance'>, UnitSpec> = {
  *
  * Null and non-finite values return `options.missing` (an em dash by default) so a
  * missing reading never becomes zero. Distance is expressed in metres and converted
- * to metres or kilometres automatically.
+ * to metres or kilometres automatically. Bytes are binary multiples (1024) and gain a
+ * decimal only above one kilobyte, matching the hub's storage usage report.
  */
 export function formatQuantity(
   value: number | null | undefined,
@@ -70,6 +72,7 @@ export function formatQuantity(
 ): string {
   if (value == null || !Number.isFinite(value)) return options.missing ?? '—';
   if (kind === 'distance') return formatDistance(value, options);
+  if (kind === 'bytes') return formatBytes(value, options);
   const spec = QUANTITIES[kind];
   const unit = options.short && spec.shortUnit !== undefined ? spec.shortUnit : spec.unit;
   const text = formatNumber(value, options.digits ?? spec.digits);
@@ -103,6 +106,31 @@ export function formatDistance(
   if (metres == null || !Number.isFinite(metres)) return options.missing ?? '—';
   if (Math.abs(metres) < 1000) return `${formatNumber(metres, options.digits ?? 0)} m`;
   return `${formatNumber(metres / 1000, options.digits ?? 1)} km`;
+}
+
+const BYTE_STEPS = [
+  { unit: 'B', factor: 1, digits: 0 },
+  { unit: 'KB', factor: 1024, digits: 0 },
+  { unit: 'MB', factor: 1024 ** 2, digits: 1 },
+  { unit: 'GB', factor: 1024 ** 3, digits: 2 },
+  { unit: 'TB', factor: 1024 ** 4, digits: 2 },
+] as const;
+
+/**
+ * Format a byte count using binary multiples, choosing the largest unit that keeps the
+ * number at or above one. Negative values and non-finite input use the missing placeholder.
+ */
+export function formatBytes(
+  bytes: number | null | undefined,
+  options: QuantityOptions = {}
+): string {
+  if (bytes == null || !Number.isFinite(bytes)) return options.missing ?? '—';
+  const magnitude = Math.abs(bytes);
+  const step = BYTE_STEPS.reduce((chosen, candidate) =>
+    magnitude >= candidate.factor ? candidate : chosen
+  );
+  const text = formatNumber(bytes / step.factor, options.digits ?? step.digits);
+  return `${text} ${step.unit}`;
 }
 
 function formatNumber(value: number, digits: number): string {
