@@ -18,11 +18,13 @@
       zoom: number;
       showGrid: boolean;
       showFov: boolean;
-      /**
-       * Append each target's distance from the sensor to its label. Left undefined by
-       * surfaces that do not offer the option, which also hides its checkbox.
-       */
+      /** Append each target's distance from the sensor to its label. */
       showDistances?: boolean;
+      /**
+       * Offer the Distance checkbox. Explicit opt-in because a Boolean prop that is absent
+       * is cast to `false` by Vue, so "undefined means hide" cannot work here.
+       */
+      distanceOption?: boolean;
       /** Editing canvases need an explicit hand tool; read-only views pan directly. */
       editMode?: boolean;
       /** Optional zoom centre, e.g. the active recorded sample. */
@@ -215,7 +217,7 @@
                 @change="emit('update:showFov', ($event.target as HTMLInputElement).checked)" />
               Field of view
             </label>
-            <label v-if="showDistances !== undefined" class="nh-view-check">
+            <label v-if="distanceOption" class="nh-view-check">
               <input
                 type="checkbox"
                 :checked="showDistances"

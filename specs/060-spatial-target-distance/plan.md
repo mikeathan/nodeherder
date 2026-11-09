@@ -142,6 +142,31 @@ compiled to a placeholder. After giving the prop `{ showTargetLabels: true }` th
 This also restores labels on the Positions replay canvas, which passes real tracks. The
 distance option builds on that same element, so it could not work without fixing the guard.
 
+## Second review pass (fixed)
+
+Reviewing my own diff turned up three defects, all in this change:
+
+1. **Dead checkbox on the Positions viewer.** I hid the Distance checkbox with
+   `v-if="showDistances !== undefined"`, but Vue casts an absent Boolean prop to `false`,
+   never `undefined`. The replay viewer therefore showed a Distance checkbox that was not
+   wired to its canvas — toggling it did nothing. Measured: the control count on the
+   Positions view was `1` before the fix. Replaced with an explicit `distanceOption`
+   opt-in that only `SpatialPanel` sets, and the browser test now asserts the control is
+   absent there.
+2. **Labels leaked into a tiny preview.** Flipping `showTargetLabels` to default `true`
+   also enabled labels in `HomePresenceCard`'s preview, which (unlike `PresenceRailTile`)
+   never opted out. At `scale: 4000` the label font is 200 view units inside an
+   11 rem-high box, so it would have crowded the card. Added the same explicit
+   `:show-target-labels="false"` the rail tile already used.
+3. **Redundant parameter and wasted work.** `spatialTargetLabel` still took a
+   `showDistance` flag even though the only caller had already branched on it, and
+   `Math.hypot` ran for every track on every frame while the option was off. Dropped the
+   parameter and moved the square root behind the enable check.
+
+All six `SpatialCanvas` consumers were re-checked after the change: live panel (labels +
+optional distance), Positions replay (labels), heatmap (no tracks), and the two Home
+previews (labels explicitly off).
+
 ## Completion
 
 Acceptance evidence recorded per task in `tasks.md`. No review approval is claimed.

@@ -437,6 +437,9 @@ test.describe('devices', () => {
     await page.setViewportSize({ width: 1280, height: 600 });
     await page.getByRole('tab',{name:'History',exact:true}).click();
     await page.getByRole('button',{name:'Positions',exact:true}).click();
+    // The replay viewer keeps its own options: no Distance checkbox, since only the live
+    // panel wires that value into its canvas.
+    await expect(page.getByLabel('Distance', { exact: true })).toHaveCount(0);
     await expect(page.locator('.nh-session-row')).toHaveCount(3);
     const fovToggle = page.getByLabel('Field of view', { exact: true });
     await expect(fovToggle).toBeEnabled();

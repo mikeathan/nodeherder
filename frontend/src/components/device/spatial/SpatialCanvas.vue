@@ -180,8 +180,11 @@
         heading = { x: ahead.x - point.x, y: ahead.y - point.y };
       }
       // The distance label uses the same origin the dot is drawn from (filtered, or raw when
-      // asked), so the text can never describe a different position than the marker.
-      const label = spatialTargetLabel(track.label, Math.hypot(origin.x, origin.y), props.showDistances === true);
+      // asked), so the text can never describe a different position than the marker. Skip the
+      // square root entirely when the option is off: this runs for every track every frame.
+      const label = props.showDistances === true
+        ? spatialTargetLabel(track.label, Math.hypot(origin.x, origin.y))
+        : track.label;
       return { key: track.id, label, state: track.state, colorIndex: track.colorIndex, at: track.at, point, heading };
     })
   );

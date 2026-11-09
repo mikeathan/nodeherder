@@ -200,6 +200,7 @@
           v-model:show-grid="showGrid"
           v-model:show-fov="showFov"
           v-model:show-distances="showDistances"
+          distance-option
           :base-view-box="radarViewBox(scale)"
           :fov-angle="displayFov"
           :edit-mode="isSpatialEditView(mode)"

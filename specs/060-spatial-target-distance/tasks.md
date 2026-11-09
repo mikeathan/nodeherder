@@ -40,3 +40,19 @@ Spec: [spec.md](spec.md) | Plan: [plan.md](plan.md) | Status: complete (unreview
   condition was always false. Give the prop a `true` default via `withDefaults`; preview
   surfaces keep opting out explicitly. IDs: AC-02, FR-01; done: label renders, and the
   live/Positions/Heatmap surfaces are covered by `e2e/devices.spec.ts` on both projects.
+
+## Second review pass
+
+- [x] T010 — Audit every `SpatialCanvas` consumer, not just the three exercised by
+  `devices.spec.ts`. IDs: FE-04; done: six consumers checked.
+- [x] T011 — Replace the `showDistances !== undefined` guard with an explicit
+  `distanceOption` opt-in: Vue casts an absent Boolean prop to `false`, so the Positions
+  viewer was showing a checkbox that did nothing. IDs: FR-01, AC-01; done: browser test
+  asserts the control is absent on the replay viewer.
+- [x] T012 — Opt `HomePresenceCard`'s preview out of target labels, matching
+  `PresenceRailTile`, so the default flip does not crowd the small card. IDs: AC-02,
+  FE-04; done: home suite passes.
+- [x] T013 — Drop the redundant `showDistance` parameter and keep `Math.hypot` behind the
+  enable check. IDs: NFR-01; done: unit tests updated, all suites pass.
+- [x] T014 — Re-run: `npm test` 774 passed; lint 0 errors; build and e2e typecheck pass;
+  `devices.spec.ts` 9/9 desktop and 9/9 mobile; `home.spec.ts` 11/11.

@@ -41,29 +41,25 @@ test('known spatial quantities retain millimetre precision and shared missing ma
 });
 
 describe('target distance labels', () => {
-  test('leaves the label untouched when the option is off', () => {
-    expect(spatialTargetLabel('Track 1', 2400, false)).toBe('Track 1');
-  });
-
-  test('appends a rounded distance when the option is on', () => {
-    expect(spatialTargetLabel('Track 1', 2400, true)).toBe('Track 1 · 2.4 m');
-    expect(spatialTargetLabel('Track 2', 250, true)).toBe('Track 2 · 0.3 m');
+  test('appends a rounded distance', () => {
+    expect(spatialTargetLabel('Track 1', 2400)).toBe('Track 1 · 2.4 m');
+    expect(spatialTargetLabel('Track 2', 250)).toBe('Track 2 · 0.3 m');
   });
 
   test('quantises to 0.1 m so filter noise does not rewrite the text', () => {
-    const stable = spatialTargetLabel('Track 1', 2431, true);
+    const stable = spatialTargetLabel('Track 1', 2431);
     // Sub-centimetre filter wobble must not change the text.
     for (const wobble of [2400, 2412, 2431, 2444]) {
-      expect(spatialTargetLabel('Track 1', wobble, true)).toBe(stable);
+      expect(spatialTargetLabel('Track 1', wobble)).toBe(stable);
     }
     // Crossing a 0.1 m boundary is a real change and does update it.
-    expect(spatialTargetLabel('Track 1', 2468, true)).toBe('Track 1 · 2.5 m');
-    expect(spatialTargetLabel('Track 1', 2600, true)).not.toBe(stable);
+    expect(spatialTargetLabel('Track 1', 2468)).toBe('Track 1 · 2.5 m');
+    expect(spatialTargetLabel('Track 1', 2600)).not.toBe(stable);
   });
 
   test('never invents a distance for an unreadable position', () => {
-    expect(spatialTargetLabel('Track 1', null, true)).toBe('Track 1');
-    expect(spatialTargetLabel('Track 1', undefined, true)).toBe('Track 1');
-    expect(spatialTargetLabel('Track 1', Number.NaN, true)).toBe('Track 1');
+    expect(spatialTargetLabel('Track 1', null)).toBe('Track 1');
+    expect(spatialTargetLabel('Track 1', undefined)).toBe('Track 1');
+    expect(spatialTargetLabel('Track 1', Number.NaN)).toBe('Track 1');
   });
 });
