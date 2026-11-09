@@ -238,6 +238,12 @@ to the spare port. Those two URLs are hardcoded per spec file, so a mismatched p
 the disconnect cases silently miss the socket; the failures observed during the review
 were that mismatch only and passed once aligned.
 
+CI on PR #103 (`feat/settings-consolidation`, run 42523468770) confirms that on the
+canonical ports: **17 of 17 checks pass**, including `Frontend Tests, Lint and Build`
+(1m12s), the full desktop and mobile E2E matrix (shards 1–4 each), `Backend Tests and
+Build`, `Backend Race Detection`, both container builds and the deployment/tooling checks.
+`Tag Build` is skipped because this is not a tag build.
+
 Selected commands (from `frontend/`): `npm test -- --runInBand`; `npm run lint`;
 `npm run build`; `npm run type-check:e2e`; `npx playwright test --project=desktop e2e/Settings.spec.ts e2e/StorageSettings.spec.ts e2e/LoggerSettings.spec.ts e2e/MCPSettings.spec.ts e2e/AssistantSettings.spec.ts e2e/SensorReportingSettings.spec.ts e2e/layout.spec.ts`
 plus `--project=mobile` for the layout/touch/viewport behaviour. Backend is untouched, so
