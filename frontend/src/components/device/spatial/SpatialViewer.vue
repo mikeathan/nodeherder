@@ -18,6 +18,11 @@
       zoom: number;
       showGrid: boolean;
       showFov: boolean;
+      /**
+       * Append each target's distance from the sensor to its label. Left undefined by
+       * surfaces that do not offer the option, which also hides its checkbox.
+       */
+      showDistances?: boolean;
       /** Editing canvases need an explicit hand tool; read-only views pan directly. */
       editMode?: boolean;
       /** Optional zoom centre, e.g. the active recorded sample. */
@@ -31,6 +36,7 @@
     'update:zoom': [value: number];
     'update:showGrid': [value: boolean];
     'update:showFov': [value: boolean];
+    'update:showDistances': [value: boolean];
   }>();
   defineSlots<{
     default(props: { viewBox: string; panMode: boolean }): any;
@@ -208,6 +214,13 @@
                 :checked="showFov"
                 @change="emit('update:showFov', ($event.target as HTMLInputElement).checked)" />
               Field of view
+            </label>
+            <label v-if="showDistances !== undefined" class="nh-view-check">
+              <input
+                type="checkbox"
+                :checked="showDistances"
+                @change="emit('update:showDistances', ($event.target as HTMLInputElement).checked)" />
+              Distance
             </label>
             <label v-if="editMode" class="nh-view-check">
               <input v-model="panTool" type="checkbox" />

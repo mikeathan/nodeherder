@@ -38,51 +38,61 @@
     snapPoint,
   } from '@/domain/spatial/canvas';
   import { screenPoint, sensorPoint } from '@/domain/spatial/workspace';
-  import { radarGridOffsets, radarViewBox, rotatePoint } from '@/domain/spatial/radar';
+  import { radarGridOffsets, radarViewBox, rotatePoint, spatialTargetLabel } from '@/domain/spatial/radar';
   import { SpatialViewIds, isSpatialEditView, type SpatialViewId } from '@/domain/spatial/view';
   import { ICONS } from '@/components/ui/icons';
 
-  const props = defineProps<{
-    workspace: SpatialWorkspace;
-    /** Display tracks with stable identity; the caller owns filtering and hold state. */
-    tracks: readonly SpatialDisplayTrack[];
-    /** Hysteresis-tracked zone occupancy; never a firmware claim. */
-    occupancy: ReadonlyMap<string, ZoneOccupancy>;
-    scale: number;
-    orientation: number;
-    online: boolean;
-    mode: SpatialViewId;
-    selectedId: string;
-    trails: { id: number; targets: SpatialTarget[] }[];
-    cells: HeatCell[];
-    showGrid: boolean;
-    showRoomContext: boolean;
-    /** Trailing path segment drawn brighter than `trails`; omitted by live surfaces. */
-    recentTrails?: { id: number; targets: SpatialTarget[] }[];
-    /** Connectors between the previous and current sample, explained as a jump. */
-    hopLinks?: { from: SpatialPoint; to: SpatialPoint }[];
-    /** Timestamp of the current sample; a new value restarts the pulse ring. */
-    pulseAt?: number;
-    /** Divides labels and markers so a zoomed viewBox keeps them readable. */
-    uiScale?: number;
-    /** Text halo width in view units; the zoomed Positions surface scales it with uiScale. */
-    labelStroke?: number;
-    /** Hide the illustrative field-of-view cone without changing the saved angle. */
-    showFov?: boolean;
-    /** Display-only FOV angle, used when the device has no configured angle. */
-    fovAngle?: number;
-    /** Panning suspends editing so the drag cannot also move a zone or handle. */
-    panMode?: boolean;
-    /** Explicit view box for auto-fitted surfaces; the panel range selector omits it. */
-    viewBox?: string;
-    /** Draw unfiltered source positions instead of filtered ones (evidence view). */
-    showRaw?: boolean;
-    label?: string;
-    /** Preview surfaces hide per-slot labels because a slot is not an identity. */
-    showTargetLabels?: boolean;
-    /** Preview dots need to stay legible in a small fitted view. */
-    targetScale?: number;
-  }>();
+  /*
+   * `showTargetLabels` defaults to true through `withDefaults`: a Boolean prop absent from
+   * the template would otherwise be cast to `false` by Vue, which silently suppressed every
+   * track label. Preview surfaces opt out explicitly instead.
+   */
+  const props = withDefaults(
+    defineProps<{
+      workspace: SpatialWorkspace;
+      /** Display tracks with stable identity; the caller owns filtering and hold state. */
+      tracks: readonly SpatialDisplayTrack[];
+      /** Hysteresis-tracked zone occupancy; never a firmware claim. */
+      occupancy: ReadonlyMap<string, ZoneOccupancy>;
+      scale: number;
+      orientation: number;
+      online: boolean;
+      mode: SpatialViewId;
+      selectedId: string;
+      trails: { id: number; targets: SpatialTarget[] }[];
+      cells: HeatCell[];
+      showGrid: boolean;
+      showRoomContext: boolean;
+      /** Trailing path segment drawn brighter than `trails`; omitted by live surfaces. */
+      recentTrails?: { id: number; targets: SpatialTarget[] }[];
+      /** Connectors between the previous and current sample, explained as a jump. */
+      hopLinks?: { from: SpatialPoint; to: SpatialPoint }[];
+      /** Timestamp of the current sample; a new value restarts the pulse ring. */
+      pulseAt?: number;
+      /** Divides labels and markers so a zoomed viewBox keeps them readable. */
+      uiScale?: number;
+      /** Text halo width in view units; the zoomed Positions surface scales it with uiScale. */
+      labelStroke?: number;
+      /** Hide the illustrative field-of-view cone without changing the saved angle. */
+      showFov?: boolean;
+      /** Display-only FOV angle, used when the device has no configured angle. */
+      fovAngle?: number;
+      /** Panning suspends editing so the drag cannot also move a zone or handle. */
+      panMode?: boolean;
+      /** Explicit view box for auto-fitted surfaces; the panel range selector omits it. */
+      viewBox?: string;
+      /** Draw unfiltered source positions instead of filtered ones (evidence view). */
+      showRaw?: boolean;
+      label?: string;
+      /** Preview surfaces hide per-slot labels because a slot is not an identity. */
+      showTargetLabels?: boolean;
+      /** Append each target's distance from the sensor to its label. */
+      showDistances?: boolean;
+      /** Preview dots need to stay legible in a small fitted view. */
+      targetScale?: number;
+    }>(),
+    { showTargetLabels: true }
+  );
   const emit = defineEmits<{
     select: [id: string];
     gestureStart: [index: number | null];
@@ -169,9 +179,13 @@
         });
         heading = { x: ahead.x - point.x, y: ahead.y - point.y };
       }
-      return { key: track.id, label: track.label, state: track.state, colorIndex: track.colorIndex, at: track.at, point, heading };
+      // The distance label uses the same origin the dot is drawn from (filtered, or raw when
+      // asked), so the text can never describe a different position than the marker.
+      const label = spatialTargetLabel(track.label, Math.hypot(origin.x, origin.y), props.showDistances === true);
+      return { key: track.id, label, state: track.state, colorIndex: track.colorIndex, at: track.at, point, heading };
     })
   );
+
   function zonePoints(points: readonly SpatialPoint[]) {
     return sensorPolygon(points, props.workspace.sensor, props.orientation);
   }
@@ -301,7 +315,7 @@
       <circle
         :r="scale * CANVAS_TARGET_RADIUS_RATIO * (targetScale ?? 1) / symbolScale"
         :class="['nh-target', `is-${track.state}`, `is-color-${track.colorIndex}`, { 'is-raw': showRaw }]" />
-      <text v-if="showTargetLabels !== false" :x="scale * CANVAS_TARGET_LABEL_X_RATIO / symbolScale" :y="scale * CANVAS_TARGET_LABEL_Y_RATIO / symbolScale" :font-size="scale * CANVAS_TARGET_FONT_RATIO / symbolScale">
+      <text v-if="showTargetLabels !== false" class="nh-target-label" :x="scale * CANVAS_TARGET_LABEL_X_RATIO / symbolScale" :y="scale * CANVAS_TARGET_LABEL_Y_RATIO / symbolScale" :font-size="scale * CANVAS_TARGET_FONT_RATIO / symbolScale">
         {{ track.label }}
       </text>
     </g>

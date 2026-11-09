@@ -93,6 +93,7 @@
   const helpOpen = ref(false);
   const showGrid = ref(true);
   const showFov = ref(false);
+  const showDistances = ref(false);
   const zoom = ref(1);
   const showRoomContext = ref(true);
   const displayFov = computed(() =>
@@ -198,6 +199,7 @@
           v-model:zoom="zoom"
           v-model:show-grid="showGrid"
           v-model:show-fov="showFov"
+          v-model:show-distances="showDistances"
           :base-view-box="radarViewBox(scale)"
           :fov-angle="displayFov"
           :edit-mode="isSpatialEditView(mode)"
@@ -219,6 +221,7 @@
               :pan-mode="panMode"
               :show-grid="showGrid"
               :show-fov="showFov"
+              :show-distances="showDistances"
               :fov-angle="displayFov"
               :ui-scale="zoom"
               :show-room-context="showRoomContext"
