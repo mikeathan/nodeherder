@@ -3,6 +3,7 @@ export enum RouteName {
   Overview = 'overview',
   Panel = 'panel',
   Devices = 'devices',
+  Wireless = 'wireless',
   Integrations = 'integrations',
   Integration = 'integration',
   IntegrationSetup = 'integrationsetup',

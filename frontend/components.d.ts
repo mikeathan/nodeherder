@@ -101,7 +101,6 @@ declare module 'vue' {
     HomePresenceOverviewCard: typeof import('./src/components/home/HomePresenceOverviewCard.vue')['default']
     HomeStandaloneCard: typeof import('./src/components/home/HomeStandaloneCard.vue')['default']
     Icon: typeof import('./src/components/controls/Icon.vue')['default']
-    InputNumber: typeof import('primevue/inputnumber')['default']
     IntegrationCatalog: typeof import('./src/components/integrations/catalog/IntegrationCatalog.vue')['default']
     IntegrationEntry: typeof import('./src/components/integrations/entries/IntegrationEntry.vue')['default']
     IntegrationPageHeader: typeof import('./src/components/integrations/shared/IntegrationPageHeader.vue')['default']
@@ -122,6 +121,9 @@ declare module 'vue' {
     NotConfiguredState: typeof import('./src/components/assistant/states/NotConfiguredState.vue')['default']
     Notifications: typeof import('./src/components/hub/alerts/Notifications.vue')['default']
     NumericHistory: typeof import('./src/components/chart/history/NumericHistory.vue')['default']
+    ObservationFilters: typeof import('./src/components/wireless/ObservationFilters.vue')['default']
+    ObservationRadar: typeof import('./src/components/wireless/ObservationRadar.vue')['default']
+    ObservationTable: typeof import('./src/components/wireless/ObservationTable.vue')['default']
     OverviewPage: typeof import('./src/components/overview/OverviewPage.vue')['default']
     PanelButton: typeof import('./src/components/panel/PanelButton.vue')['default']
     PanelDial: typeof import('./src/components/panel/PanelDial.vue')['default']
@@ -160,7 +162,6 @@ declare module 'vue' {
     Settings: typeof import('./src/components/hub/settings/Settings.vue')['default']
     SetValuesAction: typeof import('./src/components/automations/editor/actions/SetValuesAction.vue')['default']
     Sidebar: typeof import('primevue/sidebar')['default']
-    Slider: typeof import('primevue/slider')['default']
     SpatialActivityHistory: typeof import('./src/components/device/spatial/SpatialActivityHistory.vue')['default']
     SpatialCalibrationPanel: typeof import('./src/components/device/spatial/SpatialCalibrationPanel.vue')['default']
     SpatialCanvas: typeof import('./src/components/device/spatial/SpatialCanvas.vue')['default']
@@ -213,6 +214,7 @@ declare module 'vue' {
     WeatherDayCard: typeof import('./src/components/integrations/weather/WeatherDayCard.vue')['default']
     WeatherResults: typeof import('./src/components/integrations/weather/WeatherResults.vue')['default']
     WeatherStatGrid: typeof import('./src/components/integrations/weather/WeatherStatGrid.vue')['default']
+    WirelessViewer: typeof import('./src/components/wireless/WirelessViewer.vue')['default']
   }
   export interface GlobalDirectives {
     Tooltip: typeof import('primevue/tooltip')['default']

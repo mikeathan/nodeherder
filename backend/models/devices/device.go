@@ -172,7 +172,11 @@ type Device struct {
 	Exposes        map[string]*Entity     `json:"exposes"`
 	LastSeen       string                 `json:"last_seen"`
 	Availability   AvailabilityType       `json:"availability"`
-	mutex          sync.RWMutex
+	// Capabilities lists abstract features this device provides, e.g. "wireless.observe". It is
+	// declared by the provider at registration and never inferred from a provider name, so
+	// consumers stay provider-agnostic. Omitted when empty.
+	Capabilities []string `json:"capabilities,omitempty"`
+	mutex        sync.RWMutex
 }
 
 // NewDevice creates an unknown device with owned empty inventory and public metadata.

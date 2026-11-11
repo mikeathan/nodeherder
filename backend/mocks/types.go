@@ -172,6 +172,16 @@ func (w *MockEventHub) OnDeleteDeviceConfigOverride(action func(p interface{}) e
 	fmt.Println("MockEventHub: OnDeleteDeviceConfigOverride")
 }
 
+// OnSaveObservationIdentity records that the hub registered the triage save handler.
+func (w *MockEventHub) OnSaveObservationIdentity(action func(p interface{}) error) {
+	fmt.Println("MockEventHub: OnSaveObservationIdentity")
+}
+
+// OnDeleteObservationIdentity records that the hub registered the triage delete handler.
+func (w *MockEventHub) OnDeleteObservationIdentity(action func(p interface{}) error) {
+	fmt.Println("MockEventHub: OnDeleteObservationIdentity")
+}
+
 func (w *MockEventHub) OnSaveHistoryConfig(func(payload interface{}) error) {
 	fmt.Println("MockEventHub: OnSaveHistoryConfig")
 }
@@ -496,6 +506,16 @@ func (w *NopWsServer) OnSaveHistoryConfig(func(payload interface{}) error) {
 }
 func (w *NopWsServer) OnDeleteDeviceConfigOverride(action func(payload interface{}) error) {
 	fmt.Println("WsServer: Mocked OnDeleteDeviceConfigOverride")
+}
+
+// OnSaveObservationIdentity is a no-op triage save handler.
+func (w *NopWsServer) OnSaveObservationIdentity(action func(payload interface{}) error) {
+	fmt.Println("WsServer: Mocked OnSaveObservationIdentity")
+}
+
+// OnDeleteObservationIdentity is a no-op triage delete handler.
+func (w *NopWsServer) OnDeleteObservationIdentity(action func(payload interface{}) error) {
+	fmt.Println("WsServer: Mocked OnDeleteObservationIdentity")
 }
 func (w NopWsServer) OnSaveLoggerConfig(action func(payload interface{}) error) {
 	fmt.Println("WsServer: Mocked OnSaveLoggerConfig")

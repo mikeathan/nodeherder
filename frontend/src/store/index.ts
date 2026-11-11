@@ -11,6 +11,7 @@ import { AuthModule as auth } from './modules/auth';
 import { AssistantModule as assistant } from './modules/assistant/index';
 import { IntegrationsModule as integrations } from './modules/integrations';
 import { HomeModule as home } from './modules/home';
+import { ObservationsModule as observations } from './modules/observations';
 import createPersistedState from 'vuex-persistedstate';
 
 // https://blog.openreplay.com/integrate-vuex-and-typescript/
@@ -46,6 +47,7 @@ export const store = createStore<RootState>({
       commit('console/clear');
       commit('integrations/clear');
       commit('home/clear');
+      commit('observations/clear');
       commit('console/setEnabled', false);
     },
   },
@@ -60,6 +62,7 @@ export const store = createStore<RootState>({
     assistant,
     integrations,
     home,
+    observations,
   },
 });
 

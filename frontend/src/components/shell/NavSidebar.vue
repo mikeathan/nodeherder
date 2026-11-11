@@ -7,11 +7,24 @@
   import { confirm } from '@/composables/useConfirm';
   import UiIcon from '@/components/ui/UiIcon.vue';
   import AppLogo from '@/components/ui/AppLogo.vue';
-  import { isNavActive, NAV_ITEMS } from './navigation';
+  import { availableNavItems, isNavActive, NAV_ITEMS } from './navigation';
+  import { hasObservationSources } from '@/domain/observations/capability';
+  import { useStore } from 'vuex';
 
   defineEmits<{ (e: 'navigate'): void }>();
 
   const route = useRoute();
+  const store = useStore();
+  // Capability-gated entries are evaluated per render so enrolling a source reveals them
+  // without a reload; nothing here compares provider names.
+  const navItems = () =>
+    availableNavItems(
+      NAV_ITEMS.map((item) =>
+        item.route === RouteName.Wireless
+          ? { ...item, when: () => hasObservationSources(store.getters['hub/listAllDevices']?.() ?? []) }
+          : item,
+      ),
+    );
   const { signOut } = useSession();
   const permit = usePermitJoin();
   const version = __APP_VERSION__;
@@ -36,7 +49,7 @@
       <AppLogo :size="42" :version="version" />
     </RouterLink>
     <ul class="nh-nav-list">
-      <li v-for="item in NAV_ITEMS" :key="item.route">
+      <li v-for="item in navItems()" :key="item.route">
         <RouterLink
           :to="{ name: item.route }"
           class="nh-nav-item"

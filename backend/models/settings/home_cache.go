@@ -85,10 +85,12 @@ func (s *AppConfigCache) commitHomeLocked(layout HomeLayout, revision uint64) (H
 }
 
 // publicSnapshotLocked is the only AppConfig response boundary. The persisted private layout
-// must be omitted even from settings-save replies, not merely the initial hub snapshot.
+// and observation identity decisions must be omitted even from settings-save replies, not
+// merely the initial hub snapshot.
 func (s *AppConfigCache) publicSnapshotLocked() *AppConfig {
 	config := *s.appConfig
 	config.HomeLayout = nil
+	config.ObservationIdentities = nil
 	config.Hub = cloneHubConfig(config.Hub)
 	config.Bridge = cloneBridgeConfig(config.Bridge)
 	return &config

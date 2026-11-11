@@ -16,18 +16,20 @@ import (
 
 	metrics "node-herder/internal/metrics/services"
 	"node-herder/internal/mqtt"
+	"node-herder/internal/observations"
 	"node-herder/internal/ratelimiter"
 	"node-herder/internal/spatialhistory"
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
+	observationsmodel "node-herder/models/observations"
 	"node-herder/store"
 	"node-herder/utils"
 	"os"
 	"time"
 )
 
-func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store store.AppStore, mcpServer *mcpserver.Server, ctx context.Context, options ...Option) (*api.ApiServer, error) {
-	router, err := newRouter(port, ws, hub, store, mcpServer, ctx, options...)
+func registerApi(port int, eventHub ws.EventHub, hub *controllers.HubController, store store.AppStore, mcpServer *mcpserver.Server, ctx context.Context, options ...Option) (*api.ApiServer, error) {
+	router, err := newRouter(port, eventHub, hub, store, mcpServer, ctx, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -111,11 +113,11 @@ func newRouter(port int, ws ws.EventHub, hub *controllers.HubController, store s
 func Register(port int, store store.AppStore, ctx context.Context, options ...Option) (*api.ApiServer, error) {
 	markProviderDevicesOffline(store)
 
-	ws := ws.NewWsHub()
-	ws.Start()
-	context.AfterFunc(ctx, func() { _ = ws.Close() })
+	eventHub := ws.NewWsHub()
+	eventHub.Start()
+	context.AfterFunc(ctx, func() { _ = eventHub.Close() })
 
-	utils.RegisterRemoteLoggerHook(ws)
+	utils.RegisterRemoteLoggerHook(eventHub)
 
 	mqtt := mqtt.NewMqttClient(mqtt.WithDefaultMqttConfig())
 
@@ -141,16 +143,29 @@ func Register(port int, store store.AppStore, ctx context.Context, options ...Op
 		recorder.Start()
 		controllerOpts = append(controllerOpts, controllers.WithSpatialRecorder(recorder))
 	}
-	hub := controllers.RegisterHubController(ws, store, mqtt, controllerOpts...)
+	hub := controllers.RegisterHubController(eventHub, store, mqtt, controllerOpts...)
 	if hub == nil {
 		return nil, fmt.Errorf("failed to register hub controller")
 	}
-	providerManager := startDeviceProviders(ctx, hub)
+	// Observation state is memory-only; a restart loses the live view and nothing else.
+	observationService := observations.NewService(observations.Deps{
+		Context: ctx,
+		Store:   store.AppConfig(),
+		Clock:   utils.NewRealClock(),
+		Publish: func(snapshot observationsmodel.Snapshot) {
+			if err := eventHub.Broadcast(ws.Observations, snapshot); err != nil {
+				utils.LogErrorf("Failed to broadcast observations: %v", err)
+			}
+		},
+	})
+	observationService.Start(ctx)
+	registerObservationHandlers(eventHub, store.AppConfig())
+	providerManager := startDeviceProviders(ctx, hub, observationService)
 	if providerManager != nil {
 		hub.SetProviderCommands(providerManager)
 		options = append(options, WithDeviceProviders(providerManager))
 	}
-	server, err := registerApi(port, ws, hub, store, mcpServer, ctx, options...)
+	server, err := registerApi(port, eventHub, hub, store, mcpServer, ctx, options...)
 	if err != nil && providerManager != nil {
 		closeCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
@@ -180,7 +195,7 @@ func WithDeviceProviders(manager *deviceproviders.Manager) Option {
 	return func(c *optionsConfig) { c.providers = manager }
 }
 
-func startDeviceProviders(ctx context.Context, pipeline *controllers.HubController) *deviceproviders.Manager {
+func startDeviceProviders(ctx context.Context, pipeline *controllers.HubController, observations *observations.Service) *deviceproviders.Manager {
 	data := os.Getenv("DATA_DIR")
 	if data == "" {
 		data = "./data"
@@ -190,7 +205,12 @@ func startDeviceProviders(ctx context.Context, pipeline *controllers.HubControll
 		utils.LogError("Device provider storage unavailable; check key and data paths")
 		return nil
 	}
-	manager, err := deviceproviders.NewManager(ctx, repo, map[string]deviceproviders.Driver{esphome.ProviderName: esphome.NewDriver(pipeline)})
+	driver := esphome.NewDriver(pipeline)
+	// Observation is opt-in per hub: a nil service keeps every provider state-only.
+	if observations != nil {
+		driver = driver.WithObservationConsumer(observations)
+	}
+	manager, err := deviceproviders.NewManager(ctx, repo, map[string]deviceproviders.Driver{esphome.ProviderName: driver})
 	if err != nil {
 		_ = repo.Close()
 		utils.LogError("Device provider startup unavailable; check saved configuration and keys")

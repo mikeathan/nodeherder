@@ -46,13 +46,17 @@ const (
 	SaveAssistantConfig        = "saveAssistantConfig"
 	SaveDeviceConfigOverride   = "saveDeviceConfigOverride"
 	DeleteDeviceConfigOverride = "deleteDeviceConfigOverride"
-	SaveDeviceConfigDefaults   = "saveDeviceConfigDefaults"
-	SaveDashboardGroup         = "saveDashboardGroup"
-	RenameDashboardGroup       = "renameDashboardGroup"
-	DeleteDashboardGroup       = "deleteDashboardGroup"
-	ImportDashboardGroups      = "importDashboardGroups"
-	LoadDashboardGroups        = "loadDashboardGroups"
-	LoadAppconfig              = "loadAppConfig"
+	// Observation identity triage. Results reuse the correlated deviceConfigSaveResult
+	// envelope rather than introducing a second acknowledgement channel.
+	SaveObservationIdentity   = "saveObservationIdentity"
+	DeleteObservationIdentity = "deleteObservationIdentity"
+	SaveDeviceConfigDefaults  = "saveDeviceConfigDefaults"
+	SaveDashboardGroup        = "saveDashboardGroup"
+	RenameDashboardGroup      = "renameDashboardGroup"
+	DeleteDashboardGroup      = "deleteDashboardGroup"
+	ImportDashboardGroups     = "importDashboardGroups"
+	LoadDashboardGroups       = "loadDashboardGroups"
+	LoadAppconfig             = "loadAppConfig"
 
 	LoadMetrics = "loadMetrics"
 
@@ -69,7 +73,10 @@ const (
 	DeviceUpdated = "deviceUpdated" // returns back updated properties of type DeviceUpdated
 	// SpatialTargets carries a complete, synchronized snapshot of a device's mapped target
 	// slots (devices.SpatialFrame). It is additive: consumers fall back to DeviceUpdated.
-	SpatialTargets   = "spatialTargets"
+	SpatialTargets = "spatialTargets"
+	// Observations carries a complete, bounded snapshot of wireless observation state. It is
+	// additive and independent of device state.
+	Observations     = "observations"
 	OperationFailed  = "operationFailed"
 	OperationSuccess = "operationSuccess"
 	// DeviceConfigSaveResult carries correlated persistence results for opt-in settings saves.
@@ -107,6 +114,8 @@ type EventHub interface {
 	OnLoadBridgeConfig(action func() (interface{}, error))
 	OnSaveDeviceConfigOverride(func(payload interface{}) error)
 	OnDeleteDeviceConfigOverride(func(payload interface{}) error)
+	OnSaveObservationIdentity(func(payload interface{}) error)
+	OnDeleteObservationIdentity(func(payload interface{}) error)
 	OnSaveDeviceConfigDefaults(func(payload interface{}) error)
 	OnSaveHistoryConfig(func(payload interface{}) error)
 	OnSaveLoggerConfig(func(payload interface{}) error)
@@ -143,6 +152,8 @@ type eventHubImpl struct {
 	onLoadBridgeConfig           func() (interface{}, error)
 	onSaveDeviceConfigOverride   func(interface{}) error
 	onDeleteDeviceConfigOverride func(interface{}) error
+	onSaveObservationIdentity    func(interface{}) error
+	onDeleteObservationIdentity  func(interface{}) error
 	onSaveDeviceConfigDefaults   func(interface{}) error
 	onSaveHistoryConfig          func(interface{}) error
 	onSaveLoggerConfig           func(interface{}) error
@@ -179,6 +190,8 @@ func NewWsHub() EventHub {
 		onLoadBridgeConfig:           func() (interface{}, error) { return nil, nil },
 		onSaveDeviceConfigOverride:   func(payload interface{}) error { return nil },
 		onDeleteDeviceConfigOverride: func(payload interface{}) error { return nil },
+		onSaveObservationIdentity:    func(payload interface{}) error { return nil },
+		onDeleteObservationIdentity:  func(payload interface{}) error { return nil },
 		onSaveDeviceConfigDefaults:   func(payload interface{}) error { return nil },
 		onSaveHistoryConfig:          func(payload interface{}) error { return nil },
 		onSaveLoggerConfig:           func(payload interface{}) error { return nil },
@@ -246,6 +259,16 @@ func (h *eventHubImpl) OnSaveDeviceConfigOverride(action func(payload interface{
 
 func (h *eventHubImpl) OnDeleteDeviceConfigOverride(action func(payload interface{}) error) {
 	h.onDeleteDeviceConfigOverride = action
+}
+
+// OnSaveObservationIdentity registers the handler that persists one triage decision.
+func (h *eventHubImpl) OnSaveObservationIdentity(action func(payload interface{}) error) {
+	h.onSaveObservationIdentity = action
+}
+
+// OnDeleteObservationIdentity registers the handler that reverts one triage decision.
+func (h *eventHubImpl) OnDeleteObservationIdentity(action func(payload interface{}) error) {
+	h.onDeleteObservationIdentity = action
 }
 
 func (h *eventHubImpl) OnSaveDeviceConfigDefaults(action func(payload interface{}) error) {
@@ -389,6 +412,12 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 
 	case DeleteDeviceConfigOverride:
 		c.execute(eventExecutorOptionsWithSuccess(eventMsg.Payload, wrapPayloadNoResult(c.onDeleteDeviceConfigOverride)))
+
+	case SaveObservationIdentity:
+		c.execute(eventExecutorOptionsWithSuccess(eventMsg.Payload, wrapPayloadNoResult(c.onSaveObservationIdentity)))
+
+	case DeleteObservationIdentity:
+		c.execute(eventExecutorOptionsWithSuccess(eventMsg.Payload, wrapPayloadNoResult(c.onDeleteObservationIdentity)))
 
 	case SaveDeviceConfigDefaults:
 		c.execute(eventExecutorOptionsWithSuccess(eventMsg.Payload, wrapPayloadNoResult(c.onSaveDeviceConfigDefaults)))

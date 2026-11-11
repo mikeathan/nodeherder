@@ -219,6 +219,20 @@ func (s *Session) runSubscribed(ctx context.Context, c nativeClient, sink Sink, 
 	if err := c.SubscribeStates(); err != nil {
 		return fmt.Errorf("ESPHome subscription failed: %w", err)
 	}
+	// A device that implements Observer can also stream advertisements. The subscription is
+	// attempted only for those devices and a rejection is not fatal: a device without the
+	// Bluetooth proxy component still delivers its entity state.
+	observer, observes := sink.(Observer)
+	var source string
+	if observes {
+		if sourceDescriptor, ok := sink.(ObservationSource); ok {
+			source, _, _, _ = sourceDescriptor.SourceDescriptor()
+		}
+		if err := subscribeAdvertisements(c); err != nil {
+			observer = nil
+			observes = false
+		}
+	}
 	select {
 	case <-overflow:
 		return errors.New("ESPHome ingress overflow; resynchronization required")
@@ -288,6 +302,18 @@ func (s *Session) runSubscribed(ctx context.Context, c nativeClient, sink Sink, 
 		case <-commandFailed:
 			return errors.New("ESPHome command transport failed")
 		case msg := <-incoming:
+			// Advertisement batches are not entity state, so they are dispatched before the
+			// state lookup rather than being rejected as an undiscovered entity.
+			if observes {
+				if batch, ok := msg.(*api.BluetoothLERawAdvertisementsResponse); ok {
+					if decoded := decodeAdvertisements(source, batch); len(decoded) > 0 {
+						if err := observer.ObserveAdvertisements(ctx, decoded); err != nil {
+							return fmt.Errorf("ESPHome observation delivery failed: %w", err)
+						}
+					}
+					continue
+				}
+			}
 			id, ok := stateID(msg)
 			if !ok {
 				continue

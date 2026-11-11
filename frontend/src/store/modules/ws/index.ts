@@ -57,6 +57,8 @@ const mutationEvents = new Map([
   ['automationUpdated', 'automations/update'], ['deviceUpdated', 'hub/updateDevice'],
   // Complete, synchronized spatial snapshots; additive to deviceUpdated (spec 040).
   ['spatialTargets', 'hub/updateSpatialTargets'],
+  // Validated wireless observation snapshot; unknown facets are ignored, not rejected (spec 064).
+  ['observations', 'observations/setSnapshot'],
   ['bridgeConfig', 'hub/setBridgeSettings'], ['deviceAdded', 'hub/addDevice'],
   ['dashboardGroups', 'hub/setDashboardGroups'], ['mcpStatus', 'hub/setMCPStatus'],
 ]);

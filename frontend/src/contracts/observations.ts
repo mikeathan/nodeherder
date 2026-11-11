@@ -1,0 +1,155 @@
+/**
+ * Runtime validation for the `observations` WebSocket event (spec 064, FE-02).
+ *
+ * The payload crosses a trust boundary, so it is checked before it reaches application
+ * state. A malformed snapshot rejects the whole payload: a partially applied snapshot would
+ * present mixed-generation data. Unknown facet names are ignored rather than rejected, so a
+ * newer backend can add facets without breaking an older browser.
+ */
+import {
+  ObservationDecisions,
+  ObservationMedia,
+  type ObservationDecision,
+  type ObservationIdentityView,
+  type ObservationMedium,
+  type ObservationSnapshot,
+  type ObservationSourceDescriptor,
+  type ObservationSourceReading,
+} from '@/types/observations.type';
+
+const maxima: Record<'sources' | 'identities' | 'readings' | 'media' | 'facets' | 'text', number> = {
+  sources: 64,
+  identities: 1000,
+  readings: 64,
+  media: 8,
+  facets: 16,
+  text: 512,
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function boundedString(value: unknown, max = maxima.text): string | null {
+  return typeof value === 'string' && value.length <= max ? value : null;
+}
+
+function finiteNumber(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+/** Parse one source descriptor, or null when it is unusable. */
+function parseSource(raw: unknown): ObservationSourceDescriptor | null {
+  if (!isRecord(raw)) return null;
+  const id = boundedString(raw.id);
+  const name = boundedString(raw.name);
+  if (!id || name === null) return null;
+  const media = parseMedia(raw.media);
+  const facets = parseStringList(raw.facets, maxima.facets);
+  if (!media || !facets) return null;
+  return { id, name, media, facets };
+}
+
+/** Parse a media list, rejecting values outside the declared closed set. */
+function parseMedia(raw: unknown): ObservationMedium[] | null {
+  if (!Array.isArray(raw) || raw.length > maxima.media) return null;
+  const known = new Set<string>(Object.values(ObservationMedia));
+  const media: ObservationMedium[] = [];
+  for (const value of raw) {
+    if (typeof value !== 'string' || !known.has(value)) return null;
+    media.push(value as ObservationMedium);
+  }
+  return media;
+}
+
+/** Parse a bounded string list. */
+function parseStringList(raw: unknown, max: number): string[] | null {
+  if (!Array.isArray(raw) || raw.length > max) return null;
+  const values: string[] = [];
+  for (const value of raw) {
+    const text = boundedString(value, 64);
+    if (text === null) return null;
+    values.push(text);
+  }
+  return values;
+}
+
+/** Parse per-source readings. */
+function parseReadings(raw: unknown): ObservationSourceReading[] | null {
+  if (!Array.isArray(raw) || raw.length > maxima.readings) return null;
+  const readings: ObservationSourceReading[] = [];
+  for (const entry of raw) {
+    if (!isRecord(entry)) return null;
+    const id = boundedString(entry.id);
+    if (!id) return null;
+    const rssi = entry.rssi === undefined || entry.rssi === null ? null : finiteNumber(entry.rssi);
+    if (entry.rssi !== undefined && entry.rssi !== null && rssi === null) return null;
+    readings.push({ id, rssi });
+  }
+  return readings;
+}
+
+function parseDecision(raw: unknown): ObservationDecision | null {
+  const known = new Set<string>(Object.values(ObservationDecisions));
+  return typeof raw === 'string' && known.has(raw) ? (raw as ObservationDecision) : null;
+}
+
+/** Parse one identity, or null when it is unusable. */
+function parseIdentity(raw: unknown): ObservationIdentityView | null {
+  if (!isRecord(raw)) return null;
+  const key = boundedString(raw.key);
+  const kind = boundedString(raw.kind, 64);
+  const lastSeen = boundedString(raw.lastSeen, 64);
+  const decision = parseDecision(raw.decision);
+  const sources = parseReadings(raw.sources);
+  const packets = finiteNumber(raw.packets);
+  if (!key || kind === null || !lastSeen || !decision || !sources || packets === null) return null;
+  if (typeof raw.stable !== 'boolean' || Number.isNaN(Date.parse(lastSeen))) return null;
+  const vendor = raw.vendor === undefined ? undefined : finiteNumber(raw.vendor);
+  if (raw.vendor !== undefined && vendor === null) return null;
+  const rssi = raw.rssi === undefined || raw.rssi === null ? null : finiteNumber(raw.rssi);
+  if (raw.rssi !== undefined && raw.rssi !== null && rssi === null) return null;
+  return {
+    key,
+    kind,
+    vendor: vendor === null ? undefined : vendor,
+    stable: raw.stable,
+    label: boundedString(raw.label, 120) ?? undefined,
+    decision,
+    lastSeen,
+    packets,
+    rssi,
+    sources,
+  };
+}
+
+/**
+ * Validate one `observations` payload.
+ *
+ * Returns null when the payload cannot be trusted, so the caller leaves state untouched
+ * rather than applying a partial snapshot.
+ */
+export function parseObservationSnapshot(payload: unknown): ObservationSnapshot | null {
+  if (!isRecord(payload)) return null;
+  const at = boundedString(payload.at, 64);
+  if (!at || Number.isNaN(Date.parse(at))) return null;
+  if (typeof payload.truncated !== 'boolean') return null;
+  const arrivals = finiteNumber(payload.arrivals);
+  if (arrivals === null || arrivals < 0) return null;
+  if (!Array.isArray(payload.sources) || payload.sources.length > maxima.sources) return null;
+  if (!Array.isArray(payload.identities) || payload.identities.length > maxima.identities) return null;
+
+  const sources: ObservationSourceDescriptor[] = [];
+  for (const raw of payload.sources) {
+    const source = parseSource(raw);
+    if (!source) return null;
+    sources.push(source);
+  }
+  const identities: ObservationIdentityView[] = [];
+  for (const raw of payload.identities) {
+    const identity = parseIdentity(raw);
+    if (!identity) return null;
+    identities.push(identity);
+  }
+  return { at, truncated: payload.truncated, sources, identities, arrivals };
+}
