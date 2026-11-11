@@ -14,8 +14,11 @@ process.env.NODEHERDER_E2E_RUN_ID ??= randomUUID();
 export default defineConfig({
   globalSetup: './e2e/support/global-setup.ts',
   testDir: './e2e',
-  fullyParallel: false,
-  workers: 1, // the hubs keep in-memory state shared by all tests
+  // Shard by individual test, not by file: file-level sharding left one job with most of
+  // EntityViewDialog/DeviceMetrics while another finished in half the time. Workers stay
+  // at one because the in-memory hubs are shared by all tests in a job.
+  fullyParallel: true,
+  workers: 1,
   forbidOnly: CI,
   retries: 0,
   timeout: 30_000,
