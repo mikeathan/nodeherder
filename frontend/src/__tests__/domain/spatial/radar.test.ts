@@ -1,6 +1,7 @@
 import { describe, expect, test } from '@jest/globals';
 import {
   RADAR_GRID_DIVISIONS,
+  centeredSpatialView,
   radarGridOffsets,
   radarGridSpacing,
   radarViewBox,
@@ -30,6 +31,35 @@ describe('spatial radar helpers', () => {
     expect(spatialTrackRows([{ label: 'Track 1', state: 'live', x: 100, y: 200 }])).toEqual([
       'Track 1 (live): X 0.1 m, Y 0.2 m',
     ]);
+  });
+
+  describe('sensor-centred views', () => {
+    test('centres on the sensor and contains asymmetric content', () => {
+      const view = centeredSpatialView({ minX: -500, minY: 0, maxX: 3000, maxY: 6000 }, { x: 0, y: 0 }, 1);
+      expect(view).toEqual({ x: -6000, y: -6000, width: 12000, height: 12000 });
+      expect(view.x + view.width / 2).toBe(0);
+      expect(view.y + view.height / 2).toBe(0);
+    });
+
+    test('keeps the canvas aspect while containing the content', () => {
+      const view = centeredSpatialView({ minX: -500, minY: 0, maxX: 3000, maxY: 6000 }, { x: 0, y: 0 }, 2);
+      expect(view.width / view.height).toBeCloseTo(2, 5);
+      expect(view.x).toBeLessThanOrEqual(-500);
+      expect(view.x + view.width).toBeGreaterThanOrEqual(3000);
+      expect(view.y).toBeLessThanOrEqual(0);
+      expect(view.y + view.height).toBeGreaterThanOrEqual(6000);
+    });
+
+    test('centres on an offset sensor', () => {
+      const view = centeredSpatialView({ minX: 0, minY: -1000, maxX: 2000, maxY: 0 }, { x: 1000, y: -500 }, 1);
+      expect(view.x + view.width / 2).toBe(1000);
+      expect(view.y + view.height / 2).toBe(-500);
+    });
+
+    test('falls back to a square for an invalid aspect', () => {
+      const view = centeredSpatialView({ minX: -1000, minY: -1000, maxX: 1000, maxY: 1000 }, { x: 0, y: 0 }, 0);
+      expect(view.width).toBe(view.height);
+    });
   });
 });
 

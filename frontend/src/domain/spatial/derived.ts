@@ -28,6 +28,18 @@ export type DerivedPresenceValues = {
   emptySeconds: number | null;
 };
 
+/**
+ * Display state for a presence surface. Missing derived data is not a measured clear:
+ * `not-derived` is the initial state before the hub has computed a frame.
+ */
+export type DerivedPresenceDisplay = 'not-derived' | 'occupied' | 'clear';
+
+/** Resolves the display state without inventing a value for missing derived data. */
+export function derivedPresenceDisplay(values: DerivedPresenceValues): DerivedPresenceDisplay {
+  if (values.occupied === null) return 'not-derived';
+  return values.occupied ? 'occupied' : 'clear';
+}
+
 /** Stable identifier of the derived device for one source device. */
 export function derivedPresenceDeviceId(sourceId: string): string {
   return `${derivedPrefix}${sourceId}`;

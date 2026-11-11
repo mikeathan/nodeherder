@@ -11,6 +11,7 @@
   import { useDerivedPresence } from '@/composables/spatial/useDerivedPresence';
   import { formatSpatialDistance, radarGridSpacing, radarViewBox, spatialTrackRows } from '@/domain/spatial/radar';
   import { SPATIAL_ILLUSTRATIVE_FOV } from '@/domain/spatial';
+  import { serverPresenceLabel } from '@/domain/spatial/presence';
   import { SPATIAL_SMOOTHING_OPTIONS } from '@/domain/spatial/smoothing';
   import {
     DEFAULT_SPATIAL_VIEW,
@@ -140,15 +141,13 @@
   }
   // Setup panels are forms, not a scene; live and drawing keep the canvas.
   const showCanvas = computed(() => primaryMode.value !== 'setup');
-  const serverPresence = computed(() => {
-    if (!derived.derived.value) return 'Server presence: not derived yet.';
-    if (!derived.online.value) return 'Server presence: derived device offline.';
-    const values = derived.values.value;
-    const count = values.targetCount ?? 0;
-    const empty = values.emptySeconds ?? 0;
-    const last = values.lastZone ?? 'none yet';
-    return `Server presence: ${values.occupied ? 'occupied' : 'clear'} · ${count} ${count === 1 ? 'target' : 'targets'} · last zone ${last} · empty ${empty}s`;
-  });
+  const serverPresence = computed(() =>
+    serverPresenceLabel({
+      hasDerivedDevice: !!derived.derived.value,
+      online: derived.online.value,
+      values: derived.values.value,
+    })
+  );
   const spacing = computed(() => formatSpatialDistance(radarGridSpacing(scale.value)));
   const previews = computed(() =>
     zonePreviewRows(props.device, workspace.value.zones, occupancy.value, online.value, hasData.value, derived.zones.value, derived.online.value)

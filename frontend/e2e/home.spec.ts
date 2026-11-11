@@ -698,10 +698,166 @@ test.describe('home dashboard', () => {
       await page.goto(ui.home.path);
       const overview = page.locator('.nh-overview-card');
       await expect(overview).toBeVisible();
-      await expect(overview).toContainText('Presence');
+      await expect(overview.locator('.nh-overview-title')).toHaveCount(0);
+      await expect(overview.locator('.nh-sensor-head')).toHaveCount(1);
+      await expect(overview.locator('.nh-sensor-name')).toHaveText('Living room light');
       await expect(overview).toContainText('Living room light');
+      await expect(overview).toContainText('Not derived');
       await expect(overview.getByRole('link', { name: 'Open live', exact: true })).toBeVisible();
       await expect(overview.getByRole('link', { name: 'History', exact: true })).toBeVisible();
+      const sensorTile = overview.locator('.nh-sensor-panel');
+      await expect(sensorTile).toBeVisible();
+      const sensorTileBox = await sensorTile.boundingBox();
+      expect(sensorTileBox!.height).toBeLessThan(100);
+    } finally {
+      const latest = (await (await page.request.get(`${HUB_API}/home/layout`)).json()).data;
+      await page.request.put(`${HUB_API}/home/layout`, {
+        headers: { ...headers, 'If-Match': latest.etag },
+        data: { ...original, revision: latest.revision, etag: latest.etag },
+      });
+    }
+  });
+
+  test('presence overview lists every spatial sensor with one section header', async ({ page }) => {
+    await page.route('**/api/hubstate', async (route) => {
+      const response = await route.fetch();
+      const body = await response.json();
+      for (const id of [MOCK.livingRoomLight.id, MOCK.atticSocket.id]) {
+        const device = body.devices.find((item: { id: string }) => item.id === id);
+        if (!device?.exposes) continue;
+        device.provider = 'mqtt';
+        const base = Object.values(device.exposes)[0] as Record<string, unknown> | undefined;
+        if (!base) continue;
+        const entity = (name: string, type: string, unit: string, data: unknown) => ({
+          ...base,
+          name,
+          description: name,
+          unit,
+          data,
+          type,
+          category: 'measurement',
+          access_mode: 'read',
+          attributes: { label: name },
+          values: {},
+        });
+        device.exposes.target_x = entity('target_x', 'numeric', 'mm', 0);
+        device.exposes.target_y = entity('target_y', 'numeric', 'mm', 1500);
+        device.exposes.target_active = entity('target_active', 'binary', '', true);
+      }
+      await route.fulfill({ response, json: body });
+    });
+    await signIn(page, ui.home.path);
+    const original = (await (await page.request.get(`${HUB_API}/home/layout`)).json()).data;
+    const headers = { Origin: 'http://localhost:4100', 'X-NodeHerder-Request': '1', 'If-Match': original.etag };
+    const added = {
+      ...original,
+      blocks: [
+        ...original.blocks,
+        {
+          id: 'overview-block',
+          kind: 'card',
+          name: '',
+          cards: [{ id: 'overview-test', kind: 'presence_overview', panel: true }],
+        },
+      ],
+    };
+    try {
+      expect((await page.request.put(`${HUB_API}/home/layout`, { headers, data: added })).status()).toBe(200);
+      await page.goto(ui.home.path);
+      const overview = page.locator('.nh-overview-card');
+      await expect(overview.locator('.nh-overview-title strong')).toHaveText('Presence');
+      await expect(overview.locator('.nh-overview-title .nh-muted')).toHaveText('2 sensors');
+      await expect(overview.locator('.nh-sensor-head')).toHaveCount(2);
+      await expect(overview).toContainText(MOCK.livingRoomLight.name);
+      await expect(overview).toContainText(MOCK.atticSocket.name);
+      const tiles = overview.locator('.nh-sensor-panel');
+      await expect(tiles).toHaveCount(2);
+      for (const tile of await tiles.all()) {
+        const box = await tile.boundingBox();
+        expect(box!.height).toBeLessThan(110);
+      }
+    } finally {
+      const latest = (await (await page.request.get(`${HUB_API}/home/layout`)).json()).data;
+      await page.request.put(`${HUB_API}/home/layout`, {
+        headers: { ...headers, 'If-Match': latest.etag },
+        data: { ...original, revision: latest.revision, etag: latest.etag },
+      });
+    }
+  });
+
+  test('presence card explains missing derived data and updates when it arrives', async ({ page }) => {
+    const derivedId = `presence-${MOCK.livingRoomLight.id}`;
+    await page.route('**/api/hubstate', async (route) => {
+      const response = await route.fetch();
+      const body = await response.json();
+      const source = body.devices.find((device: { id: string }) => device.id === MOCK.livingRoomLight.id);
+      source.availability = 'online';
+      const entity = (name: string, type: string, data: unknown) => ({
+        name,
+        description: '',
+        unit: '',
+        data,
+        type,
+        category: 'measurement',
+        access_mode: 'read',
+        attributes: { label: name },
+        values: {},
+      });
+      body.devices = body.devices.filter((device: { id: string }) => device.id !== derivedId);
+      body.devices.push({
+        id: derivedId,
+        provider: 'presence',
+        connection_type: 'derived',
+        friendly_name: 'Living Room Light (presence)',
+        description: 'Derived presence',
+        power_source: 'mains',
+        availability: 'online',
+        last_seen: new Date().toISOString(),
+        properties: { source_device_id: MOCK.livingRoomLight.id, derived: true },
+        exposes: {
+          occupied: entity('occupied', 'binary', null),
+          target_count: entity('target_count', 'numeric', null),
+          last_zone: entity('last_zone', 'text', ''),
+          empty_seconds: entity('empty_seconds', 'numeric', null),
+        },
+      });
+      await route.fulfill({ response, json: body });
+    });
+    let sendUpdate: ((payload: unknown) => void) | undefined;
+    await page.routeWebSocket('ws://localhost:4110/ws', (socket) => {
+      sendUpdate = (payload) => socket.send(JSON.stringify({ type: 'deviceUpdated', payload }));
+      socket.onMessage(() => {});
+    });
+    await signIn(page, ui.home.path);
+    const original = (await (await page.request.get(`${HUB_API}/home/layout`)).json()).data;
+    const headers = { Origin: 'http://localhost:4100', 'X-NodeHerder-Request': '1', 'If-Match': original.etag };
+    const added = {
+      ...original,
+      blocks: [
+        ...original.blocks,
+        {
+          id: 'presence-block',
+          kind: 'card',
+          name: '',
+          cards: [{ id: 'presence-test', kind: 'presence', panel: true, device_id: MOCK.livingRoomLight.id }],
+        },
+      ],
+    };
+    try {
+      expect((await page.request.put(`${HUB_API}/home/layout`, { headers, data: added })).status()).toBe(200);
+      await page.goto(ui.home.path);
+      const card = page.locator('.nh-presence-card');
+      await expect(card).toBeVisible();
+      await expect(card).toContainText('Presence not derived yet');
+      await expect(card).not.toContainText('Clear');
+
+      await expect.poll(() => !!sendUpdate).toBe(true);
+      sendUpdate!({
+        id: derivedId,
+        data: { occupied: false, target_count: 0, last_zone: '', empty_seconds: 0 },
+      });
+      await expect(card).toContainText('Clear');
+      await expect(card).not.toContainText('Presence not derived yet');
     } finally {
       const latest = (await (await page.request.get(`${HUB_API}/home/layout`)).json()).data;
       await page.request.put(`${HUB_API}/home/layout`, {

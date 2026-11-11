@@ -2,8 +2,8 @@
   import { computed, onBeforeUnmount, ref, watch } from 'vue';
   import { copyWorkspace, screenPoint } from '@/domain/spatial/workspace';
   import { SPATIAL_DEFAULT_ORIENTATION, SPATIAL_DEFAULT_SCALE_MM, SPATIAL_ILLUSTRATIVE_FOV } from '@/domain/spatial';
-  import { sensorProjectedPoint, CANVAS_SENSOR_FONT_RATIO } from '@/domain/spatial/canvas';
-  import { radarViewBox } from '@/domain/spatial/radar';
+  import { sensorProjectedPoint } from '@/domain/spatial/canvas';
+  import { positionViewMetrics } from '@/domain/spatial/positions';
   import { SpatialViewIds } from '@/domain/spatial/view';
   import type { SpatialDisplayTrack } from '@/domain/spatial/tracks';
   import type { ZoneOccupancy } from '@/domain/spatial/occupancy';
@@ -71,6 +71,7 @@
   const zoom = ref(1);
   const zoomAnchor = ref<{ x: number; y: number } | null>(null);
   const showFov = ref(false);
+  const showDistances = ref(false);
   const configuredFov = computed(() => workspace.value.sensor.fov);
   const displayFov = computed(() =>
     configuredFov.value > 0 ? configuredFov.value : SPATIAL_ILLUSTRATIVE_FOV
@@ -150,17 +151,16 @@
     return { minX: minX - pad, minY: minY - pad, maxX: maxX + pad, maxY: maxY + pad };
   });
 
-  /** Panel aspect plus the extent that fits the content before the user's zoom. */
-  const fittedExtent = computed(() => {
-    const bounds = fittedBounds.value;
-    const width = viewerWidth.value;
-    const height = viewerHeight.value;
-    if (!bounds || width <= 0 || height <= 0) return null;
-    const aspect = width / height;
-    const boundsWidth = bounds.maxX - bounds.minX;
-    const boundsHeight = bounds.maxY - bounds.minY;
-    return { aspect, extent: Math.max(boundsHeight, boundsWidth / aspect) };
-  });
+  /** Fitted view plus symbol scale for the recorded canvas. */
+  const viewMetrics = computed(() =>
+    positionViewMetrics({
+      bounds: fittedBounds.value,
+      center: screenPoint(workspace.value.sensor, SPATIAL_DEFAULT_ORIENTATION),
+      viewerWidth: viewerWidth.value,
+      viewerHeight: viewerHeight.value,
+      zoom: zoom.value,
+    })
+  );
 
   /**
    * Screen point used to anchor a zoom level: the current sample (or the heat activity).
@@ -199,43 +199,11 @@
       : screenPoint(sensor, orientation);
   }
 
-  /** Base fitted view; the shared viewer applies zoom, the active-sample anchor and pan. */
-  const baseViewBox = computed(() => {
-    const bounds = fittedBounds.value;
-    const fitted = fittedExtent.value;
-    if (!bounds || !fitted) return radarViewBox(SPATIAL_DEFAULT_SCALE_MM);
-    const width = fitted.extent * fitted.aspect;
-    const centerX = (bounds.minX + bounds.maxX) / 2;
-    const centerY = (bounds.minY + bounds.maxY) / 2;
-    const round = (value: number) => Number(value.toFixed(1));
-    return [
-      round(centerX - width / 2),
-      round(centerY - fitted.extent / 2),
-      round(width),
-      round(fitted.extent),
-    ].join(' ');
-  });
-
   /** Session/preset/view switches clear the viewer's pan. */
   const resetKey = computed(() => `${confirmed.value}:${preset.value}:${view.value}`);
-
-  /**
-   * Keeps labels and markers at a readable pixel size regardless of the fitted extent or the
-   * zoom level; only the map content (room, path, cells) scales.
-   */
-  const symbolScale = computed(() => {
-    const fitted = fittedExtent.value;
-    if (!fitted) return zoom.value;
-    const fontMm = SPATIAL_DEFAULT_SCALE_MM * CANVAS_SENSOR_FONT_RATIO;
-    const targetPx = 14;
-    return (fontMm * viewerHeight.value * zoom.value) / (targetPx * fitted.extent);
-  });
-
-  /** Halo around labels, ~25% of their text size, so it never becomes a blob at high zoom. */
-  const labelStroke = computed(() => {
-    if (!fittedExtent.value) return 8;
-    return (SPATIAL_DEFAULT_SCALE_MM * CANVAS_SENSOR_FONT_RATIO * 0.25) / symbolScale.value;
-  });
+  const baseViewBox = computed(() => viewMetrics.value.viewBox);
+  const symbolScale = computed(() => viewMetrics.value.symbolScale);
+  const labelStroke = computed(() => viewMetrics.value.labelStroke);
 
   const groupedTrails = computed(() => trailGroups(points.value, time.value));
   const trails = computed(() =>
@@ -594,6 +562,8 @@
           v-model:zoom="zoom"
           v-model:show-grid="showGrid"
           v-model:show-fov="showFov"
+          v-model:show-distances="showDistances"
+          distance-option
           :base-view-box="baseViewBox"
           :focus="zoom > 1 ? zoomAnchor : null"
           :fov-angle="displayFov"
@@ -619,6 +589,7 @@
                 :label-stroke="labelStroke"
                 :target-scale="1 + (zoom - 1) * 0.25"
                 :show-fov="showFov"
+                :show-distances="showDistances"
                 :fov-angle="displayFov"
                 label="Recorded positions canvas"
                 :cells="[]"

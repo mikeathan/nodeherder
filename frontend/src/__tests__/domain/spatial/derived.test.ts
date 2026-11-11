@@ -1,4 +1,9 @@
-import { derivedPresenceDeviceId, derivedPresenceValues, derivedZoneSignals } from '@/domain/spatial/derived';
+import {
+  derivedPresenceDeviceId,
+  derivedPresenceDisplay,
+  derivedPresenceValues,
+  derivedZoneSignals,
+} from '@/domain/spatial/derived';
 import { device, expose } from '../../helpers/devices';
 
 test('derived device identifiers mirror the hub convention', () => {
@@ -28,6 +33,18 @@ test('unusable values stay null instead of becoming measured zero', () => {
   ]);
   expect(derivedZoneSignals(derived).get('desk')).toEqual({ occupied: null, count: null, dwell: null });
   expect(derivedZoneSignals(undefined).size).toBe(0);
+});
+
+test('missing derived occupancy is not a measured clear', () => {
+  expect(derivedPresenceDisplay({ occupied: null, targetCount: null, lastZone: null, emptySeconds: null })).toBe(
+    'not-derived'
+  );
+  expect(derivedPresenceDisplay({ occupied: true, targetCount: 1, lastZone: 'Desk', emptySeconds: 0 })).toBe(
+    'occupied'
+  );
+  expect(derivedPresenceDisplay({ occupied: false, targetCount: 0, lastZone: null, emptySeconds: 12 })).toBe(
+    'clear'
+  );
 });
 
 test('global values use the exported entity names and blank text stays unknown', () => {

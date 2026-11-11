@@ -1,89 +1,95 @@
 <script setup lang="ts">
-  import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+  import { computed, ref } from 'vue';
   import type { HomePresenceCard } from '@/types/home';
   import { RouteName } from '@/types/router';
   import { findDevice, statusOf } from '@/composables/useHub';
   import { useDerivedPresence } from '@/composables/spatial/useDerivedPresence';
-  import { derivedZoneSignals } from '@/domain/spatial/derived';
+  import { useInViewport } from '@/composables/useInViewport';
+  import { useSpatialPreview } from '@/composables/spatial/useSpatialPreview';
+  import { formatTime } from '@/utils/date.utils';
+  import { derivedPresenceDisplay } from '@/domain/spatial/derived';
+  import {
+    PRESENCE_COPY,
+    presenceEmptyLabel,
+    presenceStateLabel,
+    presenceTargetLabel,
+    presenceZoneChips,
+    presenceZoneLabel,
+  } from '@/domain/spatial/presence';
+  import { SpatialViewIds } from '@/domain/spatial/view';
   import UiButton from '@/components/ui/UiButton.vue';
   import SpatialCanvas from '@/components/device/spatial/SpatialCanvas.vue';
-  import { SpatialViewIds } from '@/domain/spatial/view';
-  import { useSpatialPreview } from '@/composables/spatial/useSpatialPreview';
 
   const props = defineProps<{ card: HomePresenceCard; editing?: boolean; busy?: boolean }>();
   defineEmits<{ remove: [] }>();
   const device = computed(() => findDevice(props.card.device_id));
   const derived = useDerivedPresence(() => device.value);
-  const zones = computed(() => {
-    const signals = derivedZoneSignals(derived.derived.value);
-    return [...signals.entries()]
-      .map(([zoneId, signal]) => {
-        const entity = Object.values(derived.derived.value?.exposes ?? {}).find(
-          (candidate) => candidate.attributes?.zoneId === zoneId && candidate.name.endsWith('_occupied')
-        );
-        return {
-          id: zoneId,
-          name: typeof entity?.attributes?.zoneName === 'string' ? entity.attributes.zoneName : zoneId,
-          occupied: signal.occupied,
-        };
-      })
-      .sort((left, right) => left.name.localeCompare(right.name));
-  });
+  const zones = computed(() => presenceZoneChips(derived.derived.value));
   const status = computed(() => (device.value ? statusOf(device.value) : 'missing'));
   const values = computed(() => derived.values.value);
+  const display = computed(() => derivedPresenceDisplay(values.value));
+  const stateLabel = computed(() => presenceStateLabel(display.value, 'card'));
+  const targetLabel = computed(() => presenceTargetLabel(values.value.targetCount));
+  const zoneLabel = computed(() => presenceZoneLabel(values.value.lastZone));
+  const emptyLabel = computed(() =>
+    display.value === 'clear' ? presenceEmptyLabel(values.value.emptySeconds) : null
+  );
   const livePreview = ref(false);
-  const visible = ref(true);
   const cardRoot = ref<HTMLElement | null>(null);
+  const visible = useInViewport(cardRoot);
   const preview = useSpatialPreview(
     () => props.card.device_id,
     () => livePreview.value && visible.value && !document.hidden
   );
-  let observer: IntersectionObserver | null = null;
-  onMounted(() => {
-    if (typeof IntersectionObserver === 'undefined' || !cardRoot.value) return;
-    observer = new IntersectionObserver(([entry]) => { visible.value = entry.isIntersecting; }, { rootMargin: '120px' });
-    observer.observe(cardRoot.value);
-  });
-  onBeforeUnmount(() => observer?.disconnect());
-  const updatedLabel = computed(() =>
-    preview.updatedAt.value ? new Date(preview.updatedAt.value).toLocaleTimeString() : ''
-  );
+  const updatedLabel = computed(() => (preview.updatedAt.value ? formatTime(preview.updatedAt.value) : ''));
 </script>
 
 <template>
-  <section ref="cardRoot" class="nh-presence-card" :aria-label="`Presence for ${device?.friendly_name ?? card.device_id}`">
+  <section ref="cardRoot" class="nh-presence-card" :aria-label="PRESENCE_COPY.card.ariaLabel(device?.friendly_name ?? card.device_id)">
     <header>
       <div>
-        <strong>{{ device?.friendly_name ?? 'Unknown device' }}</strong>
+        <strong>{{ device?.friendly_name ?? PRESENCE_COPY.card.unknownDevice }}</strong>
         <span class="nh-muted"> · {{ status }}</span>
       </div>
-      <label v-if="!editing" class="nh-presence-live"><input v-model="livePreview" type="checkbox" /> Live</label>
-      <UiButton v-if="editing" size="sm" variant="ghost" icon="delete" label="Remove presence card" :disabled="busy" @click="$emit('remove')" />
+      <label v-if="!editing" class="nh-presence-live">
+        <input v-model="livePreview" type="checkbox" /> {{ PRESENCE_COPY.card.live }}
+      </label>
+      <UiButton
+        v-if="editing"
+        size="sm"
+        variant="ghost"
+        icon="delete"
+        :label="PRESENCE_COPY.card.remove"
+        :disabled="busy"
+        @click="$emit('remove')" />
     </header>
-    <p v-if="!device" class="nh-muted">This presence device is unavailable. Remove the card if it is no longer needed.</p>
+    <p v-if="!device" class="nh-muted">{{ PRESENCE_COPY.card.missing }}</p>
     <template v-else>
-      <p v-if="!derived.derived.value" class="nh-muted">Presence has not been derived for this device yet.</p>
+      <p v-if="!derived.derived.value" class="nh-muted">{{ PRESENCE_COPY.card.notDerived }}</p>
       <template v-else>
         <p class="nh-presence-state">
-          <strong>{{ values.occupied === null ? 'Unknown' : values.occupied ? 'Occupied' : 'Clear' }}</strong>
-          <span v-if="values.targetCount !== null"> · {{ values.targetCount }} target{{ values.targetCount === 1 ? '' : 's' }}</span>
-          <span v-if="values.lastZone"> · last zone {{ values.lastZone }}</span>
-          <span v-if="values.emptySeconds !== null && !values.occupied"> · empty {{ values.emptySeconds }} s</span>
+          <strong>{{ stateLabel }}</strong>
+          <span v-if="targetLabel"> · {{ targetLabel }}</span>
+          <span v-if="zoneLabel"> · {{ zoneLabel }}</span>
+          <span v-if="emptyLabel"> · {{ emptyLabel }}</span>
         </p>
-        <ul v-if="zones.length" class="nh-presence-zones" aria-label="Zone occupancy">
+        <p v-if="display === 'not-derived'" class="nh-muted">{{ PRESENCE_COPY.card.notDerivedNote }}</p>
+        <ul v-if="zones.length" class="nh-presence-zones" :aria-label="PRESENCE_COPY.card.zoneOccupancy">
           <li v-for="zone in zones" :key="zone.id" :class="{ 'is-occupied': zone.occupied }">
-            {{ zone.name }}: {{ zone.occupied === null ? 'unknown' : zone.occupied ? 'occupied' : 'clear' }}
+            {{ zone.name }}: {{ zone.label }}
           </li>
         </ul>
         <div v-if="livePreview" class="nh-presence-preview">
           <SpatialCanvas v-if="preview.hasFrame.value" :workspace="preview.workspace.value" :tracks="preview.tracks.value"
             :occupancy="new Map()" :scale="4000" :orientation="0" :online="preview.online.value"
             :mode="SpatialViewIds.Live" selected-id="" :trails="[]" :cells="[]" :show-grid="false"
-            :show-room-context="false" :show-target-labels="false" label="Presence preview" />
-          <p v-else class="nh-muted">Waiting for a position…</p>
-          <span v-if="updatedLabel" class="nh-muted">Live preview · {{ updatedLabel }}</span>
+            :show-room-context="false" :show-target-labels="false" :label="PRESENCE_COPY.card.previewLabel" />
+          <p v-else class="nh-muted">{{ PRESENCE_COPY.card.waiting }}</p>
+          <span v-if="updatedLabel" class="nh-muted">{{ PRESENCE_COPY.card.livePreview }} · {{ updatedLabel }}</span>
         </div>
-        <RouterLink :to="{ name: RouteName.DevicePage, params: { id: card.device_id } }">Open device</RouterLink>
+        <RouterLink :to="{ name: RouteName.DevicePage, params: { id: card.device_id } }">
+          {{ PRESENCE_COPY.card.openDevice }}
+        </RouterLink>
       </template>
     </template>
   </section>

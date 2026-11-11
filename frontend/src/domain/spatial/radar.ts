@@ -24,6 +24,38 @@ export function radarViewBox(scale: number): string {
   return `${-scale} ${-scale} ${scale * 2} ${scale * 2}`;
 }
 
+/** Axis-aligned bounds in projected canvas units (millimetres). */
+export type SpatialViewBounds = { minX: number; minY: number; maxX: number; maxY: number };
+
+/** Canvas view box in projected units. */
+export type SpatialViewBox = { x: number; y: number; width: number; height: number };
+
+/**
+ * Builds an aspect-correct view box centred on `center` that contains `bounds`.
+ *
+ * The extent is symmetric around the centre, so a sensor-centred surface keeps the sensor
+ * in the middle while the recorded content still fits. A non-positive or non-finite aspect
+ * falls back to a square.
+ */
+export function centeredSpatialView(
+  bounds: SpatialViewBounds,
+  center: { x: number; y: number },
+  aspect: number
+): SpatialViewBox {
+  const safeAspect = Number.isFinite(aspect) && aspect > 0 ? aspect : 1;
+  const halfWidth = Math.max(Math.abs(bounds.minX - center.x), Math.abs(bounds.maxX - center.x));
+  const halfHeight = Math.max(Math.abs(bounds.minY - center.y), Math.abs(bounds.maxY - center.y));
+  const height = Math.max(2 * Math.max(halfHeight, halfWidth / safeAspect), 1);
+  const width = height * safeAspect;
+  const round = (value: number) => Number(value.toFixed(1));
+  return {
+    x: round(center.x - width / 2),
+    y: round(center.y - height / 2),
+    width: round(width),
+    height: round(height),
+  };
+}
+
 /** Grid line offsets from the centre, in millimetres. */
 export function radarGridOffsets(scale: number): number[] {
   const step = scale / RADAR_GRID_DIVISIONS;
