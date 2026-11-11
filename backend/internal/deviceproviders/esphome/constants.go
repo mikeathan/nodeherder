@@ -26,6 +26,7 @@ const (
 const (
 	attributeLabel              = "label"
 	attributeEntityKind         = "entity_kind"
+	attributeObjectID           = "object_id"
 	attributeDeviceClass        = "device_class"
 	attributeControlUnavailable = "control_unavailable"
 	attributeMinLength          = "min_length"

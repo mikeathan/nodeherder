@@ -39,6 +39,7 @@ export const ConnectionTypes = {
 export const ExposeAttributeKeys = {
   Label: 'label',
   EntityKind: 'entity_kind',
+  ObjectID: 'object_id',
   DeviceClass: 'device_class',
   ControlUnavailable: 'control_unavailable',
   Min: 'min',

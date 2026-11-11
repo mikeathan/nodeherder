@@ -270,7 +270,7 @@ func TestDeviceSinkPublishesOnlyBoundedPublicMetadata(t *testing.T) {
 	if err := sink.Identify(context.Background(), info); err != nil {
 		t.Fatal(err)
 	}
-	if err := sink.Inventory(context.Background(), []Descriptor{{ID: "00000000-00000001", Key: 1, Kind: "binary_sensor", DeviceClass: "occupancy", Name: "Presence"}}); err != nil {
+	if err := sink.Inventory(context.Background(), []Descriptor{{ID: "00000000-00000001", Key: 1, Kind: "binary_sensor", ObjectID: "presence", DeviceClass: "occupancy", Name: "Presence"}}); err != nil {
 		t.Fatal(err)
 	}
 	if err := sink.Ready(context.Background()); err != nil {
@@ -281,6 +281,9 @@ func TestDeviceSinkPublishesOnlyBoundedPublicMetadata(t *testing.T) {
 	}
 	if pipeline.device.Exposes["00000000-00000001"].Attributes["device_class"] != "occupancy" {
 		t.Fatal("class lost")
+	}
+	if pipeline.device.Exposes["00000000-00000001"].Attributes["object_id"] != "presence" {
+		t.Fatal("object id lost")
 	}
 }
 

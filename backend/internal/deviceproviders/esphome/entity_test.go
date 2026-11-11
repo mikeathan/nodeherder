@@ -30,6 +30,13 @@ func TestDescribeDiscoveredEntities(t *testing.T) {
 	if _, err := Describe(&api.ListEntitiesSwitchResponse{Name: string([]byte{0xff})}); err == nil {
 		t.Fatal("invalid UTF-8 accepted")
 	}
+	if _, err := Describe(&api.ListEntitiesSwitchResponse{Name: "Switch", ObjectId: string([]byte{0xff})}); err == nil {
+		t.Fatal("invalid object id accepted")
+	}
+	d, err = Describe(&api.ListEntitiesNumberResponse{Key: 7, Name: "Assume Present Timeout", ObjectId: "assume_present_timeout", MinValue: 0, MaxValue: 43200, Step: 1})
+	if err != nil || d.ObjectID != "assume_present_timeout" {
+		t.Fatalf("object id: %+v, %v", d, err)
+	}
 	if d, err := Describe(&api.PingResponse{}); err != nil || d != nil {
 		t.Fatalf("unknown message: %+v %v", d, err)
 	}

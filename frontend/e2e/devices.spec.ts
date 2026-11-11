@@ -160,6 +160,53 @@ test.describe('devices', () => {
     }
   });
 
+  test('device configuration explains known settings without inventing unknown ones', async ({ page }, info) => {
+    await page.route('**/api/hubstate', async (route) => {
+      const response = await route.fetch();
+      const state = await response.json();
+      const device = state.devices.find((d: { id: string }) => d.id === MOCK.livingRoomLight.id);
+      device.provider = 'esphome';
+      device.connection_type = 'esphome';
+      device.availability = 'online';
+      const entity = (label: string, objectID: string) => ({
+        name: objectID,
+        description: label,
+        unit: 's',
+        data: 1800,
+        type: 'numeric',
+        category: 'config',
+        access_mode: 'readwrite',
+        attributes: { label, object_id: objectID, entity_kind: 'number', min: 0, max: 43200, step: 1 },
+        values: {},
+      });
+      device.exposes = {
+        assume_present_timeout: entity('Assume Present Timeout', 'assume_present_timeout'),
+        mystery_setting: entity('Mystery Setting', 'mystery_setting'),
+      };
+      await route.fulfill({ response, json: state });
+    });
+    await signIn(page, `/devicepage/${MOCK.livingRoomLight.id}`);
+    const configuration = page
+      .locator('section')
+      .filter({ has: page.getByRole('heading', { name: 'Device configuration', exact: true }) });
+
+    const help = configuration.getByRole('button', { name: 'About Assume Present Timeout' });
+    await expect(help).toBeVisible();
+    await expect(help).toHaveAttribute('aria-expanded', 'false');
+    await help.press('Enter');
+    await expect(help).toHaveAttribute('aria-expanded', 'true');
+    await expect(configuration.getByText(/How long, in seconds, to hold occupancy/)).toBeVisible();
+    const source = configuration.getByRole('link', { name: 'Everything Smart Home documentation' });
+    await expect(source).toHaveAttribute('target', '_blank');
+    await expect(source).toHaveAttribute('rel', 'noopener noreferrer');
+    await expect(configuration.getByRole('button', { name: 'About Mystery Setting' })).toHaveCount(0);
+
+    for (const width of info.project.name === 'desktop' ? [1280, 375] : [page.viewportSize()!.width]) {
+      await page.setViewportSize({ width, height: 900 });
+      expect(await page.locator('html').evaluate((html) => html.scrollWidth <= html.clientWidth)).toBe(true);
+    }
+  });
+
   test('spatial mappings save and show only current provider reports', async ({ page }, info) => {
     await page.route('**/api/hubstate', async (route) => {
       const response = await route.fetch();

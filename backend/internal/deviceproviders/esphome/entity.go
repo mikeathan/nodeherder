@@ -19,15 +19,15 @@ import (
 // Descriptor is a discovery result, not a store of live device state. The ID is
 // stable within its device, while Name, Unit and Options are untrusted metadata.
 type Descriptor struct {
-	ID, Name, Kind, Unit, Category string
-	DeviceClass                    string
-	Key, DeviceID                  uint32
-	Writable                       bool
-	LimitedControl                 bool
-	Min, Max, Step                 float64
-	Options                        []string
-	TextMin, TextMax               uint32
-	TextPattern                    string
+	ID, Name, Kind, Unit, Category, ObjectID string
+	DeviceClass                              string
+	Key, DeviceID                            uint32
+	Writable                                 bool
+	LimitedControl                           bool
+	Min, Max, Step                           float64
+	Options                                  []string
+	TextMin, TextMax                         uint32
+	TextPattern                              string
 }
 
 // Describe maps supported native discovery messages to bounded descriptors. It
@@ -96,6 +96,12 @@ func Describe(message proto.Message) (*Descriptor, error) {
 			return nil, nil
 		}
 		d.Key, d.DeviceID, d.Name, d.Kind = entity.GetKey(), entity.GetDeviceId(), entity.GetName(), kindUnsupported
+	}
+	if identified, ok := message.(interface{ GetObjectId() string }); ok {
+		d.ObjectID = identified.GetObjectId()
+		if !validText(d.ObjectID) {
+			return nil, errors.New("invalid ESPHome object id")
+		}
 	}
 	if classified, ok := message.(interface{ GetDeviceClass() string }); ok {
 		d.DeviceClass = classified.GetDeviceClass()
