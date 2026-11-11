@@ -65,11 +65,13 @@
   }
 
   function openHistory() {
-    if (props.editing || !device.value) return;
+    // The store can clear devices for a tick during a reconnect/refresh; the tile stays in
+    // the DOM, so open by identity and let the dialog resolve the device when data returns.
+    if (props.editing) return;
     emitOpenEntityViewDialog(() => {}, {
       id: props.deviceId,
       name: props.expose,
-      title: `${label.value} · ${device.value.friendly_name}`,
+      title: `${label.value} · ${device.value?.friendly_name ?? props.deviceId}`,
     });
   }
 </script>
