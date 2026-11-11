@@ -569,10 +569,19 @@ test.describe('devices', () => {
     await page.setViewportSize({ width: 1280, height: 600 });
     await page.getByRole('tab',{name:'History',exact:true}).click();
     await page.getByRole('button',{name:'Positions',exact:true}).click();
-    // The replay viewer keeps its own options: no Distance checkbox, since only the live
-    // panel wires that value into its canvas.
-    await expect(page.getByLabel('Distance', { exact: true })).toHaveCount(0);
     await expect(page.locator('.nh-session-row')).toHaveCount(3);
+    const replayDistance = page.getByLabel('Distance', { exact: true });
+    if (!(await replayDistance.isVisible())) {
+      await page.locator('.nh-positions-main').first().getByRole('button', { name: 'View controls' }).click();
+    }
+    await expect(replayDistance).toBeVisible();
+    await expect(replayDistance).not.toBeChecked();
+    const firstTargetLabel = page.locator('text.nh-target-label').first();
+    await expect(firstTargetLabel).not.toHaveText(/· \d+(?:\.\d+)? m$/);
+    await replayDistance.check();
+    await expect(firstTargetLabel).toHaveText(/· \d+(?:\.\d+)? m$/);
+    await replayDistance.uncheck();
+    await expect(firstTargetLabel).not.toHaveText(/· \d+(?:\.\d+)? m$/);
     const fovToggle = page.getByLabel('Field of view', { exact: true });
     await expect(fovToggle).toBeEnabled();
     await expect(fovToggle).not.toBeChecked();
@@ -618,6 +627,14 @@ test.describe('devices', () => {
     const canvasBox = await page.locator('.nh-spatial-canvas').boundingBox();
     const currentView = (await page.locator('.nh-spatial-canvas').getAttribute('viewBox'))!.split(' ').map(Number);
     expect(Math.abs(currentView[2] / currentView[3] - canvasBox!.width / canvasBox!.height)).toBeLessThan(0.05);
+    const centeredDevice = await page.locator('.nh-device-bg').boundingBox();
+    expect(centeredDevice).not.toBeNull();
+    expect(
+      Math.abs(centeredDevice!.x + centeredDevice!.width / 2 - (canvasBox!.x + canvasBox!.width / 2))
+    ).toBeLessThan(3);
+    expect(
+      Math.abs(centeredDevice!.y + centeredDevice!.height / 2 - (canvasBox!.y + canvasBox!.height / 2))
+    ).toBeLessThan(3);
     const wideView = await viewBoxWidth();
     await page.getByRole('button', { name: '2×', exact: true }).click();
     await expect(page.getByRole('button', { name: '2×', exact: true })).toHaveAttribute('aria-pressed', 'true');

@@ -1,19 +1,22 @@
 <script setup lang="ts">
-  import { computed } from 'vue';
-  import { useHub } from '@/composables/useHub';
-  import { supportsSpatialMapping } from '@/domain/spatial';
+  import type { Device } from '@/types/device';
+  import { PRESENCE_COPY } from '@/domain/spatial/presence';
   import PresenceRailTile from './PresenceRailTile.vue';
 
-  const { devices } = useHub();
-  const sensors = computed(() => devices.value.filter((device) => supportsSpatialMapping(device)));
+  withDefaults(defineProps<{ sensors: readonly Device[]; showNames?: boolean }>(), { showNames: true });
 </script>
 
 <template>
-  <section class="nh-presence-rail-wrap" aria-label="Presence sensors">
+  <section class="nh-presence-rail-wrap" :aria-label="PRESENCE_COPY.overview.sensorsAriaLabel">
     <div class="nh-presence-rail" role="list">
-      <PresenceRailTile v-for="sensor in sensors" :key="sensor.id" :device="sensor" role="listitem" />
+      <PresenceRailTile
+        v-for="sensor in sensors"
+        :key="sensor.id"
+        :device="sensor"
+        :show-name="showNames"
+        role="listitem" />
     </div>
-    <p v-if="!sensors.length" class="nh-muted">No spatial sensors are available yet.</p>
+    <p v-if="!sensors.length" class="nh-muted">{{ PRESENCE_COPY.overview.noSensors }}</p>
   </section>
 </template>
 
@@ -21,7 +24,7 @@
   .nh-presence-rail-wrap { min-width: 0; }
   .nh-presence-rail {
     display: grid;
-    gap: 0.25rem;
+    gap: 0;
   }
   .nh-presence-rail > * { min-width: 0; }
 </style>

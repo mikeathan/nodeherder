@@ -86,6 +86,9 @@ export function useSpatialPreview(deviceId: () => string, active: () => boolean)
     tracks,
     updatedAt,
     online: computed(() => !!device.value && statusOf(device.value) === 'online'),
+    /** A frame exists even when no target is currently reported. */
+    hasFrameData: computed(() => !!frame.value),
+    /** A target position is present in the latest frame. */
     hasFrame: computed(() => tracks.value.length > 0),
     targetDistanceMm: computed(() => {
       const target = samples.value[0];

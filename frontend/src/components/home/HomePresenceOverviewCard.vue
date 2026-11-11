@@ -3,27 +3,33 @@
   import UiButton from '@/components/ui/UiButton.vue';
   import UiIcon from '@/components/ui/UiIcon.vue';
   import { useHub } from '@/composables/useHub';
-  import { supportsSpatialMapping } from '@/domain/spatial';
+  import { PRESENCE_COPY, presenceOverviewModel } from '@/domain/spatial/presence';
   import HomePresenceOverview from './HomePresenceOverview.vue';
 
-  defineProps<{ editing?: boolean; busy?: boolean }>();
-  const { devices } = useHub();
-  const count = computed(() => devices.value.filter((device) => supportsSpatialMapping(device)).length);
+  const props = defineProps<{ editing?: boolean; busy?: boolean }>();
+  const { devices, statusOf } = useHub();
+  const model = computed(() => presenceOverviewModel(devices.value, !!props.editing, statusOf));
   defineEmits<{ remove: [] }>();
 </script>
 
 <template>
-  <section class="nh-overview-card" aria-label="Presence overview">
-    <header class="nh-overview-head">
+  <section class="nh-overview-card" :aria-label="PRESENCE_COPY.overview.ariaLabel">
+    <header v-if="model.showHeader" class="nh-overview-head">
       <span class="nh-overview-icon"><UiIcon name="presence" /></span>
-      <span class="nh-overview-title">
-        <strong>Presence</strong>
-        <span class="nh-muted">{{ count }} sensor{{ count === 1 ? '' : 's' }}</span>
+      <span class="nh-overview-title" :class="{ 'is-single': model.isSingle }">
+        <strong>{{ model.title }}</strong>
+        <span class="nh-muted">{{ model.subtitle }}</span>
       </span>
-      <UiButton v-if="editing" size="sm" variant="ghost" icon="delete" label="Remove presence overview"
-        :disabled="busy" @click="$emit('remove')" />
+      <UiButton
+        v-if="editing"
+        size="sm"
+        variant="ghost"
+        icon="delete"
+        :label="PRESENCE_COPY.overview.remove"
+        :disabled="busy"
+        @click="$emit('remove')" />
     </header>
-    <HomePresenceOverview />
+    <HomePresenceOverview :sensors="model.sensors" :show-names="model.showNames" />
   </section>
 </template>
 
@@ -31,9 +37,9 @@
   .nh-overview-card {
     container-type: inline-size;
     display: grid;
-    gap: 0.55rem;
+    gap: 0.35rem;
     min-width: 0;
-    padding: 0.65rem 0.75rem;
+    padding: 0.6rem 0.75rem;
     border-radius: var(--nh-radius-l);
     background: var(--nh-surface);
     border: var(--nh-border-w) solid var(--nh-border);
@@ -51,6 +57,23 @@
     color: var(--nh-text-muted);
   }
   .nh-overview-title { display: grid; min-width: 0; }
-  .nh-overview-title strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .nh-overview-title .nh-muted { font-size: 0.8rem; }
+  .nh-overview-title strong {
+    font-size: 0.72rem;
+    font-weight: 650;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--nh-text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .nh-overview-title .nh-muted { font-size: 0.68rem; }
+  .nh-overview-title.is-single strong {
+    font-size: 0.875rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--nh-text);
+  }
+  .nh-overview-title.is-single .nh-muted { font-size: 0.7rem; }
 </style>
