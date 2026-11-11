@@ -49,9 +49,11 @@ export class WsRecorder {
 export async function signIn(page: Page, path = '/'): Promise<void> {
   const res = await page.request.post(`${HUB_API}/auth/login`);
   const { url } = await res.json();
-  await page.goto(url);
-  await expect(page).not.toHaveURL(/auth=success/);
-  if (path !== '/') await page.goto(path);
+  // Set the session cookie through the shared request context instead of mounting the
+  // callback page, then navigate once to the destination. This removes one full app mount
+  // from every test that only needs an authenticated page.
+  await page.request.get(url);
+  await page.goto(path);
 }
 
 export const AUTOMATION_HUB_API = 'http://localhost:4120/api';
@@ -104,7 +106,7 @@ export const test = base.extend<Fixtures, { warmRoutes: void }>({
       const page = await context.newPage();
       try {
         await signIn(page, '/groupdashboard');
-        for (const route of WARM_ROUTES) await page.goto(route, { waitUntil: 'networkidle' }).catch(() => undefined);
+        for (const route of WARM_ROUTES) await page.goto(route, { waitUntil: 'load' }).catch(() => undefined);
       } finally {
         await context.close();
       }
