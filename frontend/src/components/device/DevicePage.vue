@@ -100,7 +100,7 @@
               <ProviderEntitySection v-if="sections.diagnostics.length" :device="device" :entities="sections.diagnostics" title="Diagnostics" icon="signal" />
             </div>
             <div v-if="sections.configuration.length" class="nh-dev-side">
-              <ProviderEntitySection :device="device" :entities="sections.configuration" title="Device configuration" icon="settings" show-description />
+              <ProviderEntitySection :device="device" :entities="sections.configuration" title="Device configuration" icon="settings" show-description show-help show-reset />
             </div>
           </template>
           <template v-else>

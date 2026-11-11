@@ -161,6 +161,9 @@ func deviceEntity(d Descriptor) (*devices.Entity, error) {
 	e.Description, e.Unit = d.Name, d.Unit
 	e.Attributes[attributeLabel] = d.Name
 	e.Attributes[attributeEntityKind] = d.Kind
+	if d.ObjectID != "" {
+		e.Attributes[attributeObjectID] = d.ObjectID
+	}
 	if d.DeviceClass != "" {
 		e.Attributes[attributeDeviceClass] = d.DeviceClass
 	}

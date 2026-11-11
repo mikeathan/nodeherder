@@ -160,6 +160,138 @@ test.describe('devices', () => {
     }
   });
 
+  test('device configuration explains known settings without inventing unknown ones', async ({ page }, info) => {
+    await page.route('**/api/hubstate', async (route) => {
+      const response = await route.fetch();
+      const state = await response.json();
+      const device = state.devices.find((d: { id: string }) => d.id === MOCK.livingRoomLight.id);
+      device.provider = 'esphome';
+      device.connection_type = 'esphome';
+      device.availability = 'online';
+      const entity = (label: string, objectID: string) => ({
+        name: objectID,
+        description: label,
+        unit: 's',
+        data: 1800,
+        type: 'numeric',
+        category: 'config',
+        access_mode: 'readwrite',
+        attributes: { label, object_id: objectID, entity_kind: 'number', min: 0, max: 43200, step: 1 },
+        values: {},
+      });
+      device.exposes = {
+        assume_present_timeout: entity('Assume Present Timeout', 'assume_present_timeout'),
+        mystery_setting: entity('Mystery Setting', 'mystery_setting'),
+      };
+      await route.fulfill({ response, json: state });
+    });
+    await signIn(page, `/devicepage/${MOCK.livingRoomLight.id}`);
+    const configuration = page
+      .locator('section')
+      .filter({ has: page.getByRole('heading', { name: 'Device configuration', exact: true }) });
+
+    const help = configuration.getByRole('button', { name: 'About Assume Present Timeout' });
+    await expect(help).toBeVisible();
+    await expect(help).toHaveAttribute('aria-expanded', 'false');
+    await help.press('Enter');
+    await expect(help).toHaveAttribute('aria-expanded', 'true');
+    await expect(configuration.getByText(/How long, in seconds, to hold occupancy/)).toBeVisible();
+    const source = configuration.getByRole('link', { name: 'Everything Smart Home documentation' });
+    await expect(source).toHaveAttribute('target', '_blank');
+    await expect(source).toHaveAttribute('rel', 'noopener noreferrer');
+    await expect(configuration.getByRole('button', { name: 'About Mystery Setting' })).toHaveCount(0);
+
+    for (const width of info.project.name === 'desktop' ? [1280, 375] : [page.viewportSize()!.width]) {
+      await page.setViewportSize({ width, height: 900 });
+      expect(await page.locator('html').evaluate((html) => html.scrollWidth <= html.clientWidth)).toBe(true);
+    }
+  });
+
+  test('device configuration resets documented defaults and skips unknown settings', async ({ page }, info) => {
+    const sent: { id: string; name: string; value: unknown }[] = [];
+    await page.route('**/api/hubstate', async (route) => {
+      const response = await route.fetch();
+      const state = await response.json();
+      const device = state.devices.find((d: { id: string }) => d.id === MOCK.livingRoomLight.id);
+      device.provider = 'esphome';
+      device.connection_type = 'esphome';
+      device.availability = 'online';
+      const number = (label: string, objectID: string, data: number) => ({
+        name: objectID,
+        description: label,
+        unit: 's',
+        data,
+        type: 'numeric',
+        category: 'config',
+        access_mode: 'readwrite',
+        attributes: { label, object_id: objectID, entity_kind: 'number', min: 0, max: 43200, step: 1 },
+        values: {},
+      });
+      device.exposes = {
+        assume_present_timeout: number('Assume Present Timeout', 'assume_present_timeout', 60),
+        stale_target_reset: {
+          name: 'stale_target_reset',
+          description: 'Stale Target Reset',
+          unit: '',
+          data: true,
+          type: 'binary',
+          category: 'config',
+          access_mode: 'readwrite',
+          attributes: { label: 'Stale Target Reset', object_id: 'stale_target_reset', entity_kind: 'switch' },
+          values: { on: true, off: false },
+        },
+        mystery_setting: number('Mystery Setting', 'mystery_setting', 1),
+        factory_reset_mmwave_sensor: {
+          name: 'factory_reset_mmwave_sensor',
+          description: 'Factory Reset mmWave Sensor',
+          unit: '',
+          data: null,
+          type: 'button',
+          category: 'config',
+          access_mode: 'write',
+          attributes: { label: 'Factory Reset mmWave Sensor', object_id: 'factory_reset_mmwave_sensor', entity_kind: 'button' },
+          values: {},
+        },
+      };
+      await route.fulfill({ response, json: state });
+    });
+    await page.routeWebSocket('ws://localhost:4110/ws', (socket) => {
+      socket.onMessage((message) => {
+        const data = JSON.parse(typeof message === 'string' ? message : message.toString());
+        if (data.type === 'deviceSetValue') sent.push(data.payload);
+      });
+    });
+    await signIn(page, `/devicepage/${MOCK.livingRoomLight.id}`);
+    const configuration = page
+      .locator('section')
+      .filter({ has: page.getByRole('heading', { name: 'Device configuration', exact: true }) });
+
+    const reset = configuration.getByRole('button', { name: 'Reset to defaults' });
+    await expect(reset).toBeVisible();
+    await reset.click();
+    const dialog = page.getByRole('dialog', { name: 'Reset configuration defaults' });
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText('Reset 2 documented settings');
+    await expect(dialog).toContainText('only after the device confirms');
+    await dialog.getByRole('button', { name: 'Reset', exact: true }).click();
+
+    await expect(page.getByText('Reset requested for 2 settings.')).toBeVisible();
+    await expect.poll(() => sent.length).toBe(2);
+    expect(sent).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: MOCK.livingRoomLight.id, name: 'assume_present_timeout', value: 1800 }),
+        expect.objectContaining({ id: MOCK.livingRoomLight.id, name: 'stale_target_reset', value: false }),
+      ])
+    );
+    expect(sent.some((message) => message.name === 'mystery_setting')).toBe(false);
+    expect(sent.some((message) => message.name === 'factory_reset_mmwave_sensor')).toBe(false);
+
+    for (const width of info.project.name === 'desktop' ? [1280, 375] : [page.viewportSize()!.width]) {
+      await page.setViewportSize({ width, height: 900 });
+      expect(await page.locator('html').evaluate((html) => html.scrollWidth <= html.clientWidth)).toBe(true);
+    }
+  });
+
   test('spatial mappings save and show only current provider reports', async ({ page }, info) => {
     await page.route('**/api/hubstate', async (route) => {
       const response = await route.fetch();
