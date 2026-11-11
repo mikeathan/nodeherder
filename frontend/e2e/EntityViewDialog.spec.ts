@@ -215,7 +215,10 @@ test('closing 50 completed views releases chart instances, keyboard listeners an
   for (let i = 0; i < 50; i++) {
     await opener.click();
     const dialog = page.getByRole('dialog');
-    await expect(dialog.locator('.nh-history-canvas[data-ready="true"]')).toBeVisible();
+    // The dialog/chart chunks load asynchronously and the history service allows a 10 s
+    // request, so wait past the 7 s default before treating the open as failed.
+    await expect(dialog).toBeVisible({ timeout: 15_000 });
+    await expect(dialog.locator('.nh-history-canvas[data-ready="true"]')).toBeVisible({ timeout: 15_000 });
     await dialog.getByRole('button', { name: 'Close', exact: true }).click();
     await expect(dialog).toHaveCount(0);
     if ([4, 24].includes(i)) heaps.push(await settledHeap(i + 1));
