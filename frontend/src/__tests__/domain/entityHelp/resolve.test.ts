@@ -1,10 +1,6 @@
 import { describe, expect, test } from '@jest/globals';
-import {
-  catalogEntityHelp,
-  normalizeEntityKey,
-  providerEntityHelp,
-  resolveEntityHelp,
-} from '@/domain/entityHelp';
+import { catalogEntityHelp, providerEntityHelp, resolveEntityHelp } from '@/domain/entityHelp';
+import { normalizeEntityKey } from '@/domain/entityKey';
 import { expose } from '../../helpers/devices';
 
 function esphomeEntity(attributes: Record<string, unknown>, description = 'Assume Present Timeout') {

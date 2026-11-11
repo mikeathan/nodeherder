@@ -1,4 +1,4 @@
-# Tasks: Entity help for device configuration
+# Tasks: Device configuration help and defaults
 
 Spec: [spec.md](spec.md) | Plan: [plan.md](plan.md) | Status: complete
 
@@ -33,14 +33,33 @@ Spec: [spec.md](spec.md) | Plan: [plan.md](plan.md) | Status: complete
 - [x] T008 — Update the plan's traceability and Constitution Check with actual results;
   gate: NH-05; depends: T004, T006, T007; done: `plan.md` records commands and outcomes.
 
+## Reset to defaults
+
+- [x] T011 — Extend spec/plan with the reset source, scope and exclusions (Q4–Q7,
+  AC-12…AC-18, FR-06…FR-09, NFR-04/05); IDs: NH-01, NH-02; done: artifacts updated before
+  implementation.
+- [x] T012 — Add Jest cases for default applicability, label fallback, numeric
+  range/step, select-option drift, switch/light defaults, bulk filtering and confirmation
+  copy; IDs: FR-06, FR-09, AC-14, AC-16, AC-17; done: 10 cases pass.
+- [x] T013 — Implement the shared `domain/entityKey.ts` plus
+  `domain/entityDefaults/{types,catalog,resolve,index}.ts`; IDs: FR-06, FR-09, NFR-02;
+  done: domain suites pass.
+- [x] T014 — Add `composables/device/useEntityReset.ts`, the opt-in reset control in
+  `ProviderEntitySection.vue`, and wire it from `DevicePage.vue`; the composable confirms
+  the named targets and sends through `useDeviceCommand`; IDs: FR-07, FR-08, AC-12,
+  AC-13, AC-15; done: build and reset browser case pass.
+- [x] T015 — Add the browser case proving two documented defaults are sent, unknown and
+  button entities are skipped, and the 375 px layout does not overflow; IDs: AC-13,
+  AC-14, AC-16, AC-18; done: desktop and mobile cases pass.
+
 ## Handoff
 
 - [x] T009 — Run selected checks: backend `go test ./...`, `go build ./...`,
   `go vet ./...`; frontend `npm test -- --runInBand`, `npm run lint`, `npm run build`,
   `npm run type-check:e2e`; browser `e2e/devices.spec.ts` desktop and mobile; gate:
-  NH-05/FE-04; done: 54 Go packages, 792 Jest tests, 10 desktop and 10 mobile browser
-  tests passed; lint reports 0 errors and 23 pre-existing warnings.
-- [x] T010 — Final diff review for stale comments, duplication, unrelated changes and
+  NH-05/FE-04; done: 54 Go packages, 144 suites / 802 Jest tests, 11 desktop and 11
+  mobile browser tests passed; lint reports 0 errors and 23 pre-existing warnings.
+- [x] T016 — Final diff review for stale comments, duplication, unrelated changes and
   affected documentation; gates: NH-04, FE-01; done: review found no unrelated changes;
-  the only behavioral refactor is `ProviderEntitySection` delegating description
-  suppression to `ExposeRow` so there is one resolution path.
+  help and defaults share one identity normalizer, and reset reuses the existing command
+  lifecycle.

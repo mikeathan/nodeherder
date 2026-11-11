@@ -1,5 +1,6 @@
 import { describe, expect, test } from '@jest/globals';
-import { ENTITY_HELP_BY_DEVICE_CLASS, ENTITY_HELP_BY_OBJECT_ID, normalizeEntityKey } from '@/domain/entityHelp';
+import { ENTITY_HELP_BY_DEVICE_CLASS, ENTITY_HELP_BY_OBJECT_ID } from '@/domain/entityHelp';
+import { normalizeEntityKey } from '@/domain/entityKey';
 
 describe('entity help catalog data', () => {
   const entries = [...Object.values(ENTITY_HELP_BY_OBJECT_ID), ...Object.values(ENTITY_HELP_BY_DEVICE_CLASS)];

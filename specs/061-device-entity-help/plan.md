@@ -19,6 +19,12 @@ Observed facts:
 - `.nh-card` sets `overflow: hidden`, so an absolutely positioned tooltip would be clipped
   and a hover-only tooltip is unavailable on touch. An inline disclosure is the reliable
   interaction.
+- The ESPHome discovery API has **no default value**. `EncodeCommand` already validates
+  every number/select/switch/light/text command against the descriptor, and
+  `useDeviceCommand.send` already owns pending state, the confirmation timeout, offline
+  refusal and the no-retry rule. Reset must reuse that path.
+- Factory defaults are only in the firmware YAML (`initial_value`, `initial_option`,
+  `restore_mode`) and the manufacturer docs, so they require curated data just like help.
 
 Design:
 
@@ -33,9 +39,9 @@ Design:
    - `catalog.ts`: pure data. `ENTITY_HELP_BY_OBJECT_ID` holds vendor/component knowledge
      sourced from official documentation; `ENTITY_HELP_BY_DEVICE_CLASS` holds generic
      standards-based explanations. Every entry is `{ text, source? }`.
-   - `resolve.ts`: `normalizeEntityKey` (lowercase, non-alphanumerics to `_`, collapsed),
-     `providerEntityHelp` (reuses `showsExposeDescription`), `catalogEntityHelp`, and
-     `resolveEntityHelp` over an ordered `EntityHelpResolver[]`.
+   - `resolve.ts`: `providerEntityHelp` (reuses `showsExposeDescription`),
+     `catalogEntityHelp`, and `resolveEntityHelp` over an ordered `EntityHelpResolver[]`;
+     uses the shared identity normalizer from `src/domain/entityKey.ts`.
    - `index.ts`: the public surface.
    The resolver is the single resolution path (SSOT); sources conform to one function
    type, so adding a source or entry does not modify consumers (OCP/DIP).
@@ -52,9 +58,29 @@ Design:
    and is enabled only for the ESPHome configuration section. Unknown entities therefore
    stay unchanged (AC-04).
 
-4. **Tests.** Go table cases for capture, validation and the written attribute. Jest cases
-   for normalization, precedence, label fallback, device class, unknown entities and
-   catalog integrity.
+4. **Defaults are separate data, not help text.** New `src/domain/entityDefaults/`:
+   - `types.ts`: `EntityDefaultValue`, `EntityDefault`, `EntityDefaultTarget`.
+   - `catalog.ts`: `ENTITY_DEFAULTS_BY_OBJECT_ID` sourced from the firmware YAML
+     (`initial_value`, `initial_option`, `restore_mode`) and manufacturer docs.
+   - `resolve.ts`: `resolveEntityDefault` validates the entry against writability,
+     control type, range/step and select options; `entityDefaultTargets` filters a list;
+     `resetDefaultsMessage` builds the confirmation summary.
+   `normalizeEntityKey` moves to `src/domain/entityKey.ts` so help and defaults share one
+   identity rule. Only documented defaults are eligible; buttons, unsupported entities and
+   the disruptive `mmWave Bluetooth` switch are excluded (AC-14, AC-16, AC-17).
+
+5. **UI sends resets through the existing command path.** A new
+   `src/composables/device/useEntityReset.ts` resolves targets from the whole card (not
+   just the current page), disables the action when the device is offline or any target is
+   pending, confirms with a summary naming the affected settings, then calls
+   `useDeviceCommand.send` per target. `ProviderEntitySection` gains an opt-in `show-reset`
+   and renders the button from that composable. The success notice says "requested", never
+   "confirmed" (AC-12, AC-13, AC-15, AC-18).
+
+6. **Tests.** Go table cases for capture, validation and the written attribute. Jest cases
+   for help normalization/precedence/catalog integrity and for default applicability,
+   filtering and confirmation copy. The device page browser test covers both the
+   disclosure and a reset request.
 
 Files:
 
@@ -66,11 +92,16 @@ Files:
 | `backend/internal/deviceproviders/esphome/entity_test.go` | capture + invalid input cases |
 | `backend/internal/deviceproviders/esphome/device_sink_test.go` | attribute assertion |
 | `frontend/src/types/device.type.ts` | `ExposeAttributeKeys.ObjectID` |
-| `frontend/src/domain/entityHelp/{types,catalog,resolve,index}.ts` | resolver and data |
+| `frontend/src/domain/entityKey.ts` | shared `normalizeEntityKey` |
+| `frontend/src/domain/entityHelp/{types,catalog,resolve,index}.ts` | help resolver and data |
+| `frontend/src/domain/entityDefaults/{types,catalog,resolve,index}.ts` | defaults data, validation and summary |
 | `frontend/src/components/entity/ExposeRow.vue` | resolve help, disclosure, styles |
-| `frontend/src/components/device/provider/ProviderEntitySection.vue` | `show-help` passthrough |
-| `frontend/src/components/device/DevicePage.vue` | enable help on configuration |
-| `frontend/src/__tests__/domain/entityHelp/{resolve,catalog}.test.ts` | unit coverage |
+| `frontend/src/composables/device/useEntityReset.ts` | reset targets, availability and confirmed bulk action |
+| `frontend/src/components/device/provider/ProviderEntitySection.vue` | `show-help` passthrough and reset button |
+| `frontend/src/components/device/DevicePage.vue` | enable help and reset on configuration |
+| `frontend/src/__tests__/domain/entityHelp/{resolve,catalog}.test.ts` | help unit coverage |
+| `frontend/src/__tests__/domain/entityDefaults/{resolve,catalog}.test.ts` | defaults unit coverage |
+| `frontend/e2e/devices.spec.ts` | disclosure and reset browser cases |
 
 Alternatives rejected:
 
@@ -86,17 +117,28 @@ Alternatives rejected:
   and is the fallback label for opaque provider IDs; overwriting it would break labels.
 - **Hover-only tooltip:** clipped by `.nh-card`, unavailable on touch, weaker for long text
   and source links (AC-09).
+- **Reset to min/zero/first option:** none of those is a factory default; it would silently
+  change detection behaviour and still be wrong. Only documented defaults are eligible.
+- **Infer defaults from the first observed state:** that is the last user value, not a
+  default, and would make reset meaningless after the first session.
+- **Fetch the firmware YAML at runtime:** adds network, latency, parsing and trust
+  boundaries for data that changes rarely (NH-03/NFR-04).
+- **Reset every writable entity:** buttons are stateless, unsupported entities have no
+  value, and `mmWave Bluetooth` reboots the sensor. Eliminating those is a data decision,
+  not a component special case (AC-16).
+- **Backend-hosted defaults:** would duplicate the data and add a protocol change for a
+  browser-only affordance; the existing command path already validates values (NFR-04).
 
 ## Constitution Check
 
 | Rule | Design/verification evidence | Before implementation | Before merge |
 | --- | --- | --- | --- |
-| NH-01 | Spec 061 with AC-01…AC-11 and resolved Q1–Q3 | PASS | PASS |
-| NH-02 | Diff review: no command, confirmation, event or automation path changed | PASS | PASS |
-| NH-03 | Diff review: static text only; no new entry point, secret, household data or runtime fetch | PASS | PASS |
-| NH-04 | Additive attribute; resolver depends on a function type, not concrete sources; catalog is data | PASS | PASS |
-| NH-05 | Go cases + Jest cases + desktop/mobile device-page browser checks; results below | PASS (design) | PASS |
-| NH-06 | Diff review: no persistence, timer, subscription or retention change | PASS | PASS |
+| NH-01 | Spec 061 with AC-01…AC-18 and resolved Q1–Q7 | PASS | PASS |
+| NH-02 | Reset reuses `useDeviceCommand.send`: pending state, confirmation timeout, offline refusal and no retry; help changes no command path | PASS | PASS |
+| NH-03 | Static text only; no new entry point, secret, household data or runtime fetch | PASS | PASS |
+| NH-04 | Additive attribute; resolvers depend on function types, not concrete sources; catalogs are data | PASS | PASS |
+| NH-05 | Go cases + help/defaults Jest cases + desktop/mobile device-page browser checks; results below | PASS (design) | PASS |
+| NH-06 | No persistence, timer, subscription or retention change; bulk reset requires confirmation and never claims confirmed state | PASS | PASS |
 | BE-01 | Adapter change stays inside the ESPHome provider; no transport or service change | PASS | PASS |
 | BE-02 | No `DeviceLifetimeService` or update-semantics change | N/A | N/A |
 | BE-03 | No goroutine, timer or shared mutable state added | PASS | PASS |
@@ -104,8 +146,8 @@ Alternatives rejected:
 | BE-05 | No route, payload, authentication or MCP change | N/A | N/A |
 | FE-01 | Pure domain resolver; row remains presentational; no shared state change | PASS | PASS |
 | FE-02 | Attribute is optional; existing records and mocks remain valid | PASS | PASS |
-| FE-03 | No control, request or optimistic-state change | PASS | PASS |
-| FE-04 | Native button, accessible name, `aria-expanded`/`aria-controls`, focus-visible, mobile check | PASS (design) | PASS |
+| FE-03 | Reset requests stay distinct from confirmed state; rows keep their existing pending/confirmation/timeout behaviour | PASS | PASS |
+| FE-04 | Native help button, accessible reset button, explicit reset confirmation, focus-visible and mobile checks | PASS (design) | PASS |
 | FE-05 | Plain text, no HTML, static `https` source links with `noopener noreferrer` | PASS | PASS |
 
 ## Contracts, data, rollout
@@ -113,9 +155,11 @@ Alternatives rejected:
 - `Expose.attributes.object_id`: optional string, additive JSON. Producer: ESPHome adapter.
   Consumer: frontend resolver. Older persisted devices lack it and fall back to the
   normalized label, so no migration or compatibility window is required.
-- No HTTP/WS/MQTT/MCP, configuration or persistence change. Rollback is reverting the
-  branch; no stored data refers to the feature.
-- Catalog data ships with the bundle. Source links are static official documentation and
+- No new HTTP/WS/MQTT/MCP field or persistence change. Reset sends existing JSON scalar
+  values through the existing `deviceSetValue` WS event; `EncodeCommand` on the backend
+  remains the validation authority. Rollback is reverting the branch; no stored data refers
+  to the feature.
+- Both catalogs ship with the bundle. Source links are static official documentation and
   are rendered as plain anchors.
 
 ## Traceability and verification
@@ -128,7 +172,10 @@ Alternatives rejected:
 | FR-04, AC-07, AC-08 | `ExposeRow.vue`, `DevicePage.vue` | browser: info button, Enter toggles `aria-expanded`, help text visible | pass |
 | AC-06 | `ExposeRow.vue`, `ProviderEntitySection.vue` | diff review: provider description remains inline, not duplicated | pass |
 | AC-09 | `ExposeRow.vue` | browser: 1280 px and 375 px, `scrollWidth <= clientWidth` | pass |
-| NFR-01, NFR-02, NFR-03 | all | diff review: no dependency, fetch, device-model check, command or persistence change | pass |
+| FR-06, FR-09, AC-14, AC-16, AC-17 | `domain/entityDefaults/*` | Jest: `resolve.test.ts`, `catalog.test.ts` | pass |
+| FR-07, FR-08, AC-12, AC-13, AC-15 | `ProviderEntitySection.vue` | browser: confirm, send two defaults, skip unknown/button | pass |
+| AC-18 | `ProviderEntitySection.vue` | browser: reset control at 1280 px and 375 px, no overflow | pass |
+| NFR-01, NFR-02, NFR-03, NFR-04 | all | diff review: no dependency, fetch, device-model check, new command protocol or persistence change | pass |
 
 ## Verification (recorded)
 
@@ -136,20 +183,32 @@ Alternatives rejected:
   `node-herder/internal/deviceproviders/esphome`.
 - `cd backend && go build ./...` → pass (no output).
 - `cd backend && go vet ./...` → pass (no output).
-- `cd frontend && npm test -- --runInBand` → **142 suites / 792 tests passed**.
+- `cd frontend && npm test -- --runInBand` → **144 suites / 802 tests passed**.
 - `cd frontend && npm run lint` → **0 errors, 23 pre-existing warnings** (unchanged set).
 - `cd frontend && npm run build` → pass (`vue-tsc` + Vite).
 - `cd frontend && npm run type-check:e2e` → pass.
 - `cd frontend && npx playwright test e2e/devices.spec.ts --project=desktop` →
-  **10 passed**, including the new configuration-help case.
+  **11 passed**, including the configuration-help and reset cases.
 - `cd frontend && npx playwright test e2e/devices.spec.ts --project=mobile` →
-  **10 passed**, including the 375 px overflow assertion.
+  **11 passed**, including the 375 px overflow assertions.
 
 ## Debt, risks, exceptions
 
-- **Catalog drift:** vendor firmware can rename entities or change defaults. Mitigation:
-  conservative wording, source links, and one entry per stable `object_id`; version-aware
-  catalogs can be added later if drift is observed.
+- **Catalog drift:** vendor firmware can rename entities, change defaults or change select
+  options. Mitigation: conservative wording, source links, one entry per stable `object_id`,
+  and per-value validation against the current metadata. A default that no longer fits is
+  skipped, not coerced. Version-aware catalogs can be added later if drift is observed.
+- **Variant-specific defaults:** `update_speed` and some option sets differ by sensor
+  variant. The option-presence check prevents an invalid command, but the catalog may not
+  cover every variant yet; unknown/inapplicable entries simply do not reset.
+- **Batch volume:** the catalogue currently covers at most a handful of settings per device;
+  each reset uses one existing command and the backend queue remains bounded. No retry or
+  parallel flood is introduced.
+- **Disruptive entities:** `mmWave Bluetooth` is excluded because toggling it reboots the
+  sensor; stateless buttons and unsupported update entities are excluded by control type.
+  They remain individually controllable.
+- **Reset feedback:** the success notice says "requested", not "confirmed"; per-row pending
+  state and the existing confirmation timeout remain the source of truth (NH-02/FE-03).
 - **Renamed entities:** `object_id` is derived from the ESPHome name, so a user rename
   loses the match. The label fallback covers missing attributes, not renames. Recorded in
   the spec.
@@ -166,5 +225,7 @@ Alternatives rejected:
 ## Completion
 
 Implemented on `feat/device-entity-help`. Acceptance evidence is recorded above; no
-exceptions are requested. The catalog intentionally covers documented settings only and
-resolves to no help for unknown entities (AC-04).
+exceptions are requested. The help catalog covers documented settings only and resolves to
+no help for unknown entities (AC-04). The defaults catalog covers documented defaults only;
+unknown or now-inapplicable values do not reset, and stateless/disruptive entities are
+excluded (AC-14, AC-16).

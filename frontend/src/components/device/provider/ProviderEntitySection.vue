@@ -2,6 +2,7 @@
   /* One searchable, alphabetically sorted page of provider entities. */
   import type { Device, Expose } from '@/types/device';
   import type { IconName } from '@/components/ui/icons';
+  import { useEntityReset } from '@/composables/device/useEntityReset';
   import { useProviderEntityInventory } from '@/composables/device/useProviderEntityInventory';
   import UiCard from '@/components/ui/UiCard.vue';
   import UiButton from '@/components/ui/UiButton.vue';
@@ -14,15 +15,31 @@
     icon: IconName;
     showDescription?: boolean;
     showHelp?: boolean;
+    showReset?: boolean;
   }>();
   const { query, page, pages, filtered, visible, pageSize } = useProviderEntityInventory(
     () => props.entities,
     () => props.device.id
   );
+  const { targets: resetTargets, canReset, resetDefaults } = useEntityReset(
+    () => props.device,
+    () => props.entities
+  );
 </script>
 
 <template>
   <UiCard :title="title" :icon="icon" flush>
+    <template #tools>
+      <UiButton
+        v-if="showReset && resetTargets.length"
+        size="sm"
+        variant="ghost"
+        icon="refresh"
+        :disabled="!canReset"
+        @click="resetDefaults">
+        Reset to defaults
+      </UiButton>
+    </template>
     <div class="nh-provider-search">
       <label :for="`${device.id}-${icon}-search`">Search {{ title.toLowerCase() }}</label>
       <input :id="`${device.id}-${icon}-search`" v-model="query" class="nh-input" type="search" />

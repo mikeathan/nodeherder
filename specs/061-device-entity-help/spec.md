@@ -1,4 +1,4 @@
-# Spec: Entity help for device configuration
+# Spec: Device configuration help and defaults
 
 ID: 061 | Status: Draft | Owner: agent draft | Updated: 2026-11-10
 Constitution: 1.0.0 (proposed) | Components: backend, frontend
@@ -26,16 +26,26 @@ Facts observed in the current tree:
 - Manufacturer documentation is the authoritative semantic source for vendor entities,
   for example "Assume Present Timeout: How long, in seconds, to hold occupancy after a
   target is lost without a valid exit being detected. Default is 30 minutes."
+- The same API exposes **no default value**: numbers carry only min/max/step/unit, selects
+  carry options, switches/lights carry `assumed_state`, and buttons carry nothing. The
+  current report is the last state, not a factory default.
+- Defaults exist in the firmware YAML (`initial_value`, `initial_option`,
+  `restore_mode: RESTORE_DEFAULT_OFF/ALWAYS_OFF`) and in the manufacturer documentation.
+  NodeHerder never receives that configuration.
+- Configuration rows have no reset affordance. A user who tunes a timeout or threshold
+  must remember the original value or reflash/factory-reset the device.
 
 Scope: a provider-agnostic help resolver in the frontend, backed by a data catalog keyed
-by stable entity identity, plus an accessible disclosure for configuration entities. The
-ESPHome adapter additionally carries the canonical `object_id` so matching does not depend
-on the display label.
+by stable entity identity, plus an accessible disclosure for configuration entities; and a
+card-level "Reset to defaults" that sends catalogued defaults through the existing device
+command path. The ESPHome adapter additionally carries the canonical `object_id` so
+matching does not depend on the display label.
 
-Exclusions: no runtime documentation scraping, no backend-hosted copy of the text, no
-generated descriptions from ranges/options, no localization, no change to device commands,
-state, history or persistence, and no help for Z2M entities that already have a provider
-description.
+Exclusions: no runtime documentation or firmware-config scraping, no backend-hosted copy
+of the text or defaults, no generated descriptions/defaults from ranges/options, no
+localization, no new command protocol, no reset of stateless buttons or unsupported update
+entities, no help for Z2M entities that already have a provider description, and no
+firmware flashing or factory-reset workflow.
 
 ## Scenarios and acceptance
 
@@ -77,6 +87,27 @@ Independent verification: resolver unit cases.
   resolver and row component do not change.
 - AC-11: Device-class entries apply to any provider's expose that reports that class.
 
+### US-04 — Reset documented settings (priority P1)
+
+Independent verification: `src/__tests__/domain/entityDefaults/` and the device page
+browser test.
+
+- AC-12: Given the ESPHome configuration card and at least one catalogued default, when
+  the user activates "Reset to defaults", then a confirmation names the affected settings
+  and states that values update only after device confirmation.
+- AC-13: On confirm, each applicable setting is sent through the existing device command
+  path with its documented default; no submitted value is presented as confirmed state.
+- AC-14: An entity with no catalogued default, or whose type, range or options make the
+  default inapplicable, is skipped.
+- AC-15: When the device is offline/disabled or any target command is pending, the reset
+  control is unavailable; individual refusals are reported without claiming success.
+- AC-16: Stateless buttons, unsupported update entities and settings whose change reboots
+  the sensor are never included.
+- AC-17: Adding a default for another entity requires only a catalog entry; component
+  logic does not change.
+- AC-18: At the existing mobile breakpoint the control and confirmation remain usable
+  without horizontal scrolling.
+
 ## Requirements and success
 
 - FR-01: ESPHome discovery MUST retain a bounded `object_id` on the entity contract;
@@ -88,12 +119,25 @@ Independent verification: resolver unit cases.
   provider descriptions inline; acceptance: AC-01, AC-02, AC-05, AC-07, AC-08.
 - FR-05: Catalog text MUST be plain text with an optional source link; no raw HTML;
   acceptance: AC-02.
-- NFR-01: Resolution MUST be synchronous and in-memory, with no network call or new
+- FR-06: Defaults MUST resolve from a data catalog keyed by `object_id` (label fallback)
+  and MUST be validated against the expose's writability, control type, range and options;
+  acceptance: AC-13, AC-14, AC-17.
+- FR-07: Reset MUST send values through `useDeviceCommand`, preserving pending state,
+  confirmation timeout, offline refusal and no-retry rules; acceptance: AC-13, AC-15.
+- FR-08: Reset MUST require an explicit confirmation that names the affected settings;
+  acceptance: AC-12.
+- FR-09: Reset MUST exclude stateless actions, unsupported entities and settings with
+  disruptive side effects; acceptance: AC-16.
+- NFR-01: Help resolution MUST be synchronous and in-memory, with no network call or new
   dependency.
-- NFR-02: The catalog MUST be data keyed by normalized entity identity; components MUST
+- NFR-02: Both catalogs MUST be data keyed by normalized entity identity; components MUST
   NOT check device models or project names.
-- NFR-03: The change MUST NOT alter device command, confirmation, history or persistence
-  semantics.
+- NFR-03: Help MUST NOT alter device command, confirmation, history or persistence
+  semantics; reset MUST use the existing command semantics without adding retries or
+  optimistic confirmation.
+- NFR-04: Reset MUST NOT add a backend command, protocol or storage change; the existing
+  `deviceSetValue` path and backend validation remain authoritative.
+- NFR-05: Help and reset controls MUST remain keyboard operable and mobile-safe.
 
 ## Entities and external interfaces
 
@@ -102,8 +146,13 @@ Independent verification: resolver unit cases.
   the label fallback.
 - `EntityHelp`: `{ text, kind: 'provider' | 'catalog', source?: { label, url } }`.
 - `EntityHelpResolver`: `(expose: Expose) => EntityHelp | null`.
-- Catalog: `Record<normalizedKey, { text, source? }>` for `object_id` and `device_class`.
-- No HTTP/WS/MQTT/MCP payload or persistence change.
+- Help catalog: `Record<normalizedKey, { text, source? }>` for `object_id` and `device_class`.
+- `EntityDefault`: `{ value: number | string | boolean, source? }`.
+- `EntityDefaultTarget`: `{ expose, value, source? }` for one applicable reset command.
+- Defaults catalog: `Record<normalizedKey, EntityDefault>` for `object_id`; resolvers are
+  pure and validate the value against the current expose metadata.
+- Reset reuses the existing browser `deviceSetValue` WS event with the existing JSON scalar
+  types. No new HTTP/WS/MQTT/MCP payload, field or persistence change.
 
 ## Questions and assumptions
 
@@ -116,6 +165,16 @@ Independent verification: resolver unit cases.
 - Q3: Why not store the copy in the backend? It is presentation copy with source links and
   would duplicate browser content; the backend should carry facts. Resolution: frontend
   resolver.
+- Q4: Where do reset defaults come from? The API exposes none. Resolution: curated data
+  from the firmware YAML (`initial_value`, `initial_option`, `restore_mode`) and the
+  manufacturer docs, keyed by `object_id`, with source links.
+- Q5: Why not reset to the minimum or zero? Neither is a default; it would silently change
+  detection behaviour. Resolution: only catalogued defaults are eligible.
+- Q6: How is firmware/variant drift handled? Every default is validated against the current
+  `min/max/step/options`; an inapplicable value is skipped rather than coerced. The catalog
+  holds documented defaults only. A future version-scoped catalog can refine entries.
+- Q7: Why exclude `mmWave Bluetooth`? Its switch action reboots the mmWave sensor; a bulk
+  reset must not trigger an unexpected reboot. It remains individually controllable.
 - Assumption A1: The UI is English-only, matching the rest of the application.
 - Assumption A2: `object_id` is stable for a given firmware configuration; renaming an
   ESPHome entity changes it. The label fallback covers records without the attribute but
@@ -128,3 +187,7 @@ Success criteria:
 - SC-02: No new network request, dependency or persisted field.
 - SC-03: Backend and frontend suites pass with new resolver, catalog and `object_id`
   coverage.
+- SC-04: Reset sends only applicable catalogued defaults; unknown settings and values
+  rejected by current metadata remain unchanged.
+- SC-05: Reset adds no backend command and preserves offline, pending, confirmation-timeout
+  and no-retry behaviour.
