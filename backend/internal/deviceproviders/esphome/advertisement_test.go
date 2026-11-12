@@ -224,6 +224,37 @@ func TestForwardingDoesNotDoubleCount(t *testing.T) {
 	}
 }
 
+// The supervisor decorates the sink before handing it to the session. Embedding promotes only
+// the interface it declares, so capability assertions on the wrapper used to fail and
+// observation was silently dead: the device connected and no advertisement was ever
+// subscribed. This is the regression guard for that.
+func TestSupervisorWrapperStillExposesObservation(t *testing.T) {
+	observing := observingRegistrySink(&recordingRegistry{})
+	wrapped := &supervisedSink{SupervisorSink: observing}
+
+	// The wrapper itself must not satisfy the capability; that is what made the bug silent.
+	if _, ok := any(wrapped).(Observer); ok {
+		t.Fatal("wrapper unexpectedly implements Observer; the unwrap path is untested")
+	}
+	// Resolving through the capability helper must find it on the decorated sink.
+	if _, ok := capability[Observer](wrapped); !ok {
+		t.Fatal("Observer lost through the supervisor wrapper")
+	}
+	if _, ok := capability[ObservationSource](wrapped); !ok {
+		t.Fatal("ObservationSource lost through the supervisor wrapper")
+	}
+	if _, ok := capability[interface{ RecordAdvertisementBatch(int, int) }](wrapped); !ok {
+		t.Fatal("advertisement reporter lost through the supervisor wrapper")
+	}
+}
+
+// A plain sink must still report no capability through the helper.
+func TestCapabilityHelperRejectsPlainSink(t *testing.T) {
+	if _, ok := capability[Observer](&DeviceSink{}); ok {
+		t.Fatal("plain sink resolved an Observer")
+	}
+}
+
 func TestDecodeAdvertisementsHandlesEmptyResponses(t *testing.T) {
 	if got := decodeAdvertisements("s", nil); got != nil {
 		t.Fatalf("nil response produced %v", got)

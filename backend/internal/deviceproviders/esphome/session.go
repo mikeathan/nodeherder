@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"node-herder/internal/deviceproviders"
+	"node-herder/utils"
 
 	"github.com/mycontroller-org/esphome_api/pkg/api"
 	"github.com/mycontroller-org/esphome_api/pkg/client"
@@ -222,21 +223,26 @@ func (s *Session) runSubscribed(ctx context.Context, c nativeClient, sink Sink, 
 	// A device that implements Observer can also stream advertisements. The subscription is
 	// attempted only for those devices and a rejection is not fatal: a device without the
 	// Bluetooth proxy component still delivers its entity state.
-	observer, observes := sink.(Observer)
+	observer, observes := capability[Observer](sink)
 	var source string
 	if observes {
-		if sourceDescriptor, ok := sink.(ObservationSource); ok {
+		if sourceDescriptor, ok := capability[ObservationSource](sink); ok {
 			source, _, _, _ = sourceDescriptor.SourceDescriptor()
 		}
 		// Declare the source before subscribing so the viewer can render its filter facets
 		// even if no advertisement ever arrives.
 		announceObservationSource(sink)
 		if err := subscribeAdvertisements(c); err != nil {
+			// Logged because otherwise a missing bluetooth_proxy component is indistinguishable
+			// from a device that is merely silent, which makes field diagnosis impossible.
+			utils.LogInfof("ESPHome observation unavailable for %s: %v", source, err)
 			observer = nil
 			observes = false
 			// A rejected subscription is not a session failure, but the source must not
 			// advertise facets it will never populate.
 			withdrawObservationSource(sink)
+		} else {
+			utils.LogInfof("ESPHome observation subscribed for %s", source)
 		}
 	}
 	if observes {
@@ -244,6 +250,8 @@ func (s *Session) runSubscribed(ctx context.Context, c nativeClient, sink Sink, 
 		// does not leave stale filter facets in the viewer.
 		defer withdrawObservationSource(sink)
 	}
+	// advertisementsSeen keeps the first-batch diagnostic to one line per session.
+	advertisementsSeen := false
 	select {
 	case <-overflow:
 		return errors.New("ESPHome ingress overflow; resynchronization required")
@@ -320,8 +328,16 @@ func (s *Session) runSubscribed(ctx context.Context, c nativeClient, sink Sink, 
 					decoded := decodeAdvertisements(source, batch)
 					// Report raw and decoded counts even when every entry was unusable, so a
 					// source that receives traffic but resolves no identities is visible.
-					if reporter, ok := sink.(interface{ RecordAdvertisementBatch(int, int) }); ok {
+					if reporter, ok := capability[interface{ RecordAdvertisementBatch(int, int) }](sink); ok {
 						reporter.RecordAdvertisementBatch(len(batch.Advertisements), len(decoded))
+					}
+					// Log the first batch only. This is the single line that distinguishes "the
+					// subscription works" from "the device accepted it and sent nothing", which
+					// is otherwise impossible to tell from the outside.
+					if !advertisementsSeen {
+						advertisementsSeen = true
+						utils.LogInfof("ESPHome observation received first batch for %s: %d entries, %d decoded",
+							source, len(batch.Advertisements), len(decoded))
 					}
 					if len(decoded) > 0 {
 						if err := observer.ObserveAdvertisements(ctx, decoded); err != nil {

@@ -170,6 +170,29 @@ type supervisedSink struct {
 	supervisor *Supervisor
 }
 
+// Unwrap exposes the decorated sink so capability interfaces are not lost.
+//
+// Embedding SupervisorSink promotes only Sink and Status, so a session that asserts for
+// Observer would fail even when the underlying sink implements it. Observation would then be
+// silently dead: the device connects, states flow, and no advertisement is ever subscribed.
+func (s *supervisedSink) Unwrap() SupervisorSink { return s.SupervisorSink }
+
+// capability resolves a capability interface on either the wrapper or the sink it decorates.
+// Callers assert through this instead of on the wrapper, because the wrapper cannot promote
+// interfaces it does not itself implement.
+func capability[T any](sink Sink) (T, bool) {
+	var zero T
+	if match, ok := sink.(T); ok {
+		return match, true
+	}
+	if wrapped, ok := sink.(interface{ Unwrap() SupervisorSink }); ok {
+		if match, ok := any(wrapped.Unwrap()).(T); ok {
+			return match, true
+		}
+	}
+	return zero, false
+}
+
 func (s *supervisedSink) Identify(ctx context.Context, info *types.DeviceInfo) error {
 	if identifier, ok := s.SupervisorSink.(interface {
 		Identify(context.Context, *types.DeviceInfo) error
