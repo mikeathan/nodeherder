@@ -244,11 +244,27 @@ export function registerWebsocket(app, server) {
         }
         case 'pong':
           break;
+        case 'saveObservationIdentity':
+        case 'deleteObservationIdentity':
+          // The real backend persists the decision and rebroadcasts a snapshot; the mock
+          // acknowledges the same way so triage controls can be exercised in a browser.
+          sendOperationSuccess(ws);
+          break;
         default:
           console.log('ws unhandled type:', msg);
           break;
       }
     });
+
+    // Wireless observation snapshot. The real hub broadcasts this whenever aggregated state
+    // changes; the mock sends one so the viewer can be rendered and asserted in a browser.
+    const observationSnapshot = buildObservationSnapshot();
+    sendMessage(ws, 'observations', observationSnapshot);
+    const observationIntervalId = setInterval(function () {
+      if (!connected) return;
+      sendMessage(ws, 'observations', observationSnapshot);
+    }, 2000);
+    intervals.push(observationIntervalId);
 
     ws.on('error', function (error) {
       console.log('Cannot start server', error);
@@ -270,4 +286,71 @@ function safeParse(message) {
     console.log('Invalid JSON message', e);
     return null;
   }
+}
+
+/**
+ * One deterministic wireless observation snapshot for browser tests.
+ *
+ * Fixed data, not generated: assertions need stable keys. It covers the cases the viewer must
+ * handle — a stable beacon with an operator label, a rotating address, a known device, and a
+ * source that is connected but has delivered nothing.
+ */
+function buildObservationSnapshot() {
+  const now = Date.now();
+  const at = (offsetSeconds) => new Date(now - offsetSeconds * 1000).toISOString();
+  return {
+    at: at(0),
+    truncated: false,
+    sources: [
+      {
+        id: 'mock-proxy-1',
+        name: 'Mock hall proxy',
+        media: ['ble.adv'],
+        facets: ['kind', 'vendor'],
+        diagnostics: { advertisements: 128, decoded: 96, dropped: 0, lastAdvertisement: at(1) },
+      },
+      {
+        id: 'mock-proxy-2',
+        name: 'Mock landing proxy',
+        media: ['ble.adv'],
+        facets: ['kind'],
+        diagnostics: { advertisements: 0, decoded: 0, dropped: 0, lastAdvertisement: null },
+      },
+    ],
+    identities: [
+      {
+        key: 'ibeacon:2f234454-cf6d-4a0f-adf2-f4911ba9ffa6:1:2',
+        kind: 'ibeacon',
+        vendor: 76,
+        stable: true,
+        label: 'Front door tag',
+        decision: 'known',
+        lastSeen: at(5),
+        packets: 1841,
+        rssi: -62,
+        sources: [{ id: 'mock-proxy-1', rssi: -62 }],
+      },
+      {
+        key: 'addr:aa:bb:cc:dd:ee:01',
+        kind: 'adv',
+        stable: true,
+        decision: 'unknown',
+        lastSeen: at(8),
+        packets: 12,
+        rssi: -78,
+        sources: [{ id: 'mock-proxy-1', rssi: -78 }],
+      },
+      {
+        key: 'fp:9c02ab41',
+        kind: 'adv',
+        stable: false,
+        decision: 'unknown',
+        lastSeen: at(20),
+        packets: 3,
+        rssi: null,
+        sources: [{ id: 'mock-proxy-1', rssi: null }],
+      },
+    ],
+    arrivals: 1,
+  };
 }
