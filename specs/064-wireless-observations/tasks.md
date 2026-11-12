@@ -63,13 +63,17 @@ with evidence. No task is started; this file sequences authorized implementation
   `TestRecordSourceActivityIgnoresUnknownSources`, `TestDiagnosticsSurviveReRegister`,
   `TestDropsAreAttributedToTheirSource`, plus four contract tests and five presentation
   tests.
-- [ ] T019 — Device-page observation row: capability status and counters. Open.
-- [ ] T020 (FE-04) — Browser keyboard / 390px / 1280px verification. **Still unrun**;
-  FE-04 remains unsatisfied. Blocked additionally on the e2e mock, which emits no
-  `observations` events, so a browser test for this page needs mock support first.
-- [ ] T021 — Docs and final rule audit. Open.
-- [ ] T022 — Hardware validation: flash, enrol, confirm message id 93 (assumption A1).
-  Blocked on hardware; see [plan.md](plan.md) §4 for the recommended configuration.
+- [ ] T019 — Device-page observation row: capability status and counters. **Open.** The only
+  remaining code item. Not blocking: the viewer states per-source status, so the device page
+  row is convenience rather than diagnosis.
+- [x] T020 (FE-04) — **DONE**: `e2e/wireless.spec.ts` renders `/wireless` in a real browser at
+  1280px and 390px and now covers 13 cases, including isolation, Focus distance and trend,
+  Escape, and both viewports. The mock emits `observations`. Gate FE-04 is satisfied.
+- [ ] T021 — Docs and final rule audit. **Partially done**: spec, plan, ADRs and contract are
+  current; a final pass over the full diff is outstanding.
+- [x] T022 — **DONE on real hardware**: the Everything Presence Lite connected, the
+  subscription was accepted and advertisements decoded. This is what exposed D-10. Assumption
+  A1 (message id 93) is confirmed.
 
 ### Bug-fix round (2026-11-11)
 
@@ -94,15 +98,34 @@ with evidence. No task is started; this file sequences authorized implementation
   horizontal overflow. The mock hub now emits `observations`. Evidence: 6/6 desktop and 6/6
   mobile; full suites 168 and 177 pass with 0 failures.
 
+## Proximity round (2026-11-12)
+
+Driven by using the viewer against real hardware. Triage and grouping did not make it a
+tool: it was a census of MAC addresses.
+
+- [x] T029 — **DONE**: "only new" filtered on the triage decision and matched every identity on
+  a first run. Novelty now comes from `firstSeen` and a five-minute window. Evidence:
+  `isRecentArrival` tests; e2e asserts an older identity is excluded.
+- [x] T030 — **DONE**: pause/freeze, grouping and a list view. Freezing keeps a copy so triage
+  still lands on screen, and a watcher drops rows that leave the live snapshot.
+- [x] T031 (D-11) — **DONE**: isolation. Selecting an identity scopes every view to it; Escape
+  and an explicit control clear it; a selection that ages out says so.
+- [x] T032 — **DONE**: RSSI trend. A bounded 20-reading window per identity, older-half versus
+  newer-half means, a 3 dB deadband and a 45 s staleness horizon. `unknown` is never shown as
+  `steady`. Evidence: nine trend tests.
+- [x] T033 — **DONE**: Focus view. Range rings without a bearing, distance through the shared
+  `formatQuantity`, near/mid/far band, arrow-plus-word trend, signal sparkline. One column at
+  every width. Evidence: 13 desktop and 13 mobile e2e.
+- [x] T034 — **DONE**: trend and its sparkline participate in `renderSignature`; without that
+  they would freeze on a live device. Evidence: `TestDiagnosticsAloneTriggerAPublish` pattern.
+
 ## Handoff
 
-- [x] T014 — **Checks run** (actual results in `plan.md` §Traceability): backend
-  `go build ./...`, `go vet ./...`, `go test ./...` (52 packages pass),
+- [x] T014 — **Checks run**: backend `go build`, `go vet`, `go test ./...` (52 packages),
   `go test -race` on affected packages (clean); frontend `npm test -- --runInBand` (149 suites,
-  867 tests pass), `npm run lint` (0 errors), `npm run build` (succeeds), `vue-tsc` and
-  `type-check:e2e` clean, Playwright 168 desktop / 177 mobile pass.
+  887 tests), `npm run lint` (0 errors), `npm run build`, `vue-tsc` and `type-check:e2e` clean,
+  Playwright 175 desktop / 13 mobile wireless (0 failures).
 - [x] T015 — **DONE** via T020: keyboard focus and 390px/1280px verified in a browser.
-  Gate FE-04 is satisfied.
-- [ ] T016 — Pending: docs and final rule audit.
+- [ ] T016 — Distinct from T021: the final full-diff rule audit before merge. Open.
 
 Add discovered work here and update the spec/plan when scope changes.
