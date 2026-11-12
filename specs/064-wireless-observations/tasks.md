@@ -65,10 +65,22 @@ with evidence. No task is started; this file sequences authorized implementation
   tests.
 - [ ] T019 — Device-page observation row: capability status and counters. Open.
 - [ ] T020 (FE-04) — Browser keyboard / 390px / 1280px verification. **Still unrun**;
-  FE-04 remains unsatisfied.
+  FE-04 remains unsatisfied. Blocked additionally on the e2e mock, which emits no
+  `observations` events, so a browser test for this page needs mock support first.
 - [ ] T021 — Docs and final rule audit. Open.
 - [ ] T022 — Hardware validation: flash, enrol, confirm message id 93 (assumption A1).
   Blocked on hardware; see [plan.md](plan.md) §4 for the recommended configuration.
+
+### Bug-fix round (2026-11-11)
+
+- [x] T023 (D-4) — **DONE**: diagnostics were missing from `renderSignature`, so a source
+  whose advertisements all failed to decode never republished. That defeated D-2 precisely
+  in the diagnosis case. Counters now participate in change detection. Evidence:
+  `TestDiagnosticsAloneTriggerAPublish`, `TestUnchangedDiagnosticsDoNotRepublish`.
+- [x] T024 (D-5) — **DONE**: identity RSSI was a lifetime maximum; now tracks the newest
+  reading so distance follows movement. Evidence: `TestRSSITracksNewestReading`.
+- [x] T025 (D-6) — **DONE**: advertised local name now becomes the identity label. Evidence:
+  `TestDecodeAdvertisementsKeepsAdvertisedName`.
 
 ## Handoff
 

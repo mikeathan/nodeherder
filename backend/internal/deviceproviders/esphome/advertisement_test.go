@@ -181,6 +181,28 @@ func TestDecodeAdvertisementsSkipsUnusableEntries(t *testing.T) {
 	}
 }
 
+func TestDecodeAdvertisementsKeepsAdvertisedName(t *testing.T) {
+	// An advertised local name must become the identity label, otherwise the viewer can only
+	// show an opaque key even when the device names itself.
+	// AD structure: length, type 0x09 (complete local name), then the name bytes.
+	const completeLocalName = 0x09
+	name := append([]byte{byte(len("Kitchen tag") + 1), completeLocalName}, []byte("Kitchen tag")...)
+	batch := decodeAdvertisements("source-1", &api.BluetoothLERawAdvertisementsResponse{
+		Advertisements: []*api.BluetoothLERawAdvertisement{
+			{Address: 0x0000AABBCCDDEEFF, Rssi: -62, AddressType: uint32(observations.AddressTypePublic), Data: name},
+		},
+	})
+	if len(batch) != 1 {
+		t.Fatalf("batch length = %d", len(batch))
+	}
+	if batch[0].Identity.Label != "Kitchen tag" {
+		t.Fatalf("label = %q, want the advertised name", batch[0].Identity.Label)
+	}
+	if got, _ := batch[0].Payload["name"].(string); got != "Kitchen tag" {
+		t.Fatalf("payload name = %q", got)
+	}
+}
+
 func TestDecodeAdvertisementsHandlesEmptyResponses(t *testing.T) {
 	if got := decodeAdvertisements("s", nil); got != nil {
 		t.Fatalf("nil response produced %v", got)

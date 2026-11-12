@@ -446,6 +446,9 @@ Recorded after deciding the hardware path. Full reasoning in the revised plan.
 | D-1 | blocking | `Service.RegisterSource` had no production caller, so `snapshot.sources` was always empty and filters never rendered | Fixed: `sourceRegistry` interface, announce on subscribe, withdraw on exit |
 | D-2 | high | Five distinct failure modes produced identical empty state; `Dropped` was never wired | Fixed: `SourceDiagnostics` counters per source, viewer states status and explains silence |
 | D-3 | medium | No per-device observation affordance | Open as T019 |
+| D-4 | high | Diagnostics were absent from `renderSignature`, so counters changed without a publish. A source receiving advertisements that decode to nothing would freeze the viewer at `0 advertisements` — defeating D-2 entirely | Fixed: counters participate in change detection; regression test asserts a diagnostics-only change publishes |
+| D-5 | high | Identity RSSI was a lifetime maximum, so a device that moved away stayed frozen at its closest-ever reading, making the range estimate permanently wrong | Fixed: RSSI tracks the newest reading; test asserts -40 then -90 reports -90 |
+| D-6 | medium | The advertised local name was decoded into `Payload` and never read, so the viewer could only show an opaque key | Fixed: name becomes the identity label, with the operator label still winning at snapshot time |
 
 **Verification after the reassessment round:**
 

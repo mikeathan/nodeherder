@@ -264,10 +264,10 @@ func (s *Service) record(observation model.Observation) {
 	}
 	rssi := observation.RSSI
 	current.sources[observation.Source] = &rssi
-	if current.rssi == nil || rssi > *current.rssi {
-		best := rssi
-		current.rssi = &best
-	}
+	// RSSI tracks the most recent reading, not a lifetime maximum: a device that moves away
+	// must appear further, and a high-water mark would freeze its distance at the closest
+	// point it ever reached.
+	current.rssi = &rssi
 }
 
 // flush builds a snapshot, drops stale identities, and publishes only when the rendered state
@@ -384,23 +384,38 @@ func sourceReadings(source map[string]*int) []model.SourceReading {
 }
 
 // renderSignature is the change-detection key for a snapshot. Timestamps are excluded because
-// a snapshot with unchanged content must not broadcast merely because time passed.
+// a snapshot with unchanged content must not broadcast merely because time passed. Diagnostics
+// counters are included: a source receiving advertisements that decode to nothing changes no
+// identity, yet that is precisely the state the operator needs to see.
 func renderSignature(snapshot model.Snapshot) string {
 	signature := make([]byte, 0, 64+len(snapshot.Identities)*32)
 	for _, source := range snapshot.Sources {
 		signature = append(signature, source.ID...)
 		signature = append(signature, 0)
+		signature = appendUint64(signature, source.Diagnostics.Advertisements)
+		signature = appendUint64(signature, source.Diagnostics.Decoded)
+		signature = appendUint64(signature, source.Diagnostics.Dropped)
 	}
 	for _, identity := range snapshot.Identities {
 		signature = append(signature, identity.Key...)
 		signature = append(signature, 0)
 		signature = append(signature, identity.Decision...)
 		signature = append(signature, identity.Label...)
-		signature = append(signature, byte(identity.Packets&0xFF), byte(identity.Packets>>8))
+		signature = appendUint64(signature, identity.Packets)
 		if identity.RSSI != nil {
-			signature = append(signature, byte(*identity.RSSI+128))
+			// Encode the full value so a reading moving outside one byte still registers.
+			signature = appendUint64(signature, uint64(int64(*identity.RSSI)+128))
 		}
 		signature = append(signature, 0)
 	}
 	return string(signature)
+}
+
+// appendUint64 encodes a counter in a fixed width so the signature cannot collide with an
+// adjacent field's bytes.
+func appendUint64(buffer []byte, value uint64) []byte {
+	for shift := 0; shift < 64; shift += 8 {
+		buffer = append(buffer, byte(value>>shift))
+	}
+	return buffer
 }

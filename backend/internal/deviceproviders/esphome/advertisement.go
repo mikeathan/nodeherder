@@ -152,6 +152,11 @@ func decodeAdvertisements(source string, response *api.BluetoothLERawAdvertiseme
 		if !ok {
 			continue
 		}
+		// The advertised name is the identity's display label. Keeping it on the identity is
+		// what lets the viewer show "Kitchen tag" instead of an opaque key.
+		if name != "" {
+			identity.Label = name
+		}
 		payload := map[string]any{"addressType": adv.AddressType}
 		if name != "" {
 			payload["name"] = name

@@ -106,7 +106,7 @@ func TestFlushPublishesOnlyWhenStateChanges(t *testing.T) {
 	}
 }
 
-func TestAggregatesAcrossSourcesAndKeepsBestRSSI(t *testing.T) {
+func TestAggregatesAcrossSources(t *testing.T) {
 	clock := newFakeClock()
 	var published []model.Snapshot
 	service := NewService(Deps{
@@ -129,14 +129,87 @@ func TestAggregatesAcrossSourcesAndKeepsBestRSSI(t *testing.T) {
 	if identity.Packets != 2 {
 		t.Fatalf("packets = %d, want 2", identity.Packets)
 	}
-	if identity.RSSI == nil || *identity.RSSI != -55 {
-		t.Fatalf("rssi = %v, want the strongest -55", identity.RSSI)
-	}
 	if len(identity.Sources) != 2 {
 		t.Fatalf("sources = %d, want one reading per source", len(identity.Sources))
 	}
 	if len(published[0].Sources) != 2 {
 		t.Fatalf("source descriptors = %d, want 2", len(published[0].Sources))
+	}
+}
+
+// RSSI must follow the newest reading so a device that moves away appears further. A lifetime
+// maximum would freeze its distance at the closest point it ever reached.
+func TestRSSITracksNewestReading(t *testing.T) {
+	clock := newFakeClock()
+	var published []model.Snapshot
+	service := NewService(Deps{
+		Store:   &recordingStore{},
+		Clock:   clock,
+		Publish: func(s model.Snapshot) { published = append(published, s) },
+	})
+	service.RegisterSource("a", "Hall", []model.Medium{model.MediumBLEAdvertisement}, nil)
+
+	service.record(stableObservation("a", "addr:aa", -40, clock.Now()))
+	clock.Advance(time.Second)
+	service.flush()
+	service.record(stableObservation("a", "addr:aa", -90, clock.Now()))
+	clock.Advance(time.Second)
+	service.flush()
+
+	last := published[len(published)-1].Identities[0]
+	if last.RSSI == nil || *last.RSSI != -90 {
+		t.Fatalf("rssi = %v, want the newest reading -90", last.RSSI)
+	}
+}
+
+// A source that receives advertisements which decode to nothing changes no identity, but the
+// counters must still reach the browser: that is the state that diagnoses a configuration
+// fault. Without this the viewer would freeze at "0 advertisements".
+func TestDiagnosticsAloneTriggerAPublish(t *testing.T) {
+	clock := newFakeClock()
+	var published []model.Snapshot
+	service := NewService(Deps{
+		Store:   &recordingStore{},
+		Clock:   clock,
+		Publish: func(s model.Snapshot) { published = append(published, s) },
+	})
+	service.RegisterSource("a", "Hall", []model.Medium{model.MediumBLEAdvertisement}, nil)
+	clock.Advance(time.Second)
+	service.flush()
+	before := len(published)
+
+	// Fifty advertisements arrived, none produced an identity.
+	service.RecordSourceActivity("a", 50, 0, clock.Now())
+	clock.Advance(time.Second)
+	service.flush()
+
+	if len(published) == before {
+		t.Fatal("diagnostics changed but no snapshot published")
+	}
+	if got := published[len(published)-1].Sources[0].Diagnostics.Advertisements; got != 50 {
+		t.Fatalf("advertisements = %d, want 50", got)
+	}
+}
+
+// Repeated identical counters must not keep rebroadcasting; change detection still applies.
+func TestUnchangedDiagnosticsDoNotRepublish(t *testing.T) {
+	clock := newFakeClock()
+	var published []model.Snapshot
+	service := NewService(Deps{
+		Store:   &recordingStore{},
+		Clock:   clock,
+		Publish: func(s model.Snapshot) { published = append(published, s) },
+	})
+	service.RegisterSource("a", "Hall", []model.Medium{model.MediumBLEAdvertisement}, nil)
+	service.RecordSourceActivity("a", 5, 5, clock.Now())
+	clock.Advance(time.Second)
+	service.flush()
+	after := len(published)
+
+	clock.Advance(time.Second)
+	service.flush()
+	if len(published) != after {
+		t.Fatalf("published %d snapshots with unchanged counters, want %d", len(published), after)
 	}
 }
 
