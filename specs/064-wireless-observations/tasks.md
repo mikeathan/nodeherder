@@ -88,19 +88,21 @@ with evidence. No task is started; this file sequences authorized implementation
   import the `@/store` singleton. Evidence: `layout.spec.ts` failed before, passes after.
 - [x] T028 (D-9) — **DONE**: removed the never-dispatched `stale` flag; the viewer derives
   from `ws/getConnectionStatus`.
-- [ ] T020 (FE-04) — **Now demonstrated as necessary, not optional**: T027 shipped while 867
-  unit tests stayed green, and only the browser spec caught a mount-time crash. Browser
-  verification of `/wireless` remains unrun.
+- [x] T020 (FE-04) — **DONE**: `e2e/wireless.spec.ts` renders `/wireless` in a real browser at
+  1280px and 390px, asserting identity rendering, the bearing-less disclaimer, facet filters
+  appearing (D-1 regression guard), the only-new filter, keyboard focus on triage, and no
+  horizontal overflow. The mock hub now emits `observations`. Evidence: 6/6 desktop and 6/6
+  mobile; full suites 168 and 177 pass with 0 failures.
 
 ## Handoff
 
 - [x] T014 — **Checks run** (actual results in `plan.md` §Traceability): backend
   `go build ./...`, `go vet ./...`, `go test ./...` (52 packages pass),
   `go test -race` on affected packages (clean); frontend `npm test -- --runInBand` (149 suites,
-  859 tests pass), `npm run lint` (0 errors; 23 pre-existing warnings elsewhere),
-  `npm run build` (succeeds).
-- [ ] T015 — Partially done: offline/stale/empty states implemented and lint-clean, but
-  keyboard and 390px/1280px browser verification is **unrun**. Gate FE-04 is not yet satisfied.
+  867 tests pass), `npm run lint` (0 errors), `npm run build` (succeeds), `vue-tsc` and
+  `type-check:e2e` clean, Playwright 168 desktop / 177 mobile pass.
+- [x] T015 — **DONE** via T020: keyboard focus and 390px/1280px verified in a browser.
+  Gate FE-04 is satisfied.
 - [ ] T016 — Pending: docs and final rule audit.
 
 Add discovered work here and update the spec/plan when scope changes.
