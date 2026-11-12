@@ -73,6 +73,8 @@ export type ObservationIdentityView = {
   lastSeen: string;
   packets: number;
   rssi?: number | null;
+  /** Median of the recent window; distance must be derived from this, not the newest packet. */
+  rssiSmoothed?: number | null;
   sources: ObservationSourceReading[];
   /** Direction of change over the recent window; unknown is never shown as steady. */
   trend?: ObservationTrend;

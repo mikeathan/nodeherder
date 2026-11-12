@@ -329,6 +329,7 @@ function buildObservationSnapshot() {
         lastSeen: at(5),
         packets: 1841,
         rssi: -62,
+        rssiSmoothed: -66,
         trend: 'approaching',
         trendDeltaDb: 5.5,
         signal: [-74, -72, -70, -68, -66, -64, -62],

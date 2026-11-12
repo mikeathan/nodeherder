@@ -5,6 +5,7 @@ package observations
 // and "unknown" are as trustworthy as "approaching".
 
 import (
+	"slices"
 	"time"
 
 	model "node-herder/models/observations"
@@ -19,6 +20,10 @@ type trendResult struct {
 	DeltaDB float64
 	// Signal is the window's signal strengths, oldest first, for display.
 	Signal []int
+	// Smoothed is the median signal strength over the window, or nil when there is no sample.
+	// Median rather than mean: a single outlier packet should not move the estimate, and RSSI
+	// outliers are common when a body passes between the device and the antenna.
+	Smoothed *int
 }
 
 // appendReading adds one sample to the bounded window, dropping the oldest when full. The
@@ -46,12 +51,13 @@ func computeTrend(window []rssiReading, now time.Time) trendResult {
 	for i, reading := range window {
 		signal[i] = reading.RSSI
 	}
+	smoothed := medianRSSI(window)
 	if len(window) < rssiTrendMinReadings {
-		return trendResult{Trend: model.TrendUnknown, Signal: signal}
+		return trendResult{Trend: model.TrendUnknown, Signal: signal, Smoothed: smoothed}
 	}
 	newest := window[len(window)-1]
 	if now.Sub(newest.At) > rssiTrendHorizon {
-		return trendResult{Trend: model.TrendUnknown, Signal: signal}
+		return trendResult{Trend: model.TrendUnknown, Signal: signal, Smoothed: smoothed}
 	}
 
 	half := len(window) / 2
@@ -61,12 +67,31 @@ func computeTrend(window []rssiReading, now time.Time) trendResult {
 
 	switch {
 	case delta > rssiTrendDeadbandDB:
-		return trendResult{Trend: model.TrendApproaching, DeltaDB: delta, Signal: signal}
+		return trendResult{Trend: model.TrendApproaching, DeltaDB: delta, Signal: signal, Smoothed: smoothed}
 	case delta < -rssiTrendDeadbandDB:
-		return trendResult{Trend: model.TrendReceding, DeltaDB: delta, Signal: signal}
+		return trendResult{Trend: model.TrendReceding, DeltaDB: delta, Signal: signal, Smoothed: smoothed}
 	default:
-		return trendResult{Trend: model.TrendSteady, DeltaDB: delta, Signal: signal}
+		return trendResult{Trend: model.TrendSteady, DeltaDB: delta, Signal: signal, Smoothed: smoothed}
 	}
+}
+
+// medianRSSI returns the middle signal strength of the window, or nil when it is empty.
+//
+// Median is chosen over mean so one outlier packet cannot move the displayed distance: a body
+// passing between device and antenna produces exactly that kind of outlier, and averaging would
+// spread the error across the estimate instead of rejecting it. The slice is copied before
+// sorting so the caller's window order is preserved.
+func medianRSSI(readings []rssiReading) *int {
+	if len(readings) == 0 {
+		return nil
+	}
+	values := make([]int, len(readings))
+	for i, reading := range readings {
+		values[i] = reading.RSSI
+	}
+	slices.Sort(values)
+	median := values[len(values)/2]
+	return &median
 }
 
 // meanRSSI averages a slice of readings. An empty slice yields zero, which callers avoid by

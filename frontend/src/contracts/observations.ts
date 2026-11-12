@@ -138,6 +138,10 @@ function parseIdentity(raw: unknown): ObservationIdentityView | null {
   if (raw.vendor !== undefined && vendor === null) return null;
   const rssi = raw.rssi === undefined || raw.rssi === null ? null : finiteNumber(raw.rssi);
   if (raw.rssi !== undefined && raw.rssi !== null && rssi === null) return null;
+  // Optional so an older backend payload still parses; callers fall back to the single reading.
+  const rssiSmoothed =
+    raw.rssiSmoothed === undefined || raw.rssiSmoothed === null ? null : finiteNumber(raw.rssiSmoothed);
+  if (raw.rssiSmoothed !== undefined && raw.rssiSmoothed !== null && rssiSmoothed === null) return null;
   // Trend fields are optional so a payload from an earlier backend still parses. An unknown
   // trend value is rejected rather than coerced, because it would become a false claim.
   const trend = parseTrend(raw.trend);
@@ -158,6 +162,7 @@ function parseIdentity(raw: unknown): ObservationIdentityView | null {
     lastSeen,
     packets,
     rssi,
+    rssiSmoothed,
     sources,
     ...(trend ? { trend } : {}),
     ...(trendDeltaDb === null || trendDeltaDb === undefined ? {} : { trendDeltaDb }),

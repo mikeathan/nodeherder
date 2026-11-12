@@ -86,6 +86,48 @@ func TestTrendSignalMirrorsTheWindow(t *testing.T) {
 	}
 }
 
+// The displayed distance is derived from this value, so it must reject single outliers: one bad
+// packet moving the estimate several metres is the jitter users notice.
+func TestMedianRejectsASingleOutlier(t *testing.T) {
+	got := computeTrend(readingsAt(-60, -61, -60, -59, -95, -60, -61), trendNow)
+	if got.Smoothed == nil {
+		t.Fatal("no smoothed value")
+	}
+	// The mean would be about -65; the median stays with the cluster.
+	if *got.Smoothed < -62 || *got.Smoothed > -59 {
+		t.Fatalf("smoothed = %d, want a value from the -59..-61 cluster", *got.Smoothed)
+	}
+}
+
+func TestMedianIsNilWithoutSamples(t *testing.T) {
+	if got := computeTrend(nil, trendNow); got.Smoothed != nil {
+		t.Fatalf("smoothed = %v, want nil so the UI shows a missing value", *got.Smoothed)
+	}
+}
+
+func TestMedianSurvivesATinyWindow(t *testing.T) {
+	// One or two readings cannot describe a trend, but they can still describe a position.
+	got := computeTrend(readingsAt(-70), trendNow)
+	if got.Trend != model.TrendUnknown {
+		t.Fatalf("trend = %q, want unknown", got.Trend)
+	}
+	if got.Smoothed == nil || *got.Smoothed != -70 {
+		t.Fatalf("smoothed = %v, want -70", got.Smoothed)
+	}
+}
+
+func TestMedianDoesNotReorderTheWindow(t *testing.T) {
+	window := readingsAt(-70, -60, -80)
+	before := []int{window[0].RSSI, window[1].RSSI, window[2].RSSI}
+	computeTrend(window, trendNow)
+	after := []int{window[0].RSSI, window[1].RSSI, window[2].RSSI}
+	for i := range before {
+		if before[i] != after[i] {
+			t.Fatalf("window reordered: %v became %v", before, after)
+		}
+	}
+}
+
 func TestTrendUnknownDeltaIsZero(t *testing.T) {
 	// A caller must not read a leftover delta alongside unknown, which would imply movement.
 	if got := computeTrend(nil, trendNow); got.DeltaDB != 0 {

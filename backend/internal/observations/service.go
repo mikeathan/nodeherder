@@ -385,6 +385,7 @@ func (s *Service) snapshotLocked(now time.Time) model.Snapshot {
 		}
 		trend := computeTrend(current.readings, now)
 		view.Trend, view.TrendDeltaDB, view.Signal = trend.Trend, trend.DeltaDB, trend.Signal
+		view.RSSISmoothed = trend.Smoothed
 		if label := decisions[current.identity.Key].Label; label != "" {
 			view.Label = label
 		} else {
@@ -431,6 +432,11 @@ func renderSignature(snapshot model.Snapshot) string {
 		if identity.RSSI != nil {
 			// Encode the full value so a reading moving outside one byte still registers.
 			signature = appendUint64(signature, uint64(int64(*identity.RSSI)+128))
+		}
+		// The smoothed value drives the displayed distance, so it must participate or the
+		// figure would freeze while the underlying window moved.
+		if identity.RSSISmoothed != nil {
+			signature = appendUint64(signature, uint64(int64(*identity.RSSISmoothed)+128))
 		}
 		// Trend and its sparkline change without any identity field changing, so they must
 		// participate or the arrow and history would freeze on a live device.

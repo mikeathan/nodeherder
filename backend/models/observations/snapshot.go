@@ -66,11 +66,16 @@ type IdentityView struct {
 	// FirstSeen is when this process first heard the identity, so a viewer can offer
 	// "recently appeared" instead of inferring novelty from the triage decision, which is
 	// unknown for every identity on a first run and would therefore match everything.
-	FirstSeen time.Time       `json:"firstSeen"`
-	LastSeen  time.Time       `json:"lastSeen"`
-	Packets   uint64          `json:"packets"`
-	RSSI      *int            `json:"rssi,omitempty"`
-	Sources   []SourceReading `json:"sources"`
+	FirstSeen time.Time `json:"firstSeen"`
+	LastSeen  time.Time `json:"lastSeen"`
+	Packets   uint64    `json:"packets"`
+	// RSSI is the newest single reading, kept for diagnostics.
+	RSSI *int `json:"rssi,omitempty"`
+	// RSSISmoothed is the median of the recent window and is what distance must be derived
+	// from. A single reading swings several dB, which through the log-distance curve becomes a
+	// multi-metre jump; the median removes that without lagging a real move.
+	RSSISmoothed *int            `json:"rssiSmoothed,omitempty"`
+	Sources      []SourceReading `json:"sources"`
 	// Trend describes the direction of change over the recent window: approaching, receding,
 	// steady or unknown. Unknown is never presented as steady.
 	Trend string `json:"trend"`

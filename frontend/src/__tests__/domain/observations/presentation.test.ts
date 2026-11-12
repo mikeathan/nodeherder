@@ -9,7 +9,9 @@ import {
   DEFAULT_TX_POWER_AT_1M,
   bearingForIdentity,
   distanceBand,
+  distanceRSSI,
   estimateDistanceMetres,
+  roundedDistanceMetres,
   groupIdentities,
   identityTitle,
   isEphemeralIdentity,
@@ -219,6 +221,46 @@ describe('groupIdentities', () => {
 
   test('returns no sections for no identities', () => {
     expect(groupIdentities([])).toEqual([]);
+  });
+});
+
+describe('distanceRSSI', () => {
+  test('prefers the smoothed median so distance does not follow single-packet jitter', () => {
+    expect(distanceRSSI({ rssi: -90, rssiSmoothed: -62 })).toBe(-62);
+  });
+
+  test('falls back to the single reading when no smoothed value exists', () => {
+    // Keeps a payload from an earlier backend usable rather than showing nothing.
+    expect(distanceRSSI({ rssi: -70 })).toBe(-70);
+    expect(distanceRSSI({ rssi: -70, rssiSmoothed: null })).toBe(-70);
+  });
+
+  test('returns null when there is no reading at all', () => {
+    expect(distanceRSSI({})).toBeNull();
+    expect(distanceRSSI({ rssi: null, rssiSmoothed: null })).toBeNull();
+  });
+});
+
+describe('roundedDistanceMetres', () => {
+  test('rounds to whole metres below ten', () => {
+    expect(roundedDistanceMetres(7.4)).toBe(7);
+    expect(roundedDistanceMetres(7.6)).toBe(8);
+  });
+
+  test('rounds to five-metre steps above ten, because metre precision is not real', () => {
+    expect(roundedDistanceMetres(11.2)).toBe(10);
+    expect(roundedDistanceMetres(13.4)).toBe(15);
+    expect(roundedDistanceMetres(22)).toBe(20);
+  });
+
+  test('never rounds a real reading down to zero', () => {
+    expect(roundedDistanceMetres(0.2)).toBe(1);
+    expect(roundedDistanceMetres(0)).toBe(1);
+  });
+
+  test('an absent reading stays absent', () => {
+    expect(roundedDistanceMetres(null)).toBeNull();
+    expect(roundedDistanceMetres(Number.NaN)).toBeNull();
   });
 });
 

@@ -14,6 +14,7 @@
     DEFAULT_TX_POWER_AT_1M,
     RANGE_RINGS_M,
     bearingForIdentity,
+    distanceRSSI,
     estimateDistanceMetres,
     isEphemeralIdentity,
   } from '@/domain/observations/presentation';
@@ -44,7 +45,8 @@
    */
   const placed = computed(() =>
     props.identities.flatMap((identity) => {
-      const metres = estimateDistanceMetres(identity.rssi, props.txPowerAt1m, props.pathLossExponent);
+      // Smoothed signal keeps the blip from jumping between rings on single-packet jitter.
+      const metres = estimateDistanceMetres(distanceRSSI(identity), props.txPowerAt1m, props.pathLossExponent);
       if (metres === null) return [];
       const bearing = (bearingForIdentity(identity.key) * Math.PI) / 180;
       // Log scale so each ring is equally readable; clamp beyond the outer ring to the edge.

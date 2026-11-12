@@ -177,6 +177,34 @@ export function groupIdentities(
 }
 
 /**
+ * Signal strength to base a distance on.
+ *
+ * The smoothed median is preferred because a single packet swings several dB, which through the
+ * log-distance curve becomes a multi-metre jump. Falling back to the raw reading keeps an older
+ * payload usable rather than showing nothing.
+ */
+export function distanceRSSI(identity: Pick<ObservationIdentityView, 'rssi' | 'rssiSmoothed'>): number | null {
+  if (typeof identity.rssiSmoothed === 'number' && Number.isFinite(identity.rssiSmoothed)) {
+    return identity.rssiSmoothed;
+  }
+  if (typeof identity.rssi === 'number' && Number.isFinite(identity.rssi)) return identity.rssi;
+  return null;
+}
+
+/**
+ * Round a distance to something the estimate can actually support.
+ *
+ * Below 10 m the value is whole metres; above that, 5 m steps. Sub-metre precision is not real
+ * when indoor error is 1-3 m, and showing it invites false confidence. Never rounds to zero: a
+ * positive estimate under a metre reads `1 m`.
+ */
+export function roundedDistanceMetres(metres: number | null | undefined): number | null {
+  if (typeof metres !== 'number' || !Number.isFinite(metres)) return null;
+  if (metres < 10) return Math.max(1, Math.round(metres));
+  return Math.round(metres / 5) * 5;
+}
+
+/**
  * Coarse proximity bands.
  *
  * A single anchor measures RSSI only, so the estimate carries 1-3 m of indoor error. Offering a

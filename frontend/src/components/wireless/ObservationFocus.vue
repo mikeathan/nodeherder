@@ -15,7 +15,9 @@
     DEFAULT_TX_POWER_AT_1M,
     DISTANCE_BAND_LABELS,
     distanceBand,
+    distanceRSSI,
     estimateDistanceMetres,
+    roundedDistanceMetres,
     identityTitle,
     isEphemeralIdentity,
     trendPresentation,
@@ -42,15 +44,21 @@
     (event: 'clear'): void;
   }>();
 
-  /** Estimated range, or null when the source reported no signal strength. */
+  /**
+   * Estimated range, or null when the source reported no signal strength. Derived from the
+   * smoothed median rather than the newest packet, so the figure does not swing with jitter.
+   */
   const metres = computed(() =>
-    estimateDistanceMetres(props.identity.rssi, props.txPowerAt1m, props.pathLossExponent),
+    estimateDistanceMetres(distanceRSSI(props.identity), props.txPowerAt1m, props.pathLossExponent),
   );
+
+  /** Distance rounded to the precision the estimate supports; sub-metre figures are fiction. */
+  const displayMetres = computed(() => roundedDistanceMetres(metres.value));
 
   const band = computed(() => distanceBand(metres.value));
 
   /** Distance through the shared formatter, so the missing value is never rendered as zero. */
-  const distanceText = computed(() => formatQuantity(metres.value, 'distance'));
+  const distanceText = computed(() => formatQuantity(displayMetres.value, 'distance'));
 
   const trend = computed(() => trendPresentation(props.identity.trend));
 
