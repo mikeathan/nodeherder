@@ -82,8 +82,10 @@
               class="observation-table__title observation-table__select"
               :aria-pressed="props.selectedKey === identity.key"
               :aria-label="`Isolate ${identityTitle(identity)}`"
+              title="Isolate this identity"
               @click="emit('select', identity.key)"
             >
+              <span class="observation-table__target-icon" aria-hidden="true">◎</span>
               {{ identityTitle(identity) }}
             </button>
             <span
@@ -171,7 +173,12 @@
   }
 
   /* The isolate control looks like text until focused, so the table stays scannable. */
+  /* Visibly a control: without the resting underline and target glyph, isolation was
+     undiscoverable and the viewer looked unchanged. */
   .observation-table__select {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
     background: none;
     border: 0;
     color: inherit;
@@ -180,13 +187,18 @@
     text-align: left;
     cursor: pointer;
     text-decoration: underline;
-    text-decoration-color: transparent;
+    text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
     text-underline-offset: 0.15em;
   }
 
   .observation-table__select:hover,
   .observation-table__select:focus-visible {
     text-decoration-color: currentColor;
+    color: var(--accent-primary, #4a9eff);
+  }
+
+  .observation-table__target-icon {
+    color: var(--accent-primary, #4a9eff);
   }
 
   .observation-table__select:focus-visible {

@@ -18,8 +18,8 @@ test.describe('wireless viewer', () => {
     // <title> tooltips, so an unscoped text match is ambiguous by design.
     const table = page.locator('.observation-table');
     await expect(table.getByText('Front door tag')).toBeVisible();
-    await expect(table.getByText('addr:aa:bb:cc:dd:ee:01', { exact: true })).toBeVisible();
-    await expect(table.getByText('fp:9c02ab41', { exact: true })).toBeVisible();
+    await expect(table.getByRole('button', { name: 'Isolate addr:aa:bb:cc:dd:ee:01', exact: true })).toBeVisible();
+    await expect(table.getByRole('button', { name: 'Isolate fp:9c02ab41', exact: true })).toBeVisible();
 
     // The source that delivers traffic reports it; the silent one explains itself rather than
     // leaving an empty screen.
@@ -48,7 +48,7 @@ test.describe('wireless viewer', () => {
     const table = page.locator('.observation-table');
     // The recently-appeared beacon and an older device both start visible.
     await expect(table.getByText('Front door tag')).toBeVisible();
-    await expect(table.getByText('addr:aa:bb:cc:dd:ee:01', { exact: true })).toBeVisible();
+    await expect(table.getByRole('button', { name: 'Isolate addr:aa:bb:cc:dd:ee:01', exact: true })).toBeVisible();
 
     await page.getByRole('button', { name: 'Only new', exact: true }).click();
 
@@ -56,7 +56,7 @@ test.describe('wireless viewer', () => {
     // though it has never been triaged. Filtering on triage state would match everything here,
     // which is the bug this replaces.
     await expect(table.getByText('Front door tag')).toBeVisible();
-    await expect(table.getByText('addr:aa:bb:cc:dd:ee:01', { exact: true })).toHaveCount(0);
+    await expect(table.getByRole('button', { name: 'Isolate addr:aa:bb:cc:dd:ee:01', exact: true })).toHaveCount(0);
   });
 
   test('pausing freezes the rows so they can be read', async ({ page }) => {
@@ -104,8 +104,8 @@ test.describe('wireless viewer', () => {
     await expect(focus).toBeVisible();
     await expect(focus.getByRole('heading', { name: 'Front door tag' })).toBeVisible();
     // Only the isolated identity is present; the others are gone from every view.
-    await expect(page.getByText('addr:aa:bb:cc:dd:ee:01', { exact: true })).toHaveCount(0);
-    await expect(page.getByText('fp:9c02ab41', { exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Isolate addr:aa:bb:cc:dd:ee:01', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Isolate fp:9c02ab41', exact: true })).toHaveCount(0);
   });
 
   test('Focus shows distance, band and trend', async ({ page }) => {

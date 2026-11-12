@@ -97,11 +97,29 @@ func (s *observingSink) RegisterSourceProvider(registry sourceRegistry) {
 	s.registry = registry
 }
 
+// resolveObservingSink finds the observing sink inside a session sink.
+//
+// The session is handed the supervisor's wrapper, which promotes only the methods of the
+// interface it embeds. A direct assertion for *observingSink therefore fails, and because
+// announcing is optional the failure is silent: identities still arrive, but the viewer never
+// learns the source or its facets. Unwrapping is what keeps that path reachable.
+func resolveObservingSink(sink Sink) (*observingSink, bool) {
+	if observing, ok := sink.(*observingSink); ok {
+		return observing, true
+	}
+	if wrapped, ok := sink.(interface{ Unwrap() SupervisorSink }); ok {
+		if observing, ok := any(wrapped.Unwrap()).(*observingSink); ok {
+			return observing, true
+		}
+	}
+	return nil, false
+}
+
 // announceObservationSource declares the source to the aggregator exactly once. Repeating it
 // is harmless but pointless, and the guard keeps a reconnecting session from duplicating the
 // descriptor. A sink without a registry announces nothing.
-func announceObservationSource(sink any) {
-	observing, ok := sink.(*observingSink)
+func announceObservationSource(sink Sink) {
+	observing, ok := resolveObservingSink(sink)
 	if !ok || observing.registry == nil || observing.announced {
 		return
 	}
@@ -112,8 +130,8 @@ func announceObservationSource(sink any) {
 
 // withdrawObservationSource forgets a source that is no longer observing, so its stale facets
 // do not linger in the viewer after a removal or reconfiguration.
-func withdrawObservationSource(sink any) {
-	observing, ok := sink.(*observingSink)
+func withdrawObservationSource(sink Sink) {
+	observing, ok := resolveObservingSink(sink)
 	if !ok || observing.registry == nil || !observing.announced {
 		return
 	}

@@ -255,6 +255,43 @@ func TestCapabilityHelperRejectsPlainSink(t *testing.T) {
 	}
 }
 
+// The session announces through the supervisor wrapper, not the bare sink. A direct assertion
+// for *observingSink failed there, so the source was never registered: identities arrived but
+// the viewer reported "0 sources" and rendered no filter facets. This is that regression.
+func TestSourceAnnouncesThroughTheSupervisorWrapper(t *testing.T) {
+	registry := &recordingRegistry{}
+	wrapped := &supervisedSink{SupervisorSink: observingRegistrySink(registry)}
+
+	announceObservationSource(wrapped)
+
+	if len(registry.registered) != 1 {
+		t.Fatalf("registered = %v, want the source announced through the wrapper", registry.registered)
+	}
+	if len(registry.facets) == 0 {
+		t.Fatal("no facets registered; the viewer would render no filter controls")
+	}
+
+	// Withdrawing through the wrapper must reach the same sink.
+	withdrawObservationSource(wrapped)
+	if len(registry.unregistered) != 1 {
+		t.Fatalf("unregistered = %v, want the withdrawal to reach the wrapped sink", registry.unregistered)
+	}
+}
+
+func TestAnnounceIgnoresNonObservingSinks(t *testing.T) {
+	registry := &recordingRegistry{}
+	// A plain sink has no registry and no observer, so nothing is announced.
+	announceObservationSource(&DeviceSink{})
+	if len(registry.registered) != 0 {
+		t.Fatalf("nil registry registered %v", registry.registered)
+	}
+	// A wrapper around a plain sink must also stay silent.
+	announceObservationSource(&supervisedSink{SupervisorSink: &DeviceSink{}})
+	if len(registry.registered) != 0 {
+		t.Fatalf("plain wrapped sink registered %v", registry.registered)
+	}
+}
+
 func TestDecodeAdvertisementsHandlesEmptyResponses(t *testing.T) {
 	if got := decodeAdvertisements("s", nil); got != nil {
 		t.Fatalf("nil response produced %v", got)

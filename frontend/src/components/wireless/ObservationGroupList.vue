@@ -80,8 +80,10 @@
               class="observation-groups__select"
               :aria-pressed="props.selectedKey === identity.key"
               :aria-label="`Isolate ${identityTitle(identity)}`"
+              title="Isolate this identity"
               @click="emit('select', identity.key)"
             >
+              <span class="observation-groups__target-icon" aria-hidden="true">◎</span>
               {{ identityTitle(identity) }}
             </button>
             <span v-if="identity.decision === 'unknown'" class="observation-groups__new">New</span>
@@ -189,7 +191,11 @@
     white-space: nowrap;
   }
 
+  /* Visibly a control: isolation was undiscoverable without a resting underline and glyph. */
   .observation-groups__select {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
     background: none;
     border: 0;
     color: inherit;
@@ -198,13 +204,18 @@
     text-align: left;
     cursor: pointer;
     text-decoration: underline;
-    text-decoration-color: transparent;
+    text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
     text-underline-offset: 0.15em;
   }
 
   .observation-groups__select:hover,
   .observation-groups__select:focus-visible {
     text-decoration-color: currentColor;
+    color: var(--accent-primary, #4a9eff);
+  }
+
+  .observation-groups__target-icon {
+    color: var(--accent-primary, #4a9eff);
   }
 
   .observation-groups__select:focus-visible {
