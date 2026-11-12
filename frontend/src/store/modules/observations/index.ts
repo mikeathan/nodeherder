@@ -3,6 +3,8 @@
  *
  * The module holds a validated snapshot only. It never derives device truth and never
  * persists identities, which keeps household-adjacent identifiers out of browser storage.
+ * Connectivity is deliberately not tracked here: the viewer reads the canonical
+ * `ws/getConnectionStatus` so the two cannot disagree.
  */
 import type { Module } from 'vuex';
 import type { RootState } from '../../state';
@@ -16,7 +18,6 @@ export const ObservationsModule: Module<ObservationsState, RootState> = {
   state: (): ObservationsState => ({
     snapshot: null,
     loaded: false,
-    stale: false,
   }),
 
   getters: {
@@ -24,8 +25,6 @@ export const ObservationsModule: Module<ObservationsState, RootState> = {
     snapshot: (state: ObservationsState): ObservationSnapshot | null => state.snapshot,
     /** Whether a snapshot has ever been received. */
     hasData: (state: ObservationsState): boolean => state.loaded,
-    /** Whether the viewer should warn that the socket is disconnected. */
-    stale: (state: ObservationsState): boolean => state.stale,
   },
 
   mutations: {
@@ -41,27 +40,11 @@ export const ObservationsModule: Module<ObservationsState, RootState> = {
       }
       state.snapshot = snapshot;
       state.loaded = true;
-      state.stale = false;
-    },
-
-    setStale(state: ObservationsState, stale: boolean) {
-      state.stale = stale;
     },
 
     clear(state: ObservationsState) {
       state.snapshot = null;
       state.loaded = false;
-      state.stale = false;
-    },
-  },
-
-  actions: {
-    /**
-     * Mark the retained snapshot stale on disconnect. Identity data is deliberately not
-     * cleared: the operator keeps context while the socket retries.
-     */
-    markStale({ commit }) {
-      commit('setStale', true);
     },
   },
 };

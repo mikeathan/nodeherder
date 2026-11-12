@@ -9,12 +9,13 @@
   import AppLogo from '@/components/ui/AppLogo.vue';
   import { availableNavItems, isNavActive, NAV_ITEMS } from './navigation';
   import { hasObservationSources } from '@/domain/observations/capability';
-  import { useStore } from 'vuex';
+  // The app installs the store under a Symbol injection key, so vuex's bare useStore() cannot
+  // find it. Components use the singleton, as the rest of the codebase does.
+  import { store } from '@/store';
 
   defineEmits<{ (e: 'navigate'): void }>();
 
   const route = useRoute();
-  const store = useStore();
   // Capability-gated entries are evaluated per render so enrolling a source reveals them
   // without a reload; nothing here compares provider names.
   const navItems = () =>

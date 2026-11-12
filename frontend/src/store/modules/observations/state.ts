@@ -6,6 +6,4 @@ export interface ObservationsState {
   snapshot: ObservationSnapshot | null;
   /** True once a snapshot has been received, so empty and loading are distinguishable. */
   loaded: boolean;
-  /** True while the socket is disconnected; the last snapshot is retained but marked stale. */
-  stale: boolean;
 }

@@ -7,7 +7,9 @@
    * component change.
    */
   import { computed, ref } from 'vue';
-  import { useStore } from 'vuex';
+  // The app installs the store under a Symbol injection key, so vuex's bare useStore() cannot
+  // find it. Components use the singleton, as the rest of the codebase does.
+  import { store } from '@/store';
   import type { ObservationDecision, ObservationIdentityView } from '@/types/observations.type';
   import { ObservationDecisions, ObservationFacets } from '@/types/observations.type';
   import { snapshotSummary, sourceIsSilent, sourceStatus, untriagedCount, vendorHex } from '@/domain/observations/presentation';
@@ -15,11 +17,11 @@
   import ObservationTable from './ObservationTable.vue';
   import ObservationFilters from './ObservationFilters.vue';
 
-  const store = useStore();
-
   const snapshot = computed(() => store.getters['observations/snapshot']);
   const loaded = computed(() => store.getters['observations/hasData']);
-  const stale = computed(() => store.getters['observations/stale']);
+  // Derived from the canonical socket status rather than a parallel flag of our own, so the
+  // warning cannot disagree with the connection indicator in the header.
+  const stale = computed(() => store.getters['ws/getConnectionStatus'] !== 'connected');
   const allIdentities = computed<ObservationIdentityView[]>(() => snapshot.value?.identities ?? []);
 
   const selected = ref<Record<string, string[]>>({});
