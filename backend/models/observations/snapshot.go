@@ -13,10 +13,25 @@ const MaxSnapshotIdentities = 256
 // dimensions this source can populate, so the viewer renders controls from data instead of
 // hardcoding per-source knowledge.
 type SourceDescriptor struct {
-	ID     string   `json:"id"`
-	Name   string   `json:"name"`
-	Media  []Medium `json:"media"`
-	Facets []string `json:"facets"`
+	ID          string            `json:"id"`
+	Name        string            `json:"name"`
+	Media       []Medium          `json:"media"`
+	Facets      []string          `json:"facets"`
+	Diagnostics SourceDiagnostics `json:"diagnostics"`
+}
+
+// SourceDiagnostics reports what a source has actually delivered in this process. It exists to
+// distinguish "connected but silent" from "not configured", so an empty viewer is diagnosable
+// rather than mysterious. Counters reset on restart and are never metrics history.
+type SourceDiagnostics struct {
+	// Advertisements counts advertisement entries received from the source.
+	Advertisements uint64 `json:"advertisements"`
+	// Decoded counts entries that produced a usable identity.
+	Decoded uint64 `json:"decoded"`
+	// Dropped counts observations discarded because the aggregation queue was full.
+	Dropped uint64 `json:"dropped"`
+	// LastAdvertisement is when the most recent advertisement arrived; nil means never.
+	LastAdvertisement *time.Time `json:"lastAdvertisement,omitempty"`
 }
 
 // SourceReading is one source's view of an identity. RSSI is absent when the source

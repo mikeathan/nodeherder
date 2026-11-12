@@ -12,9 +12,11 @@ import {
   identityTitle,
   isEphemeralIdentity,
   snapshotSummary,
+  sourceIsSilent,
+  sourceStatus,
   untriagedCount,
 } from '@/domain/observations/presentation';
-import type { ObservationIdentityView, ObservationSnapshot } from '@/types/observations.type';
+import type { ObservationIdentityView, ObservationSnapshot, ObservationSourceDescriptor } from '@/types/observations.type';
 
 function identity(overrides: Partial<ObservationIdentityView> = {}): ObservationIdentityView {
   return {
@@ -102,6 +104,43 @@ describe('identityTitle', () => {
     const title = identityTitle(identity({ key: long }));
     expect(title.length).toBeLessThanOrEqual(25);
     expect(title).toContain('…');
+  });
+});
+
+describe('source status diagnostics', () => {
+  const base: ObservationSourceDescriptor = { id: 'a', name: 'Hall proxy', media: ['ble.adv'], facets: ['kind'] };
+
+  test('reports scanning when advertisements arrive', () => {
+    const status = sourceStatus({
+      ...base,
+      diagnostics: { advertisements: 12, decoded: 9, dropped: 0, lastAdvertisement: null },
+    });
+    expect(status).toContain('Scanning');
+    expect(status).toContain('12 advertisements');
+  });
+
+  test('mentions drops when the queue saturated', () => {
+    const status = sourceStatus({
+      ...base,
+      diagnostics: { advertisements: 12, decoded: 9, dropped: 4, lastAdvertisement: null },
+    });
+    expect(status).toContain('4 dropped');
+  });
+
+  test('explains silence as a likely configuration fault', () => {
+    const silent = { ...base, diagnostics: { advertisements: 0, decoded: 0, dropped: 0, lastAdvertisement: null } };
+    expect(sourceStatus(silent)).toContain('bluetooth_proxy');
+    expect(sourceIsSilent(silent)).toBe(true);
+  });
+
+  test('does not call a delivering source silent', () => {
+    const active = { ...base, diagnostics: { advertisements: 1, decoded: 1, dropped: 0, lastAdvertisement: null } };
+    expect(sourceIsSilent(active)).toBe(false);
+  });
+
+  test('treats absent diagnostics as connected rather than silent', () => {
+    expect(sourceStatus(base)).toBe('Connected');
+    expect(sourceIsSilent(base)).toBe(false);
   });
 });
 

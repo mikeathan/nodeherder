@@ -23,12 +23,25 @@ export const ObservationDecisions = {
 
 export type ObservationDecision = (typeof ObservationDecisions)[keyof typeof ObservationDecisions];
 
+/**
+ * Delivery counters for one source. They exist to distinguish "connected but silent" from
+ * "never configured", so an empty viewer is diagnosable. Process-lifetime only, never history.
+ */
+export type ObservationSourceDiagnostics = {
+  advertisements: number;
+  decoded: number;
+  dropped: number;
+  /** Absent when the source has never delivered an advertisement. */
+  lastAdvertisement?: string | null;
+};
+
 /** One observing device and the filter dimensions it can populate. */
 export type ObservationSourceDescriptor = {
   id: string;
   name: string;
   media: ObservationMedium[];
   facets: string[];
+  diagnostics?: ObservationSourceDiagnostics;
 };
 
 /** One source's reading of an identity. An absent RSSI means "not observed", not zero. */

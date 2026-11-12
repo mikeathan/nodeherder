@@ -228,10 +228,21 @@ func (s *Session) runSubscribed(ctx context.Context, c nativeClient, sink Sink, 
 		if sourceDescriptor, ok := sink.(ObservationSource); ok {
 			source, _, _, _ = sourceDescriptor.SourceDescriptor()
 		}
+		// Declare the source before subscribing so the viewer can render its filter facets
+		// even if no advertisement ever arrives.
+		announceObservationSource(sink)
 		if err := subscribeAdvertisements(c); err != nil {
 			observer = nil
 			observes = false
+			// A rejected subscription is not a session failure, but the source must not
+			// advertise facets it will never populate.
+			withdrawObservationSource(sink)
 		}
+	}
+	if observes {
+		// Forget the descriptor on every session exit so a removed or reconfigured device
+		// does not leave stale filter facets in the viewer.
+		defer withdrawObservationSource(sink)
 	}
 	select {
 	case <-overflow:
@@ -306,7 +317,13 @@ func (s *Session) runSubscribed(ctx context.Context, c nativeClient, sink Sink, 
 			// state lookup rather than being rejected as an undiscovered entity.
 			if observes {
 				if batch, ok := msg.(*api.BluetoothLERawAdvertisementsResponse); ok {
-					if decoded := decodeAdvertisements(source, batch); len(decoded) > 0 {
+					decoded := decodeAdvertisements(source, batch)
+					// Report raw and decoded counts even when every entry was unusable, so a
+					// source that receives traffic but resolves no identities is visible.
+					if reporter, ok := sink.(interface{ RecordAdvertisementBatch(int, int) }); ok {
+						reporter.RecordAdvertisementBatch(len(batch.Advertisements), len(decoded))
+					}
+					if len(decoded) > 0 {
 						if err := observer.ObserveAdvertisements(ctx, decoded); err != nil {
 							return fmt.Errorf("ESPHome observation delivery failed: %w", err)
 						}

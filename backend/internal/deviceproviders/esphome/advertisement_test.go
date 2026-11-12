@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 	"testing"
+	"time"
 
 	"node-herder/internal/observations"
 	model "node-herder/models/observations"
@@ -29,6 +30,84 @@ func observingTestSink(observer Observer) *observingSink {
 		observer:   observer,
 		sourceID:   "enrollment-1",
 		sourceName: "Hall proxy",
+	}
+}
+
+// recordingRegistry captures source registration so the session's wiring is observable.
+type recordingRegistry struct {
+	registered     []string
+	unregistered   []string
+	media          []model.Medium
+	facets         []string
+	advertisements uint64
+	decoded        uint64
+	lastAt         *time.Time
+}
+
+func (r *recordingRegistry) RegisterSource(id, name string, media []model.Medium, facets []string) {
+	r.registered = append(r.registered, id+"|"+name)
+	r.media = media
+	r.facets = facets
+}
+
+func (r *recordingRegistry) UnregisterSource(id string) { r.unregistered = append(r.unregistered, id) }
+
+// RecordSourceActivity records delivery counts reported by the sink.
+func (r *recordingRegistry) RecordSourceActivity(id string, advertisements, decoded uint64, at time.Time) {
+	r.advertisements += advertisements
+	r.decoded += decoded
+	if r.lastAt == nil || at.After(*r.lastAt) {
+		observed := at
+		r.lastAt = &observed
+	}
+}
+
+// observingRegistrySink is an observing sink whose observer also records descriptors.
+func observingRegistrySink(registry *recordingRegistry) *observingSink {
+	return &observingSink{
+		DeviceSink: &DeviceSink{},
+		observer:   &recordingObserver{},
+		registry:   registry,
+		sourceID:   "enrollment-1",
+		sourceName: "Hall proxy",
+	}
+}
+
+func TestObservationSourceRegistersOnceWhileObserving(t *testing.T) {
+	registry := &recordingRegistry{}
+	sink := observingRegistrySink(registry)
+
+	announceObservationSource(sink)
+
+	if len(registry.registered) != 1 || registry.registered[0] != "enrollment-1|Hall proxy" {
+		t.Fatalf("registered = %v, want one descriptor", registry.registered)
+	}
+	// Facets must reach the registry, otherwise the viewer renders no filters at all.
+	if len(registry.facets) == 0 {
+		t.Fatal("no facets registered; the viewer would show no filter controls")
+	}
+	if len(registry.media) != 1 || registry.media[0] != model.MediumBLEAdvertisement {
+		t.Fatalf("media = %v", registry.media)
+	}
+
+	// A second call must not duplicate the descriptor.
+	announceObservationSource(sink)
+	if len(registry.registered) != 1 {
+		t.Fatalf("registered %d times, want idempotent registration", len(registry.registered))
+	}
+}
+
+func TestNonObservingSinkIsNeverRegistered(t *testing.T) {
+	registry := &recordingRegistry{}
+	// A plain sink has no registry and no observer, so nothing is announced.
+	if _, ok := any(&DeviceSink{}).(sourceRegistry); ok {
+		t.Fatal("plain sink satisfied sourceRegistry")
+	}
+	sink := &observingSink{DeviceSink: &DeviceSink{}, observer: &recordingObserver{}, sourceID: "x", sourceName: "y"}
+	sink.registry = nil
+	announceObservationSource(sink)
+	if len(registry.registered) != 0 {
+		t.Fatalf("nil registry registered %v", registry.registered)
 	}
 }
 

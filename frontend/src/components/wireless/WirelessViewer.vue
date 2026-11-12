@@ -10,7 +10,7 @@
   import { useStore } from 'vuex';
   import type { ObservationDecision, ObservationIdentityView } from '@/types/observations.type';
   import { ObservationDecisions } from '@/types/observations.type';
-  import { snapshotSummary, untriagedCount } from '@/domain/observations/presentation';
+  import { snapshotSummary, sourceIsSilent, sourceStatus, untriagedCount } from '@/domain/observations/presentation';
   import ObservationRadar from './ObservationRadar.vue';
   import ObservationTable from './ObservationTable.vue';
   import ObservationFilters from './ObservationFilters.vue';
@@ -57,6 +57,9 @@
   const summary = computed(() => snapshotSummary(snapshot.value));
   const newCount = computed(() => untriagedCount(snapshot.value));
   const truncated = computed(() => snapshot.value?.truncated === true);
+  /** Sources that are connected but have delivered nothing, which usually means a config fault. */
+  const sources = computed(() => snapshot.value?.sources ?? []);
+  const silentSources = computed(() => sources.value.filter(sourceIsSilent));
 
   /**
    * Persist a triage decision. The row is marked pending until the request settles, and the
@@ -99,6 +102,24 @@
     <template v-else>
       <p v-if="truncated" class="wireless-viewer__notice" role="status">
         Showing the most recently heard devices only; the snapshot reached its size limit.
+      </p>
+
+      <!--
+        Silence has several indistinguishable causes, so each source states its own delivery
+        status. Without this an empty viewer could mean an unreachable host, a device without
+        bluetooth_proxy, or genuinely nothing in range.
+      -->
+      <ul v-if="sources.length > 0" class="wireless-viewer__sources">
+        <li v-for="source in sources" :key="source.id" :class="{ 'is-silent': sourceIsSilent(source) }">
+          <strong>{{ source.name }}</strong>
+          <span>{{ sourceStatus(source) }}</span>
+        </li>
+      </ul>
+
+      <p v-if="silentSources.length > 0" class="wireless-viewer__notice" role="status">
+        {{ silentSources.length === 1 ? 'One source is' : `${silentSources.length} sources are` }}
+        connected but not sending advertisements. Confirm each device has
+        <code>bluetooth_proxy</code> in its ESPHome configuration.
       </p>
 
       <div class="wireless-viewer__layout">
@@ -152,6 +173,36 @@
     color: var(--warning-text, #e0a33e);
     margin: 0;
     font-size: 0.875rem;
+  }
+
+  .wireless-viewer__sources {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .wireless-viewer__sources li {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    padding: 0.375rem 0.625rem;
+    border: 1px solid var(--border-subtle, #2a3441);
+    border-radius: 0.375rem;
+    font-size: 0.8125rem;
+  }
+
+  /* A silent source is a likely misconfiguration, so it is marked by border and text, not
+     colour alone. */
+  .wireless-viewer__sources li.is-silent {
+    border-style: dashed;
+    border-color: var(--warning-text, #e0a33e);
+  }
+
+  .wireless-viewer__sources li span {
+    color: var(--text-muted, #8b9bab);
   }
 
   .wireless-viewer__layout {

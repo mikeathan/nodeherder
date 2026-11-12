@@ -112,4 +112,41 @@ describe('parseObservationSnapshot', () => {
     (payload.sources as Record<string, unknown>[])[0].facets = ['kind', 'futureFacet'];
     expect(parseObservationSnapshot(payload)).not.toBeNull();
   });
+
+  test('accepts a source without diagnostics so an older backend still parses', () => {
+    const payload = validSnapshot();
+    delete (payload.sources as Record<string, unknown>[])[0].diagnostics;
+    const parsed = parseObservationSnapshot(payload);
+    expect(parsed).not.toBeNull();
+    expect(parsed?.sources[0].diagnostics).toBeUndefined();
+  });
+
+  test('parses delivery counters when present', () => {
+    const payload = validSnapshot();
+    (payload.sources as Record<string, unknown>[])[0].diagnostics = {
+      advertisements: 120,
+      decoded: 96,
+      dropped: 3,
+      lastAdvertisement: '2026-11-11T10:15:21.000Z',
+    };
+    const parsed = parseObservationSnapshot(payload);
+    expect(parsed?.sources[0].diagnostics).toEqual({
+      advertisements: 120,
+      decoded: 96,
+      dropped: 3,
+      lastAdvertisement: '2026-11-11T10:15:21.000Z',
+    });
+  });
+
+  test('rejects negative or non-numeric counters', () => {
+    for (const diagnostics of [
+      { advertisements: -1, decoded: 0, dropped: 0 },
+      { advertisements: 'many', decoded: 0, dropped: 0 },
+      { advertisements: 0, decoded: 0 },
+    ]) {
+      const payload = validSnapshot();
+      (payload.sources as Record<string, unknown>[])[0].diagnostics = diagnostics;
+      expect(parseObservationSnapshot(payload)).toBeNull();
+    }
+  });
 });

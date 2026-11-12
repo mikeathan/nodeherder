@@ -152,6 +152,9 @@ func Register(port int, store store.AppStore, ctx context.Context, options ...Op
 		Context: ctx,
 		Store:   store.AppConfig(),
 		Clock:   utils.NewRealClock(),
+		// A saturated queue must be observable rather than silent: the counter reaches the
+		// per-source diagnostics the viewer renders (NH-06).
+		Dropped: func() { utils.LogDebug("Observations queue full; a batch was dropped") },
 		Publish: func(snapshot observationsmodel.Snapshot) {
 			if err := eventHub.Broadcast(ws.Observations, snapshot); err != nil {
 				utils.LogErrorf("Failed to broadcast observations: %v", err)

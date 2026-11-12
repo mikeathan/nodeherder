@@ -420,12 +420,45 @@ Command results:
 
 Unrun checks, stated as gaps:
 
-- Accordion keyboard traversal and focus order at 390px/1280px in a real browser — **UNRUN**.
-  FE-04 is therefore not yet satisfied.
-- A live ESPHome Bluetooth proxy check — **UNRUN** and requires separate authorisation; no
-  test depends on household hardware (NH-05). Assumption A1 (firmware reports raw
-  advertisements, message id 93) remains unvalidated.
+- Browser keyboard traversal and focus order at 390px/1280px — **UNRUN**. FE-04 is not
+  satisfied.
+- A live ESPHome Bluetooth proxy check — **UNRUN** and requires separate authorisation.
+  Assumption A1 (firmware reports raw advertisements, message id 93) remains unvalidated.
 - `npm run type-check:e2e` — **UNRUN**; no e2e spec was added for this feature.
+
+## 7a. Reassessment round (2026-11-11)
+
+Recorded after deciding the hardware path. Full reasoning in the revised plan.
+
+**Corrections to earlier statements in this plan:**
+
+- Adding `esp32_ble_tracker` requires **one USB flash**, because the code partition must
+  be resized. OTA alone is insufficient. The earlier "reflash over OTA" claim was wrong.
+- `esp32_ble_tracker` defaults `continuous: true`, so the radio scans permanently.
+  ESPHome documents an `on_client_connected`/`on_client_disconnected` pattern that scans
+  only while a consumer is connected; that is the recommended configuration for a shared
+  device.
+
+**Defects found by re-reading the implementation:**
+
+| ID | Severity | Defect | Resolution |
+| --- | --- | --- | --- |
+| D-1 | blocking | `Service.RegisterSource` had no production caller, so `snapshot.sources` was always empty and filters never rendered | Fixed: `sourceRegistry` interface, announce on subscribe, withdraw on exit |
+| D-2 | high | Five distinct failure modes produced identical empty state; `Dropped` was never wired | Fixed: `SourceDiagnostics` counters per source, viewer states status and explains silence |
+| D-3 | medium | No per-device observation affordance | Open as T019 |
+
+**Verification after the reassessment round:**
+
+- `go build ./...`, `go vet ./...` — PASS
+- `go test ./...` — PASS, 52 packages
+- `go test -race` on affected packages — PASS, no races
+- `npm test -- --runInBand` — PASS, 149 suites / 867 tests (8 new)
+- `npm run lint` — PASS, 0 errors
+- `npm run build` — PASS
+- Still unrun: browser keyboard/viewport checks (T020), live hardware validation (T022)
+
+No new dependencies, no schema migration. `SourceDiagnostics` is additive and optional at
+browser ingress, so an older backend payload still parses.
 
 ## 8. Task sequence
 

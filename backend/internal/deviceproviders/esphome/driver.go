@@ -14,6 +14,7 @@ import (
 type Driver struct {
 	pipeline DevicePipeline
 	observer Observer
+	registry sourceRegistry
 }
 
 // NewDriver binds ESPHome sessions to the shared device lifecycle pipeline and, when
@@ -23,8 +24,13 @@ func NewDriver(pipeline DevicePipeline) *Driver { return &Driver{pipeline: pipel
 
 // WithObservationConsumer enables Bluetooth advertisement observation for every instance this
 // driver creates. It is a functional method so the existing constructor signature is preserved.
+// A value that also implements sourceRegistry registers each observing device, which is what
+// lets the viewer render filter facets before any advertisement arrives.
 func (d *Driver) WithObservationConsumer(observer Observer) *Driver {
 	d.observer = observer
+	if registry, ok := observer.(sourceRegistry); ok {
+		d.registry = registry
+	}
 	return d
 }
 
@@ -75,6 +81,7 @@ func (d *Driver) NewInstance(enrollment deviceproviders.Enrollment) (deviceprovi
 		sessionSink = &observingSink{
 			DeviceSink: sink,
 			observer:   d.observer,
+			registry:   d.registry,
 			sourceID:   enrollment.ID,
 			sourceName: name,
 		}

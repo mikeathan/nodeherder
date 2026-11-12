@@ -5,7 +5,12 @@
  * zones and bearings, while this view is range-only and bearing-less. Sharing the canvas would
  * corrupt both, so only the polar maths is reused.
  */
-import type { ObservationDecision, ObservationIdentityView, ObservationSnapshot } from '@/types/observations.type';
+import type {
+  ObservationDecision,
+  ObservationIdentityView,
+  ObservationSnapshot,
+  ObservationSourceDescriptor,
+} from '@/types/observations.type';
 import { ObservationDecisions } from '@/types/observations.type';
 
 /** Log range rings in metres. RSSI error is multiplicative, so linear rings would mislead. */
@@ -74,6 +79,29 @@ export function identityTitle(identity: ObservationIdentityView): string {
 export function untriagedCount(snapshot: ObservationSnapshot | null): number {
   if (!snapshot) return 0;
   return snapshot.identities.filter((identity) => identity.decision === ObservationDecisions.Unknown).length;
+}
+
+/**
+ * Explain why a source may show no data.
+ *
+ * Silence has several indistinguishable causes — unreachable host, no `bluetooth_proxy`
+ * compiled in, firmware sending a different message type, or genuinely nothing in range. These
+ * descriptions make the difference visible, which matters most on a first real flash.
+ */
+export function sourceStatus(source: ObservationSourceDescriptor): string {
+  const diagnostics = source.diagnostics;
+  if (!diagnostics) return 'Connected';
+  if (diagnostics.advertisements > 0) {
+    const dropped = diagnostics.dropped > 0 ? `, ${diagnostics.dropped} dropped` : '';
+    return `Scanning · ${diagnostics.advertisements} advertisements${dropped}`;
+  }
+  return 'Connected, but no advertisements received. Check that this device runs bluetooth_proxy.';
+}
+
+/** Whether a source is connected yet has never delivered a packet, which signals a fault. */
+export function sourceIsSilent(source: ObservationSourceDescriptor): boolean {
+  const diagnostics = source.diagnostics;
+  return !!diagnostics && diagnostics.advertisements === 0;
 }
 
 /** Human summary of a snapshot for the header, avoiding invented precision. */

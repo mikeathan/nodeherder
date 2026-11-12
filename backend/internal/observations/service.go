@@ -71,9 +71,10 @@ type Service struct {
 
 // sourceState is one registered observing device's identity and declared facets.
 type sourceState struct {
-	name   string
-	media  []model.Medium
-	facets []string
+	name        string
+	media       []model.Medium
+	facets      []string
+	diagnostics model.SourceDiagnostics
 }
 
 // aggregate is the rolling state for one identity within this process.
@@ -126,10 +127,39 @@ func (s *Service) RegisterSource(id, name string, media []model.Medium, facets [
 			return
 		}
 	}
-	s.sources[id] = &sourceState{
+	// Preserve counters across a reconnect so a restart of the session does not make the
+	// viewer look like it has never received anything.
+	existing := s.sources[id]
+	state := &sourceState{
 		name:   name,
 		media:  append([]model.Medium(nil), media...),
 		facets: append([]string(nil), facets...),
+	}
+	if existing != nil {
+		state.diagnostics = existing.diagnostics
+	}
+	s.sources[id] = state
+}
+
+// RecordSourceActivity accumulates delivery counters for one source so the viewer can
+// distinguish "connected but silent" from "not configured". The transport reports raw counts
+// because only it can measure them. An unknown source is ignored: registration happens before
+// subscription, so this ordering means a stray report cannot create a phantom descriptor.
+func (s *Service) RecordSourceActivity(id string, advertisements, decoded uint64, at time.Time) {
+	if id == "" {
+		return
+	}
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	state, ok := s.sources[id]
+	if !ok {
+		return
+	}
+	state.diagnostics.Advertisements += advertisements
+	state.diagnostics.Decoded += decoded
+	if advertisements > 0 {
+		seenAt := at
+		state.diagnostics.LastAdvertisement = &seenAt
 	}
 }
 
@@ -149,6 +179,9 @@ func (s *Service) ObserveAdvertisements(_ context.Context, batch []model.Observa
 		select {
 		case s.queue <- observation:
 		default:
+			// Attribute the drop to its source so a saturated queue is visible per device
+			// rather than as an unattributed global counter.
+			s.noteDrop(observation.Source)
 			if s.dropped != nil {
 				s.dropped()
 			}
@@ -156,6 +189,18 @@ func (s *Service) ObserveAdvertisements(_ context.Context, batch []model.Observa
 		}
 	}
 	return nil
+}
+
+// noteDrop increments the drop counter for one source descriptor.
+func (s *Service) noteDrop(source string) {
+	if source == "" {
+		return
+	}
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	if state, ok := s.sources[source]; ok {
+		state.diagnostics.Dropped++
+	}
 }
 
 // Start runs the aggregation worker until ctx is cancelled, then returns after the worker
@@ -264,10 +309,11 @@ func (s *Service) snapshotLocked(now time.Time) model.Snapshot {
 	for _, id := range sourceIDs {
 		source := s.sources[id]
 		snapshot.Sources = append(snapshot.Sources, model.SourceDescriptor{
-			ID:     id,
-			Name:   source.name,
-			Media:  append([]model.Medium(nil), source.media...),
-			Facets: append([]string(nil), source.facets...),
+			ID:          id,
+			Name:        source.name,
+			Media:       append([]model.Medium(nil), source.media...),
+			Facets:      append([]string(nil), source.facets...),
+			Diagnostics: source.diagnostics,
 		})
 	}
 

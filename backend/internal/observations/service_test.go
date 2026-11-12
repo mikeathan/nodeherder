@@ -248,6 +248,110 @@ func TestStaleIdentitiesAreDropped(t *testing.T) {
 	}
 }
 
+func TestSourceDiagnosticsReachTheSnapshot(t *testing.T) {
+	clock := newFakeClock()
+	var published []model.Snapshot
+	service := NewService(Deps{
+		Store:   &recordingStore{},
+		Clock:   clock,
+		Publish: func(s model.Snapshot) { published = append(published, s) },
+	})
+	service.RegisterSource("a", "Hall proxy", []model.Medium{model.MediumBLEAdvertisement}, []string{"kind"})
+
+	// A source that connects but delivers nothing must still be visible with zero counters,
+	// which is what distinguishes it from a source that was never enrolled.
+	clock.Advance(time.Second)
+	service.flush()
+	if len(published) != 1 || len(published[0].Sources) != 1 {
+		t.Fatalf("published = %+v", published)
+	}
+	if got := published[0].Sources[0].Diagnostics; got.Advertisements != 0 || got.LastAdvertisement != nil {
+		t.Fatalf("diagnostics = %+v, want zeros and no timestamp", got)
+	}
+
+	service.RecordSourceActivity("a", 5, 3, clock.Now())
+	service.record(stableObservation("a", "addr:aa", -60, clock.Now()))
+	clock.Advance(time.Second)
+	service.flush()
+
+	last := published[len(published)-1]
+	got := last.Sources[0].Diagnostics
+	if got.Advertisements != 5 || got.Decoded != 3 {
+		t.Fatalf("diagnostics = %+v, want 5 advertisements and 3 decoded", got)
+	}
+	if got.LastAdvertisement == nil {
+		t.Fatal("lastAdvertisement not recorded")
+	}
+}
+
+func TestRecordSourceActivityIgnoresUnknownSources(t *testing.T) {
+	clock := newFakeClock()
+	service := NewService(Deps{Store: &recordingStore{}, Clock: clock})
+	// Reporting before registration must not create a phantom descriptor.
+	service.RecordSourceActivity("ghost", 10, 10, clock.Now())
+	service.mutex.Lock()
+	defer service.mutex.Unlock()
+	if len(service.sources) != 0 {
+		t.Fatalf("sources = %d, want none", len(service.sources))
+	}
+}
+
+func TestDiagnosticsSurviveReRegister(t *testing.T) {
+	clock := newFakeClock()
+	service := NewService(Deps{Store: &recordingStore{}, Clock: clock})
+	service.RegisterSource("a", "Hall", []model.Medium{model.MediumBLEAdvertisement}, nil)
+	service.RecordSourceActivity("a", 4, 4, clock.Now())
+	// A reconnect re-registers the same id; counters must not reset, or the viewer looks
+	// like it has never received anything after every session restart.
+	service.RegisterSource("a", "Hall renamed", []model.Medium{model.MediumBLEAdvertisement}, []string{"kind"})
+	service.mutex.Lock()
+	defer service.mutex.Unlock()
+	if service.sources["a"].diagnostics.Advertisements != 4 {
+		t.Fatalf("diagnostics reset on re-register: %+v", service.sources["a"].diagnostics)
+	}
+	if service.sources["a"].name != "Hall renamed" {
+		t.Fatal("descriptor not updated on re-register")
+	}
+}
+
+func TestDropsAreAttributedToTheirSource(t *testing.T) {
+	clock := newFakeClock()
+	service := NewService(Deps{
+		Store: &recordingStore{},
+		Clock: clock,
+		Queue: 1,
+	})
+	service.RegisterSource("a", "Hall", []model.Medium{model.MediumBLEAdvertisement}, nil)
+	// Fill the queue without a worker, then overflow it.
+	_ = service.ObserveAdvertisements(context.Background(), []model.Observation{stableObservation("a", "addr:01", -60, clock.Now())})
+	_ = service.ObserveAdvertisements(context.Background(), []model.Observation{stableObservation("a", "addr:02", -61, clock.Now())})
+
+	service.mutex.Lock()
+	defer service.mutex.Unlock()
+	if service.sources["a"].diagnostics.Dropped != 1 {
+		t.Fatalf("dropped = %d, want 1", service.sources["a"].diagnostics.Dropped)
+	}
+}
+
+func TestUnregisterSourceRemovesDescriptor(t *testing.T) {
+	clock := newFakeClock()
+	var published []model.Snapshot
+	service := NewService(Deps{
+		Store:   &recordingStore{},
+		Clock:   clock,
+		Publish: func(s model.Snapshot) { published = append(published, s) },
+	})
+	service.RegisterSource("a", "Hall", []model.Medium{model.MediumBLEAdvertisement}, nil)
+	service.UnregisterSource("a")
+	clock.Advance(time.Second)
+	service.flush()
+	for _, snapshot := range published {
+		if len(snapshot.Sources) != 0 {
+			t.Fatalf("withdrawn source still present: %+v", snapshot.Sources)
+		}
+	}
+}
+
 func TestStartStopsOnContextCancel(t *testing.T) {
 	clock := newFakeClock()
 	ctx, cancel := context.WithCancel(context.Background())

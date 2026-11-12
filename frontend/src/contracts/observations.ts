@@ -14,6 +14,7 @@ import {
   type ObservationMedium,
   type ObservationSnapshot,
   type ObservationSourceDescriptor,
+  type ObservationSourceDiagnostics,
   type ObservationSourceReading,
 } from '@/types/observations.type';
 
@@ -38,6 +39,23 @@ function finiteNumber(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
+/** Parse optional delivery counters. Absent counters are valid, so an older backend parses. */
+function parseDiagnostics(raw: unknown): ObservationSourceDiagnostics | undefined | null {
+  if (raw === undefined || raw === null) return undefined;
+  if (!isRecord(raw)) return null;
+  const advertisements = finiteNumber(raw.advertisements);
+  const decoded = finiteNumber(raw.decoded);
+  const dropped = finiteNumber(raw.dropped);
+  if (advertisements === null || decoded === null || dropped === null) return null;
+  if (advertisements < 0 || decoded < 0 || dropped < 0) return null;
+  const lastAdvertisement =
+    raw.lastAdvertisement === undefined || raw.lastAdvertisement === null
+      ? null
+      : boundedString(raw.lastAdvertisement, 64);
+  if (raw.lastAdvertisement !== undefined && raw.lastAdvertisement !== null && lastAdvertisement === null) return null;
+  return { advertisements, decoded, dropped, lastAdvertisement };
+}
+
 /** Parse one source descriptor, or null when it is unusable. */
 function parseSource(raw: unknown): ObservationSourceDescriptor | null {
   if (!isRecord(raw)) return null;
@@ -47,7 +65,9 @@ function parseSource(raw: unknown): ObservationSourceDescriptor | null {
   const media = parseMedia(raw.media);
   const facets = parseStringList(raw.facets, maxima.facets);
   if (!media || !facets) return null;
-  return { id, name, media, facets };
+  const diagnostics = parseDiagnostics(raw.diagnostics);
+  if (diagnostics === null) return null;
+  return { id, name, media, facets, ...(diagnostics ? { diagnostics } : {}) };
 }
 
 /** Parse a media list, rejecting values outside the declared closed set. */

@@ -43,9 +43,32 @@ with evidence. No task is started; this file sequences authorized implementation
 - [x] T012 — **DONE**: `WirelessViewer`, `ObservationRadar`, `ObservationTable`,
   `ObservationFilters`, route and capability-gated nav; IDs: FR-07, NFR-04, AC-10;
   evidence: navigation gating tests pass; `npm run build` succeeds.
-- [x] T013 — deferred: the per-device "Emit observations" settings row was not added. The
-  capability is declared and consumed; the device-page row is presentation only. Recorded as
-  follow-up so the gap is explicit rather than implied complete.
+- [x] T013 — **Superseded by T019**. The per-device row is now required rather than
+  optional: it must show capability status and live counters, because a device can be
+  connected yet silent.
+
+## Reassessment round (2026-11-11, after hardware decision)
+
+- [x] T017 (D-1, blocking bug) — **DONE**: `Service.RegisterSource` was never called in
+  production, so `snapshot.sources` was always empty and the filter component always
+  rendered its empty state. Added the `sourceRegistry` optional interface, announced on
+  subscribe and withdrawn on session exit. IDs: AC-07, FR-05. Evidence:
+  `TestObservationSourceRegistersOnceWhileObserving`,
+  `TestNonObservingSinkIsNeverRegistered`, `TestUnregisterSourceRemovesDescriptor`.
+- [x] T018 (D-2) — **DONE**: per-source `SourceDiagnostics` (advertisements, decoded,
+  dropped, lastAdvertisement) reach the snapshot; `Dropped` is now wired from `hub.go`;
+  drops are attributed to their source; the viewer states each source's delivery status
+  and explains silence as a likely `bluetooth_proxy` omission. IDs: NFR-01, FE-03.
+  Evidence: `TestSourceDiagnosticsReachTheSnapshot`,
+  `TestRecordSourceActivityIgnoresUnknownSources`, `TestDiagnosticsSurviveReRegister`,
+  `TestDropsAreAttributedToTheirSource`, plus four contract tests and five presentation
+  tests.
+- [ ] T019 — Device-page observation row: capability status and counters. Open.
+- [ ] T020 (FE-04) — Browser keyboard / 390px / 1280px verification. **Still unrun**;
+  FE-04 remains unsatisfied.
+- [ ] T021 — Docs and final rule audit. Open.
+- [ ] T022 — Hardware validation: flash, enrol, confirm message id 93 (assumption A1).
+  Blocked on hardware; see [plan.md](plan.md) §4 for the recommended configuration.
 
 ## Handoff
 
