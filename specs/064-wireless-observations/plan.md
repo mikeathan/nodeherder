@@ -449,6 +449,13 @@ Recorded after deciding the hardware path. Full reasoning in the revised plan.
 | D-4 | high | Diagnostics were absent from `renderSignature`, so counters changed without a publish. A source receiving advertisements that decode to nothing would freeze the viewer at `0 advertisements` — defeating D-2 entirely | Fixed: counters participate in change detection; regression test asserts a diagnostics-only change publishes |
 | D-5 | high | Identity RSSI was a lifetime maximum, so a device that moved away stayed frozen at its closest-ever reading, making the range estimate permanently wrong | Fixed: RSSI tracks the newest reading; test asserts -40 then -90 reports -90 |
 | D-6 | medium | The advertised local name was decoded into `Payload` and never read, so the viewer could only show an opaque key | Fixed: name becomes the identity label, with the operator label still winning at snapshot time |
+| D-7 | high | Diagnostics counted twice: the session reported raw counts and `ObserveAdvertisements` counted the forwarded batch again, so 10 advertisements reported 18 — corrupting the counter used to judge whether hardware works | Fixed: one owner for counting; `TestForwardingDoesNotDoubleCount` |
+| D-8 | blocking | `NavSidebar` and `WirelessViewer` called vuex's bare `useStore()`, but `main.ts` installs the store under a `Symbol` injection key, so the store was `undefined` and the sidebar crashed on mount | Fixed: import the `@/store` singleton as every other component does. Confirmed by `layout.spec.ts`, which failed before and passes after |
+| D-9 | medium | The observations module carried a `stale` flag and a `markStale` action that nothing dispatched, so the "Disconnected" notice was dead | Fixed: derive from the canonical `ws/getConnectionStatus` getter |
+
+**Lesson recorded:** D-8 was invisible to every unit suite — 867 tests passed while the
+application crashed on first render. Only the browser spec caught it. That is the concrete
+cost of FE-04 still being open, and the reason the browser check must not stay deferred.
 
 **Verification after the reassessment round:**
 

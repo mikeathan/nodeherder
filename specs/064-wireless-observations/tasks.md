@@ -81,6 +81,16 @@ with evidence. No task is started; this file sequences authorized implementation
   reading so distance follows movement. Evidence: `TestRSSITracksNewestReading`.
 - [x] T025 (D-6) — **DONE**: advertised local name now becomes the identity label. Evidence:
   `TestDecodeAdvertisementsKeepsAdvertisedName`.
+- [x] T026 (D-7) — **DONE**: diagnostics were counted twice (10 advertisements reported 18).
+  Counting now has one owner. Evidence: `TestForwardingDoesNotDoubleCount`.
+- [x] T027 (D-8, blocking) — **DONE**: `useStore()` returned undefined because the app installs
+  the store under a Symbol injection key; the sidebar crashed on mount. Both components now
+  import the `@/store` singleton. Evidence: `layout.spec.ts` failed before, passes after.
+- [x] T028 (D-9) — **DONE**: removed the never-dispatched `stale` flag; the viewer derives
+  from `ws/getConnectionStatus`.
+- [ ] T020 (FE-04) — **Now demonstrated as necessary, not optional**: T027 shipped while 867
+  unit tests stayed green, and only the browser spec caught a mount-time crash. Browser
+  verification of `/wireless` remains unrun.
 
 ## Handoff
 
