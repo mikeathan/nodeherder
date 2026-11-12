@@ -142,6 +142,44 @@ test.describe('wireless viewer', () => {
     await expect(page.locator('.observation-focus')).toHaveCount(0);
   });
 
+  test('clicking a radar blip isolates that identity', async ({ page }) => {
+    await signIn(page, '/wireless');
+
+    // Blips are real controls, reachable by role rather than by pixel position.
+    const blip = page.getByRole('button', { name: /^Isolate Front door tag, \d+ metres$/ }).first();
+    await expect(blip).toBeVisible();
+    await blip.click();
+
+    const focus = page.locator('.observation-focus');
+    await expect(focus).toBeVisible();
+    await expect(focus.getByRole('heading', { name: 'Front door tag' })).toBeVisible();
+    // Only the isolated identity remains anywhere in the view.
+    await expect(page.getByRole('button', { name: 'Isolate addr:aa:bb:cc:dd:ee:01', exact: true })).toHaveCount(0);
+  });
+
+  test('blips are keyboard operable', async ({ page }) => {
+    await signIn(page, '/wireless');
+    const blip = page.getByRole('button', { name: /^Isolate Front door tag, \d+ metres$/ }).first();
+    await blip.focus();
+    // Visible focus is required: the SVG highlight is the only cue here.
+    await expect(blip).toBeFocused();
+    await blip.press('Enter');
+    await expect(page.locator('.observation-focus')).toBeVisible();
+  });
+
+  test('the radar derives its distance from smoothed signal', async ({ page }) => {
+    await signIn(page, '/wireless');
+    const blip = page.getByRole('button', { name: /^Isolate Front door tag, \d+ metres$/ }).first();
+    const label = (await blip.getAttribute('aria-label')) ?? '';
+    const metres = Number(label.match(/(\d+) metres/)?.[1]);
+
+    // The mock sends rssi -62 but rssiSmoothed -66, with txPower -59 and exponent 2.5:
+    //   raw      -> 10^((3)/25)  = 1.3 m -> 1 m
+    //   smoothed -> 10^((7)/25)  = 1.9 m -> 2 m
+    // So 2 proves the smoothed value is used; 1 would mean the single packet leaked through.
+    expect(metres).toBe(2);
+  });
+
   test('triage controls are keyboard reachable and report a decision', async ({ page }) => {
     await signIn(page, '/wireless');
     const known = page.getByRole('button', { name: 'Mark known', exact: true }).first();

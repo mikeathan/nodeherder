@@ -276,7 +276,11 @@
       />
 
       <div v-else-if="viewMode === ObservationViews.Radar" class="wireless-viewer__layout">
-        <ObservationRadar :identities="scoped" />
+        <ObservationRadar
+          :identities="scoped"
+          :selected-key="selectedKey"
+          @select="selectIdentity"
+        />
         <div class="wireless-viewer__detail">
           <ObservationTable
             :identities="scoped"

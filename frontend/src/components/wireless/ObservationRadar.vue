@@ -16,12 +16,15 @@
     bearingForIdentity,
     distanceRSSI,
     estimateDistanceMetres,
+    identityTitle,
     isEphemeralIdentity,
   } from '@/domain/observations/presentation';
 
   const props = withDefaults(
     defineProps<{
       identities: readonly ObservationIdentityView[];
+      /** Currently isolated identity, so its blip can be marked. */
+      selectedKey?: string | null;
       /** Transmit power at one metre in dBm; sources may override the default. */
       txPowerAt1m?: number;
       pathLossExponent?: number;
@@ -31,6 +34,10 @@
       pathLossExponent: DEFAULT_PATH_LOSS_EXPONENT,
     },
   );
+
+  const emit = defineEmits<{
+    (event: 'select', key: string): void;
+  }>();
 
   const titleId = useId();
 
@@ -110,7 +117,32 @@
       <line class="observation-radar__axis" x1="50" x2="50" y1="4" y2="96" />
       <line class="observation-radar__axis" x1="4" x2="96" y1="50" y2="50" />
 
-      <g v-for="blip in placed" :key="blip.identity.key">
+      <!--
+        Each blip is a real control, not a decorative dot: clicking isolates that identity.
+        SVG groups cannot receive focus or announce a role, so each blip carries an explicit
+        tabindex, role and label. A wider transparent hit area sits under the visible dot,
+        because a 2.4-unit radius is far below a comfortable touch target.
+      -->
+      <g
+        v-for="blip in placed"
+        :key="blip.identity.key"
+        class="observation-radar__blip-group"
+        :class="{ 'is-selected': props.selectedKey === blip.identity.key }"
+        role="button"
+        tabindex="0"
+        :aria-pressed="props.selectedKey === blip.identity.key"
+        :aria-label="`Isolate ${identityTitle(blip.identity)}, ${Math.round(blip.metres)} metres`"
+        :data-identity-key="blip.identity.key"
+        @click="emit('select', blip.identity.key)"
+        @keydown.enter.prevent="emit('select', blip.identity.key)"
+        @keydown.space.prevent="emit('select', blip.identity.key)"
+      >
+        <circle
+          class="observation-radar__hit"
+          :cx="blip.x"
+          :cy="blip.y"
+          r="6"
+        />
         <circle
           class="observation-radar__blip"
           :class="{
@@ -166,6 +198,34 @@
     stroke: var(--border-subtle, #2a3441);
     stroke-width: 0.3;
     stroke-dasharray: 1 1.5;
+  }
+
+  /* Invisible but clickable: the visible dot is far smaller than a usable touch target. */
+  .observation-radar__hit {
+    fill: transparent;
+    cursor: pointer;
+  }
+
+  .observation-radar__blip-group {
+    cursor: pointer;
+    outline: none;
+  }
+
+  .observation-radar__blip-group:focus-visible .observation-radar__blip {
+    stroke: var(--accent-primary, #4a9eff);
+    stroke-width: 1.4;
+  }
+
+  .observation-radar__blip-group:hover .observation-radar__blip {
+    stroke: var(--text-primary, #e6edf3);
+    stroke-width: 1;
+  }
+
+  /* The isolated identity is highlighted so the radar and the Focus panel agree. */
+  .observation-radar__blip-group.is-selected .observation-radar__blip {
+    fill: var(--accent-primary, #4a9eff);
+    stroke: var(--text-primary, #e6edf3);
+    stroke-width: 1.2;
   }
 
   .observation-radar__blip {
