@@ -58,11 +58,23 @@ export type ObservationIdentityView = {
   stable: boolean;
   label?: string;
   decision: ObservationDecision;
+  /** When this process first heard the identity; distinguishes "appeared" from "untriaged". */
+  firstSeen: string;
   lastSeen: string;
   packets: number;
   rssi?: number | null;
   sources: ObservationSourceReading[];
 };
+
+/** How the operator wants the identities presented. */
+export const ObservationViews = {
+  /** Radar plus detailed table. */
+  Radar: 'radar',
+  /** Dense grouped list, for scanning many devices quickly. */
+  List: 'list',
+} as const;
+
+export type ObservationViewMode = (typeof ObservationViews)[keyof typeof ObservationViews];
 
 /** One complete broadcast snapshot. Never a delta: a missed snapshot reconverges on the next. */
 export type ObservationSnapshot = {

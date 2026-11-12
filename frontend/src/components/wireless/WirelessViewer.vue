@@ -5,29 +5,58 @@
    * A hub-level live instrument, not configuration: it shows whatever any enrolled observing
    * source reports. Nothing here names a provider, so a new source kind appears without a
    * component change.
+   *
+   * Live snapshots arrive several times a second, so the view offers a freeze control: a table
+   * that reorders while you read it is unusable for triage.
    */
-  import { computed, ref } from 'vue';
+  import { computed, ref, watch } from 'vue';
   // The app installs the store under a Symbol injection key, so vuex's bare useStore() cannot
   // find it. Components use the singleton, as the rest of the codebase does.
   import { store } from '@/store';
-  import type { ObservationDecision, ObservationIdentityView } from '@/types/observations.type';
-  import { ObservationDecisions, ObservationFacets } from '@/types/observations.type';
-  import { snapshotSummary, sourceIsSilent, sourceStatus, untriagedCount, vendorHex } from '@/domain/observations/presentation';
+  import type { ObservationDecision, ObservationIdentityView, ObservationViewMode } from '@/types/observations.type';
+  import { ObservationFacets, ObservationViews } from '@/types/observations.type';
+  import {
+    groupIdentities,
+    isRecentArrival,
+    snapshotSummary,
+    sourceIsSilent,
+    sourceStatus,
+    vendorHex,
+  } from '@/domain/observations/presentation';
   import ObservationRadar from './ObservationRadar.vue';
   import ObservationTable from './ObservationTable.vue';
   import ObservationFilters from './ObservationFilters.vue';
+  import ObservationGroupList from './ObservationGroupList.vue';
+  import UiButton from '@/components/ui/UiButton.vue';
 
   const snapshot = computed(() => store.getters['observations/snapshot']);
   const loaded = computed(() => store.getters['observations/hasData']);
   // Derived from the canonical socket status rather than a parallel flag of our own, so the
   // warning cannot disagree with the connection indicator in the header.
   const stale = computed(() => store.getters['ws/getConnectionStatus'] !== 'connected');
-  const allIdentities = computed<ObservationIdentityView[]>(() => snapshot.value?.identities ?? []);
+  /** Live identities exactly as the hub last reported them. */
+  const liveIdentities = computed<ObservationIdentityView[]>(() => snapshot.value?.identities ?? []);
 
   const selected = ref<Record<string, string[]>>({});
+  /** Show only identities that appeared within the recent window. */
   const onlyNew = ref(false);
+  const viewMode = ref<ObservationViewMode>(ObservationViews.Radar);
   /** Keys with a save in flight, so the row reports progress rather than looking inert. */
   const pending = ref<Set<string>>(new Set());
+
+  /**
+   * Frozen identities, captured when paused. A copy is kept rather than updates being ignored,
+   * so triage actions still land on what is on screen.
+   */
+  const frozen = ref<ObservationIdentityView[] | null>(null);
+  const paused = computed(() => frozen.value !== null);
+
+  /** Identities to render: the frozen copy while paused, otherwise the live snapshot. */
+  const identities = computed(() => frozen.value ?? liveIdentities.value);
+
+  function togglePause(): void {
+    frozen.value = paused.value ? null : liveIdentities.value.map((identity) => ({ ...identity }));
+  }
 
   /** Facets declared by any source; the filter component renders only these. */
   const facets = computed(() => {
@@ -38,11 +67,14 @@
     return [...declared];
   });
 
-  /** Apply the operator's facet selection and the new-only toggle. */
+  /** Apply the operator's facet selection, the recent-only toggle and the frozen view. */
   const visible = computed(() => {
     const selection = selected.value;
-    return allIdentities.value.filter((identity) => {
-      if (onlyNew.value && identity.decision !== ObservationDecisions.Unknown) return false;
+    const now = Date.now();
+    return identities.value.filter((identity) => {
+      // "New" means recently appeared, never "untriaged": on a first run every identity is
+      // untriaged, so filtering on the decision matches everything and looks broken.
+      if (onlyNew.value && !isRecentArrival(identity, now)) return false;
       return Object.entries(selection).every(([facet, values]) => {
         if (values.length === 0) return true;
         if (facet === ObservationFacets.Kind) return values.includes(identity.kind);
@@ -53,8 +85,11 @@
     });
   });
 
+  /** Grouped sections for the list view. */
+  const grouped = computed(() => groupIdentities(visible.value));
+
   const summary = computed(() => snapshotSummary(snapshot.value));
-  const newCount = computed(() => untriagedCount(snapshot.value));
+  const newCount = computed(() => visible.value.filter((identity) => isRecentArrival(identity)).length);
   const truncated = computed(() => snapshot.value?.truncated === true);
   /** Sources that are connected but have delivered nothing, which usually means a config fault. */
   const sources = computed(() => snapshot.value?.sources ?? []);
@@ -63,9 +98,15 @@
   /**
    * Persist a triage decision. The row is marked pending until the request settles, and the
    * snapshot is not updated locally: the backend is the authority and broadcasts the result.
+   * While paused the frozen copy is updated so the operator sees their own change land.
    */
   function decide(key: string, decision: ObservationDecision): void {
     pending.value = new Set(pending.value).add(key);
+    if (frozen.value) {
+      frozen.value = frozen.value.map((identity) =>
+        identity.key === key ? { ...identity, decision } : identity,
+      );
+    }
     void store
       .dispatch('ws/emit', {
         event: 'saveObservationIdentity',
@@ -77,6 +118,14 @@
         pending.value = next;
       });
   }
+
+  // While frozen, drop rows the live snapshot no longer contains. Otherwise resuming would show
+  // identities that aged out minutes ago as though they were still present.
+  watch(liveIdentities, (next) => {
+    if (!frozen.value) return;
+    const live = new Set(next.map((identity) => identity.key));
+    frozen.value = frozen.value.filter((identity) => live.has(identity.key));
+  });
 </script>
 
 <template>
@@ -86,7 +135,7 @@
         <h1 id="wireless-title">Wireless</h1>
         <p class="wireless-viewer__summary" aria-live="polite">
           {{ summary }}
-          <span v-if="newCount > 0">· {{ newCount }} untriaged</span>
+          <span v-if="newCount > 0">· {{ newCount }} new</span>
         </p>
       </div>
       <p v-if="stale" class="wireless-viewer__stale" role="status">
@@ -121,20 +170,49 @@
         <code>bluetooth_proxy</code> in its ESPHome configuration.
       </p>
 
-      <div class="wireless-viewer__layout">
+      <div class="wireless-viewer__toolbar">
+        <UiButton :variant="paused ? 'primary' : 'default'" :aria-pressed="paused" @click="togglePause">
+          {{ paused ? 'Resume updates' : 'Pause updates' }}
+        </UiButton>
+        <span v-if="paused" class="wireless-viewer__paused" role="status">Frozen</span>
+
+        <div class="wireless-viewer__views" role="group" aria-label="View">
+          <button
+            v-for="mode in [ObservationViews.Radar, ObservationViews.List]"
+            :key="mode"
+            type="button"
+            class="wireless-viewer__view"
+            :class="{ 'is-active': viewMode === mode }"
+            :aria-pressed="viewMode === mode"
+            @click="viewMode = mode"
+          >
+            {{ mode === ObservationViews.Radar ? 'Radar' : 'List' }}
+          </button>
+        </div>
+      </div>
+
+      <ObservationFilters
+        :identities="identities"
+        :facets="facets"
+        :selected="selected"
+        :only-new="onlyNew"
+        @update:selected="selected = $event"
+        @update:only-new="onlyNew = $event"
+      />
+
+      <div v-if="viewMode === ObservationViews.Radar" class="wireless-viewer__layout">
         <ObservationRadar :identities="visible" />
         <div class="wireless-viewer__detail">
-          <ObservationFilters
-            :identities="allIdentities"
-            :facets="facets"
-            :selected="selected"
-            :only-new="onlyNew"
-            @update:selected="selected = $event"
-            @update:only-new="onlyNew = $event"
-          />
           <ObservationTable :identities="visible" :pending="pending" @decide="decide" />
         </div>
       </div>
+
+      <ObservationGroupList
+        v-else
+        :groups="grouped"
+        :pending="pending"
+        @decide="decide"
+      />
     </template>
   </section>
 </template>
@@ -143,7 +221,7 @@
   .wireless-viewer {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1.25rem;
     padding: 1.5rem;
   }
 
@@ -204,6 +282,45 @@
     color: var(--text-muted, #8b9bab);
   }
 
+  .wireless-viewer__toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .wireless-viewer__paused {
+    font-size: 0.8125rem;
+    color: var(--warning-text, #e0a33e);
+  }
+
+  .wireless-viewer__views {
+    display: inline-flex;
+    border: 1px solid var(--border-subtle, #2a3441);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-left: auto;
+  }
+
+  .wireless-viewer__view {
+    background: transparent;
+    border: 0;
+    color: inherit;
+    font: inherit;
+    padding: 0.25rem 0.875rem;
+    cursor: pointer;
+  }
+
+  .wireless-viewer__view.is-active {
+    background: var(--accent-primary, #4a9eff);
+    color: #04121f;
+  }
+
+  .wireless-viewer__view:focus-visible {
+    outline: 2px solid var(--accent-primary, #4a9eff);
+    outline-offset: -2px;
+  }
+
   .wireless-viewer__layout {
     display: grid;
     gap: 1.5rem;
@@ -226,6 +343,10 @@
 
     .wireless-viewer__layout {
       grid-template-columns: 1fr;
+    }
+
+    .wireless-viewer__views {
+      margin-left: 0;
     }
   }
 </style>

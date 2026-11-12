@@ -122,6 +122,7 @@ declare module 'vue' {
     Notifications: typeof import('./src/components/hub/alerts/Notifications.vue')['default']
     NumericHistory: typeof import('./src/components/chart/history/NumericHistory.vue')['default']
     ObservationFilters: typeof import('./src/components/wireless/ObservationFilters.vue')['default']
+    ObservationGroupList: typeof import('./src/components/wireless/ObservationGroupList.vue')['default']
     ObservationRadar: typeof import('./src/components/wireless/ObservationRadar.vue')['default']
     ObservationTable: typeof import('./src/components/wireless/ObservationTable.vue')['default']
     OverviewPage: typeof import('./src/components/overview/OverviewPage.vue')['default']

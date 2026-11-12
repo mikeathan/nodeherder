@@ -113,6 +113,68 @@ export function sourceIsSilent(source: ObservationSourceDescriptor): boolean {
   return !!diagnostics && diagnostics.advertisements === 0;
 }
 
+/**
+ * Window in which an identity counts as "recently appeared".
+ *
+ * Novelty must come from arrival time, not from the triage decision. On a first run every
+ * identity is untriaged, so filtering on `decision === 'unknown'` matches everything and the
+ * control appears broken.
+ */
+export const RECENT_ARRIVAL_MS = 5 * 60 * 1000;
+
+/**
+ * Tolerated clock skew between the hub and the browser, in milliseconds.
+ *
+ * A reading slightly ahead of local time is normal; one far ahead is bad data and must not be
+ * presented as a fresh arrival.
+ */
+export const ARRIVAL_SKEW_TOLERANCE_MS = 60 * 1000;
+
+/** Whether an identity first appeared within the recent window, relative to now. */
+export function isRecentArrival(
+  identity: Pick<ObservationIdentityView, 'firstSeen'>,
+  now: number = Date.now(),
+  windowMs: number = RECENT_ARRIVAL_MS,
+): boolean {
+  const seen = Date.parse(identity.firstSeen);
+  if (Number.isNaN(seen)) return false;
+  const elapsed = now - seen;
+  // Reject data from beyond the skew tolerance rather than showing an impossible arrival.
+  if (elapsed < -ARRIVAL_SKEW_TOLERANCE_MS) return false;
+  return elapsed <= windowMs;
+}
+
+/** Human group label for an identity, used to section the list view. */
+export function identityGroup(identity: ObservationIdentityView): string {
+  if (identity.kind === 'ibeacon') return 'iBeacon';
+  if (identity.kind === 'eddystone') return 'Eddystone';
+  const vendor = vendorHex(identity.vendor);
+  if (vendor) return `Vendor ${vendor}`;
+  return identity.stable ? 'Stable address' : 'Rotating address';
+}
+
+/**
+ * Group identities into ordered sections for the list view.
+ *
+ * Sections are ordered by size so the noisiest category is first, and identities inside a
+ * section keep the incoming order (most recently seen first). Groups with equal size fall back
+ * to label order, so the output is deterministic.
+ */
+export function groupIdentities(
+  identities: readonly ObservationIdentityView[],
+): { group: string; identities: ObservationIdentityView[] }[] {
+  const sections = new Map<string, ObservationIdentityView[]>();
+  for (const identity of identities) {
+    const group = identityGroup(identity);
+    const bucket = sections.get(group);
+    if (bucket) bucket.push(identity);
+    else sections.set(group, [identity]);
+  }
+  return [...sections.entries()]
+    .map(([group, members]) => ({ group, identities: members }))
+    .sort((a, b) => b.identities.length - a.identities.length || a.group.localeCompare(b.group));
+}
+
 /** Human summary of a snapshot for the header, avoiding invented precision. */
 export function snapshotSummary(snapshot: ObservationSnapshot | null): string {
   if (!snapshot) return 'No observations yet';

@@ -425,6 +425,34 @@ func TestUnregisterSourceRemovesDescriptor(t *testing.T) {
 	}
 }
 
+// firstSeen must be the first observation of an identity, not its latest: the viewer needs it
+// to distinguish a device that just appeared from one that has been present for hours.
+func TestFirstSeenIsStableAcrossObservations(t *testing.T) {
+	clock := newFakeClock()
+	var published []model.Snapshot
+	service := NewService(Deps{
+		Store:   &recordingStore{},
+		Clock:   clock,
+		Publish: func(s model.Snapshot) { published = append(published, s) },
+	})
+	service.RegisterSource("a", "Hall", []model.Medium{model.MediumBLEAdvertisement}, nil)
+
+	first := clock.Now()
+	service.record(stableObservation("a", "addr:aa", -60, first))
+	clock.Advance(time.Minute)
+	service.record(stableObservation("a", "addr:aa", -61, clock.Now()))
+	clock.Advance(time.Second)
+	service.flush()
+
+	view := published[len(published)-1].Identities[0]
+	if !view.FirstSeen.Equal(first) {
+		t.Fatalf("firstSeen = %v, want the first observation %v", view.FirstSeen, first)
+	}
+	if !view.LastSeen.After(view.FirstSeen) {
+		t.Fatalf("lastSeen %v should follow firstSeen %v", view.LastSeen, view.FirstSeen)
+	}
+}
+
 func TestStartStopsOnContextCancel(t *testing.T) {
 	clock := newFakeClock()
 	ctx, cancel := context.WithCancel(context.Background())

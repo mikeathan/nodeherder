@@ -45,12 +45,53 @@ test.describe('wireless viewer', () => {
 
   test('isolating new identities narrows the table', async ({ page }) => {
     await signIn(page, '/wireless');
+    const table = page.locator('.observation-table');
+    // The recently-appeared beacon and an older device both start visible.
+    await expect(table.getByText('Front door tag')).toBeVisible();
+    await expect(table.getByText('addr:aa:bb:cc:dd:ee:01', { exact: true })).toBeVisible();
+
     await page.getByRole('button', { name: 'Only new', exact: true }).click();
 
-    // The "known" beacon is filtered out; untriaged rows remain.
-    const table = page.locator('.observation-table');
-    await expect(table.getByText('Front door tag')).toHaveCount(0);
-    await expect(table.getByText('addr:aa:bb:cc:dd:ee:01', { exact: true })).toBeVisible();
+    // "New" means recently appeared, not untriaged: the older identity is filtered out even
+    // though it has never been triaged. Filtering on triage state would match everything here,
+    // which is the bug this replaces.
+    await expect(table.getByText('Front door tag')).toBeVisible();
+    await expect(table.getByText('addr:aa:bb:cc:dd:ee:01', { exact: true })).toHaveCount(0);
+  });
+
+  test('pausing freezes the rows so they can be read', async ({ page }) => {
+    await signIn(page, '/wireless');
+    await page.getByRole('button', { name: 'Pause updates', exact: true }).click();
+
+    await expect(page.getByRole('button', { name: 'Resume updates', exact: true })).toBeVisible();
+    await expect(page.getByText('Frozen', { exact: true })).toBeVisible();
+    // The table keeps rendering while frozen; it is a snapshot, not an empty state.
+    await expect(page.locator('.observation-table').getByText('Front door tag')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Resume updates', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Pause updates', exact: true })).toBeVisible();
+  });
+
+  test('the list view groups identities into collapsible sections', async ({ page }) => {
+    await signIn(page, '/wireless');
+    await page.getByRole('button', { name: 'List', exact: true }).click();
+
+    const groups = page.locator('.observation-groups');
+    await expect(groups).toBeVisible();
+    const section = groups.getByRole('button', { name: /iBeacon/ });
+    await expect(section).toHaveAttribute('aria-expanded', 'true');
+    // Sections collapse so a noisy category can be folded away.
+    await section.click();
+    await expect(section).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  test('view mode switches back to the radar', async ({ page }) => {
+    await signIn(page, '/wireless');
+    await page.getByRole('button', { name: 'List', exact: true }).click();
+    await expect(page.locator('.observation-groups')).toBeVisible();
+    await page.getByRole('button', { name: 'Radar', exact: true }).click();
+    await expect(page.locator('.observation-radar')).toBeVisible();
+    await expect(page.locator('.observation-groups')).toHaveCount(0);
   });
 
   test('triage controls are keyboard reachable and report a decision', async ({ page }) => {

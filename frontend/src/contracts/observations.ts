@@ -120,11 +120,17 @@ function parseIdentity(raw: unknown): ObservationIdentityView | null {
   const key = boundedString(raw.key);
   const kind = boundedString(raw.kind, 64);
   const lastSeen = boundedString(raw.lastSeen, 64);
+  // firstSeen is optional so a payload from an earlier backend still parses; callers fall back
+  // to lastSeen rather than inventing a timestamp.
+  const firstSeen = raw.firstSeen === undefined || raw.firstSeen === null ? null : boundedString(raw.firstSeen, 64);
   const decision = parseDecision(raw.decision);
   const sources = parseReadings(raw.sources);
   const packets = finiteNumber(raw.packets);
   if (!key || kind === null || !lastSeen || !decision || !sources || packets === null) return null;
   if (typeof raw.stable !== 'boolean' || Number.isNaN(Date.parse(lastSeen))) return null;
+  if (raw.firstSeen !== undefined && raw.firstSeen !== null) {
+    if (firstSeen === null || Number.isNaN(Date.parse(firstSeen))) return null;
+  }
   const vendor = raw.vendor === undefined ? undefined : finiteNumber(raw.vendor);
   if (raw.vendor !== undefined && vendor === null) return null;
   const rssi = raw.rssi === undefined || raw.rssi === null ? null : finiteNumber(raw.rssi);
@@ -136,6 +142,7 @@ function parseIdentity(raw: unknown): ObservationIdentityView | null {
     stable: raw.stable,
     label: boundedString(raw.label, 120) ?? undefined,
     decision,
+    firstSeen: firstSeen ?? lastSeen,
     lastSeen,
     packets,
     rssi,

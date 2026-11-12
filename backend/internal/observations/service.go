@@ -75,11 +75,12 @@ type sourceState struct {
 
 // aggregate is the rolling state for one identity within this process.
 type aggregate struct {
-	identity model.Identity
-	lastSeen time.Time
-	packets  uint64
-	rssi     *int
-	sources  map[string]*int
+	identity  model.Identity
+	firstSeen time.Time
+	lastSeen  time.Time
+	packets   uint64
+	rssi      *int
+	sources   map[string]*int
 }
 
 // NewService builds a service. Call Start to begin consuming observations.
@@ -240,8 +241,9 @@ func (s *Service) record(observation model.Observation) {
 	current, ok := s.aggregates[observation.Identity.Key]
 	if !ok {
 		current = &aggregate{
-			identity: observation.Identity,
-			sources:  map[string]*int{},
+			identity:  observation.Identity,
+			firstSeen: seenAt,
+			sources:   map[string]*int{},
 		}
 		s.aggregates[observation.Identity.Key] = current
 		if observation.Identity.Stable {
@@ -343,15 +345,16 @@ func (s *Service) snapshotLocked(now time.Time) model.Snapshot {
 			decision = settings.DecisionUnknown
 		}
 		view := model.IdentityView{
-			Key:      current.identity.Key,
-			Kind:     current.identity.Kind,
-			Vendor:   current.identity.Vendor,
-			Stable:   current.identity.Stable,
-			Decision: string(decision),
-			LastSeen: current.lastSeen,
-			Packets:  current.packets,
-			RSSI:     current.rssi,
-			Sources:  sourceReadings(current.sources),
+			Key:       current.identity.Key,
+			Kind:      current.identity.Kind,
+			Vendor:    current.identity.Vendor,
+			Stable:    current.identity.Stable,
+			Decision:  string(decision),
+			FirstSeen: current.firstSeen,
+			LastSeen:  current.lastSeen,
+			Packets:   current.packets,
+			RSSI:      current.rssi,
+			Sources:   sourceReadings(current.sources),
 		}
 		if label := decisions[current.identity.Key].Label; label != "" {
 			view.Label = label

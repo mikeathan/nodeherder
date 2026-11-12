@@ -43,16 +43,21 @@ type SourceReading struct {
 
 // IdentityView is the aggregated, renderable state of one identity.
 type IdentityView struct {
-	Key      string          `json:"key"`
-	Kind     string          `json:"kind"`
-	Vendor   uint16          `json:"vendor,omitempty"`
-	Stable   bool            `json:"stable"`
-	Label    string          `json:"label,omitempty"`
-	Decision string          `json:"decision"`
-	LastSeen time.Time       `json:"lastSeen"`
-	Packets  uint64          `json:"packets"`
-	RSSI     *int            `json:"rssi,omitempty"`
-	Sources  []SourceReading `json:"sources"`
+	Key    string `json:"key"`
+	Kind   string `json:"kind"`
+	Vendor uint16 `json:"vendor,omitempty"`
+	Stable bool   `json:"stable"`
+	Label  string `json:"label,omitempty"`
+	// Decision is the operator's triage state: unknown, known or ignored.
+	Decision string `json:"decision"`
+	// FirstSeen is when this process first heard the identity, so a viewer can offer
+	// "recently appeared" instead of inferring novelty from the triage decision, which is
+	// unknown for every identity on a first run and would therefore match everything.
+	FirstSeen time.Time       `json:"firstSeen"`
+	LastSeen  time.Time       `json:"lastSeen"`
+	Packets   uint64          `json:"packets"`
+	RSSI      *int            `json:"rssi,omitempty"`
+	Sources   []SourceReading `json:"sources"`
 }
 
 // Snapshot is one complete, self-contained broadcast. It is never a delta: a consumer that
