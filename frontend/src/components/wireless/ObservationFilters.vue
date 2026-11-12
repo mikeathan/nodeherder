@@ -9,7 +9,12 @@
   import { computed } from 'vue';
   import type { ObservationIdentityView } from '@/types/observations.type';
   import { ObservationFacets, ObservationDecisions } from '@/types/observations.type';
-  import { vendorHex } from '@/domain/observations/presentation';
+  import {
+    DISTANCE_PRESETS,
+    distancePresetLabel,
+    vendorHex,
+    type DistancePreset,
+  } from '@/domain/observations/presentation';
 
   const props = defineProps<{
     identities: readonly ObservationIdentityView[];
@@ -19,12 +24,18 @@
     selected: Readonly<Record<string, readonly string[]>>;
     /** Whether to show only untriaged identities and unstable fingerprints. */
     onlyNew: boolean;
+    /** Inclusive metre limit, or null for no distance filter. */
+    distance: DistancePreset;
   }>();
 
   const emit = defineEmits<{
     (event: 'update:selected', value: Record<string, string[]>): void;
     (event: 'update:onlyNew', value: boolean): void;
+    (event: 'update:distance', value: DistancePreset): void;
   }>();
+
+  /** Preset options, with `null` first so clearing the filter is one click away. */
+  const distanceOptions: DistancePreset[] = [null, ...DISTANCE_PRESETS];
 
   /** Facets this component knows how to render, intersected with what sources declare. */
   const supported = computed(() =>
@@ -90,6 +101,27 @@
     >
       Only new
     </button>
+
+    <!--
+      Range presets. "Within N metres" is the only proximity question one anchor can answer, and
+      the presets are coarse because the estimate is.
+    -->
+    <fieldset class="observation-filters__group">
+      <legend>Distance</legend>
+      <div class="observation-filters__presets">
+        <button
+          v-for="option in distanceOptions"
+          :key="option ?? 'any'"
+          type="button"
+          class="observation-filters__preset"
+          :class="{ 'is-active': props.distance === option }"
+          :aria-pressed="props.distance === option"
+          @click="emit('update:distance', option)"
+        >
+          {{ distancePresetLabel(option) }}
+        </button>
+      </div>
+    </fieldset>
 
     <fieldset v-for="facet in supported" :key="facet" class="observation-filters__group">
       <legend>{{ facetLabel(facet) }}</legend>
@@ -165,6 +197,39 @@
     align-items: center;
     font-size: 0.875rem;
     cursor: pointer;
+  }
+
+  /* A segmented group rather than checkboxes: these options are mutually exclusive. */
+  .observation-filters__presets {
+    display: inline-flex;
+    border: 1px solid var(--border-subtle, #2a3441);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .observation-filters__preset {
+    background: transparent;
+    border: 0;
+    color: inherit;
+    font: inherit;
+    font-size: 0.8125rem;
+    padding: 0.25rem 0.75rem;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .observation-filters__preset + .observation-filters__preset {
+    border-left: 1px solid var(--border-subtle, #2a3441);
+  }
+
+  .observation-filters__preset.is-active {
+    background: var(--accent-primary, #4a9eff);
+    color: #04121f;
+  }
+
+  .observation-filters__preset:focus-visible {
+    outline: 2px solid var(--accent-primary, #4a9eff);
+    outline-offset: -2px;
   }
 
   .observation-filters__hint,

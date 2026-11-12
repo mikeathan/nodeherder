@@ -142,6 +142,66 @@ test.describe('wireless viewer', () => {
     await expect(page.locator('.observation-focus')).toHaveCount(0);
   });
 
+  test('the distance preset narrows the list to nearby devices', async ({ page }) => {
+    await signIn(page, '/wireless');
+    await page.getByRole('button', { name: 'List', exact: true }).click();
+
+    // Mock identities span roughly 2 m, 11 m and beyond, so a 5 m limit keeps only the first.
+    const preset = page.getByRole('button', { name: '≤ 5 m', exact: true });
+    await expect(preset).toBeVisible();
+    await preset.click();
+    await expect(preset).toHaveAttribute('aria-pressed', 'true');
+
+    await expect(page.getByRole('button', { name: 'Isolate Front door tag', exact: true })).toHaveCount(1);
+    // The 11 m identity is excluded, and so is one with no reading at all.
+    await expect(page.getByRole('button', { name: 'Isolate addr:aa:bb:cc:dd:ee:01', exact: true })).toHaveCount(0);
+
+    // Any clears the filter.
+    await page.getByRole('button', { name: 'Any', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Isolate addr:aa:bb:cc:dd:ee:01', exact: true })).toHaveCount(1);
+  });
+
+  test('the distance control is a single-select group', async ({ page }) => {
+    await signIn(page, '/wireless');
+    const any = page.getByRole('button', { name: 'Any', exact: true });
+    const near = page.getByRole('button', { name: '≤ 2 m', exact: true });
+    await expect(any).toHaveAttribute('aria-pressed', 'true');
+    await near.click();
+    // Selecting one preset clears the other: these are exclusive, unlike the facet checkboxes.
+    await expect(near).toHaveAttribute('aria-pressed', 'true');
+    await expect(any).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  test('the global radar uses most of the available height', async ({ page }) => {
+    // Desktop only: below 1200px the table stacks underneath, so the radar is bounded by the
+    // column width instead of the viewport height.
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await signIn(page, '/wireless');
+    await expect(page.locator('.observation-table')).toBeVisible();
+    const box = (await page.locator('.observation-radar__canvas').boundingBox())!;
+    const viewport = page.viewportSize()!;
+
+    // Previously capped at 28rem (448px) in a narrow column, which made the global view small.
+    // The radar is now the primary pane: at least 60% of the viewport height.
+    expect(box.height).toBeGreaterThan(viewport.height * 0.6);
+    // It stays square, so the rings remain circular.
+    expect(Math.abs(box.width - box.height)).toBeLessThan(2);
+  });
+
+  test('the radar fills the column on a phone without overflow', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await signIn(page, '/wireless');
+    await expect(page.locator('.observation-table')).toBeVisible();
+    const box = (await page.locator('.observation-radar__canvas').boundingBox())!;
+    // Full column minus page padding, and never wider than the viewport.
+    expect(box.width).toBeGreaterThan(300);
+    expect(box.width).toBeLessThanOrEqual(390);
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow).toBeLessThanOrEqual(1);
+  });
+
   test('clicking a radar blip isolates that identity', async ({ page }) => {
     await signIn(page, '/wireless');
 

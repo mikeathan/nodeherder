@@ -173,13 +173,26 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    min-width: 0;
+    /* Centre the square canvas when the column is wider than the height cap. */
+    align-items: center;
   }
 
+  /*
+   * The canvas fills its container. The old 28rem cap kept the global radar small even when the
+   * layout had far more room, which is why it was hard to read.
+   */
   .observation-radar__canvas {
+    display: block;
     width: 100%;
-    max-width: 28rem;
     height: auto;
     aspect-ratio: 1;
+    /*
+     * Height grows with the viewport rather than the content column: the canvas is square, so a
+     * modest height cap would silently shrink it. 82vh keeps the caption and toolbar on screen
+     * at typical desktop heights while still letting the radar dominate.
+     */
+    max-height: 82vh;
     background: var(--surface-sunken, #0f1419);
     border-radius: 50%;
   }

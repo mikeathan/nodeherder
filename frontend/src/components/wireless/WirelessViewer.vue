@@ -22,6 +22,8 @@
     sourceIsSilent,
     sourceStatus,
     vendorHex,
+    withinDistance,
+    type DistancePreset,
   } from '@/domain/observations/presentation';
   import ObservationRadar from './ObservationRadar.vue';
   import ObservationTable from './ObservationTable.vue';
@@ -43,6 +45,8 @@
   /** Show only identities that appeared within the recent window. */
   const onlyNew = ref(false);
   const viewMode = ref<ObservationViewMode>(ObservationViews.Radar);
+  /** Inclusive metre limit for the proximity preset, or null for no limit. */
+  const distanceLimit = ref<DistancePreset>(null);
   /** Keys with a save in flight, so the row reports progress rather than looking inert. */
   const pending = ref<Set<string>>(new Set());
 
@@ -77,6 +81,7 @@
       // "New" means recently appeared, never "untriaged": on a first run every identity is
       // untriaged, so filtering on the decision matches everything and looks broken.
       if (onlyNew.value && !isRecentArrival(identity, now)) return false;
+      if (!withinDistance(identity, distanceLimit.value)) return false;
       return Object.entries(selection).every(([facet, values]) => {
         if (values.length === 0) return true;
         if (facet === ObservationFacets.Kind) return values.includes(identity.kind);
@@ -263,8 +268,10 @@
         :facets="facets"
         :selected="facetSelection"
         :only-new="onlyNew"
+        :distance="distanceLimit"
         @update:selected="facetSelection = $event"
         @update:only-new="onlyNew = $event"
+        @update:distance="distanceLimit = $event"
       />
 
       <ObservationFocus
@@ -424,10 +431,15 @@
     outline-offset: -2px;
   }
 
+  /*
+   * The radar is the primary surface: it takes the remaining width and the table gets a bounded
+   * column. The previous split capped the radar at 24rem, which made the global view small even
+   * on a wide screen.
+   */
   .wireless-viewer__layout {
     display: grid;
     gap: 1.5rem;
-    grid-template-columns: minmax(16rem, 24rem) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(17rem, 24rem);
     align-items: start;
   }
 
@@ -439,17 +451,31 @@
   }
 
   /* Stack the radar above the table on narrow screens rather than shrinking both. */
+  /* Below 1200px the table would squeeze the radar, so stack with the radar first. */
+  @media (max-width: 1199px) {
+    .wireless-viewer__layout {
+      grid-template-columns: 1fr;
+    }
+  }
+
   @media (max-width: 899px) {
     .wireless-viewer {
-      padding: 1rem;
+      padding: 0.75rem;
+      gap: 1rem;
     }
 
     .wireless-viewer__layout {
       grid-template-columns: 1fr;
+      gap: 1rem;
     }
 
     .wireless-viewer__views {
       margin-left: 0;
+    }
+
+    /* On a phone the radar is the whole point of the view, so it gets the full column. */
+    .wireless-viewer__toolbar {
+      gap: 0.5rem;
     }
   }
 </style>

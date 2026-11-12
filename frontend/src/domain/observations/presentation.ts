@@ -205,6 +205,38 @@ export function roundedDistanceMetres(metres: number | null | undefined): number
 }
 
 /**
+ * Distance presets offered as a button group.
+ *
+ * A single anchor cannot resolve direction, so "within N metres" is the only range question the
+ * data can answer honestly. Presets are coarse because the estimate is: 1-3 m of indoor error
+ * makes a 2 m step meaningless past the first few metres.
+ */
+export const DISTANCE_PRESETS = [2, 5, 10, 20] as const;
+
+export type DistancePreset = (typeof DISTANCE_PRESETS)[number] | null;
+
+/** Label for a preset button; null means no distance limit. */
+export function distancePresetLabel(metres: DistancePreset): string {
+  return metres === null ? 'Any' : `≤ ${metres} m`;
+}
+
+/**
+ * Whether an identity is within an inclusive metre limit.
+ *
+ * An identity with no usable reading cannot be proven to be within any limit, so it is excluded
+ * rather than assumed near. Null limit means no constraint.
+ */
+export function withinDistance(
+  identity: Pick<ObservationIdentityView, 'rssi' | 'rssiSmoothed'>,
+  limit: DistancePreset,
+): boolean {
+  if (limit === null) return true;
+  const metres = estimateDistanceMetres(distanceRSSI(identity));
+  if (metres === null) return false;
+  return metres <= limit;
+}
+
+/**
  * Coarse proximity bands.
  *
  * A single anchor measures RSSI only, so the estimate carries 1-3 m of indoor error. Offering a

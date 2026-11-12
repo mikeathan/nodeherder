@@ -9,6 +9,7 @@ import {
   DEFAULT_TX_POWER_AT_1M,
   bearingForIdentity,
   distanceBand,
+  distancePresetLabel,
   distanceRSSI,
   estimateDistanceMetres,
   roundedDistanceMetres,
@@ -21,6 +22,7 @@ import {
   sourceStatus,
   trendPresentation,
   untriagedCount,
+  withinDistance,
 } from '@/domain/observations/presentation';
 import type { ObservationIdentityView, ObservationSnapshot, ObservationSourceDescriptor } from '@/types/observations.type';
 
@@ -261,6 +263,52 @@ describe('roundedDistanceMetres', () => {
   test('an absent reading stays absent', () => {
     expect(roundedDistanceMetres(null)).toBeNull();
     expect(roundedDistanceMetres(Number.NaN)).toBeNull();
+  });
+});
+
+describe('withinDistance', () => {
+  const at = (rssiSmoothed: number) => ({ rssi: rssiSmoothed, rssiSmoothed });
+
+  test('no limit passes everything, including identities with no reading', () => {
+    expect(withinDistance(at(-90), null)).toBe(true);
+    expect(withinDistance({}, null)).toBe(true);
+  });
+
+  test('an identity inside the limit passes', () => {
+    // -59 dBm tx power and n 2.5: -66 -> ~1.9 m, well inside 5 m.
+    expect(withinDistance(at(-66), 5)).toBe(true);
+  });
+
+  test('an identity outside the limit is excluded', () => {
+    // -85 -> ~11 m, outside a 5 m limit.
+    expect(withinDistance(at(-85), 5)).toBe(false);
+  });
+
+  test('the limit is inclusive at the boundary', () => {
+    // ~10.0 m at these constants; exactly on the 10 m limit must still pass.
+    const metres = estimateDistanceMetres(-84)!;
+    expect(metres).toBeLessThanOrEqual(10);
+    expect(withinDistance(at(-84), 10)).toBe(true);
+  });
+
+  test('an identity with no reading cannot be proven within any limit', () => {
+    // Assuming "near" would put an unmeasured device in the closest bucket.
+    expect(withinDistance({}, 5)).toBe(false);
+    expect(withinDistance({ rssi: null, rssiSmoothed: null }, 10)).toBe(false);
+  });
+
+  test('uses the smoothed value when both are present', () => {
+    // Raw is strong enough for 2 m, smoothed is not: the filter must follow the smoothed value,
+    // which is what the displayed distance uses.
+    expect(withinDistance({ rssi: -62, rssiSmoothed: -90 }, 5)).toBe(false);
+  });
+});
+
+describe('distancePresetLabel', () => {
+  test('labels each preset and the cleared state', () => {
+    expect(distancePresetLabel(null)).toBe('Any');
+    expect(distancePresetLabel(2)).toBe('≤ 2 m');
+    expect(distancePresetLabel(20)).toBe('≤ 20 m');
   });
 });
 
