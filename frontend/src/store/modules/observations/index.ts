@@ -26,11 +26,6 @@ export const ObservationsModule: Module<ObservationsState, RootState> = {
     hasData: (state: ObservationsState): boolean => state.loaded,
     /** Whether the viewer should warn that the socket is disconnected. */
     stale: (state: ObservationsState): boolean => state.stale,
-    /** Identities the operator has not triaged yet; this is the "isolate new" view. */
-    untriaged: (state: ObservationsState) => (): ObservationSnapshot['identities'] =>
-      (state.snapshot?.identities ?? []).filter((identity) => identity.decision === 'unknown'),
-    /** Every source that contributed at least one identity. */
-    sources: (state: ObservationsState) => () => state.snapshot?.sources ?? [],
   },
 
   mutations: {

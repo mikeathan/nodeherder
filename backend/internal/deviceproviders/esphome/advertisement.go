@@ -63,11 +63,12 @@ type observingSink struct {
 	announced  bool
 }
 
-// ObserveAdvertisements forwards a batch to the shared aggregator and reports delivery counts.
+// ObserveAdvertisements forwards a batch to the shared aggregator.
+//
+// It does not count the batch. Counting belongs to RecordAdvertisementBatch, which the session
+// calls with the raw entry count; counting here as well would double every counter because the
+// forwarded batch has already had unusable entries removed.
 func (s *observingSink) ObserveAdvertisements(ctx context.Context, batch []model.Observation) error {
-	// recordActivity runs before forwarding so counters reflect what arrived even when the
-	// observer rejects the batch.
-	s.recordActivity(len(batch), len(batch))
 	return s.observer.ObserveAdvertisements(ctx, batch)
 }
 
@@ -152,21 +153,15 @@ func decodeAdvertisements(source string, response *api.BluetoothLERawAdvertiseme
 		if !ok {
 			continue
 		}
-		// The advertised name is the identity's display label. Keeping it on the identity is
-		// what lets the viewer show "Kitchen tag" instead of an opaque key.
+		// The advertised name becomes the identity label, which is what the viewer renders.
 		if name != "" {
 			identity.Label = name
-		}
-		payload := map[string]any{"addressType": adv.AddressType}
-		if name != "" {
-			payload["name"] = name
 		}
 		batch = append(batch, model.Observation{
 			Source:   source,
 			Medium:   model.MediumBLEAdvertisement,
 			Identity: identity,
 			RSSI:     adv.RSSI,
-			Payload:  payload,
 		})
 	}
 	return batch

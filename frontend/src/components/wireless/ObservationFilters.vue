@@ -9,6 +9,7 @@
   import { computed } from 'vue';
   import type { ObservationIdentityView } from '@/types/observations.type';
   import { ObservationFacets, ObservationDecisions } from '@/types/observations.type';
+  import { vendorHex } from '@/domain/observations/presentation';
 
   const props = defineProps<{
     identities: readonly ObservationIdentityView[];
@@ -46,10 +47,8 @@
 
   function facetValue(identity: ObservationIdentityView, facet: string): string {
     if (facet === ObservationFacets.Kind) return identity.kind;
-    if (facet === ObservationFacets.Vendor) {
-      // Vendors are numeric company identifiers; show the hex form people recognise.
-      return identity.vendor === undefined ? '' : `0x${identity.vendor.toString(16).toUpperCase().padStart(4, '0')}`;
-    }
+    // Vendors are numeric company identifiers; show the hex form people recognise.
+    if (facet === ObservationFacets.Vendor) return vendorHex(identity.vendor);
     return '';
   }
 

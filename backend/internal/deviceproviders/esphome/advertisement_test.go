@@ -198,8 +198,29 @@ func TestDecodeAdvertisementsKeepsAdvertisedName(t *testing.T) {
 	if batch[0].Identity.Label != "Kitchen tag" {
 		t.Fatalf("label = %q, want the advertised name", batch[0].Identity.Label)
 	}
-	if got, _ := batch[0].Payload["name"].(string); got != "Kitchen tag" {
-		t.Fatalf("payload name = %q", got)
+	// The label is the single source of truth for the display name; Payload must not duplicate
+	// it, or the two could disagree after a rename.
+	if name, ok := batch[0].Payload["name"]; ok {
+		t.Fatalf("payload duplicated the name: %v", name)
+	}
+}
+
+// Forwarding a batch must not count it again: the session already reports the raw and decoded
+// counts, and the forwarded slice has had unusable entries removed. Counting in both places
+// doubled every counter.
+func TestForwardingDoesNotDoubleCount(t *testing.T) {
+	registry := &recordingRegistry{}
+	sink := observingRegistrySink(registry)
+
+	const raw, decoded = 10, 8
+	sink.RecordAdvertisementBatch(raw, decoded)
+	_ = sink.ObserveAdvertisements(context.Background(), make([]model.Observation, decoded))
+
+	if registry.advertisements != raw {
+		t.Fatalf("advertisements = %d, want %d", registry.advertisements, raw)
+	}
+	if registry.decoded != decoded {
+		t.Fatalf("decoded = %d, want %d", registry.decoded, decoded)
 	}
 }
 

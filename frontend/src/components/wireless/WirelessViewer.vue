@@ -9,8 +9,8 @@
   import { computed, ref } from 'vue';
   import { useStore } from 'vuex';
   import type { ObservationDecision, ObservationIdentityView } from '@/types/observations.type';
-  import { ObservationDecisions } from '@/types/observations.type';
-  import { snapshotSummary, sourceIsSilent, sourceStatus, untriagedCount } from '@/domain/observations/presentation';
+  import { ObservationDecisions, ObservationFacets } from '@/types/observations.type';
+  import { snapshotSummary, sourceIsSilent, sourceStatus, untriagedCount, vendorHex } from '@/domain/observations/presentation';
   import ObservationRadar from './ObservationRadar.vue';
   import ObservationTable from './ObservationTable.vue';
   import ObservationFilters from './ObservationFilters.vue';
@@ -43,11 +43,8 @@
       if (onlyNew.value && identity.decision !== ObservationDecisions.Unknown) return false;
       return Object.entries(selection).every(([facet, values]) => {
         if (values.length === 0) return true;
-        if (facet === 'kind') return values.includes(identity.kind);
-        if (facet === 'vendor') {
-          const hex = identity.vendor === undefined ? '' : `0x${identity.vendor.toString(16).toUpperCase().padStart(4, '0')}`;
-          return values.includes(hex);
-        }
+        if (facet === ObservationFacets.Kind) return values.includes(identity.kind);
+        if (facet === ObservationFacets.Vendor) return values.includes(vendorHex(identity.vendor));
         // An unknown facet cannot be filtered here; ignoring it keeps a newer backend usable.
         return true;
       });

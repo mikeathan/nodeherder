@@ -68,6 +68,15 @@ export const DECISION_LABELS: Record<ObservationDecision, string> = {
   [ObservationDecisions.Ignored]: 'Ignored',
 };
 
+/**
+ * Render a BLE company identifier the way people recognise it, e.g. `0x004C` for Apple.
+ * Returns an empty string when the identity carries no vendor, so the facet never invents one.
+ */
+export function vendorHex(vendor: number | undefined): string {
+  if (typeof vendor !== 'number' || !Number.isFinite(vendor)) return '';
+  return `0x${vendor.toString(16).toUpperCase().padStart(4, '0')}`;
+}
+
 /** Display name for an identity, preferring the operator label, then the advertised name. */
 export function identityTitle(identity: ObservationIdentityView): string {
   if (identity.label) return identity.label;

@@ -32,10 +32,8 @@ type IdentityStore interface {
 // Deps are the service's collaborators. Every field is injected so tests use a fake clock and
 // a stub store, and the service owns no global state.
 type Deps struct {
-	// Context bounds the worker lifetime. Nil uses context.Background().
-	Context context.Context
-	Store   IdentityStore
-	Clock   utils.Clock
+	Store IdentityStore
+	Clock utils.Clock
 	// Publish receives each changed snapshot. Nil discards snapshots, which lets a hub
 	// without a browser still aggregate for other consumers.
 	Publish func(model.Snapshot)
@@ -64,9 +62,7 @@ type Service struct {
 	aggregates  map[string]*aggregate
 	arrivals    int
 	lastState   string
-	lastAt      time.Time
 	lastPublish time.Time
-	truncated   bool
 }
 
 // sourceState is one registered observing device's identity and declared facets.
@@ -79,12 +75,11 @@ type sourceState struct {
 
 // aggregate is the rolling state for one identity within this process.
 type aggregate struct {
-	identity  model.Identity
-	lastSeen  time.Time
-	packets   uint64
-	rssi      *int
-	sources   map[string]*int
-	ephemeral bool
+	identity model.Identity
+	lastSeen time.Time
+	packets  uint64
+	rssi     *int
+	sources  map[string]*int
 }
 
 // NewService builds a service. Call Start to begin consuming observations.
@@ -245,9 +240,8 @@ func (s *Service) record(observation model.Observation) {
 	current, ok := s.aggregates[observation.Identity.Key]
 	if !ok {
 		current = &aggregate{
-			identity:  observation.Identity,
-			sources:   map[string]*int{},
-			ephemeral: !observation.Identity.Stable,
+			identity: observation.Identity,
+			sources:  map[string]*int{},
 		}
 		s.aggregates[observation.Identity.Key] = current
 		if observation.Identity.Stable {

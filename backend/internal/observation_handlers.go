@@ -9,7 +9,6 @@ import (
 
 	"node-herder/internal/ws"
 	"node-herder/models/settings"
-	"node-herder/utils"
 )
 
 // maxObservationLabelRunes bounds an operator-supplied display label.
@@ -84,10 +83,4 @@ func observationIdentityKey(payload interface{}) (string, error) {
 		return "", errors.New("invalid observation identity key")
 	}
 	return key, nil
-}
-
-// logObservationHandlerFailure keeps rejection reasons observable without echoing household
-// identifiers into the log.
-func logObservationHandlerFailure(action string, err error) {
-	utils.LogErrorf("Observation %s rejected: %v", action, err)
 }
