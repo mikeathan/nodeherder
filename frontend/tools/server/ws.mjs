@@ -329,6 +329,9 @@ function buildObservationSnapshot() {
         lastSeen: at(5),
         packets: 1841,
         rssi: -62,
+        trend: 'approaching',
+        trendDeltaDb: 5.5,
+        signal: [-74, -72, -70, -68, -66, -64, -62],
         sources: [{ id: 'mock-proxy-1', rssi: -62 }],
       },
       {

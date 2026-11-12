@@ -8,6 +8,7 @@ import {
   DEFAULT_PATH_LOSS_EXPONENT,
   DEFAULT_TX_POWER_AT_1M,
   bearingForIdentity,
+  distanceBand,
   estimateDistanceMetres,
   groupIdentities,
   identityTitle,
@@ -16,6 +17,7 @@ import {
   snapshotSummary,
   sourceIsSilent,
   sourceStatus,
+  trendPresentation,
   untriagedCount,
 } from '@/domain/observations/presentation';
 import type { ObservationIdentityView, ObservationSnapshot, ObservationSourceDescriptor } from '@/types/observations.type';
@@ -217,6 +219,45 @@ describe('groupIdentities', () => {
 
   test('returns no sections for no identities', () => {
     expect(groupIdentities([])).toEqual([]);
+  });
+});
+
+describe('distanceBand', () => {
+  test('classifies inside each boundary', () => {
+    expect(distanceBand(1)).toBe('near');
+    expect(distanceBand(3)).toBe('mid');
+    expect(distanceBand(9)).toBe('far');
+  });
+
+  test('treats boundaries as exclusive upper bounds', () => {
+    // Exactly 2 m is no longer "near"; exactly 6 m is no longer "mid".
+    expect(distanceBand(2)).toBe('mid');
+    expect(distanceBand(6)).toBe('far');
+  });
+
+  test('an absent reading is unknown, never near', () => {
+    expect(distanceBand(null)).toBe('unknown');
+    expect(distanceBand(undefined)).toBe('unknown');
+    expect(distanceBand(Number.NaN)).toBe('unknown');
+  });
+});
+
+describe('trendPresentation', () => {
+  test('pairs every arrow with a word', () => {
+    for (const trend of ['approaching', 'receding', 'steady', 'unknown'] as const) {
+      const presentation = trendPresentation(trend);
+      expect(presentation.label.length).toBeGreaterThan(0);
+    }
+  });
+
+  test('unknown carries no arrow, so it cannot be mistaken for steady', () => {
+    expect(trendPresentation('unknown').arrow).toBe('');
+    expect(trendPresentation(undefined)).toEqual(trendPresentation('unknown'));
+  });
+
+  test('direction arrows differ from the steady arrow', () => {
+    expect(trendPresentation('approaching').arrow).not.toBe(trendPresentation('steady').arrow);
+    expect(trendPresentation('receding').arrow).not.toBe(trendPresentation('approaching').arrow);
   });
 });
 

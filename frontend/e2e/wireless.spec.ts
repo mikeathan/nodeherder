@@ -94,6 +94,54 @@ test.describe('wireless viewer', () => {
     await expect(page.locator('.observation-groups')).toHaveCount(0);
   });
 
+  test('isolating an identity shows only that identity in Focus', async ({ page }) => {
+    await signIn(page, '/wireless');
+    // Start from the list, then isolate one identity by name.
+    await page.getByRole('button', { name: 'List', exact: true }).click();
+    await page.getByRole('button', { name: 'Isolate Front door tag', exact: true }).click();
+
+    const focus = page.locator('.observation-focus');
+    await expect(focus).toBeVisible();
+    await expect(focus.getByRole('heading', { name: 'Front door tag' })).toBeVisible();
+    // Only the isolated identity is present; the others are gone from every view.
+    await expect(page.getByText('addr:aa:bb:cc:dd:ee:01', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('fp:9c02ab41', { exact: true })).toHaveCount(0);
+  });
+
+  test('Focus shows distance, band and trend', async ({ page }) => {
+    await signIn(page, '/wireless');
+    await page.getByRole('button', { name: 'List', exact: true }).click();
+    await page.getByRole('button', { name: 'Isolate Front door tag', exact: true }).click();
+
+    const focus = page.locator('.observation-focus');
+    // Distance is formatted by the shared formatter, so a unit always accompanies the figure.
+    await expect(focus.locator('.observation-focus__value')).toContainText('m');
+    await expect(focus.getByText(/near|mid|far/)).toBeVisible();
+    // The trend pairs an arrow with a word, never a colour or arrow alone.
+    await expect(focus.getByText(/Approaching|Receding|Steady|No trend yet/)).toBeVisible();
+    await expect(focus.getByText(/Estimated from signal strength only/)).toBeVisible();
+  });
+
+  test('escape clears isolation and returns to the full view', async ({ page }) => {
+    await signIn(page, '/wireless');
+    await page.getByRole('button', { name: 'List', exact: true }).click();
+    await page.getByRole('button', { name: 'Isolate Front door tag', exact: true }).click();
+    await expect(page.locator('.observation-focus')).toBeVisible();
+
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.observation-focus')).toHaveCount(0);
+    // Back to the unfiltered set, so the other identities are reachable again.
+    await expect(page.getByRole('button', { name: 'Isolate Front door tag', exact: true })).toHaveCount(1);
+  });
+
+  test('the All identities control also leaves isolation', async ({ page }) => {
+    await signIn(page, '/wireless');
+    await page.getByRole('button', { name: 'List', exact: true }).click();
+    await page.getByRole('button', { name: 'Isolate Front door tag', exact: true }).click();
+    await page.getByRole('button', { name: '‹ All identities', exact: true }).click();
+    await expect(page.locator('.observation-focus')).toHaveCount(0);
+  });
+
   test('triage controls are keyboard reachable and report a decision', async ({ page }) => {
     await signIn(page, '/wireless');
     const known = page.getByRole('button', { name: 'Mark known', exact: true }).first();

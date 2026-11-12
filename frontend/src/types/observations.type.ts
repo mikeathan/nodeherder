@@ -50,6 +50,16 @@ export type ObservationSourceReading = {
   rssi?: number | null;
 };
 
+/** Direction of change in signal strength. A proximity proxy, never a velocity. */
+export const ObservationTrends = {
+  Unknown: 'unknown',
+  Steady: 'steady',
+  Approaching: 'approaching',
+  Receding: 'receding',
+} as const;
+
+export type ObservationTrend = (typeof ObservationTrends)[keyof typeof ObservationTrends];
+
 /** Aggregated, renderable state of one observed identity. */
 export type ObservationIdentityView = {
   key: string;
@@ -64,6 +74,12 @@ export type ObservationIdentityView = {
   packets: number;
   rssi?: number | null;
   sources: ObservationSourceReading[];
+  /** Direction of change over the recent window; unknown is never shown as steady. */
+  trend?: ObservationTrend;
+  /** Smoothed change in dB across the window; positive means the signal strengthened. */
+  trendDeltaDb?: number;
+  /** Recent signal strengths in dBm, oldest first, for a sparkline. */
+  signal?: number[];
 };
 
 /** How the operator wants the identities presented. */
@@ -72,6 +88,8 @@ export const ObservationViews = {
   Radar: 'radar',
   /** Dense grouped list, for scanning many devices quickly. */
   List: 'list',
+  /** One isolated identity with a large proximity readout. */
+  Focus: 'focus',
 } as const;
 
 export type ObservationViewMode = (typeof ObservationViews)[keyof typeof ObservationViews];

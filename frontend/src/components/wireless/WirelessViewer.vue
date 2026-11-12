@@ -9,7 +9,7 @@
    * Live snapshots arrive several times a second, so the view offers a freeze control: a table
    * that reorders while you read it is unusable for triage.
    */
-  import { computed, ref, watch } from 'vue';
+  import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
   // The app installs the store under a Symbol injection key, so vuex's bare useStore() cannot
   // find it. Components use the singleton, as the rest of the codebase does.
   import { store } from '@/store';
@@ -27,6 +27,7 @@
   import ObservationTable from './ObservationTable.vue';
   import ObservationFilters from './ObservationFilters.vue';
   import ObservationGroupList from './ObservationGroupList.vue';
+  import ObservationFocus from './ObservationFocus.vue';
   import UiButton from '@/components/ui/UiButton.vue';
 
   const snapshot = computed(() => store.getters['observations/snapshot']);
@@ -37,7 +38,8 @@
   /** Live identities exactly as the hub last reported them. */
   const liveIdentities = computed<ObservationIdentityView[]>(() => snapshot.value?.identities ?? []);
 
-  const selected = ref<Record<string, string[]>>({});
+  /** Facet filter selections, distinct from the isolated identity. */
+  const facetSelection = ref<Record<string, string[]>>({});
   /** Show only identities that appeared within the recent window. */
   const onlyNew = ref(false);
   const viewMode = ref<ObservationViewMode>(ObservationViews.Radar);
@@ -69,7 +71,7 @@
 
   /** Apply the operator's facet selection, the recent-only toggle and the frozen view. */
   const visible = computed(() => {
-    const selection = selected.value;
+    const selection = facetSelection.value;
     const now = Date.now();
     return identities.value.filter((identity) => {
       // "New" means recently appeared, never "untriaged": on a first run every identity is
@@ -87,6 +89,54 @@
 
   /** Grouped sections for the list view. */
   const grouped = computed(() => groupIdentities(visible.value));
+
+  /**
+   * Isolated identity, resolved from the live set by key.
+   *
+   * Held as a key rather than an object so a snapshot update cannot replace the selected
+   * identity with a stale copy, and so an identity that ages out is detectable.
+   */
+  const selectedKey = ref<string | null>(null);
+  const selected = computed(() => identities.value.find((identity) => identity.key === selectedKey.value) ?? null);
+  /** True when a selection was made but the identity has since left the snapshot. */
+  const selectionLost = computed(() => selectedKey.value !== null && selected.value === null);
+
+  function selectIdentity(key: string): void {
+    selectedKey.value = key;
+    viewMode.value = ObservationViews.Focus;
+  }
+
+  function clearSelection(): void {
+    selectedKey.value = null;
+    if (viewMode.value === ObservationViews.Focus) viewMode.value = ObservationViews.Radar;
+  }
+
+  /**
+   * Identities the radar and list render. Isolation is applied here rather than inside each
+   * child so every view agrees on what is shown.
+   */
+  const scoped = computed(() => (selected.value ? [selected.value] : visible.value));
+
+  /**
+   * Views offered right now. Focus is only meaningful with a selection, so it is not offered
+   * while nothing is isolated; it would otherwise render an empty panel.
+   */
+  const availableViews = computed<ObservationViewMode[]>(() =>
+    selected.value
+      ? [ObservationViews.Focus, ObservationViews.Radar, ObservationViews.List]
+      : [ObservationViews.Radar, ObservationViews.List],
+  );
+
+  const VIEW_LABELS: Readonly<Record<ObservationViewMode, string>> = {
+    radar: 'Radar',
+    list: 'List',
+    focus: 'Focus',
+  };
+
+  /** Label for a view tab. */
+  function viewLabel(mode: ObservationViewMode): string {
+    return VIEW_LABELS[mode];
+  }
 
   const summary = computed(() => snapshotSummary(snapshot.value));
   const newCount = computed(() => visible.value.filter((identity) => isRecentArrival(identity)).length);
@@ -126,6 +176,14 @@
     const live = new Set(next.map((identity) => identity.key));
     frozen.value = frozen.value.filter((identity) => live.has(identity.key));
   });
+
+  // Escape leaves isolation, the expected way out of a selected detail view. Listening on the
+  // window keeps it working wherever focus sits inside the view.
+  function onKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Escape' && selectedKey.value !== null) clearSelection();
+  }
+  onMounted(() => window.addEventListener('keydown', onKeydown));
+  onUnmounted(() => window.removeEventListener('keydown', onKeydown));
 </script>
 
 <template>
@@ -178,7 +236,7 @@
 
         <div class="wireless-viewer__views" role="group" aria-label="View">
           <button
-            v-for="mode in [ObservationViews.Radar, ObservationViews.List]"
+            v-for="mode in availableViews"
             :key="mode"
             type="button"
             class="wireless-viewer__view"
@@ -186,32 +244,57 @@
             :aria-pressed="viewMode === mode"
             @click="viewMode = mode"
           >
-            {{ mode === ObservationViews.Radar ? 'Radar' : 'List' }}
+            {{ viewLabel(mode) }}
           </button>
         </div>
       </div>
 
+      <!--
+        A selection that aged out must say so. Silently reverting to the full list would look
+        like the click never registered.
+      -->
+      <p v-if="selectionLost" class="wireless-viewer__notice" role="status">
+        That identity has not been heard recently, so it left the list.
+        <button type="button" class="wireless-viewer__link" @click="clearSelection">Show all</button>
+      </p>
+
       <ObservationFilters
         :identities="identities"
         :facets="facets"
-        :selected="selected"
+        :selected="facetSelection"
         :only-new="onlyNew"
-        @update:selected="selected = $event"
+        @update:selected="facetSelection = $event"
         @update:only-new="onlyNew = $event"
       />
 
-      <div v-if="viewMode === ObservationViews.Radar" class="wireless-viewer__layout">
-        <ObservationRadar :identities="visible" />
+      <ObservationFocus
+        v-if="viewMode === ObservationViews.Focus && selected"
+        :identity="selected"
+        :pending="pending.has(selected.key)"
+        @decide="decide"
+        @clear="clearSelection"
+      />
+
+      <div v-else-if="viewMode === ObservationViews.Radar" class="wireless-viewer__layout">
+        <ObservationRadar :identities="scoped" />
         <div class="wireless-viewer__detail">
-          <ObservationTable :identities="visible" :pending="pending" @decide="decide" />
+          <ObservationTable
+            :identities="scoped"
+            :pending="pending"
+            :selected-key="selectedKey"
+            @decide="decide"
+            @select="selectIdentity"
+          />
         </div>
       </div>
 
       <ObservationGroupList
-        v-else
+        v-else-if="viewMode === ObservationViews.List"
         :groups="grouped"
         :pending="pending"
+        :selected-key="selectedKey"
         @decide="decide"
+        @select="selectIdentity"
       />
     </template>
   </section>
@@ -280,6 +363,22 @@
 
   .wireless-viewer__sources li span {
     color: var(--text-muted, #8b9bab);
+  }
+
+  .wireless-viewer__link {
+    background: none;
+    border: 0;
+    color: var(--accent-primary, #4a9eff);
+    font: inherit;
+    padding: 0;
+    margin-left: 0.375rem;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+
+  .wireless-viewer__link:focus-visible {
+    outline: 2px solid var(--accent-primary, #4a9eff);
+    outline-offset: 2px;
   }
 
   .wireless-viewer__toolbar {

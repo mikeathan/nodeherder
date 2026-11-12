@@ -16,10 +16,13 @@
     identities: readonly ObservationIdentityView[];
     /** Identity keys with a save in flight, so their controls report progress. */
     pending: ReadonlySet<string>;
+    /** Currently isolated identity, so the row can be marked. */
+    selectedKey?: string | null;
   }>();
 
   const emit = defineEmits<{
     (event: 'decide', key: string, decision: ObservationDecision): void;
+    (event: 'select', key: string): void;
   }>();
 
   function time(value: string): string {
@@ -64,9 +67,25 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="identity in rows" :key="identity.key">
+        <tr
+          v-for="identity in rows"
+          :key="identity.key"
+          :class="{ 'is-selected': props.selectedKey === identity.key }"
+        >
           <th scope="row">
-            <span class="observation-table__title">{{ identityTitle(identity) }}</span>
+            <!--
+              The identity title is the isolate control. It is a button rather than a row click
+              so the triage buttons beside it stay independently operable.
+            -->
+            <button
+              type="button"
+              class="observation-table__title observation-table__select"
+              :aria-pressed="props.selectedKey === identity.key"
+              :aria-label="`Isolate ${identityTitle(identity)}`"
+              @click="emit('select', identity.key)"
+            >
+              {{ identityTitle(identity) }}
+            </button>
             <span
               v-if="identity.decision === ObservationDecisions.Unknown"
               class="observation-table__new"
@@ -149,6 +168,34 @@
 
   .observation-table__title {
     font-weight: 600;
+  }
+
+  /* The isolate control looks like text until focused, so the table stays scannable. */
+  .observation-table__select {
+    background: none;
+    border: 0;
+    color: inherit;
+    font: inherit;
+    padding: 0;
+    text-align: left;
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-underline-offset: 0.15em;
+  }
+
+  .observation-table__select:hover,
+  .observation-table__select:focus-visible {
+    text-decoration-color: currentColor;
+  }
+
+  .observation-table__select:focus-visible {
+    outline: 2px solid var(--accent-primary, #4a9eff);
+    outline-offset: 2px;
+  }
+
+  tr.is-selected {
+    background: color-mix(in srgb, var(--accent-primary, #4a9eff) 12%, transparent);
   }
 
   /* The new marker carries text, not just colour, so it survives grayscale and screen readers. */

@@ -23,6 +23,21 @@ const (
 	maxSources           = 32
 )
 
+// Proximity trend limits.
+const (
+	// rssiWindowSize bounds recent readings per identity. At typical advertisement rates this
+	// covers roughly a minute: long enough to see an approach, short enough to react to a turn.
+	rssiWindowSize = 20
+	// rssiTrendHorizon is how old the newest reading may be before trend becomes unknown,
+	// so a stalled device never reports a direction that stopped being true.
+	rssiTrendHorizon = 45 * time.Second
+	// rssiTrendDeadbandDB is the smoothed change required to call a trend. Ordinary RSSI jitter
+	// is several dB, so without a deadband steady motion would read as movement.
+	rssiTrendDeadbandDB = 3.0
+	// rssiTrendMinReadings is the shortest window that can describe a direction.
+	rssiTrendMinReadings = 3
+)
+
 // IdentityStore reads persisted operator decisions. SaveObserver is deliberately absent: the
 // service only ever reads decisions, so a transport cannot mutate user intent.
 type IdentityStore interface {
@@ -81,6 +96,15 @@ type aggregate struct {
 	packets   uint64
 	rssi      *int
 	sources   map[string]*int
+	// readings is a bounded, oldest-first window of recent signal strengths used to describe
+	// direction of change. It is deliberately memory-only: trend is live state, not history.
+	readings []rssiReading
+}
+
+// rssiReading is one signal strength sample in the trend window.
+type rssiReading struct {
+	RSSI int
+	At   time.Time
 }
 
 // NewService builds a service. Call Start to begin consuming observations.
@@ -264,6 +288,9 @@ func (s *Service) record(observation model.Observation) {
 	// must appear further, and a high-water mark would freeze its distance at the closest
 	// point it ever reached.
 	current.rssi = &rssi
+	// The trend window is fed here, on the aggregation worker, so the browser never has to
+	// reconstruct history and a reload cannot change the answer.
+	current.readings = appendReading(current.readings, rssi, seenAt)
 }
 
 // flush builds a snapshot, drops stale identities, and publishes only when the rendered state
@@ -356,6 +383,8 @@ func (s *Service) snapshotLocked(now time.Time) model.Snapshot {
 			RSSI:      current.rssi,
 			Sources:   sourceReadings(current.sources),
 		}
+		trend := computeTrend(current.readings, now)
+		view.Trend, view.TrendDeltaDB, view.Signal = trend.Trend, trend.DeltaDB, trend.Signal
 		if label := decisions[current.identity.Key].Label; label != "" {
 			view.Label = label
 		} else {
@@ -402,6 +431,13 @@ func renderSignature(snapshot model.Snapshot) string {
 		if identity.RSSI != nil {
 			// Encode the full value so a reading moving outside one byte still registers.
 			signature = appendUint64(signature, uint64(int64(*identity.RSSI)+128))
+		}
+		// Trend and its sparkline change without any identity field changing, so they must
+		// participate or the arrow and history would freeze on a live device.
+		signature = append(signature, identity.Trend...)
+		signature = appendUint64(signature, uint64(int64(identity.TrendDeltaDB*8)+4096))
+		for _, sample := range identity.Signal {
+			signature = appendUint64(signature, uint64(int64(sample)+128))
 		}
 		signature = append(signature, 0)
 	}

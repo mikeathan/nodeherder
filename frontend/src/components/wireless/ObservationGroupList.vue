@@ -15,10 +15,13 @@
     groups: readonly { group: string; identities: ObservationIdentityView[] }[];
     /** Identity keys with a save in flight, so their controls report progress. */
     pending: ReadonlySet<string>;
+    /** Currently isolated identity, so the row can be marked. */
+    selectedKey?: string | null;
   }>();
 
   const emit = defineEmits<{
     (event: 'decide', key: string, decision: ObservationDecision): void;
+    (event: 'select', key: string): void;
   }>();
 
   /** Section names the operator has folded. Collapsed state is display-only. */
@@ -65,9 +68,22 @@
       </h2>
 
       <ul v-show="!isCollapsed(group.group)" class="observation-groups__list">
-        <li v-for="identity in group.identities" :key="identity.key" class="observation-groups__row">
+        <li
+          v-for="identity in group.identities"
+          :key="identity.key"
+          class="observation-groups__row"
+          :class="{ 'is-selected': props.selectedKey === identity.key }"
+        >
           <span class="observation-groups__title">
-            {{ identityTitle(identity) }}
+            <button
+              type="button"
+              class="observation-groups__select"
+              :aria-pressed="props.selectedKey === identity.key"
+              :aria-label="`Isolate ${identityTitle(identity)}`"
+              @click="emit('select', identity.key)"
+            >
+              {{ identityTitle(identity) }}
+            </button>
             <span v-if="identity.decision === 'unknown'" class="observation-groups__new">New</span>
           </span>
           <span class="observation-groups__meta">
@@ -171,6 +187,33 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .observation-groups__select {
+    background: none;
+    border: 0;
+    color: inherit;
+    font: inherit;
+    padding: 0;
+    text-align: left;
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-underline-offset: 0.15em;
+  }
+
+  .observation-groups__select:hover,
+  .observation-groups__select:focus-visible {
+    text-decoration-color: currentColor;
+  }
+
+  .observation-groups__select:focus-visible {
+    outline: 2px solid var(--accent-primary, #4a9eff);
+    outline-offset: 2px;
+  }
+
+  .observation-groups__row.is-selected {
+    background: color-mix(in srgb, var(--accent-primary, #4a9eff) 12%, transparent);
   }
 
   .observation-groups__new {

@@ -9,6 +9,7 @@
 import {
   ObservationDecisions,
   ObservationMedia,
+  ObservationTrends,
   type ObservationDecision,
   type ObservationIdentityView,
   type ObservationMedium,
@@ -16,15 +17,17 @@ import {
   type ObservationSourceDescriptor,
   type ObservationSourceDiagnostics,
   type ObservationSourceReading,
+  type ObservationTrend,
 } from '@/types/observations.type';
 
-const maxima: Record<'sources' | 'identities' | 'readings' | 'media' | 'facets' | 'text', number> = {
+const maxima: Record<'sources' | 'identities' | 'readings' | 'media' | 'facets' | 'text' | 'signal', number> = {
   sources: 64,
   identities: 1000,
   readings: 64,
   media: 8,
   facets: 16,
   text: 512,
+  signal: 128,
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -135,6 +138,15 @@ function parseIdentity(raw: unknown): ObservationIdentityView | null {
   if (raw.vendor !== undefined && vendor === null) return null;
   const rssi = raw.rssi === undefined || raw.rssi === null ? null : finiteNumber(raw.rssi);
   if (raw.rssi !== undefined && raw.rssi !== null && rssi === null) return null;
+  // Trend fields are optional so a payload from an earlier backend still parses. An unknown
+  // trend value is rejected rather than coerced, because it would become a false claim.
+  const trend = parseTrend(raw.trend);
+  if (trend === null) return null;
+  const trendDeltaDb =
+    raw.trendDeltaDb === undefined || raw.trendDeltaDb === null ? undefined : finiteNumber(raw.trendDeltaDb);
+  if (raw.trendDeltaDb !== undefined && raw.trendDeltaDb !== null && trendDeltaDb === null) return null;
+  const signal = parseSignal(raw.signal);
+  if (signal === null) return null;
   return {
     key,
     kind,
@@ -147,7 +159,30 @@ function parseIdentity(raw: unknown): ObservationIdentityView | null {
     packets,
     rssi,
     sources,
+    ...(trend ? { trend } : {}),
+    ...(trendDeltaDb === null || trendDeltaDb === undefined ? {} : { trendDeltaDb }),
+    ...(signal ? { signal } : {}),
   };
+}
+
+/** Parse a trend value. Absent is allowed; an unrecognised value is rejected. */
+function parseTrend(raw: unknown): ObservationTrend | undefined | null {
+  if (raw === undefined || raw === null) return undefined;
+  const known = new Set<string>(Object.values(ObservationTrends));
+  return typeof raw === 'string' && known.has(raw) ? (raw as ObservationTrend) : null;
+}
+
+/** Parse the bounded signal history used for the sparkline. */
+function parseSignal(raw: unknown): number[] | undefined | null {
+  if (raw === undefined || raw === null) return undefined;
+  if (!Array.isArray(raw) || raw.length > maxima.signal) return null;
+  const samples: number[] = [];
+  for (const value of raw) {
+    const sample = finiteNumber(value);
+    if (sample === null) return null;
+    samples.push(sample);
+  }
+  return samples;
 }
 
 /**

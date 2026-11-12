@@ -41,6 +41,19 @@ type SourceReading struct {
 	RSSI *int   `json:"rssi,omitempty"`
 }
 
+// Trend values reported in IdentityView.Trend. They describe the direction of change in
+// received signal strength, which is a proximity proxy, never a velocity.
+const (
+	// TrendUnknown means there is not enough recent history to describe a direction.
+	TrendUnknown = "unknown"
+	// TrendSteady means any change stayed inside the jitter deadband.
+	TrendSteady = "steady"
+	// TrendApproaching means the signal strengthened: the device is likely closer.
+	TrendApproaching = "approaching"
+	// TrendReceding means the signal weakened: the device is likely further away.
+	TrendReceding = "receding"
+)
+
 // IdentityView is the aggregated, renderable state of one identity.
 type IdentityView struct {
 	Key    string `json:"key"`
@@ -58,6 +71,15 @@ type IdentityView struct {
 	Packets   uint64          `json:"packets"`
 	RSSI      *int            `json:"rssi,omitempty"`
 	Sources   []SourceReading `json:"sources"`
+	// Trend describes the direction of change over the recent window: approaching, receding,
+	// steady or unknown. Unknown is never presented as steady.
+	Trend string `json:"trend"`
+	// TrendDeltaDB is the smoothed change in dB across the window. Positive means the signal
+	// strengthened. It is zero when Trend is unknown.
+	TrendDeltaDB float64 `json:"trendDeltaDb"`
+	// Signal is the recent smoothed history as signal strengths in dBm, oldest first, for a
+	// sparkline. It is bounded by the aggregation window and never persisted.
+	Signal []int `json:"signal,omitempty"`
 }
 
 // Snapshot is one complete, self-contained broadcast. It is never a delta: a consumer that

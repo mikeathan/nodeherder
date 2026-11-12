@@ -10,8 +10,9 @@ import type {
   ObservationIdentityView,
   ObservationSnapshot,
   ObservationSourceDescriptor,
+  ObservationTrend,
 } from '@/types/observations.type';
-import { ObservationDecisions } from '@/types/observations.type';
+import { ObservationDecisions, ObservationTrends } from '@/types/observations.type';
 
 /** Log range rings in metres. RSSI error is multiplicative, so linear rings would mislead. */
 export const RANGE_RINGS_M = [1, 3, 10, 30] as const;
@@ -173,6 +174,62 @@ export function groupIdentities(
   return [...sections.entries()]
     .map(([group, members]) => ({ group, identities: members }))
     .sort((a, b) => b.identities.length - a.identities.length || a.group.localeCompare(b.group));
+}
+
+/**
+ * Coarse proximity bands.
+ *
+ * A single anchor measures RSSI only, so the estimate carries 1-3 m of indoor error. Offering a
+ * band alongside the figure keeps the UI from implying precision it cannot have.
+ */
+export const DistanceBands = {
+  Near: 'near',
+  Mid: 'mid',
+  Far: 'far',
+  Unknown: 'unknown',
+} as const;
+
+export type DistanceBand = (typeof DistanceBands)[keyof typeof DistanceBands];
+
+/** Metres at which a reading stops counting as `near`. */
+export const NEAR_BAND_METRES = 2;
+/** Metres at which a reading starts counting as `far`. */
+export const FAR_BAND_METRES = 6;
+
+/** Classify a distance estimate into a band. An absent reading is unknown, never near. */
+export function distanceBand(metres: number | null | undefined): DistanceBand {
+  if (typeof metres !== 'number' || !Number.isFinite(metres)) return DistanceBands.Unknown;
+  if (metres < NEAR_BAND_METRES) return DistanceBands.Near;
+  if (metres < FAR_BAND_METRES) return DistanceBands.Mid;
+  return DistanceBands.Far;
+}
+
+/** Human label for a band. */
+export const DISTANCE_BAND_LABELS: Readonly<Record<DistanceBand, string>> = {
+  near: 'near',
+  mid: 'mid',
+  far: 'far',
+  unknown: 'unknown',
+};
+
+/**
+ * Direction indicator for a trend.
+ *
+ * The arrow is paired with a word everywhere it renders: an arrow alone would be ambiguous, and
+ * pointing up for "approaching" reads as "signal up" only to someone who already knows.
+ */
+export const TREND_PRESENTATION: Readonly<
+  Record<ObservationTrend, { arrow: string; label: string }>
+> = {
+  approaching: { arrow: '↓', label: 'Approaching' },
+  receding: { arrow: '↑', label: 'Receding' },
+  steady: { arrow: '→', label: 'Steady' },
+  unknown: { arrow: '', label: 'No trend yet' },
+};
+
+/** Presentation for a trend value, defaulting to unknown for an absent field. */
+export function trendPresentation(trend: ObservationTrend | undefined) {
+  return TREND_PRESENTATION[trend ?? ObservationTrends.Unknown] ?? TREND_PRESENTATION.unknown;
 }
 
 /** Human summary of a snapshot for the header, avoiding invented precision. */

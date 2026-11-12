@@ -107,6 +107,47 @@ describe('parseObservationSnapshot', () => {
     expect(parsed?.identities[0].rssi).not.toBe(0);
   });
 
+  test('accepts an identity without trend fields so an older backend still parses', () => {
+    const payload = validSnapshot();
+    const parsed = parseObservationSnapshot(payload);
+    expect(parsed).not.toBeNull();
+    expect(parsed?.identities[0].trend).toBeUndefined();
+  });
+
+  test('parses trend, delta and the signal history', () => {
+    const payload = validSnapshot();
+    Object.assign((payload.identities as Record<string, unknown>[])[0], {
+      trend: 'approaching',
+      trendDeltaDb: 4.5,
+      signal: [-70, -68, -65],
+    });
+    const parsed = parseObservationSnapshot(payload);
+    expect(parsed?.identities[0].trend).toBe('approaching');
+    expect(parsed?.identities[0].trendDeltaDb).toBe(4.5);
+    expect(parsed?.identities[0].signal).toEqual([-70, -68, -65]);
+  });
+
+  test('rejects an unrecognised trend rather than coercing it', () => {
+    // A coerced value would become a false claim about movement.
+    const payload = validSnapshot();
+    (payload.identities as Record<string, unknown>[])[0].trend = 'getting-closer';
+    expect(parseObservationSnapshot(payload)).toBeNull();
+  });
+
+  test('rejects a malformed signal history', () => {
+    for (const signal of ['abc', [1, 'two'], { a: 1 }]) {
+      const payload = validSnapshot();
+      (payload.identities as Record<string, unknown>[])[0].signal = signal;
+      expect(parseObservationSnapshot(payload)).toBeNull();
+    }
+  });
+
+  test('rejects an oversized signal history', () => {
+    const payload = validSnapshot();
+    (payload.identities as Record<string, unknown>[])[0].signal = Array.from({ length: 129 }, () => -60);
+    expect(parseObservationSnapshot(payload)).toBeNull();
+  });
+
   test('tolerates an unknown facet name', () => {
     const payload = validSnapshot();
     (payload.sources as Record<string, unknown>[])[0].facets = ['kind', 'futureFacet'];
