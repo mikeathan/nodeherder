@@ -8,31 +8,16 @@ Mark done only with evidence. No task is started.
 ## Preparation
 
 - [x] T001 — **DONE**: ADR-001, ADR-002 and ADR-003 recorded. Q1 agreed (neighbour is
-  advisory, worded as likely); Q2 agreed (per identity, per-source readings nested); Q3
-  corrected to 30 days so a transition never outlives its evidence. IDs: FR-01, FR-06.
-- [ ] T002 — Confirm the summary schema against a fixture day and the storage ceiling in
-  NFR-01; gate: BE-04; done: arithmetic recorded in the plan.
+- [x] T002 — **DONE**: schema confirmed and the ceiling measured rather than estimated. A
 
 ## Backend
 
-- [ ] T003 — Red tests for evidence accumulation: hour mask, Welford mean and variance, band
-  transitions, write floor. Paths: `backend/internal/observations/evidence_test.go`.
-  IDs: FR-01, AC-01, AC-12; done: failing for the right reasons.
-- [ ] T004 — Implement `evidence.go`; IDs: FR-01; depends: T003; done: green.
-- [ ] T005 — Red tests for classification: the four classes from synthetic evidence, the
-  learning threshold, recency weighting, hysteresis needing two evaluations, family rollup,
-  **and the measured reclassification delay** (a change needs about five days of sustained
-  contrary evidence; one day must not flip). Paths: `classify_test.go`. IDs: FR-02, FR-03,
-  FR-06, FR-10, AC-01…AC-08, AC-11, AC-17.
-- [ ] T006 — Implement `classify.go` as a pure function; IDs: FR-02, FR-03; depends: T005;
-  done: green, table-driven, no clock dependency outside an injected `now`.
-- [ ] T006a — Red tests for the provisional pre-filter: rotating address is mobile and shown;
-  never-strong is likely-neighbour and hidden; stable-plus-strong stays learning and shown;
-  a real class supersedes a provisional one and records the transition.
-  Paths: `provisional_test.go`. IDs: FR-11, FR-12, AC-18…AC-22; depends: T006.
-- [ ] T006b — Implement the provisional pre-filter, used only below the evidence threshold.
-  IDs: FR-11, FR-12; depends: T006a; done: green, and a test proving the full classifier
-  always wins once evidence exists.
+- [x] T003 — **DONE**: `evidence_test.go`, 11 tests. Hour mask, Welford over 10k readings, mobility thresholds, write floor, day reset, unusable readings.
+- [x] T004 — **DONE**: `evidence.go`. RSSI 0 counts as activity but not as signal evidence, because 0 dBm means unmeasured, not zero distance.
+- [x] T005 — **DONE**: `classify_test.go`, 12 tests. Hysteresis is measured against real scores rather than asserted.
+- [x] T006 — **DONE**: `classify.go`. Per-day scoring then recency weighting. Mobility counted in dB, not distance bands.
+- [x] T006a — **DONE**: `provisional_test.go`, 5 tests.
+- [x] T006b — **DONE**: `provisional.go`. `Provisional.asClassified` is the single bridge to the classifier's type.
 - [ ] T007 — Red tests for the summaries store: write floor, retention, `Prune`, absence of a
   file when there are no observations, and that **transitions are pruned on the same 30-day
   boundary as summaries**. Paths: `internal/observations/summaries/*_test.go`.

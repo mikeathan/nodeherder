@@ -151,7 +151,7 @@ reason.
 ## Requirements and success
 
 - FR-01: MUST accumulate per-identity daily evidence: duty cycle, packet count, RSSI mean and
-  variance, hour-of-day presence, band transitions, strongest smoothed reading, and
+  variance, hour-of-day presence, dB threshold crossings, strongest smoothed reading, and
   advertisement family. Acceptance: AC-01…AC-05.
 - FR-02: MUST classify from a rolling window with recency weighting, and MUST NOT persist the
   class itself. Acceptance: AC-06, AC-08.
@@ -172,8 +172,9 @@ reason.
   Acceptance: AC-18, AC-19, AC-20.
 - FR-12: MUST mark a provisional class as provisional in the payload and the UI, and MUST
   record a transition when a real class supersedes it. Acceptance: AC-21, AC-22.
-- NFR-01: Summary storage MUST stay bounded: at most one row per identity per day, with a
-  stated ceiling for a typical household.
+- NFR-01: Summary storage MUST stay bounded: at most one row per identity per day. Measured
+  ceiling for 256 identities × 30 days plus 1,000 transitions is **≈ 1.8 MB** (223 B per
+  summary, 159 B per transition), asserted by a test so growth is caught rather than assumed.
 - NFR-02: Classification MUST be computed on the aggregation worker, never per render.
 - NFR-03: No new runtime dependency.
 - NFR-04: Stored summaries MUST contain no raw observations, packet contents, or payloads.

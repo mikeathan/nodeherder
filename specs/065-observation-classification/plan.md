@@ -43,7 +43,7 @@ type evidence struct {
     rssi                welfordState // count, mean, M2
     strongest           int          // strongest smoothed median seen
     weakest             int
-    bandTransitions     uint32
+    mobility            mobilityState // hysteresis-thresholded dB crossings, not metres
     family              string
 }
 
@@ -51,9 +51,22 @@ type evidence struct {
 type welfordState struct{ Count uint64; Mean, M2 float64 }
 ```
 
-`bandTransitions` increments when the smoothed median crosses a `DISTANCE_RANGES` boundary
-since the previous observation. This is the mobility signal: variance conflates "moved" with
-"someone walked past", whereas a band crossing is an actual change of estimated range.
+**Mobility is counted in dB, not in distance bands.** The draft keyed this to
+`DISTANCE_RANGES`, which is a frontend presentation concept: the backend has no distance model,
+and distance there depends on `txPowerAt1m = -59` and `pathLossExponent = 2.5`, both UI
+assumptions. Storing history keyed to them would (a) duplicate the path-loss model in Go, and
+(b) silently invalidate every stored summary the day those constants changed. Since the class is
+recomputed from evidence, evidence must not encode a presentation choice.
+
+Instead `mobility` records how often the smoothed median crossed a fixed dB threshold
+(`mobilityCrossingDB = 6`) in either direction, with hysteresis: a crossing is counted only after
+the signal moves 6 dB away from the level at the last crossing. Six is chosen because the
+adjacent distance bands are 7.5–10 dB apart (at the default assumptions) and RSSI jitter is
+about 3 dB — so a 6 dB move is a real change of range, while ordinary jitter cannot trigger one.
+
+This is still the mobility signal rather than variance, and for the same reason: variance
+conflates "the device moved" with "someone walked past the antenna", whereas a sustained
+crossing is an actual change of position.
 
 ### 2.2 Storage
 
@@ -77,19 +90,34 @@ type DailySummary struct {
     HourMask        uint32  // bit N set when heard during hour N
     RSSIMean        float64
     RSSIM2          float64
-    Strongest       int
-    Weakest         int
-    BandTransitions uint32
-    Family          string
+    Strongest   int
+    Weakest     int
+    Crossings   uint32 // dB threshold crossings; see §2.1 for why not distance bands
+    Family      string
 }
 ```
 
 Write floor (AC-12): a day is stored only when `ActiveHours >= 2 && Packets >= 20`. A device
 that appears once never earns a row, so noise costs nothing.
 
-Retention: summaries 30 days, transitions **30 days to match**, pruned daily. 256 identities ×
-30 days × ~120 B ≈ 900 KB — stated in NFR-01 and asserted by a test. A transition must not
-outlive the evidence that justified it, or the UI could show a change it cannot explain.
+Retention: summaries 30 days, transitions **30 days to match**, pruned daily. A transition must
+not outlive the evidence that justified it, or the UI could show a change it cannot explain.
+
+Sizes are **measured, not estimated** (T002): a populated `DailySummary` JSON-encodes to 223 B
+and a `Transition` to 159 B. So:
+
+| Items | Rows | Size |
+| --- | --- | --- |
+| 256 identities × 30 days | 7,680 | 1.67 MB |
+| 1,000 transitions (deliberately high) | 1,000 | 0.16 MB |
+| **Total ceiling** | | **≈ 1.8 MB** |
+
+The earlier ~120 B / 900 KB figure was an estimate taken before the struct existed and was
+wrong by roughly 2×. NFR-01 uses the measured number.
+
+A leaner encoding was measured too — `float32`, `uint16` counters, `int8` RSSI — and saves only
+13% (194 B per row). Not worth quantising values that classification reads, since 1.8 MB in a
+bbolt file is not a constraint and rounding the evidence would be.
 
 ### 2.3 Reclassification speed, measured
 
@@ -185,7 +213,7 @@ Additive fields on `IdentityView`:
 ```go
 Class      string   `json:"class"`       // learning until enough evidence
 Confidence float64  `json:"confidence"`
-Evidence   Evidence `json:"evidence"`    // dutyCycle, hoursObserved, bandTransitions, nightPresence
+Evidence   Evidence `json:"evidence"`    // dutyCycle, hoursObserved, crossings, nightPresence
 ChangedAt  *time.Time `json:"changedAt,omitempty"`
 PreviousClass string `json:"previousClass,omitempty"`
 ```

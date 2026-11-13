@@ -27,7 +27,7 @@ Additive fields on the existing identity object:
   "evidence": {
     "dutyCycle": 0.34,
     "hoursObserved": 41,
-    "bandTransitions": 27,
+    "crossings": 27,
     "nightPresence": false
   },
   "changedAt": "2026-11-10T06:12:00Z",
@@ -42,7 +42,7 @@ Additive fields on the existing identity object:
 | `confidence` | number 0–1 | Margin over the runner-up class; 0 while learning |
 | `evidence.dutyCycle` | number 0–1 | Fraction of observed hours present, over the window |
 | `evidence.hoursObserved` | integer | Hours of evidence behind the class |
-| `evidence.bandTransitions` | integer | Distance-band crossings, the mobility signal |
+| `evidence.crossings` | integer | Distance-band crossings, the mobility signal |
 | `evidence.nightPresence` | boolean | Heard between 00:00 and 05:00 UTC |
 | `changedAt` | RFC 3339 UTC, optional | When the class last changed |
 | `previousClass` | string, optional | The class before that change |
