@@ -5,7 +5,11 @@
   import { ObservationViews } from '@/types/observations.type';
   import {
     RADAR_SPANS_M,
+    autoRadarSpan,
+    distanceRSSI,
+    estimateDistanceMetres,
     isRecentArrival,
+    stepRadarSpan,
     snapshotSummary,
     sourceIsSilent,
     sourceStatus,
@@ -58,6 +62,32 @@
   function viewLabel(mode: ObservationViewMode): string {
     return OBSERVATION_VIEW_LABELS[mode];
   }
+
+  /**
+   * Zoom by one stop. `radarSpan` is a span in metres, so zooming in means a *smaller* number.
+   *
+   * When the span is null the radar is in Auto and follows the data, so the first step starts from
+   * whatever is currently drawn rather than from an arbitrary preset — otherwise pressing "+" could
+   * jump to a wider range than what is on screen.
+   */
+  const currentSpan = computed(() => radarSpan.value ?? autoRadarSpan(scopedMetres.value));
+
+  const scopedMetres = computed(() =>
+    scoped.value.flatMap((identity) => {
+      const metres = estimateDistanceMetres(distanceRSSI(identity));
+      return metres === null ? [] : [metres];
+    }),
+  );
+
+  function zoom(direction: -1 | 1): void {
+    radarSpan.value = stepRadarSpan(currentSpan.value, direction);
+  }
+
+  const canZoomIn = computed(() => currentSpan.value > RADAR_SPANS_M[0]);
+  const canZoomOut = computed(() => currentSpan.value < RADAR_SPANS_M[RADAR_SPANS_M.length - 1]);
+
+  /** Current range, so the zoom direction is never ambiguous. */
+  const rangeLabel = computed(() => `${currentSpan.value} m`);
 
   const summary = computed(() => snapshotSummary(snapshot.value));
   const newCount = computed(() => visible.value.filter((identity) => isRecentArrival(identity)).length);
@@ -208,11 +238,34 @@
             @select="selectIdentity"
           />
           <!--
-            Scale control. Auto follows the data so a nearby-only household fills the canvas;
-            a fixed span keeps the scale still, which is what makes small movements visible.
+            Zoom control. Plus zooms in, which *narrows* the span: a narrower span draws the same
+            space larger, and that is the direction the word means. The readout states the current
+            range so the direction is never ambiguous, and Auto returns to following the data.
           -->
-          <div class="wireless-viewer__scale" role="group" aria-label="Radar scale">
-            <span class="wireless-viewer__scale-label">Scale</span>
+          <div class="wireless-viewer__scale" role="group" aria-label="Radar range">
+            <button
+              type="button"
+              class="wireless-viewer__zoom"
+              :disabled="!canZoomIn"
+              aria-label="Zoom in"
+              title="Zoom in"
+              @click="zoom(-1)"
+            >
+              +
+            </button>
+            <span class="wireless-viewer__range" aria-live="polite">
+              {{ rangeLabel }}
+            </span>
+            <button
+              type="button"
+              class="wireless-viewer__zoom"
+              :disabled="!canZoomOut"
+              aria-label="Zoom out"
+              title="Zoom out"
+              @click="zoom(1)"
+            >
+              −
+            </button>
             <button
               type="button"
               class="wireless-viewer__scale-option"
@@ -221,17 +274,6 @@
               @click="radarSpan = null"
             >
               Auto
-            </button>
-            <button
-              v-for="span in RADAR_SPANS_M"
-              :key="span"
-              type="button"
-              class="wireless-viewer__scale-option"
-              :class="{ 'is-active': radarSpan === span }"
-              :aria-pressed="radarSpan === span"
-              @click="radarSpan = span"
-            >
-              {{ span }} m
             </button>
           </div>
         </div>
@@ -411,12 +453,39 @@
     flex-wrap: wrap;
   }
 
-  .wireless-viewer__scale-label {
-    color: var(--text-muted, #8b9bab);
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    margin-right: 0.25rem;
+  .wireless-viewer__zoom {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border: 1px solid var(--border-subtle, #dee2e6);
+    border-radius: 50%;
+    background: var(--surface, #fff);
+    color: var(--text-muted, #495057);
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .wireless-viewer__zoom:hover:not(:disabled) {
+    border-color: var(--accent-border, #a5d8ff);
+    color: var(--accent-strong, #1864ab);
+  }
+
+  .wireless-viewer__zoom:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  /* The range readout is the anchor between the two buttons, so "in" and "out" are unambiguous. */
+  .wireless-viewer__range {
+    min-width: 3.5rem;
+    text-align: center;
+    font-size: 0.8rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted, #495057);
   }
 
   .wireless-viewer__scale-option {

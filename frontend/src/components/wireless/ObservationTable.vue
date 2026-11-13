@@ -9,7 +9,7 @@
   import { computed } from 'vue';
   import type { ObservationDecision, ObservationIdentityView } from '@/types/observations.type';
   import { ObservationDecisions } from '@/types/observations.type';
-  import { identityTitle, isEphemeralIdentity } from '@/domain/observations/presentation';
+  import { identityTitle, isEphemeralIdentity, kindLabel } from '@/domain/observations/presentation';
   import ClassBadge from './ClassBadge.vue';
   import UiButton from '@/components/ui/UiButton.vue';
 
@@ -102,7 +102,9 @@
                  them: the operator's decision is the authority. -->
             <ClassBadge :classification="identity.classification" compact />
           </td>
-          <td>{{ identity.kind }}</td>
+          <!-- Rendered through kindLabel: the wire value is "adv", which is jargon for what is
+               simply Bluetooth. -->
+          <td>{{ kindLabel(identity.kind) }}</td>
           <td>
             <span :title="identity.key">{{ addressType(identity) }}</span>
           </td>

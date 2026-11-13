@@ -9,7 +9,12 @@
   import { computed } from 'vue';
   import type { ObservationIdentityView } from '@/types/observations.type';
   import { ObservationFacets, ObservationDecisions } from '@/types/observations.type';
-  import { DISTANCE_RANGES, vendorHex } from '@/domain/observations/presentation';
+  import {
+    DISTANCE_RANGES,
+    isUsefulFacet,
+    kindLabel,
+    vendorHex,
+  } from '@/domain/observations/presentation';
 
   const props = defineProps<{
     identities: readonly ObservationIdentityView[];
@@ -32,21 +37,37 @@
     (event: 'update:showDemoted', value: boolean): void;
   }>();
 
-  /** Facets this component knows how to render, intersected with what sources declare. */
+  /**
+   * Facets this component knows how to render, intersected with what sources declare.
+   *
+   * A facet is then dropped when it has only one possible value, because such a filter cannot do
+   * anything: with one option, both states match everything. In an ordinary household that is
+   * exactly the Kind facet, since every device is `adv`. The declaration is still honoured — this
+   * only decides whether a control is worth showing today.
+   */
   const supported = computed(() =>
-    props.facets.filter((facet) => facet === ObservationFacets.Kind || facet === ObservationFacets.Vendor),
+    props.facets.filter(
+      (facet) =>
+        (facet === ObservationFacets.Kind || facet === ObservationFacets.Vendor) &&
+        isUsefulFacet(valuesFor(facet)),
+    ),
   );
 
-  /** Distinct values per supported facet, taken from the current identities. */
+  /** Distinct values for one facet, taken from the current identities. */
+  function valuesFor(facet: string): string[] {
+    const values = new Set<string>();
+    for (const identity of props.identities) {
+      const value = facetValue(identity, facet);
+      if (value) values.add(value);
+    }
+    return [...values].sort();
+  }
+
+  /** Distinct values per supported facet, memoised per render. */
   const options = computed(() => {
     const byFacet = new Map<string, string[]>();
     for (const facet of supported.value) {
-      const values = new Set<string>();
-      for (const identity of props.identities) {
-        const value = facetValue(identity, facet);
-        if (value) values.add(value);
-      }
-      byFacet.set(facet, [...values].sort());
+      byFacet.set(facet, valuesFor(facet));
     }
     return byFacet;
   });
@@ -56,6 +77,11 @@
     // Vendors are numeric company identifiers; show the hex form people recognise.
     if (facet === ObservationFacets.Vendor) return vendorHex(identity.vendor);
     return '';
+  }
+
+  /** Readable label for a facet value: `adv` reads as "Bluetooth", not as jargon. */
+  function facetValueLabel(facet: string, value: string): string {
+    return facet === ObservationFacets.Kind ? kindLabel(value) : value;
   }
 
   function facetLabel(facet: string): string {
@@ -145,7 +171,7 @@
           :checked="isSelected(facet, value)"
           @change="toggle(facet, value)"
         />
-        <span>{{ value }}</span>
+        <span>{{ facetValueLabel(facet, value) }}</span>
       </label>
     </fieldset>
 

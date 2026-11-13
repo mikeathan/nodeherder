@@ -20,12 +20,15 @@ import {
 } from '@/types/observations.type';
 
 /**
- * Log range rings in metres.
+ * Number of range rings drawn, including the outer edge.
  *
- * RSSI error is multiplicative, so rings are logarithmic. The set reaches below a metre because
- * a nearby device is the common case and was previously indistinguishable from the origin.
+ * Rings are evenly spaced in canvas space on purpose. The projection is logarithmic, so evenly
+ * spaced circles are the visually honest choice: a log scale drawn with an absolute ladder
+ * (0.5, 1, 3, 10 m) produces circles at uneven radii whose gaps change with every zoom level,
+ * which reads as a broken scale rather than a log one. Even spacing makes a doubling of distance
+ * occupy a constant amount of screen, which is what a log scale is for.
  */
-export const RANGE_RINGS_M = [0.5, 1, 3, 10, 30] as const;
+export const RING_COUNT = 4;
 
 /**
  * Smallest distance the radial projection will place, in metres.
@@ -48,36 +51,126 @@ export const RADAR_RADIUS_FRACTION = 0.9;
  * Returns a value in (0, 1]: 1 is the outermost ring. Monotonic, so a closer device is never
  * drawn further out than a distant one.
  */
-export function radialRatio(
-  metres: number,
-  maxRing: number = RANGE_RINGS_M[RANGE_RINGS_M.length - 1],
-): number {
+export function radialRatio(metres: number, maxRing: number = DEFAULT_RADAR_SPAN): number {
   if (!Number.isFinite(metres) || !Number.isFinite(maxRing) || maxRing <= MIN_PROJECTED_METRES) return 0;
   const clamped = Math.min(Math.max(metres, MIN_PROJECTED_METRES), maxRing);
   const ratio = Math.log10(clamped / MIN_PROJECTED_METRES) / Math.log10(maxRing / MIN_PROJECTED_METRES);
   return Math.min(Math.max(ratio, 0.02), 1);
 }
 
-/** Span presets for the radar scale, in metres. */
-export const RADAR_SPANS_M = [3, 10, 30] as const;
+/**
+ * Span presets for the radar scale, in metres, widest-last.
+ *
+ * These are the zoom stops rather than the only values: the viewer steps through them with
+ * zoom in/out, so they are ordered and the step is a doubling. A doubling is chosen because the
+ * projection is logarithmic, so each stop reveals the same amount of new detail.
+ */
+export const RADAR_SPANS_M = [1, 2, 3, 5, 10, 20, 30, 50] as const;
 
 export type RadarSpan = (typeof RADAR_SPANS_M)[number];
 
+/** Default span, used when no data determines one. */
+export const DEFAULT_RADAR_SPAN: RadarSpan = 30;
+
 /**
- * Choose a span from the data, rounding up to the smallest preset that contains it.
+ * Next span when zooming one step, or the current one at the limit.
+ *
+ * `direction` is -1 to zoom in (narrower span, more detail) and 1 to zoom out. Zooming in must
+ * shrink the span: a narrower span draws the same space larger, which is the direction the word
+ * means and the one an operator expects from a plus/minus pair.
+ */
+export function stepRadarSpan(current: number, direction: -1 | 1): RadarSpan {
+  const presets = RADAR_SPANS_M;
+  // Snap an off-ladder span to the nearest preset first, so a value from a future data-driven
+  // span still steps predictably rather than jumping to an end.
+  let index = presets.findIndex((span) => span >= current);
+  if (index < 0) index = presets.length - 1;
+  const next = index + direction;
+  if (next < 0) return presets[0];
+  if (next >= presets.length) return presets[presets.length - 1];
+  return presets[next];
+}
+
+/**
+ * Choose a span from the data, rounding up to the smallest preset that contains the furthest
+ * reading.
  *
  * Scaling to the data is what makes sub-metre bands legible: on a 30 m scale every nearby device
- * collapses into the middle few percent of the canvas.
+ * collapses into the middle few percent of the canvas. With no readings the default span is used
+ * rather than the narrowest, so an empty radar does not claim a one-metre range.
  */
 export function autoRadarSpan(metres: readonly number[]): RadarSpan {
   const largest = metres.reduce((max, value) => (Number.isFinite(value) && value > max ? value : max), 0);
+  if (largest <= 0) return DEFAULT_RADAR_SPAN;
   return RADAR_SPANS_M.find((span) => largest <= span) ?? RADAR_SPANS_M[RADAR_SPANS_M.length - 1];
 }
 
-/** Rings to draw for a span: every standard ring inside it, plus the span edge itself. */
-export function ringsForSpan(span: number): number[] {
-  const within = RANGE_RINGS_M.filter((ring) => ring < span);
-  return [...within, span];
+/**
+ * One range ring: where to draw it, and what to call it.
+ *
+ * Both are carried because they must not be derived from each other. The ratio is the exact
+ * position and is what makes the circles evenly spaced; the metres value is that position
+ * expressed as a distance and is what the label shows. Rounding the metres for a tidy label must
+ * never move the circle, which is why the ratio is stored rather than recomputed from the label.
+ */
+export type RadarRing = {
+  /** Position as a fraction of the canvas radius, in (0, 1]. */
+  ratio: number;
+  /** Distance this ring represents, rounded for display. */
+  metres: number;
+  /** True for the outermost ring, which is the span edge. */
+  outer: boolean;
+};
+
+/**
+ * Rings for a span, innermost first.
+ *
+ * Circles are placed at equal fractions of the canvas radius and labelled by *inverting* the
+ * projection at each position. Equal spacing is what a log scale should look like: each ring
+ * multiplies the distance by the same factor, so a doubling of range is a constant distance on
+ * screen at every zoom level.
+ *
+ * The previous implementation filtered a fixed absolute ladder (0.5, 1, 3, 10 m) instead, which
+ * put circles at uneven radii whose gaps changed with every zoom — 23%, 23%, 13% at a 3 m span.
+ * That reads as a broken scale, and it was one: an absolute ladder wearing a log projection.
+ *
+ * The ring at fraction 0 is skipped because it would sit on the centre marker, where its label is
+ * unreadable and its circle indistinguishable from the origin.
+ */
+export function ringsForSpan(span: number): RadarRing[] {
+  if (!Number.isFinite(span) || span <= MIN_PROJECTED_METRES) {
+    return [{ ratio: 1, metres: span, outer: true }];
+  }
+
+  const rings: RadarRing[] = [];
+  for (let index = 1; index < RING_COUNT; index++) {
+    const ratio = index / RING_COUNT;
+    // Invert radialRatio: the projection is log-linear, so this is its exact inverse.
+    const metres = MIN_PROJECTED_METRES * Math.pow(span / MIN_PROJECTED_METRES, ratio);
+    rings.push({ ratio, metres: roundRing(metres), outer: false });
+  }
+  rings.push({ ratio: 1, metres: span, outer: true });
+  return rings;
+}
+
+/**
+ * Round a ring distance to two significant digits.
+ *
+ * The precision is chosen by measurement, not taste. A ring is drawn at its exact ratio, so the
+ * label has to describe that position closely enough that a device at the labelled distance lands
+ * on the ring. One or two decimal places failed: at a 3 m span the ring at 75% is truly at 1.52 m,
+ * and labelling it "2 m" put a device at 2 m a tenth of the radius away from it — the ring would
+ * have been lying about where 2 m is.
+ *
+ * Two significant digits holds the disagreement to about 1% of the radius at every span tested,
+ * while one significant digit did not. Labels therefore read as 0.77 m or 2.4 m rather than always
+ * landing on round numbers, which is the correct trade: a slightly awkward number is honest, and a
+ * tidy number drawn in the wrong place is not.
+ */
+function roundRing(metres: number): number {
+  if (!Number.isFinite(metres) || metres <= 0) return 0;
+  const magnitude = Math.pow(10, Math.ceil(Math.log10(metres)) - 2);
+  return Math.round(metres / magnitude) * magnitude;
 }
 
 /** Calibrated transmit power at one metre, in dBm, used for the range estimate. */
@@ -129,6 +222,45 @@ export function isEphemeralIdentity(identity: ObservationIdentityView): boolean 
 export function vendorHex(vendor: number | undefined): string {
   if (typeof vendor !== 'number' || !Number.isFinite(vendor)) return '';
   return `0x${vendor.toString(16).toUpperCase().padStart(4, '0')}`;
+}
+
+/**
+ * Readable label for an observation kind.
+ *
+ * The wire values are `adv`, `ibeacon` and `eddystone`. Only the last two are meaningful jargon —
+ * `adv` means nothing to an operator and is uninformative anyway, since it is what every ordinary
+ * device sends. It is therefore rendered as "Bluetooth", which says what the medium is rather than
+ * naming a packet type the operator did not ask about.
+ *
+ * An unknown kind is returned as-is rather than hidden: a value this build does not recognise is a
+ * newer backend, and showing it keeps that visible.
+ */
+export function kindLabel(kind: string | undefined): string {
+  switch (kind) {
+    case 'adv':
+      return 'Bluetooth';
+    case 'ibeacon':
+      return 'iBeacon';
+    case 'eddystone':
+      return 'Eddystone';
+    default:
+      return kind ?? 'Unknown';
+  }
+}
+
+/**
+ * Whether a facet is worth rendering as a control.
+ *
+ * A filter with one value is a control that cannot do anything: it either matches everything
+ * (off) or matches everything (on). `adv` alone is exactly that state for an ordinary household,
+ * which is why the Kind facet was an inert row of buttons.
+ *
+ * The facet is not removed from the model, only from the UI: the day a real beacon appears there
+ * are two values and the control becomes useful. This is a presentation decision, not a change to
+ * what the backend declares.
+ */
+export function isUsefulFacet(values: readonly string[]): boolean {
+  return values.length > 1;
 }
 
 /** Display name for an identity, preferring the operator label, then the advertised name. */

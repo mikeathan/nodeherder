@@ -142,19 +142,62 @@ test.describe('wireless viewer', () => {
     await expect(page.locator('.observation-focus')).toHaveCount(0);
   });
 
-  test('the radar scale can be fixed manually and exposes finer bands', async ({ page }) => {
+  test('the radar scale zooms in and out with an unambiguous direction', async ({ page }) => {
     await signIn(page, '/wireless');
 
     // Auto is the default: the scale follows the data.
     const auto = page.getByRole('button', { name: 'Auto', exact: true });
     await expect(auto).toHaveAttribute('aria-pressed', 'true');
 
-    // A fixed span keeps the scale still while readings change.
-    await page.getByRole('button', { name: '3 m', exact: true }).click();
-    await expect(page.getByRole('button', { name: '3 m', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    const range = page.locator('.wireless-viewer__range');
+    const zoomIn = page.getByRole('button', { name: 'Zoom in', exact: true });
+    const zoomOut = page.getByRole('button', { name: 'Zoom out', exact: true });
+
+    // Zooming in must *narrow* the range: a narrower span draws the same space larger, which is
+    // the direction the word means. This is the assertion that would have caught an inverted scale.
+    const before = Number((await range.textContent())?.replace(' m', ''));
+    await zoomIn.click();
+    const afterIn = Number((await range.textContent())?.replace(' m', ''));
+    expect(afterIn).toBeLessThan(before);
+
+    // Zooming out widens it again.
+    await zoomOut.click();
+    expect(Number((await range.textContent())?.replace(' m', ''))).toBeGreaterThan(afterIn);
+
+    // Stepping the scale leaves Auto, because the operator has taken control.
     await expect(auto).toHaveAttribute('aria-pressed', 'false');
 
-    // Sub-metre bands exist and are exclusive.
+    // Returning to Auto restores following the data.
+    await auto.click();
+    await expect(auto).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  test('the radar rings keep even spacing at every zoom level', async ({ page }) => {
+    await signIn(page, '/wireless');
+
+    // The bug this guards: rings used to come from a fixed absolute ladder, so their gaps changed
+    // with zoom (23%, 23%, 13% at a 3 m span) and the scale read as broken.
+    const radii = async () =>
+      page.locator('.observation-radar__ring').evaluateAll((nodes) =>
+        nodes
+          .map((node) => Number(node.getAttribute('r')))
+          .sort((a, b) => a - b),
+      );
+
+    await page.getByRole('button', { name: 'Zoom in', exact: true }).click();
+    const narrow = await radii();
+    await page.getByRole('button', { name: 'Zoom out', exact: true }).click();
+    const narrowThenWide = await radii();
+
+    for (const set of [narrow, narrowThenWide]) {
+      for (let index = 1; index < set.length; index++) {
+        expect(set[index] - set[index - 1]).toBeCloseTo(set[0], 0);
+      }
+    }
+  });
+
+  test('sub-metre distance bands remain available', async ({ page }) => {
+    await signIn(page, '/wireless');
     const fine = page.getByRole('button', { name: '0.5–1 m', exact: true });
     await expect(fine).toBeVisible();
     await fine.click();

@@ -26,6 +26,12 @@ import {
   autoRadarSpan,
   radialRatio,
   ringsForSpan,
+  stepRadarSpan,
+  kindLabel,
+  isUsefulFacet,
+  RING_COUNT,
+  DEFAULT_RADAR_SPAN,
+  RADAR_SPANS_M,
   CLASS_PRESENTATION,
   classPresentation,
   classificationEvidence,
@@ -389,31 +395,131 @@ describe('radialRatio', () => {
 
 describe('autoRadarSpan', () => {
   test('picks the smallest preset that contains the furthest reading', () => {
-    expect(autoRadarSpan([0.4, 1.2])).toBe(3);
+    expect(autoRadarSpan([0.4, 1.2])).toBe(2);
     expect(autoRadarSpan([2, 8])).toBe(10);
     expect(autoRadarSpan([4, 25])).toBe(30);
   });
 
-  test('falls back to the largest preset when a reading exceeds all of them', () => {
-    expect(autoRadarSpan([120])).toBe(30);
+  test('falls back to the widest preset when a reading exceeds all of them', () => {
+    expect(autoRadarSpan([120])).toBe(50);
   });
 
-  test('an empty or unmeasured set still yields a usable span', () => {
-    expect(autoRadarSpan([])).toBe(3);
-    expect(autoRadarSpan([Number.NaN])).toBe(3);
+  test('an empty or unmeasured set yields the default, not the narrowest', () => {
+    // A narrow default would claim a one-metre range over an empty radar, which reads as a broken
+    // scale rather than as "nothing here".
+    expect(autoRadarSpan([])).toBe(DEFAULT_RADAR_SPAN);
+    expect(autoRadarSpan([Number.NaN])).toBe(DEFAULT_RADAR_SPAN);
+  });
+});
+
+describe('stepRadarSpan', () => {
+  test('zooming in narrows the span', () => {
+    // The direction the word means: a narrower span draws the same space larger.
+    expect(stepRadarSpan(30, -1)).toBe(20);
+    expect(stepRadarSpan(10, -1)).toBe(5);
+  });
+
+  test('zooming out widens the span', () => {
+    expect(stepRadarSpan(10, 1)).toBe(20);
+    expect(stepRadarSpan(3, 1)).toBe(5);
+  });
+
+  test('stops at the limits rather than wrapping', () => {
+    const narrowest = RADAR_SPANS_M[0];
+    const widest = RADAR_SPANS_M[RADAR_SPANS_M.length - 1];
+    expect(stepRadarSpan(narrowest, -1)).toBe(narrowest);
+    expect(stepRadarSpan(widest, 1)).toBe(widest);
+  });
+
+  test('an off-ladder span snaps to a preset before stepping', () => {
+    // A span can end up off-ladder once it follows the data; stepping must stay predictable.
+    expect(RADAR_SPANS_M).toContain(stepRadarSpan(7, 1));
+    expect(RADAR_SPANS_M).toContain(stepRadarSpan(7, -1));
   });
 });
 
 describe('ringsForSpan', () => {
-  test('includes every standard ring inside the span plus the span edge', () => {
-    expect(ringsForSpan(3)).toEqual([0.5, 1, 3]);
-    expect(ringsForSpan(10)).toEqual([0.5, 1, 3, 10]);
+  test('rings are evenly spaced on the canvas at every span', () => {
+    // This is the property that was broken: the old implementation filtered an absolute ladder, so
+    // gaps changed with zoom (23%, 23%, 13% at a 3 m span) and the scale read as broken.
+    for (const span of [1, 3, 10, 30, 50]) {
+      const rings = ringsForSpan(span);
+      const gaps = rings.slice(1).map((ring, index) => ring.ratio - rings[index].ratio);
+      for (const gap of gaps) {
+        expect(gap).toBeCloseTo(1 / RING_COUNT, 10);
+      }
+    }
   });
 
-  test('never repeats the edge as both a standard ring and the span', () => {
+  test('the outer ring is the span edge, at full radius', () => {
+    for (const span of [1, 3, 10, 30, 50]) {
+      const rings = ringsForSpan(span);
+      const outer = rings[rings.length - 1];
+      expect(outer.ratio).toBe(1);
+      expect(outer.metres).toBe(span);
+      expect(outer.outer).toBe(true);
+    }
+  });
+
+  test('ring labels increase and stay inside the span', () => {
     const rings = ringsForSpan(30);
-    expect(new Set(rings).size).toBe(rings.length);
-    expect(rings[rings.length - 1]).toBe(30);
+    for (let index = 1; index < rings.length; index++) {
+      expect(rings[index].metres).toBeGreaterThan(rings[index - 1].metres);
+    }
+    for (const ring of rings) {
+      expect(ring.metres).toBeLessThanOrEqual(30);
+      expect(ring.metres).toBeGreaterThan(0);
+    }
+  });
+
+  test('a ring label agrees with the projection it was drawn at', () => {
+    // The ring and the blips go through the same projection, so a device at a ring's labelled
+    // distance must land on that ring. This is the property that forbids coarse rounding: at a 3 m
+    // span the 75% ring is truly at 1.52 m, and labelling it "2 m" would put a device at 2 m a
+    // tenth of the radius away from the circle that claims to be 2 m.
+    //
+    // The tolerance is measured, not guessed: two significant digits holds it to under 0.02 of the
+    // radius across every span.
+    for (const span of [1, 2, 3, 5, 10, 20, 30, 50]) {
+      for (const ring of ringsForSpan(span)) {
+        expect(Math.abs(radialRatio(ring.metres, span) - ring.ratio)).toBeLessThan(0.02);
+      }
+    }
+  });
+
+  test('never draws a ring at the exact centre', () => {
+    // Fraction 0 would sit on the centre marker, where the label is unreadable.
+    for (const ring of ringsForSpan(30)) {
+      expect(ring.ratio).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe('kindLabel', () => {
+  test('renders the wire values as words an operator reads', () => {
+    // "adv" is jargon for what is simply Bluetooth, and it is on almost every row.
+    expect(kindLabel('adv')).toBe('Bluetooth');
+    expect(kindLabel('ibeacon')).toBe('iBeacon');
+    expect(kindLabel('eddystone')).toBe('Eddystone');
+  });
+
+  test('passes an unknown kind through rather than hiding it', () => {
+    // An unrecognised value means a newer backend; showing it keeps that visible.
+    expect(kindLabel('wifi.probe')).toBe('wifi.probe');
+    expect(kindLabel(undefined)).toBe('Unknown');
+  });
+});
+
+describe('isUsefulFacet', () => {
+  test('one value is not worth a control', () => {
+    // With a single option both states match everything, so the filter cannot do anything. In an
+    // ordinary household that is exactly the Kind facet, since every device is "adv".
+    expect(isUsefulFacet(['adv'])).toBe(false);
+    expect(isUsefulFacet([])).toBe(false);
+  });
+
+  test('two or more values are worth a control', () => {
+    expect(isUsefulFacet(['adv', 'ibeacon'])).toBe(true);
   });
 });
 

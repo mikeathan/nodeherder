@@ -114,12 +114,19 @@
 
   const unplaced = computed(() => props.identities.length - placed.value.length);
 
-  /** Ring circles with their labels, drawn outermost first so labels stay legible. */
+  /**
+   * Ring circles with their labels, drawn outermost first so labels stay legible.
+   *
+   * Radius comes from the ring's own ratio, not from re-projecting its rounded label: rounding
+   * 0.67 m to "0.7 m" would otherwise move the circle and reintroduce the uneven gaps the ratio
+   * exists to prevent.
+   */
   const rings = computed(() =>
     ringsForSpan(activeSpan.value)
-      .map((metres) => ({
-        metres,
-        radius: radialRatio(metres, activeSpan.value) * outerRadius * RADAR_RADIUS_FRACTION,
+      .map((ring) => ({
+        metres: ring.metres,
+        outer: ring.outer,
+        radius: ring.ratio * outerRadius * RADAR_RADIUS_FRACTION,
       }))
       .reverse(),
   );
@@ -142,7 +149,7 @@
 
       <circle
         v-for="ring in rings"
-        :key="ring.metres"
+        :key="`ring-${ring.radius}`"
         class="observation-radar__ring"
         cx="50"
         cy="50"
@@ -151,7 +158,7 @@
       />
       <text
         v-for="ring in rings"
-        :key="`label-${ring.metres}`"
+        :key="`label-${ring.radius}`"
         class="observation-radar__ring-label"
         :x="50 + 1"
         :y="50 - ring.radius - 1"
