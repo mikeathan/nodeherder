@@ -22,8 +22,9 @@
     sourceIsSilent,
     sourceStatus,
     vendorHex,
-    withinDistance,
-    type DistancePreset,
+    ANY_DISTANCE_RANGE,
+    distanceRangeById,
+    withinDistanceRange,
   } from '@/domain/observations/presentation';
   import ObservationRadar from './ObservationRadar.vue';
   import ObservationTable from './ObservationTable.vue';
@@ -45,8 +46,8 @@
   /** Show only identities that appeared within the recent window. */
   const onlyNew = ref(false);
   const viewMode = ref<ObservationViewMode>(ObservationViews.Radar);
-  /** Inclusive metre limit for the proximity preset, or null for no limit. */
-  const distanceLimit = ref<DistancePreset>(null);
+  /** Selected distance band id; the "any" range applies no filter. */
+  const distanceRange = ref<string>(ANY_DISTANCE_RANGE.id);
   /** Keys with a save in flight, so the row reports progress rather than looking inert. */
   const pending = ref<Set<string>>(new Set());
 
@@ -81,7 +82,7 @@
       // "New" means recently appeared, never "untriaged": on a first run every identity is
       // untriaged, so filtering on the decision matches everything and looks broken.
       if (onlyNew.value && !isRecentArrival(identity, now)) return false;
-      if (!withinDistance(identity, distanceLimit.value)) return false;
+      if (!withinDistanceRange(identity, distanceRangeById(distanceRange.value))) return false;
       return Object.entries(selection).every(([facet, values]) => {
         if (values.length === 0) return true;
         if (facet === ObservationFacets.Kind) return values.includes(identity.kind);
@@ -268,10 +269,10 @@
         :facets="facets"
         :selected="facetSelection"
         :only-new="onlyNew"
-        :distance="distanceLimit"
+        :distance="distanceRange"
         @update:selected="facetSelection = $event"
         @update:only-new="onlyNew = $event"
-        @update:distance="distanceLimit = $event"
+        @update:distance="distanceRange = $event"
       />
 
       <ObservationFocus

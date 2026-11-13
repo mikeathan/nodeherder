@@ -9,7 +9,6 @@ import {
   DEFAULT_TX_POWER_AT_1M,
   bearingForIdentity,
   distanceBand,
-  distancePresetLabel,
   distanceRSSI,
   estimateDistanceMetres,
   roundedDistanceMetres,
@@ -22,7 +21,9 @@ import {
   sourceStatus,
   trendPresentation,
   untriagedCount,
-  withinDistance,
+  withinDistanceRange,
+  distanceRangeById,
+  DISTANCE_RANGES,
 } from '@/domain/observations/presentation';
 import type { ObservationIdentityView, ObservationSnapshot, ObservationSourceDescriptor } from '@/types/observations.type';
 
@@ -266,49 +267,67 @@ describe('roundedDistanceMetres', () => {
   });
 });
 
-describe('withinDistance', () => {
+describe('withinDistanceRange', () => {
   const at = (rssiSmoothed: number) => ({ rssi: rssiSmoothed, rssiSmoothed });
+  const range = (id: string) => distanceRangeById(id);
 
-  test('no limit passes everything, including identities with no reading', () => {
-    expect(withinDistance(at(-90), null)).toBe(true);
-    expect(withinDistance({}, null)).toBe(true);
+  test('any range passes everything, including identities with no reading', () => {
+    expect(withinDistanceRange(at(-90), range('any'))).toBe(true);
+    expect(withinDistanceRange({}, range('any'))).toBe(true);
   });
 
-  test('an identity inside the limit passes', () => {
-    // -59 dBm tx power and n 2.5: -66 -> ~1.9 m, well inside 5 m.
-    expect(withinDistance(at(-66), 5)).toBe(true);
+  test('each band covers its own span', () => {
+    // -66 -> ~1.9 m: under 2 m.
+    expect(withinDistanceRange(at(-66), range('under2'))).toBe(true);
+    expect(withinDistanceRange(at(-66), range('2to5'))).toBe(false);
+    // -80 -> ~7 m: the 5-10 m band.
+    expect(withinDistanceRange(at(-80), range('5to10'))).toBe(true);
+    expect(withinDistanceRange(at(-80), range('2to5'))).toBe(false);
+    // -90 -> ~17 m: the open upper band.
+    expect(withinDistanceRange(at(-90), range('over10'))).toBe(true);
   });
 
-  test('an identity outside the limit is excluded', () => {
-    // -85 -> ~11 m, outside a 5 m limit.
-    expect(withinDistance(at(-85), 5)).toBe(false);
+  test('neighbouring bands never both match one reading', () => {
+    // "Any" is the unfiltered range and matches everything, so it is excluded here: the bands
+    // themselves must be disjoint, or one device would appear in two of them at once.
+    const bands = DISTANCE_RANGES.filter((entry) => entry.id !== 'any');
+    for (const rssi of [-60, -66, -72, -78, -84, -90]) {
+      const matches = bands.filter((entry) => withinDistanceRange(at(rssi), entry));
+      expect(matches.length).toBe(1);
+    }
   });
 
-  test('the limit is inclusive at the boundary', () => {
-    // ~10.0 m at these constants; exactly on the 10 m limit must still pass.
-    const metres = estimateDistanceMetres(-84)!;
-    expect(metres).toBeLessThanOrEqual(10);
-    expect(withinDistance(at(-84), 10)).toBe(true);
+  test('exactly one band matches, or none when "any" is the only match', () => {
+    for (const rssi of [-60, -66, -72, -78, -84, -90]) {
+      const matches = DISTANCE_RANGES.filter((entry) => withinDistanceRange(at(rssi), entry));
+      // "any" plus exactly one band.
+      expect(matches.map((entry) => entry.id)).toContain('any');
+      expect(matches.length).toBeLessThanOrEqual(2);
+    }
   });
 
-  test('an identity with no reading cannot be proven within any limit', () => {
-    // Assuming "near" would put an unmeasured device in the closest bucket.
-    expect(withinDistance({}, 5)).toBe(false);
-    expect(withinDistance({ rssi: null, rssiSmoothed: null }, 10)).toBe(false);
+  test('the bands are exhaustive for any measured reading', () => {
+    for (let rssi = -40; rssi >= -110; rssi -= 1) {
+      const matches = DISTANCE_RANGES.filter((entry) => withinDistanceRange(at(rssi), entry));
+      expect(matches.length).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  test('an identity with no reading belongs to no band but any', () => {
+    // Assuming "near" would put an unmeasured device in the closest band.
+    for (const id of ['under2', '2to5', '5to10', 'over10']) {
+      expect(withinDistanceRange({}, range(id))).toBe(false);
+    }
+    expect(withinDistanceRange({}, range('any'))).toBe(true);
   });
 
   test('uses the smoothed value when both are present', () => {
-    // Raw is strong enough for 2 m, smoothed is not: the filter must follow the smoothed value,
-    // which is what the displayed distance uses.
-    expect(withinDistance({ rssi: -62, rssiSmoothed: -90 }, 5)).toBe(false);
+    expect(withinDistanceRange({ rssi: -62, rssiSmoothed: -90 }, range('under2'))).toBe(false);
+    expect(withinDistanceRange({ rssi: -62, rssiSmoothed: -90 }, range('over10'))).toBe(true);
   });
-});
 
-describe('distancePresetLabel', () => {
-  test('labels each preset and the cleared state', () => {
-    expect(distancePresetLabel(null)).toBe('Any');
-    expect(distancePresetLabel(2)).toBe('≤ 2 m');
-    expect(distancePresetLabel(20)).toBe('≤ 20 m');
+  test('an unknown range id falls back to any rather than hiding everything', () => {
+    expect(distanceRangeById('nonsense').id).toBe('any');
   });
 });
 

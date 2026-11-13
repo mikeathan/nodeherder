@@ -205,35 +205,59 @@ export function roundedDistanceMetres(metres: number | null | undefined): number
 }
 
 /**
- * Distance presets offered as a button group.
+ * Distance filter ranges.
  *
- * A single anchor cannot resolve direction, so "within N metres" is the only range question the
- * data can answer honestly. Presets are coarse because the estimate is: 1-3 m of indoor error
- * makes a 2 m step meaningless past the first few metres.
+ * Ranges rather than open-ended limits: "within 20 m" covers nearly every device, so it cannot
+ * isolate anything. A band answers "which of these is in the next room", and the boundaries are
+ * deliberately small because beyond a few metres the estimate is too coarse to subdivide.
+ *
+ * Bounds are half-open `[min, max)`, so neighbouring ranges never both match one reading. A null
+ * bound is open-ended, making the set exhaustive with no overlap.
  */
-export const DISTANCE_PRESETS = [2, 5, 10, 20] as const;
+export type DistanceRange = {
+  /** Stable identifier, used for selection state and test assertions. */
+  id: string;
+  /** Inclusive lower bound in metres, or null for no lower bound. */
+  min: number | null;
+  /** Exclusive upper bound in metres, or null for no upper bound. */
+  max: number | null;
+  label: string;
+};
 
-export type DistancePreset = (typeof DISTANCE_PRESETS)[number] | null;
+/** Ranges offered as a segmented control, smallest first. */
+export const DISTANCE_RANGES: readonly DistanceRange[] = [
+  { id: 'any', min: null, max: null, label: 'Any' },
+  { id: 'under2', min: null, max: 2, label: '< 2 m' },
+  { id: '2to5', min: 2, max: 5, label: '2–5 m' },
+  { id: '5to10', min: 5, max: 10, label: '5–10 m' },
+  { id: 'over10', min: 10, max: null, label: '≥ 10 m' },
+];
 
-/** Label for a preset button; null means no distance limit. */
-export function distancePresetLabel(metres: DistancePreset): string {
-  return metres === null ? 'Any' : `≤ ${metres} m`;
+/** The unfiltered range; every other range narrows to a band. */
+export const ANY_DISTANCE_RANGE: DistanceRange = DISTANCE_RANGES[0];
+
+/** Resolve a range by id, falling back to "any" so an unknown id cannot hide every device. */
+export function distanceRangeById(id: string): DistanceRange {
+  return DISTANCE_RANGES.find((range) => range.id === id) ?? ANY_DISTANCE_RANGE;
 }
 
 /**
- * Whether an identity is within an inclusive metre limit.
+ * Whether an identity falls inside a range.
  *
- * An identity with no usable reading cannot be proven to be within any limit, so it is excluded
- * rather than assumed near. Null limit means no constraint.
+ * An identity with no usable reading belongs to no measured band: it is excluded from every
+ * range except "any", rather than being assumed near. The distance comes from the smoothed median
+ * so the filter agrees with the figure shown in Focus.
  */
-export function withinDistance(
+export function withinDistanceRange(
   identity: Pick<ObservationIdentityView, 'rssi' | 'rssiSmoothed'>,
-  limit: DistancePreset,
+  range: DistanceRange,
 ): boolean {
-  if (limit === null) return true;
+  if (range.min === null && range.max === null) return true;
   const metres = estimateDistanceMetres(distanceRSSI(identity));
   if (metres === null) return false;
-  return metres <= limit;
+  if (range.min !== null && metres < range.min) return false;
+  if (range.max !== null && metres >= range.max) return false;
+  return true;
 }
 
 /**

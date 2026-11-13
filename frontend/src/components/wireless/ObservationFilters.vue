@@ -9,12 +9,7 @@
   import { computed } from 'vue';
   import type { ObservationIdentityView } from '@/types/observations.type';
   import { ObservationFacets, ObservationDecisions } from '@/types/observations.type';
-  import {
-    DISTANCE_PRESETS,
-    distancePresetLabel,
-    vendorHex,
-    type DistancePreset,
-  } from '@/domain/observations/presentation';
+  import { DISTANCE_RANGES, vendorHex } from '@/domain/observations/presentation';
 
   const props = defineProps<{
     identities: readonly ObservationIdentityView[];
@@ -24,18 +19,15 @@
     selected: Readonly<Record<string, readonly string[]>>;
     /** Whether to show only untriaged identities and unstable fingerprints. */
     onlyNew: boolean;
-    /** Inclusive metre limit, or null for no distance filter. */
-    distance: DistancePreset;
+    /** Selected distance range id; "any" applies no filter. */
+    distance: string;
   }>();
 
   const emit = defineEmits<{
     (event: 'update:selected', value: Record<string, string[]>): void;
     (event: 'update:onlyNew', value: boolean): void;
-    (event: 'update:distance', value: DistancePreset): void;
+    (event: 'update:distance', value: string): void;
   }>();
-
-  /** Preset options, with `null` first so clearing the filter is one click away. */
-  const distanceOptions: DistancePreset[] = [null, ...DISTANCE_PRESETS];
 
   /** Facets this component knows how to render, intersected with what sources declare. */
   const supported = computed(() =>
@@ -103,22 +95,22 @@
     </button>
 
     <!--
-      Range presets. "Within N metres" is the only proximity question one anchor can answer, and
-      the presets are coarse because the estimate is.
+      Distance bands, not open-ended limits: "within 20 m" covers almost every device and so
+      isolates nothing. Bands answer "which of these is in the next room".
     -->
     <fieldset class="observation-filters__group">
       <legend>Distance</legend>
       <div class="observation-filters__presets">
         <button
-          v-for="option in distanceOptions"
-          :key="option ?? 'any'"
+          v-for="range in DISTANCE_RANGES"
+          :key="range.id"
           type="button"
           class="observation-filters__preset"
-          :class="{ 'is-active': props.distance === option }"
-          :aria-pressed="props.distance === option"
-          @click="emit('update:distance', option)"
+          :class="{ 'is-active': props.distance === range.id }"
+          :aria-pressed="props.distance === range.id"
+          @click="emit('update:distance', range.id)"
         >
-          {{ distancePresetLabel(option) }}
+          {{ range.label }}
         </button>
       </div>
     </fieldset>
