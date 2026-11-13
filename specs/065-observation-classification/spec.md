@@ -90,6 +90,9 @@ fixture data.
   the row states the previous class.
 - AC-08: Given a single day of contrary evidence against a long history, then the class does
   not change; recency is weighted but a change must hold across evaluations.
+- AC-17: Given a sustained behaviour change, then the class changes in roughly five days of
+  consistent new evidence, not sooner. This is the measured consequence of the weighting and
+  is stated so the delay is a decision, not a surprise.
 - AC-09: Given an operator triage decision, then that decision overrides the class for
   display permanently, and the class is still shown as advisory.
 
@@ -140,7 +143,9 @@ fixture data.
 - NFR-04: Stored summaries MUST contain no raw observations, packet contents, or payloads.
 
 Units and retention: distances in metres; timestamps UTC; daily summaries retained 30 days,
-pruned daily. Class transitions retained 90 days. Raw observations remain memory-only, as
+pruned daily. Class transitions retained **30 days, matching the summaries**: a transition
+older than the evidence that justified it could be displayed but not explained, so retaining
+it longer would be inconsistent rather than useful. Raw observations remain memory-only, as
 ADR-002 requires.
 
 ## Entities and external interfaces
@@ -159,9 +164,9 @@ read-only route for summary history; no new public surface.
 
 | ID | Question | Consequence | Owner | Resolution |
 | --- | --- | --- | --- | --- |
-| Q1 | Is "neighbour" distinguishable from "far corner" with one anchor? | Determines whether the class is labelled as a guess | Maintainer | Open. Assumption A1: with one source the class is advisory only and must be worded as such. |
-| Q2 | Should daily summaries be per source or per identity? | Affects memory and multi-anchor future | Maintainer | Open. Recommendation: per identity with per-source readings nested, so a second proxy adds evidence without a schema change. |
-| Q3 | Retention for transitions: 90 days proposed | Affects storage growth | Maintainer | Open. |
+| Q1 | Is "neighbour" distinguishable from "far corner" with one anchor? | Determines whether the class is labelled as a guess | Maintainer | **Agreed: advisory only, worded as likely.** With one source it is a heuristic. |
+| Q2 | Should daily summaries be per source or per identity? | Affects memory and multi-anchor future | Maintainer | **Agreed: per identity, with per-source readings nested**, so a second proxy adds evidence without a schema change. |
+| Q3 | Retention for transitions: 90 days proposed | Affects storage growth | Maintainer | **Resolved: 30 days, matching summaries.** A transition outliving its evidence could not be explained. |
 
 ### Assumptions
 

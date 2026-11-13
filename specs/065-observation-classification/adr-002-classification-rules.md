@@ -41,6 +41,10 @@ Consequences:
 Two safeguards are part of the decision, not tuning details:
 
 - **Recency weighting** (5-day half-life) so a device that changes behaviour can change class.
+  Measured consequence: 21 days of infrastructure evidence weighs 7.30 day-equivalents against
+  0.08 for two hours of new behaviour, and sustained contrary evidence needs about five days to
+  win. The delay is deliberate — slow enough not to flap, fast enough to self-correct within a
+  week — and the half-life is the single tuning lever should that prove wrong.
 - **Hysteresis:** a class change requires the candidate to win on two consecutive
   evaluations, so one unusual day cannot flip a long-standing class.
 

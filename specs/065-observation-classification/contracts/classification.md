@@ -68,9 +68,12 @@ coerced class would be a false claim about behaviour.
 
 `GET /api/wireless/summaries?key=<identityKey>&days=<n>`
 
-Protected. Returns daily summaries newest first, bounded to the retention window and to a
-maximum of 90 rows. Used by the Timeline pane. Contains aggregates only: no payloads, no
+Protected. Returns daily summaries newest first, bounded to the 30-day retention window and to
+a maximum of 30 rows. Used by the Timeline pane. Contains aggregates only: no payloads, no
 addresses beyond the identity key the caller already supplied.
+
+Class transitions are retained on the same 30-day boundary, so every transition the UI can
+show is one whose supporting evidence still exists.
 
 ## Compatibility
 

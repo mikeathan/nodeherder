@@ -7,9 +7,9 @@ Mark done only with evidence. No task is started.
 
 ## Preparation
 
-- [ ] T001 — Record ADR-001 (evidence summaries), ADR-002 (rules, not a model), ADR-003
-  (Tracked/Census split); resolve Q1 (neighbour wording), Q2 (summary grain), Q3
-  (transition retention). IDs: FR-01, FR-06; done: ADRs accepted, open questions answered.
+- [x] T001 — **DONE**: ADR-001, ADR-002 and ADR-003 recorded. Q1 agreed (neighbour is
+  advisory, worded as likely); Q2 agreed (per identity, per-source readings nested); Q3
+  corrected to 30 days so a transition never outlives its evidence. IDs: FR-01, FR-06.
 - [ ] T002 — Confirm the summary schema against a fixture day and the storage ceiling in
   NFR-01; gate: BE-04; done: arithmetic recorded in the plan.
 
@@ -20,13 +20,16 @@ Mark done only with evidence. No task is started.
   IDs: FR-01, AC-01, AC-12; done: failing for the right reasons.
 - [ ] T004 — Implement `evidence.go`; IDs: FR-01; depends: T003; done: green.
 - [ ] T005 — Red tests for classification: the four classes from synthetic evidence, the
-  learning threshold, recency weighting, hysteresis needing two evaluations, family rollup.
-  Paths: `classify_test.go`. IDs: FR-02, FR-03, FR-06, FR-10, AC-01…AC-08, AC-11.
+  learning threshold, recency weighting, hysteresis needing two evaluations, family rollup,
+  **and the measured reclassification delay** (a change needs about five days of sustained
+  contrary evidence; one day must not flip). Paths: `classify_test.go`. IDs: FR-02, FR-03,
+  FR-06, FR-10, AC-01…AC-08, AC-11, AC-17.
 - [ ] T006 — Implement `classify.go` as a pure function; IDs: FR-02, FR-03; depends: T005;
   done: green, table-driven, no clock dependency outside an injected `now`.
-- [ ] T007 — Red tests for the summaries store: write floor, retention, `Prune`, role of the
-  absence of a file when there are no observations. Paths:
-  `internal/observations/summaries/*_test.go`. IDs: FR-07, FR-08, FR-09, NFR-01.
+- [ ] T007 — Red tests for the summaries store: write floor, retention, `Prune`, absence of a
+  file when there are no observations, and that **transitions are pruned on the same 30-day
+  boundary as summaries**. Paths: `internal/observations/summaries/*_test.go`.
+  IDs: FR-07, FR-08, FR-09, NFR-01.
 - [ ] T008 — Implement `internal/observations/summaries`, mirroring `spatialhistory`:
   repository interface, bbolt store, worker-serialised recorder, bounded queue that drops.
   IDs: FR-07, FR-08, NFR-01; depends: T007; done: green, `-race` clean.

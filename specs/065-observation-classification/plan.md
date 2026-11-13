@@ -87,10 +87,35 @@ type DailySummary struct {
 Write floor (AC-12): a day is stored only when `ActiveHours >= 2 && Packets >= 20`. A device
 that appears once never earns a row, so noise costs nothing.
 
-Retention: summaries 30 days, transitions 90 days, pruned daily. 256 identities × 30 days ×
-~120 B ≈ 900 KB — stated in NFR-01 and asserted by a test.
+Retention: summaries 30 days, transitions **30 days to match**, pruned daily. 256 identities ×
+30 days × ~120 B ≈ 900 KB — stated in NFR-01 and asserted by a test. A transition must not
+outlive the evidence that justified it, or the UI could show a change it cannot explain.
 
-### 2.3 Classification
+### 2.3 Reclassification speed, measured
+
+Recency weighting uses a 5-day half-life. The arithmetic, recorded so the delay is a decision
+rather than a surprise:
+
+| Evidence | Weighted day-equivalents |
+| --- | --- |
+| 21 days as infrastructure | 7.30 |
+| 2 hours of new behaviour, today | 0.08 |
+
+So a single unusual day cannot move a long-standing class. How long sustained contrary
+behaviour needs before it wins:
+
+| New behaviour held for | New | Old | Flips |
+| --- | --- | --- | --- |
+| 1 day | 1.87 | 5.43 | no |
+| 3 days | 3.29 | 4.02 | no |
+| 5 days | 4.36 | 2.94 | yes |
+
+**A genuine reclassification therefore takes about five days of consistent evidence.** That
+is the intended trade: slow enough that a fridge does not flap, fast enough that a device
+which really moved is corrected within a week. Reducing the half-life to 2 days would flip in
+about two days at the cost of more flapping; that single constant is the tuning lever.
+
+### 2.4 Classification
 
 `internal/observations/classify.go`, a pure function over the rolling window so it is
 directly testable and never persisted.
@@ -134,7 +159,7 @@ Family-level classification (FR-06, AC-11): summaries for short-lived addresses 
 `Family` (vendor + AD signature from spec 064's decoder). A family with a personal profile is
 treated as personal even though no individual address survives.
 
-### 2.4 Broadcast
+### 2.5 Broadcast
 
 Additive fields on `IdentityView`:
 
