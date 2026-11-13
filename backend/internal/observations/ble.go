@@ -122,6 +122,25 @@ func fingerprint(address net.HardwareAddr) string {
 	return hex.EncodeToString(sum[:])[:fingerprintHexLength]
 }
 
+// fingerprintFamily groups rotating addresses that belong to the same device family.
+//
+// A phone advertising a rotating address becomes a new identity every few minutes, so classifying
+// each one separately would produce dozens of rows that each look transient. The family is the
+// vendor plus the advertised label, which survives rotation for devices that keep a stable name —
+// the common case for a phone advertising as its owner's name. A device that rotates both address
+// and label falls back to the vendor alone: coarser, but still better than calling every rotation a
+// new arrival.
+//
+// Deliberately not the address: grouping by address would reproduce the identity, not group it.
+// Deliberately not derived from a stored field either, because a family is a property of what was
+// observed rather than something the store should recompute.
+func fingerprintFamily(identity model.Identity) string {
+	if identity.Label == "" {
+		return fmt.Sprintf("%04x", identity.Vendor)
+	}
+	return fmt.Sprintf("%04x:%s", identity.Vendor, identity.Label)
+}
+
 // beaconIdentity recognises beacon payloads that carry their own identity, which survives
 // address rotation.
 func beaconIdentity(data []byte) (model.Identity, bool) {

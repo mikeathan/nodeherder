@@ -64,3 +64,26 @@ func (s DailySummary) Var() float64 {
 	}
 	return variance
 }
+
+// Transition records that an identity's class changed.
+//
+// It is stored rather than derived because a change is an event: the evidence that produced it may
+// later be pruned, and "this became personal on Tuesday" is exactly what an operator needs when a
+// device behaves unexpectedly.
+//
+// It is a log rather than a derivation, and deliberately self-contained: it states the reason at
+// the time, because the summaries that justified it will eventually be gone. Retention matches the
+// summaries so that every transition still displayable is still explainable.
+type Transition struct {
+	// Key is the identity the change belongs to.
+	Key string `json:"key"`
+	// Day is the UTC day of the change, and is part of the storage key with Key.
+	Day string `json:"day"`
+	// At is the exact time of the change in RFC 3339 form.
+	At string `json:"at"`
+	// From and To are the classes before and after.
+	From string `json:"from"`
+	To   string `json:"to"`
+	// Reason states why, in the operator's terms, so the row explains itself.
+	Reason string `json:"reason"`
+}

@@ -18,13 +18,8 @@ Mark done only with evidence. No task is started.
 - [x] T006 — **DONE**: `classify.go`. Per-day scoring then recency weighting. Mobility counted in dB, not distance bands.
 - [x] T006a — **DONE**: `provisional_test.go`, 5 tests.
 - [x] T006b — **DONE**: `provisional.go`. `Provisional.asClassified` is the single bridge to the classifier's type.
-- [ ] T007 — Red tests for the summaries store: write floor, retention, `Prune`, absence of a
-  file when there are no observations, and that **transitions are pruned on the same 30-day
-  boundary as summaries**. Paths: `internal/observations/summaries/*_test.go`.
-  IDs: FR-07, FR-08, FR-09, NFR-01.
-- [ ] T008 — Implement `internal/observations/summaries`, mirroring `spatialhistory`:
-  repository interface, bbolt store, worker-serialised recorder, bounded queue that drops.
-  IDs: FR-07, FR-08, NFR-01; depends: T007; done: green, `-race` clean.
+- [x] T007 — **DONE**: `summaries/store_test.go`, 11 tests. Includes the prefix-collision guard, which caught a real key-layout bug.
+- [x] T008 — **DONE**: `summaries/store.go` + `observations/summarise.go`. The recorder lives in `observations` because it needs the accumulator; the dependency runs one way only.
 - [ ] T009 — Wire the summariser into the service and add the additive snapshot fields.
   IDs: FR-01, FR-02, FR-04; depends: T004, T006, T008; done: snapshot carries class and
   evidence; transitions recorded on change only.
