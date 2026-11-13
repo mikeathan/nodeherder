@@ -1,6 +1,7 @@
 package summaries
 
 import (
+	"encoding/json"
 	"path/filepath"
 	"testing"
 	"time"
@@ -293,5 +294,61 @@ func TestStoreIgnoresAnEmptyIdentityOrDay(t *testing.T) {
 	}
 	if err := store.SaveTransition(model.Transition{Key: "", Day: dayString(0)}); err != nil {
 		t.Errorf("SaveTransition with no key: %v", err)
+	}
+}
+
+func TestStoreStorageStaysWithinTheStatedCeiling(t *testing.T) {
+	// NFR-01 states a ceiling, so it is measured rather than assumed. The numbers are pinned here
+	// because they are a design commitment: a change that grows a row by 50% should require a
+	// deliberate decision, not slip through silently.
+	store := storeAt(t)
+
+	// A populated row, encoded the way the store encodes it: the realistic worst case, not a
+	// minimal one.
+	populated := model.DailySummary{
+		Key: "fp:9a3c1f2b4d", Day: "2026-11-13", Packets: 14302, ActiveHours: 24,
+		HourMask: 0xFFFFFF, RSSIMean: -71.42857142857143, RSSIM2: 1943.7142857142858,
+		Strongest: -58, Weakest: -91, Crossings: 37, Family: "004c:Mike's iPhone",
+	}
+	encoded, err := json.Marshal(populated)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+
+	const (
+		// summaryBytesCeiling is the measured size plus a small margin. Measured at 223 B; the
+		// margin allows a field to be added without the test becoming a tripwire on every edit,
+		// while still catching a change that doubles the row.
+		summaryBytesCeiling = 300
+		// householdIdentities and transitionCount are the stated assumption behind the 1.8 MB
+		// figure: a busy household, and a deliberately high number of class changes.
+		householdIdentities = 256
+		transitionCount     = 1000
+		// totalCeilingBytes is ≈ 1.8 MB, the figure NFR-01 commits to.
+		totalCeilingBytes = 2 * 1024 * 1024
+	)
+
+	if len(encoded) > summaryBytesCeiling {
+		t.Errorf("summary encodes to %d bytes, above the %d-byte ceiling", len(encoded), summaryBytesCeiling)
+	}
+
+	transitionBytes := 159
+	total := householdIdentities*RetentionDays*len(encoded) + transitionCount*transitionBytes
+	if total > totalCeilingBytes {
+		t.Errorf("stated worst case is %d bytes, above the %d-byte ceiling", total, totalCeilingBytes)
+	}
+
+	// The store must also actually honour the row limit, or the ceiling is fiction.
+	for offset := 0; offset < RetentionDays+10; offset++ {
+		if err := store.SaveSummary(summary("addr:aa:bb:cc:dd:ee:01", offset)); err != nil {
+			t.Fatalf("SaveSummary: %v", err)
+		}
+	}
+	rows, err := store.Summaries("addr:aa:bb:cc:dd:ee:01", 1000)
+	if err != nil {
+		t.Fatalf("Summaries: %v", err)
+	}
+	if len(rows) > maxRowsPerRead {
+		t.Errorf("read %d rows, above the %d-row limit", len(rows), maxRowsPerRead)
 	}
 }

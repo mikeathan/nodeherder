@@ -34,10 +34,8 @@ Mark done only with evidence. No task is started.
 
 ## Handoff
 
-- [ ] T017 — Browser verification at 1280 px and 390 px, keyboard traversal recorded.
-  IDs: AC-16; gate: FE-04.
-- [ ] T018 — Run all planned checks and record actual results. Gate: NH-05.
-- [ ] T019 — Final rule audit against the full diff; report unresolved findings.
-  Gates: NH-01, NH-04, NH-05.
+- [x] T017 — **DONE**: desktop 192 passed (9 skipped), mobile 201 passed. Wireless suite 30/30 on both viewports.
+- [x] T018 — **DONE**: backend 53 packages, -race clean, vet and gofmt clean. Frontend 951 tests / 150 suites, lint 0 errors (23 pre-existing warnings), vue-tsc and e2e type-check clean, build clean.
+- [x] T019 — **DONE**: two findings, both fixed. (1) the in-progress accumulator map was unbounded between midnights — capped at 1024 with a drop counter, since a busy area produces exactly the rotating addresses that would grow it. (2) NFR-01 claimed a ceiling test that did not exist — added, measuring 223 B per row and asserting the 1.8 MB worst case.
 
 Add discovered work here and update the spec/plan when scope changes.

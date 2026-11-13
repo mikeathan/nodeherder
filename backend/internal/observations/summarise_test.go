@@ -4,6 +4,7 @@ package observations
 // the previous day or double-counts it would silently corrupt the evidence classification reads.
 
 import (
+	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -259,6 +260,35 @@ func TestRecorderPromotesStaleDaysOnTick(t *testing.T) {
 	}
 	if saved[0].Day != "2026-11-13" {
 		t.Errorf("Day = %q, want 2026-11-13", saved[0].Day)
+	}
+
+	recorder.Close()
+}
+
+func TestRecorderBoundsTheAccumulatorMap(t *testing.T) {
+	// A busy area produces thousands of rotating addresses, and rotating addresses are exactly what
+	// would grow this map until midnight. The cap is what keeps memory finite; hitting it drops
+	// rather than evicts, because an evicted accumulator would lose the only copy of that day.
+	start := time.Date(2026, 11, 13, 9, 0, 0, 0, time.UTC)
+	recorder, _, _ := newTestRecorder(t, start)
+	recorder.Start()
+
+	for i := 0; i < maxAccumulatedIdentities+50; i++ {
+		recorder.Observe(observationAt(fmt.Sprintf("fp:%06x", i), -70, start))
+	}
+
+	waitFor(t, func() bool {
+		recorder.mutex.Lock()
+		defer recorder.mutex.Unlock()
+		return recorder.dropped >= 50
+	})
+
+	recorder.mutex.Lock()
+	size := len(recorder.accumulate)
+	recorder.mutex.Unlock()
+
+	if size > maxAccumulatedIdentities {
+		t.Errorf("accumulator map holds %d identities, want at most %d", size, maxAccumulatedIdentities)
 	}
 
 	recorder.Close()

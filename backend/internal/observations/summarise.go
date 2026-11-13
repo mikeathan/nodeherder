@@ -28,6 +28,14 @@ const (
 	// summaryTick is how often the worker looks for a day boundary.
 	summaryTick = time.Minute
 
+	// maxAccumulatedIdentities bounds the in-progress map.
+	//
+	// Without a cap, a busy area with thousands of rotating addresses would grow the map until the
+	// next midnight — and rotating addresses are exactly what a busy area produces. The cap is
+	// generous relative to a household but finite, and hitting it drops rather than grows, which is
+	// the same rule the rest of this pipeline follows (NH-06).
+	maxAccumulatedIdentities = 1024
+
 	// pruneEvery bounds retention work; the window is 30 days, so daily is generous.
 	pruneEvery = 24 * time.Hour
 
@@ -181,6 +189,13 @@ func (r *SummarisingRecorder) handle(observation model.Observation) {
 	r.mutex.Lock()
 	accumulator, found := r.accumulate[key]
 	if !found {
+		if len(r.accumulate) >= maxAccumulatedIdentities {
+			// At capacity, ignore a new identity rather than evicting one: an evicted accumulator
+			// would lose the evidence it had gathered, and this day is the only copy.
+			r.dropped++
+			r.mutex.Unlock()
+			return
+		}
 		accumulator = &dayAccumulator{day: day, family: family}
 		r.accumulate[key] = accumulator
 	}
