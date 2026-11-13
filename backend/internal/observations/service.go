@@ -117,6 +117,8 @@ type Service struct {
 	recorder      ObservationRecorder
 	classifyEvery time.Duration
 
+	wg sync.WaitGroup
+
 	mutex       sync.Mutex
 	sources     map[string]*sourceState
 	aggregates  map[string]*aggregate
@@ -284,19 +286,52 @@ func (s *Service) noteDroppedBatch(source string) {
 	}
 }
 
-// Start runs the aggregation worker until ctx is cancelled, then returns after the worker
-// has stopped. It is safe to call once; the returned function reports completion.
+// Start launches the aggregation worker. It returns immediately; call Wait to observe shutdown.
+//
+// It is safe to call once. A second call would start a second consumer on the same queue, which
+// would split observations between two aggregates rather than rejecting the call — hence "once"
+// rather than "idempotently".
 func (s *Service) Start(ctx context.Context) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	s.wg.Add(1)
 	go s.run(ctx)
+}
+
+// Wait blocks until the aggregation worker has stopped, which happens when the context passed to
+// Start is cancelled.
+//
+// This exists so shutdown can order itself. The service reads the summary store, and the recorder
+// closes it: without a way to wait, the store could be closed while a classification pass was
+// still reading, which turns a clean shutdown into a stream of errors from a closing database.
+func (s *Service) Wait() { s.wg.Wait() }
+
+// WaitContext blocks until the worker has stopped or ctx expires, and reports whether it stopped.
+//
+// Shutdown must be bounded. The worker exits when its own context is cancelled, but that context
+// is not guaranteed to be cancelled on every exit path — a failed Listen never cancels it — so an
+// unbounded Wait there would hang the process instead of shutting it down. Returning a bool lets
+// the caller log a timeout rather than pretend the ordering held.
+func (s *Service) WaitContext(ctx context.Context) bool {
+	done := make(chan struct{})
+	go func() {
+		s.wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+		return true
+	case <-ctx.Done():
+		return false
+	}
 }
 
 // run consumes observations and flushes on the publish interval. A ticker drives flushes so a
 // burst that stops mid-window still publishes, and an idle hub publishes nothing because the
 // snapshot is compared before broadcast.
 func (s *Service) run(ctx context.Context) {
+	defer s.wg.Done()
 	ticker := time.NewTicker(s.publishGap)
 	defer ticker.Stop()
 	for {
@@ -390,6 +425,11 @@ func (s *Service) flush() {
 		// Refresh first, then build the snapshot once. Refreshing after building would publish a
 		// stale class and then immediately publish again, doubling the broadcast for no gain.
 		s.refreshClassifications(pending)
+		// Re-read the clock: the classification pass reads the database, so the `now` captured
+		// before it can be hundreds of milliseconds stale by this point. A snapshot timestamped in
+		// the past makes the viewer's "last seen 5 s ago" read wrong, and the publish-gap check
+		// below would be computed against a moment that has already passed.
+		now = s.clock.Now()
 	}
 
 	s.mutex.Lock()
@@ -567,15 +607,24 @@ func (s *Service) refreshClassifications(keys []string) {
 	}
 	s.mutex.Unlock()
 
+	s.mutex.Lock()
+	previous := s.classified
+	s.mutex.Unlock()
+
 	refreshed := make(map[string]model.ClassificationView, len(keys))
 	for _, key := range keys {
 		summaries, err := s.history.Summaries(key, retentionDays)
 		if err != nil {
 			// A read failure must not clear an existing class: showing nothing is a worse answer
-			// than showing the last good evidence. It must still be visible, though — the store
-			// returns errors rather than logging them, so swallowing one here would leave a broken
+			// than showing the last good evidence. Carrying the cached entry forward is what makes
+			// that true — the cache is replaced wholesale below, so a bare `continue` would have
+			// dropped the class the comment promises to keep. It is logged because the store
+			// returns errors rather than logging them, and swallowing one would leave a broken
 			// database looking exactly like an installation with no history yet.
 			utils.LogErrorf("observation summaries: read %s: %v", key, err)
+			if cached, ok := previous[key]; ok {
+				refreshed[key] = cached
+			}
 			continue
 		}
 		if len(summaries) == 0 {

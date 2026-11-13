@@ -200,13 +200,26 @@ func Register(port int, store store.AppStore, ctx context.Context, options ...Op
 	// would be lost and the database left locked.
 	if summaryRecorder != nil {
 		if err == nil {
-			// The recorder owns the store's lifetime; closing it flushes the day in progress and
-			// releases the database, in that order.
-			server.AddShutdownHook(func(context.Context) error {
+			server.AddShutdownHook(func(hookCtx context.Context) error {
+				// The observation service reads the summary store on its classification pass, so it
+				// must stop before the store closes. Without this ordering a shutdown would close
+				// the database underneath an in-flight read and turn a clean exit into a burst of
+				// errors from a closed file.
+				//
+				// Bounded rather than unbounded: the worker stops on its own context, but a failed
+				// Listen never cancels that context, so waiting forever there would hang the
+				// shutdown instead of completing it. A timeout is logged because it means the
+				// ordering did not hold and the close below may race a read.
+				if !observationService.WaitContext(hookCtx) {
+					utils.LogErrorf("observation service did not stop before the summary store closed")
+				}
+				// The recorder owns the store's lifetime; closing it flushes the day in progress
+				// and releases the database, in that order.
 				summaryRecorder.Close()
 				return nil
 			})
 		} else {
+			observationService.Wait()
 			summaryRecorder.Close()
 		}
 	}

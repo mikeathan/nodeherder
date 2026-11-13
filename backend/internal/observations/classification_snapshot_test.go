@@ -6,6 +6,7 @@ package observations
 // hide everything on the first day or claim a class that does not exist.
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sync"
@@ -482,5 +483,81 @@ func TestThePreFilterStrongestReadingIsComputedOnce(t *testing.T) {
 	}
 	if !found {
 		t.Fatal("the weak identity was not in the snapshot")
+	}
+}
+
+func TestAReadFailurePreservesTheCachedClass(t *testing.T) {
+	// The comment promised that a read failure would keep the last good class, but the cache was
+	// replaced wholesale and the failure path only `continue`d — so the class was silently dropped
+	// and the row fell back to the pre-filter. A comment that describes behaviour the code does not
+	// have is worse than no comment: it stops the next reader from checking.
+	clock := mocks.NewMockClock(func() time.Time { return at(9, 0) })
+	history := &historyStub{byKey: map[string][]model.DailySummary{
+		"addr:aa:bb:cc:dd:ee:01": {
+			summaryOn(0, func(s *model.DailySummary) { s.ActiveHours = 24; s.HourMask = allDay() }),
+		},
+	}}
+	service, capture := classifyService(t, clock, history, &recorderStub{})
+
+	service.record(model.Observation{
+		Source: "esp-1", Identity: model.Identity{Key: "addr:aa:bb:cc:dd:ee:01", Stable: true},
+		RSSI: -55, ObservedAt: clock.Now(),
+	})
+	service.flush()
+
+	if got := capture.last().Identities[0].Classification.Class; got != ClassInfrastructure {
+		t.Fatalf("setup failed: class = %q, want infrastructure", got)
+	}
+
+	// Break the store, then classify again. The good class must survive.
+	history.mutex.Lock()
+	history.err = errors.New("disk on fire")
+	history.mutex.Unlock()
+
+	// Advance past the publish gap, or the second flush is suppressed as "nothing new to send" and
+	// the snapshot inspected below would still be the first one — a test that passes without ever
+	// reaching the code it claims to cover.
+	clock.Advance(2 * time.Second)
+	service.flush()
+
+	service.mutex.Lock()
+	cached, ok := service.classified["addr:aa:bb:cc:dd:ee:01"]
+	service.mutex.Unlock()
+
+	if !ok {
+		t.Fatal("the cached class was dropped entirely after a read failure")
+	}
+	if cached.Class != ClassInfrastructure {
+		t.Errorf("cached class = %q after a read failure, want the previous infrastructure", cached.Class)
+	}
+}
+
+func TestWaitContextReturnsWhenTheWorkerStops(t *testing.T) {
+	// Shutdown ordering depends on being able to observe the worker stopping, and on not hanging
+	// when it does not. A failed Listen never cancels the service's context, so an unbounded wait
+	// would hang the process instead of shutting it down.
+	clock := mocks.NewMockClock(func() time.Time { return at(9, 0) })
+	service, _ := classifyService(t, clock, &historyStub{}, &recorderStub{})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	service.Start(ctx)
+	cancel()
+
+	if !service.WaitContext(context.Background()) {
+		t.Error("WaitContext reported a timeout after the worker had stopped")
+	}
+}
+
+func TestWaitContextGivesUpRatherThanHanging(t *testing.T) {
+	clock := mocks.NewMockClock(func() time.Time { return at(9, 0) })
+	service, _ := classifyService(t, clock, &historyStub{}, &recorderStub{})
+	// Deliberately never cancelled, so the worker keeps running.
+	service.Start(context.Background())
+
+	expired, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+	defer cancel()
+
+	if service.WaitContext(expired) {
+		t.Error("WaitContext reported the worker stopped, but it is still running")
 	}
 }
