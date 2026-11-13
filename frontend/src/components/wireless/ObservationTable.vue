@@ -10,6 +10,7 @@
   import type { ObservationDecision, ObservationIdentityView } from '@/types/observations.type';
   import { ObservationDecisions } from '@/types/observations.type';
   import { identityTitle, isEphemeralIdentity } from '@/domain/observations/presentation';
+  import ClassBadge from './ClassBadge.vue';
   import UiButton from '@/components/ui/UiButton.vue';
 
   const props = defineProps<{
@@ -58,6 +59,7 @@
       <thead>
         <tr>
           <th scope="col">Identity</th>
+          <th scope="col">Class</th>
           <th scope="col">Kind</th>
           <th scope="col">Address</th>
           <th scope="col">Signal</th>
@@ -95,6 +97,11 @@
               New
             </span>
           </th>
+          <td>
+            <!-- The class is advisory, so it sits beside the triage controls rather than replacing
+                 them: the operator's decision is the authority. -->
+            <ClassBadge :classification="identity.classification" compact />
+          </td>
           <td>{{ identity.kind }}</td>
           <td>
             <span :title="identity.key">{{ addressType(identity) }}</span>

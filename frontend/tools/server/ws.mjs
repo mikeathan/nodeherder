@@ -334,6 +334,18 @@ function buildObservationSnapshot() {
         trendDeltaDb: 5.5,
         signal: [-74, -72, -70, -68, -66, -64, -62],
         sources: [{ id: 'mock-proxy-1', rssi: -62 }],
+        // A settled, visible class with its reasoning, so the badge and evidence text can be
+        // asserted. Personal rather than infrastructure because this is a tag the operator placed,
+        // and it matters that a settled class is visible by default.
+        classification: {
+          class: 'personal',
+          showByDefault: true,
+          confidence: 0.78,
+          hoursObserved: 96,
+          daysConsidered: 4,
+          reason: 'Present for part of the day with a changing signal, which suggests a device someone carries.',
+          advisory: true,
+        },
       },
       {
         key: 'addr:aa:bb:cc:dd:ee:01',
@@ -345,6 +357,16 @@ function buildObservationSnapshot() {
         packets: 12,
         rssi: -78,
         sources: [{ id: 'mock-proxy-1', rssi: -78 }],
+        // Still learning: shows the progress line rather than a bare class, so the "learning is
+        // work in progress, not a failure" treatment is exercised.
+        classification: {
+          class: 'learning',
+          showByDefault: true,
+          confidence: 0,
+          hoursObserved: 6,
+          reason: '18 more observed hours needed before a class is asserted.',
+          advisory: true,
+        },
       },
       {
         key: 'fp:9c02ab41',
@@ -356,6 +378,42 @@ function buildObservationSnapshot() {
         packets: 3,
         rssi: null,
         sources: [{ id: 'mock-proxy-1', rssi: null }],
+        // A provisional pre-filter result: shown, but marked as a guess rather than a verdict.
+        classification: {
+          class: 'mobile-unidentifiable',
+          provisional: true,
+          showByDefault: true,
+          confidence: 0,
+          hoursObserved: 0,
+          reason: 'Address rotates, so this is a person\'s device rather than household equipment.',
+          advisory: true,
+        },
+      },
+      {
+        key: 'addr:aa:bb:cc:dd:ee:02',
+        kind: 'adv',
+        stable: true,
+        decision: 'unknown',
+        firstSeen: at(3600),
+        lastSeen: at(60),
+        packets: 4210,
+        rssi: -58,
+        rssiSmoothed: -59,
+        trend: 'steady',
+        trendDeltaDb: 0.4,
+        signal: [-59, -60, -59, -58, -59, -59, -58],
+        sources: [{ id: 'mock-proxy-1', rssi: -58 }],
+        // Demoted by default: this is the row class the operator complained about, and the footer
+        // must be able to say it is there without showing it.
+        classification: {
+          class: 'infrastructure',
+          showByDefault: false,
+          confidence: 0.83,
+          hoursObserved: 168,
+          daysConsidered: 7,
+          reason: 'Present almost all day, including overnight, and barely moved.',
+          advisory: true,
+        },
       },
     ],
     arrivals: 1,

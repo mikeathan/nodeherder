@@ -26,8 +26,21 @@ import {
   autoRadarSpan,
   radialRatio,
   ringsForSpan,
+  CLASS_PRESENTATION,
+  classPresentation,
+  classificationEvidence,
+  hiddenIdentities,
+  isProvisional,
+  learningProgress,
+  shownByDefault,
 } from '@/domain/observations/presentation';
-import type { ObservationIdentityView, ObservationSnapshot, ObservationSourceDescriptor } from '@/types/observations.type';
+import type {
+  ObservationClassification,
+  ObservationIdentityView,
+  ObservationSnapshot,
+  ObservationSourceDescriptor,
+} from '@/types/observations.type';
+import { ObservationClasses } from '@/types/observations.type';
 
 function identity(overrides: Partial<ObservationIdentityView> = {}): ObservationIdentityView {
   return {
@@ -464,5 +477,113 @@ describe('snapshotSummary', () => {
 
   test('reports an explicit empty state', () => {
     expect(snapshotSummary(null)).toBe('No observations yet');
+  });
+});
+
+/**
+ * Class presentation.
+ *
+ * These tests exist because the wording is the feature: a class the operator cannot read or check
+ * is a class they will not trust, and "learning" must never be shown as if it were an answer.
+ */
+describe('class presentation', () => {
+  function classification(overrides: Partial<ObservationClassification> = {}): ObservationClassification {
+    return {
+      class: 'infrastructure',
+      showByDefault: false,
+      confidence: 0.7,
+      hoursObserved: 30,
+      advisory: true,
+      ...overrides,
+    };
+  }
+
+  test('every class has plain-language wording', () => {
+    // No class may render as a raw identifier, which is what the operator complained about.
+    for (const value of Object.values(ObservationClasses)) {
+      const presentation = classPresentation(classification({ class: value }));
+      expect(presentation.label).toBeTruthy();
+      expect(presentation.label).not.toBe(value);
+      expect(presentation.hint).toBeTruthy();
+    }
+  });
+
+  test('an absent classification reads as learning, not as a class', () => {
+    const presentation = classPresentation(undefined);
+    expect(presentation.tone).toBe('learning');
+    expect(presentation.label).toBe('Learning');
+  });
+
+  test('an unknown class falls back to learning rather than blank', () => {
+    const presentation = classPresentation(classification({ class: 'something-new' }));
+    expect(presentation.tone).toBe('learning');
+  });
+
+  test('infrastructure and neighbour are the demoted classes', () => {
+    // The operator's complaint was a wall of MAC addresses; these two are what should collapse.
+    expect(CLASS_PRESENTATION[ObservationClasses.Infrastructure].tone).toBe('installed');
+    expect(CLASS_PRESENTATION[ObservationClasses.Neighbour].tone).toBe('outside');
+  });
+
+  test('provisional is true when the backend says so', () => {
+    expect(isProvisional(classification({ provisional: true }))).toBe(true);
+  });
+
+  test('provisional is true for the pre-filter classes even without the flag', () => {
+    // These values only exist before any history does, so treating them as settled would claim a
+    // day-one guess was a verdict.
+    expect(isProvisional(classification({ class: ObservationClasses.ProvisionalMobile }))).toBe(true);
+    expect(isProvisional(classification({ class: ObservationClasses.ProvisionalNeighbour }))).toBe(true);
+  });
+
+  test('a settled class is not provisional', () => {
+    expect(isProvisional(classification({ class: 'personal' }))).toBe(false);
+  });
+
+  test('an absent classification is provisional, because nothing is known', () => {
+    expect(isProvisional(undefined)).toBe(true);
+  });
+
+  test('evidence prefers the backend reason', () => {
+    const classificationWithReason = classification({ reason: 'Present 23 of 24 hours.' });
+    expect(classificationEvidence(classificationWithReason)).toBe('Present 23 of 24 hours.');
+  });
+
+  test('evidence explains learning with its progress', () => {
+    // A learning class with no explanation looks like a failure; naming the progress makes it read
+    // as work in progress.
+    const learning = classification({ class: 'learning', hoursObserved: 6, reason: undefined });
+    expect(classificationEvidence(learning)).toContain('6 of 24');
+  });
+
+  test('learning progress is reported only while learning', () => {
+    expect(learningProgress(classification({ class: 'learning', hoursObserved: 6 }))).toBe('6 of 24 hours');
+    expect(learningProgress(classification({ class: 'personal', hoursObserved: 30 }))).toBeNull();
+    expect(learningProgress(undefined)).toBeNull();
+  });
+
+  test('learning progress is capped at a full day', () => {
+    expect(learningProgress(classification({ class: 'learning', hoursObserved: 40 }))).toBe('24 of 24 hours');
+  });
+
+  test('an identity is shown unless the backend says otherwise', () => {
+    // Absence means an older backend, and showing too much is the safe failure.
+    const shown = identity({ classification: classification({ showByDefault: true }) });
+    const hidden = identity({ classification: classification({ showByDefault: false }) });
+    const unknown = identity();
+
+    expect(shownByDefault(shown as never)).toBe(true);
+    expect(shownByDefault(hidden as never)).toBe(false);
+    expect(shownByDefault(unknown as never)).toBe(true);
+  });
+
+  test('hidden identities are counted for the footer', () => {
+    const identities = [
+      identity({ key: 'addr:aa:bb:cc:dd:ee:01', classification: classification({ showByDefault: true }) }),
+      identity({ key: 'addr:aa:bb:cc:dd:ee:02', classification: classification({ showByDefault: false }) }),
+      identity({ key: 'addr:aa:bb:cc:dd:ee:03', classification: classification({ showByDefault: false }) }),
+    ];
+
+    expect(hiddenIdentities(identities as never)).toHaveLength(2);
   });
 });

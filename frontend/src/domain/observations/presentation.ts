@@ -6,13 +6,18 @@
  * corrupt both, so only the polar maths is reused.
  */
 import type {
+  ObservationClassification,
   ObservationDecision,
   ObservationIdentityView,
   ObservationSnapshot,
   ObservationSourceDescriptor,
   ObservationTrend,
 } from '@/types/observations.type';
-import { ObservationDecisions, ObservationTrends } from '@/types/observations.type';
+import {
+  ObservationClasses,
+  ObservationDecisions,
+  ObservationTrends,
+} from '@/types/observations.type';
 
 /**
  * Log range rings in metres.
@@ -376,4 +381,121 @@ export function snapshotSummary(snapshot: ObservationSnapshot | null): string {
   const base = `${identities} ${identities === 1 ? 'device' : 'devices'} from ${sources} ${sources === 1 ? 'source' : 'sources'}`;
   if (arrivals > 0) return `${base} · ${arrivals} new`;
   return base;
+}
+
+/**
+ * Plain-language presentation for each class.
+ *
+ * The words matter more than the badge colour. "Infrastructure" is jargon an operator has to
+ * translate; "Installed" says the same thing in the vocabulary of their house. The hint carries the
+ * reasoning, because a class the operator cannot check is a class they cannot trust.
+ *
+ * Every entry also states whether the class is hidden by default, so the "N hidden" footer can
+ * explain itself without repeating the rule.
+ */
+export const CLASS_PRESENTATION: Readonly<
+  Record<string, { label: string; hint: string; tone: 'installed' | 'yours' | 'outside' | 'passing' | 'learning' }>
+> = {
+  [ObservationClasses.Infrastructure]: {
+    label: 'Installed',
+    hint: 'Always here and never moves, like a hub or a TV on standby.',
+    tone: 'installed',
+  },
+  [ObservationClasses.Personal]: {
+    label: 'Yours',
+    hint: 'Comes and goes and its signal changes, like a phone or a watch.',
+    tone: 'yours',
+  },
+  [ObservationClasses.Neighbour]: {
+    label: 'Outside',
+    hint: 'Always much weaker than your own devices, so probably a neighbour.',
+    tone: 'outside',
+  },
+  [ObservationClasses.Transient]: {
+    label: 'Passing',
+    hint: 'Only heard briefly, so probably someone walking or driving past.',
+    tone: 'passing',
+  },
+  [ObservationClasses.Learning]: {
+    label: 'Learning',
+    hint: 'Not enough history yet to say what this is.',
+    tone: 'learning',
+  },
+  [ObservationClasses.ProvisionalMobile]: {
+    label: 'Someone’s device',
+    hint: 'Its address rotates, so it belongs to a person rather than the building.',
+    tone: 'yours',
+  },
+  [ObservationClasses.ProvisionalNeighbour]: {
+    label: 'Probably outside',
+    hint: 'Never heard strongly, so probably beyond the room.',
+    tone: 'outside',
+  },
+};
+
+/** Presentation for a class, falling back to learning rather than showing nothing. */
+export function classPresentation(classification: ObservationClassification | undefined) {
+  if (!classification) return CLASS_PRESENTATION[ObservationClasses.Learning];
+  return CLASS_PRESENTATION[classification.class] ?? CLASS_PRESENTATION[ObservationClasses.Learning];
+}
+
+/**
+ * Whether a class is a guess rather than a verdict.
+ *
+ * Two things make a class provisional: the backend says so, or the class is one of the pre-filter
+ * values, which only ever exist before any history does. Both are rendered differently, because a
+ * guess presented as a fact is how an operator learns to distrust the whole feature.
+ */
+export function isProvisional(classification: ObservationClassification | undefined): boolean {
+  if (!classification) return true;
+  if (classification.provisional === true) return true;
+  return (
+    classification.class === ObservationClasses.ProvisionalMobile ||
+    classification.class === ObservationClasses.ProvisionalNeighbour
+  );
+}
+
+/**
+ * One line describing the evidence behind a class.
+ *
+ * It prefers the backend's own wording, because that reason was written with the numbers in hand.
+ * A locally composed fallback exists so a class from an older backend is still explainable.
+ */
+export function classificationEvidence(classification: ObservationClassification | undefined): string {
+  if (!classification) return '';
+  if (classification.reason) return classification.reason;
+  if (classification.class === ObservationClasses.Learning) {
+    return `Learning — ${classification.hoursObserved} of 24 hours observed.`;
+  }
+  return '';
+}
+
+/**
+ * The learning progress line, shown instead of a bare class while evidence accumulates.
+ *
+ * A slow classifier that shows nothing looks broken; showing how far it has to go is the difference
+ * between "still working" and "gave up".
+ */
+export function learningProgress(classification: ObservationClassification | undefined): string | null {
+  if (!classification) return null;
+  if (classification.class !== ObservationClasses.Learning) return null;
+  return `${Math.min(classification.hoursObserved, 24)} of 24 hours`;
+}
+
+/**
+ * Whether an identity belongs in the default view.
+ *
+ * The backend decides this and sends it, so the rule lives in one place. When the field is absent —
+ * an older backend — everything is shown rather than guessed at, because hiding a device the
+ * operator wants is the worse failure.
+ */
+export function shownByDefault(identity: ObservationIdentityView): boolean {
+  return identity.classification?.showByDefault !== false;
+}
+
+/** Identities the default view hides, so the footer can say how many and why. */
+export function hiddenIdentities(
+  identities: readonly ObservationIdentityView[],
+): ObservationIdentityView[] {
+  return identities.filter((identity) => !shownByDefault(identity));
 }

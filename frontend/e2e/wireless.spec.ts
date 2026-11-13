@@ -290,3 +290,107 @@ test.describe('wireless viewer', () => {
     }
   });
 });
+
+/*
+ * Behavioural classification (spec 065).
+ *
+ * The point of this work was the maintainer's complaint that the viewer was "a big list of mostly
+ * mac address". These tests assert the two halves of the fix: demoted classes are hidden with an
+ * honest count, and every class that is shown says what it means in words.
+ */
+test.describe('classification', () => {
+  test('demoted classes are hidden and their count is reported', async ({ page }) => {
+    await signIn(page, '/wireless');
+
+    const table = page.locator('.observation-table');
+    // The installed device is hidden by default; this is the row type that made the list useless.
+    await expect(table.getByRole('button', { name: 'Isolate addr:aa:bb:cc:dd:ee:02', exact: true })).toHaveCount(0);
+
+    // Hiding is never silent: the footer states how many and offers a way back.
+    await expect(page.getByText(/1 device hidden/)).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Show them', exact: true })).toBeVisible();
+  });
+
+  test('revealing demoted classes brings them back', async ({ page }) => {
+    await signIn(page, '/wireless');
+
+    await page.getByRole('button', { name: 'Show them', exact: true }).click();
+
+    const table = page.locator('.observation-table');
+    await expect(table.getByRole('button', { name: 'Isolate addr:aa:bb:cc:dd:ee:02', exact: true })).toBeVisible();
+    await expect(page.getByText(/device hidden/)).toHaveCount(0);
+  });
+
+  test('the show-all toggle is an alternative route to the same state', async ({ page }) => {
+    await signIn(page, '/wireless');
+
+    await page.getByRole('button', { name: 'Show all kinds', exact: true }).click();
+
+    const table = page.locator('.observation-table');
+    await expect(table.getByRole('button', { name: 'Isolate addr:aa:bb:cc:dd:ee:02', exact: true })).toBeVisible();
+  });
+
+  test('every visible row states its class in words', async ({ page }) => {
+    await signIn(page, '/wireless');
+    const table = page.locator('.observation-table');
+
+    // No raw identifiers: the operator must never see "infrastructure" as a badge.
+    await expect(table.locator('.class-badge').first()).toBeVisible();
+    await expect(table.getByText('Yours', { exact: true })).toBeVisible();
+    await expect(table.getByText('infrastructure', { exact: true })).toHaveCount(0);
+  });
+
+  test('learning shows its progress rather than a bare label', async ({ page }) => {
+    await signIn(page, '/wireless');
+
+    // A slow classifier that shows nothing looks broken; naming the progress makes it read as work
+    // in progress.
+    await expect(page.locator('.observation-table').getByText('Learning', { exact: true })).toBeVisible();
+    await expect(page.locator('.observation-table').getByText('6 of 24 hours', { exact: true })).toBeVisible();
+  });
+
+  test('a provisional class is marked as a guess', async ({ page }) => {
+    await signIn(page, '/wireless');
+    const table = page.locator('.observation-table');
+
+    const badge = table.locator('.class-badge--provisional').first();
+    await expect(badge).toBeVisible();
+    // The marker and the accessible text both say so, so it is not colour-only.
+    await expect(table.getByText('(provisional guess)', { exact: false }).first()).toBeAttached();
+  });
+
+  test('the isolated view explains the class and shows its evidence', async ({ page }) => {
+    await signIn(page, '/wireless');
+
+    // The beacon carries a settled class with a reason, so it is the one whose explanation can be
+    // asserted; the other identities are still learning.
+    await page.getByRole('button', { name: 'Isolate Front door tag', exact: true }).click();
+
+    const focus = page.locator('.observation-focus');
+    await expect(focus).toBeVisible();
+    // The reasoning must be present: a class the operator cannot check is a class they cannot trust.
+    // Scoped to the reason element: the same sentence also appears in the badge tooltip, and a
+    // strict-mode match on both would be ambiguous.
+    await expect(focus.locator('.observation-focus__class-reason')).toContainText(
+      'Present for part of the day with a changing signal',
+    );
+    await expect(focus.getByText(/Advisory only/)).toBeVisible();
+    await expect(focus.getByRole('heading', { name: 'Evidence', exact: true })).toBeVisible();
+  });
+
+  test('the radar legend names its classes so colour is never the only cue', async ({ page }) => {
+    await signIn(page, '/wireless');
+
+    const legend = page.locator('.observation-radar__legend');
+    await expect(legend).toBeVisible();
+    await expect(legend.getByText('Yours', { exact: true })).toBeVisible();
+  });
+
+  test('classification survives a phone viewport without overflow', async ({ page }) => {
+    await signIn(page, '/wireless');
+    await page.getByRole('button', { name: 'Isolate addr:aa:bb:cc:dd:ee:01', exact: true }).click();
+
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
+    expect(overflow).toBe(false);
+  });
+});

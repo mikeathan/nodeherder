@@ -191,3 +191,116 @@ describe('parseObservationSnapshot', () => {
     }
   });
 });
+
+/**
+ * Classification is optional in the contract but strict when present.
+ *
+ * The distinction that matters: absent means the backend did not classify, which is normal for an
+ * older backend, while an unrecognised class means the payload disagrees with this build. The first
+ * is allowed through, the second is refused so the mismatch is visible rather than rendered as a
+ * blank badge.
+ */
+function withClassification(classification: unknown): Record<string, unknown> {
+  const snapshot = validSnapshot();
+  const identity = (snapshot.identities as Record<string, unknown>[])[0];
+  identity.classification = classification;
+  return snapshot;
+}
+
+function validClassification(): Record<string, unknown> {
+  return {
+    class: 'infrastructure',
+    showByDefault: false,
+    confidence: 0.72,
+    hoursObserved: 26,
+    daysConsidered: 3,
+    reason: 'Present almost all day, including overnight, and barely moved.',
+    advisory: true,
+  };
+}
+
+describe('classification contract', () => {
+  test('accepts a well-formed classification', () => {
+    const parsed = parseObservationSnapshot(withClassification(validClassification()));
+    expect(parsed).not.toBeNull();
+    const classification = parsed?.identities[0].classification;
+    expect(classification?.class).toBe('infrastructure');
+    expect(classification?.showByDefault).toBe(false);
+    expect(classification?.hoursObserved).toBe(26);
+    expect(classification?.reason).toContain('Present almost all day');
+  });
+
+  test('accepts a snapshot with no classification at all', () => {
+    // An older backend sends none. The viewer must render the identity anyway, because refusing the
+    // whole snapshot would blank the page on a mixed-version deployment.
+    const parsed = parseObservationSnapshot(validSnapshot());
+    expect(parsed).not.toBeNull();
+    expect(parsed?.identities[0].classification).toBeUndefined();
+  });
+
+  test('accepts every known class', () => {
+    for (const value of ['infrastructure', 'personal', 'neighbour', 'transient', 'learning', 'mobile-unidentifiable', 'likely-neighbour']) {
+      const classification = { ...validClassification(), class: value };
+      expect(parseObservationSnapshot(withClassification(classification))).not.toBeNull();
+    }
+  });
+
+  test('rejects an unrecognised class', () => {
+    // A class this build cannot name would render as a blank badge, which reads as a bug. Refusing
+    // the identity keeps the mismatch visible.
+    expect(parseObservationSnapshot(withClassification({ ...validClassification(), class: 'appliance' }))).toBeNull();
+  });
+
+  test('rejects a classification without the required fields', () => {
+    for (const missing of ['class', 'showByDefault', 'confidence', 'hoursObserved']) {
+      const classification = validClassification();
+      delete classification[missing];
+      expect(parseObservationSnapshot(withClassification(classification))).toBeNull();
+    }
+  });
+
+  test('rejects a non-boolean showByDefault', () => {
+    // This field decides visibility, so a coerced value would silently change what the operator
+    // sees. String "false" is famously truthy; rejecting is the only safe reading.
+    expect(parseObservationSnapshot(withClassification({ ...validClassification(), showByDefault: 'false' }))).toBeNull();
+  });
+
+  test('rejects a non-object classification', () => {
+    for (const bad of ['infrastructure', 42, [], true]) {
+      expect(parseObservationSnapshot(withClassification(bad))).toBeNull();
+    }
+  });
+
+  test('clamps a confidence outside the unit range', () => {
+    // Confidence is only used for wording intensity, so clamping is honest: the class itself is
+    // unaffected, and rejecting the whole snapshot over a display number would be disproportionate.
+    const high = parseObservationSnapshot(withClassification({ ...validClassification(), confidence: 4 }));
+    expect(high?.identities[0].classification?.confidence).toBe(1);
+
+    const low = parseObservationSnapshot(withClassification({ ...validClassification(), confidence: -2 }));
+    expect(low?.identities[0].classification?.confidence).toBe(0);
+  });
+
+  test('keeps the provisional and pending-change flags when present', () => {
+    const parsed = parseObservationSnapshot(
+      withClassification({
+        ...validClassification(),
+        class: 'mobile-unidentifiable',
+        provisional: true,
+        candidate: 'personal',
+        changePending: true,
+      }),
+    );
+    const classification = parsed?.identities[0].classification;
+    expect(classification?.provisional).toBe(true);
+    expect(classification?.candidate).toBe('personal');
+    expect(classification?.changePending).toBe(true);
+  });
+
+  test('bounds an oversized reason', () => {
+    const parsed = parseObservationSnapshot(
+      withClassification({ ...validClassification(), reason: 'x'.repeat(400) }),
+    );
+    expect(parsed?.identities[0].classification?.reason?.length).toBeLessThanOrEqual(240);
+  });
+});

@@ -21,12 +21,15 @@
     onlyNew: boolean;
     /** Selected distance range id; "any" applies no filter. */
     distance: string;
+    /** Whether demoted classes (installed, outside) are revealed. */
+    showDemoted: boolean;
   }>();
 
   const emit = defineEmits<{
     (event: 'update:selected', value: Record<string, string[]>): void;
     (event: 'update:onlyNew', value: boolean): void;
     (event: 'update:distance', value: string): void;
+    (event: 'update:showDemoted', value: boolean): void;
   }>();
 
   /** Facets this component knows how to render, intersected with what sources declare. */
@@ -80,6 +83,10 @@
   function toggleOnlyNew(): void {
     emit('update:onlyNew', !props.onlyNew);
   }
+
+  function toggleShowDemoted(): void {
+    emit('update:showDemoted', !props.showDemoted);
+  }
 </script>
 
 <template>
@@ -92,6 +99,21 @@
       @click="toggleOnlyNew"
     >
       Only new
+    </button>
+
+    <!--
+      The complement of the default filter. The default hides installed equipment and devices that
+      look like neighbours, which is most of the census; this reveals them again so nothing is ever
+      hidden without a way back.
+    -->
+    <button
+      type="button"
+      class="observation-filters__toggle"
+      :class="{ 'is-active': showDemoted }"
+      :aria-pressed="showDemoted"
+      @click="toggleShowDemoted"
+    >
+      {{ showDemoted ? 'Hiding nothing' : 'Show all kinds' }}
     </button>
 
     <!--

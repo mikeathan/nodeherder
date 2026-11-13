@@ -155,3 +155,79 @@ describe('useObservationViewer', () => {
     }
   });
 });
+
+/**
+ * The default filter is the point of classification.
+ *
+ * The operator's complaint was "a big list of mostly mac address". Installed equipment and
+ * neighbours are the bulk of that list, so the default view hides them — but the count is reported
+ * and the toggle exists, because a device hidden with no way to see it is a device that looks lost.
+ */
+describe('demoted classes', () => {
+  function classified(key: string, showByDefault: boolean) {
+    return identity(key, {
+      classification: {
+        class: showByDefault ? 'personal' : 'infrastructure',
+        showByDefault,
+        confidence: 0.7,
+        hoursObserved: 30,
+        advisory: true,
+      },
+    });
+  }
+
+  test('hides demoted identities by default', () => {
+    const state = ref(
+      snapshot([
+        classified('addr:aa:bb:cc:dd:ee:01', true),
+        classified('addr:aa:bb:cc:dd:ee:02', false),
+        classified('addr:aa:bb:cc:dd:ee:03', false),
+      ]),
+    );
+    const viewer = useObservationViewer(() => state.value);
+
+    expect(viewer.visible.value).toHaveLength(1);
+    expect(viewer.demotedCount.value).toBe(2);
+  });
+
+  test('reveals them when asked', () => {
+    const state = ref(
+      snapshot([
+        classified('addr:aa:bb:cc:dd:ee:01', true),
+        classified('addr:aa:bb:cc:dd:ee:02', false),
+      ]),
+    );
+    const viewer = useObservationViewer(() => state.value);
+
+    viewer.showDemoted.value = true;
+
+    expect(viewer.visible.value).toHaveLength(2);
+    expect(viewer.demotedCount.value).toBe(0);
+  });
+
+  test('shows an unclassified identity rather than hiding it', () => {
+    // An older backend sends no classification. Hiding those would blank the page on a mixed
+    // deployment, and showing too much is the safe failure.
+    const state = ref(snapshot([identity('addr:aa:bb:cc:dd:ee:09')]));
+    const viewer = useObservationViewer(() => state.value);
+
+    expect(viewer.visible.value).toHaveLength(1);
+    expect(viewer.demotedCount.value).toBe(0);
+  });
+
+  test('counts only the demoted, not everything filtered out', () => {
+    // The footer says how many are hidden by class. A distance filter hiding a device is a
+    // different statement, and conflating them would make the number meaningless.
+    const state = ref(
+      snapshot([
+        classified('addr:aa:bb:cc:dd:ee:01', true),
+        classified('addr:aa:bb:cc:dd:ee:02', false),
+      ]),
+    );
+    const viewer = useObservationViewer(() => state.value);
+
+    viewer.onlyNew.value = true;
+
+    expect(viewer.demotedCount.value).toBe(1);
+  });
+});

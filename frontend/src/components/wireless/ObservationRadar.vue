@@ -16,6 +16,7 @@
     autoRadarSpan,
     bearingForIdentity,
     distanceRSSI,
+    classPresentation,
     estimateDistanceMetres,
     identityTitle,
     isEphemeralIdentity,
@@ -87,9 +88,26 @@
         x: 50 + Math.sin(bearing) * ratio * outerRadius * RADAR_RADIUS_FRACTION,
         y: 50 - Math.cos(bearing) * ratio * outerRadius * RADAR_RADIUS_FRACTION,
         ephemeral: isEphemeralIdentity(identity),
+        // The class tone is resolved here rather than in the template so an absent classification
+        // still produces a valid class name, which keeps the styling total.
+        tone: classPresentation(identity.classification).tone,
+        label: classPresentation(identity.classification).label,
       };
     }),
   );
+
+  /**
+   * Legend entries for the classes currently on the radar, in a fixed order so it does not
+   * reshuffle as devices come and go.
+   */
+  const legend = computed(() => {
+    const seen = new Map<string, string>();
+    for (const blip of placed.value) {
+      if (!seen.has(blip.tone)) seen.set(blip.tone, blip.label);
+    }
+    const order = ['installed', 'yours', 'outside', 'passing', 'learning'];
+    return order.filter((tone) => seen.has(tone)).map((tone) => ({ tone, label: seen.get(tone)! }));
+  });
 
   /** Number of identities drawn at the edge because they exceed the span. */
   const beyondSpan = computed(() => placed.value.filter((blip) => blip.beyondSpan).length);
@@ -170,21 +188,42 @@
           :cy="blip.y"
           r="6"
         />
+        <!--
+          Shape encodes class as well as colour, so the radar stays readable without colour
+          vision. A rotating address keeps its dashed ring from spec 064; class adds a tone.
+        -->
         <circle
           class="observation-radar__blip"
-          :class="{
-            'observation-radar__blip--ephemeral': blip.ephemeral,
-            'observation-radar__blip--known': blip.identity.decision === 'known',
-          }"
+          :class="[
+            {
+              'observation-radar__blip--ephemeral': blip.ephemeral,
+              'observation-radar__blip--known': blip.identity.decision === 'known',
+            },
+            `observation-radar__blip--${blip.tone}`,
+          ]"
           :cx="blip.x"
           :cy="blip.y"
           r="2.4"
         />
-        <title>{{ blip.identity.label || blip.identity.key }} · {{ Math.round(blip.metres) }} m</title>
+        <title>
+          {{ blip.identity.label || blip.identity.key }} · {{ Math.round(blip.metres) }} m ·
+          {{ blip.label }}
+        </title>
       </g>
     </svg>
 
     <figcaption class="observation-radar__caption">
+      <!--
+        The legend names each class in words, so the radar is readable without colour vision and
+        the operator learns what the tones mean. It lists only the classes actually drawn, which
+        stops it becoming a permanent key to things that are not on screen.
+      -->
+      <span v-if="legend.length > 0" class="observation-radar__legend">
+        <span v-for="entry in legend" :key="entry.tone" class="observation-radar__legend-item">
+          <span class="observation-radar__legend-dot" :class="`observation-radar__blip--${entry.tone}`" aria-hidden="true" />
+          {{ entry.label }}
+        </span>
+      </span>
       Range only · no bearing. Distances are estimated from signal strength and are accurate to
       a few metres indoors.
       <span v-if="unplaced > 0" class="observation-radar__unplaced">
@@ -254,24 +293,120 @@
     outline: none;
   }
 
-  .observation-radar__blip-group:focus-visible .observation-radar__blip {
+  .observation-radar__blip-group:focus-visible .observation-radar__blip--installed {
+  fill: var(--text-muted, #495057);
+  opacity: 0.55;
+}
+
+.observation-radar__blip--yours {
+  fill: var(--accent-strong, #1864ab);
+}
+
+.observation-radar__blip--outside {
+  fill: var(--text-subtle, #868e96);
+  opacity: 0.6;
+}
+
+.observation-radar__blip--passing {
+  fill: var(--text-subtle, #868e96);
+  opacity: 0.4;
+}
+
+.observation-radar__blip--learning {
+  fill: var(--text-muted, #495057);
+  opacity: 0.8;
+}
+
+.observation-radar__blip {
     stroke: var(--accent-primary, #4a9eff);
     stroke-width: 1.4;
   }
 
-  .observation-radar__blip-group:hover .observation-radar__blip {
+  .observation-radar__blip-group:hover .observation-radar__blip--installed {
+  fill: var(--text-muted, #495057);
+  opacity: 0.55;
+}
+
+.observation-radar__blip--yours {
+  fill: var(--accent-strong, #1864ab);
+}
+
+.observation-radar__blip--outside {
+  fill: var(--text-subtle, #868e96);
+  opacity: 0.6;
+}
+
+.observation-radar__blip--passing {
+  fill: var(--text-subtle, #868e96);
+  opacity: 0.4;
+}
+
+.observation-radar__blip--learning {
+  fill: var(--text-muted, #495057);
+  opacity: 0.8;
+}
+
+.observation-radar__blip {
     stroke: var(--text-primary, #e6edf3);
     stroke-width: 1;
   }
 
   /* The isolated identity is highlighted so the radar and the Focus panel agree. */
-  .observation-radar__blip-group.is-selected .observation-radar__blip {
+  .observation-radar__blip-group.is-selected .observation-radar__blip--installed {
+  fill: var(--text-muted, #495057);
+  opacity: 0.55;
+}
+
+.observation-radar__blip--yours {
+  fill: var(--accent-strong, #1864ab);
+}
+
+.observation-radar__blip--outside {
+  fill: var(--text-subtle, #868e96);
+  opacity: 0.6;
+}
+
+.observation-radar__blip--passing {
+  fill: var(--text-subtle, #868e96);
+  opacity: 0.4;
+}
+
+.observation-radar__blip--learning {
+  fill: var(--text-muted, #495057);
+  opacity: 0.8;
+}
+
+.observation-radar__blip {
     fill: var(--accent-primary, #4a9eff);
     stroke: var(--text-primary, #e6edf3);
     stroke-width: 1.2;
   }
 
-  .observation-radar__blip {
+  .observation-radar__blip--installed {
+  fill: var(--text-muted, #495057);
+  opacity: 0.55;
+}
+
+.observation-radar__blip--yours {
+  fill: var(--accent-strong, #1864ab);
+}
+
+.observation-radar__blip--outside {
+  fill: var(--text-subtle, #868e96);
+  opacity: 0.6;
+}
+
+.observation-radar__blip--passing {
+  fill: var(--text-subtle, #868e96);
+  opacity: 0.4;
+}
+
+.observation-radar__blip--learning {
+  fill: var(--text-muted, #495057);
+  opacity: 0.8;
+}
+
+.observation-radar__blip {
     fill: var(--accent-primary, #4a9eff);
     stroke: var(--surface-sunken, #0f1419);
     stroke-width: 0.3;
@@ -295,12 +430,55 @@
     font-size: 0.8125rem;
   }
 
-  .observation-radar__unplaced {
+  .observation-radar__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.75rem;
+  margin-bottom: 0.3rem;
+}
+
+.observation-radar__legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.observation-radar__legend-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+}
+
+.observation-radar__unplaced {
     display: block;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .observation-radar__blip {
+    .observation-radar__blip--installed {
+  fill: var(--text-muted, #495057);
+  opacity: 0.55;
+}
+
+.observation-radar__blip--yours {
+  fill: var(--accent-strong, #1864ab);
+}
+
+.observation-radar__blip--outside {
+  fill: var(--text-subtle, #868e96);
+  opacity: 0.6;
+}
+
+.observation-radar__blip--passing {
+  fill: var(--text-subtle, #868e96);
+  opacity: 0.4;
+}
+
+.observation-radar__blip--learning {
+  fill: var(--text-muted, #495057);
+  opacity: 0.8;
+}
+
+.observation-radar__blip {
       transition: none;
     }
   }

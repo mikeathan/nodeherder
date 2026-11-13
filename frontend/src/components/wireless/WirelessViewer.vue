@@ -33,6 +33,8 @@
   const {
     facetSelection,
     onlyNew,
+    showDemoted,
+    demotedCount,
     distanceRange,
     radarSpan,
     viewMode,
@@ -170,10 +172,24 @@
         :selected="facetSelection"
         :only-new="onlyNew"
         :distance="distanceRange"
+        :show-demoted="showDemoted"
         @update:selected="facetSelection = $event"
         @update:only-new="onlyNew = $event"
         @update:distance="distanceRange = $event"
+        @update:show-demoted="showDemoted = $event"
       />
+
+      <!--
+        Hidden-by-class notice. The count is always present when anything is hidden, because a
+        device that disappears without explanation reads as a fault rather than as a filter.
+      -->
+      <p v-if="demotedCount > 0" class="wireless-viewer__demoted" role="status">
+        {{ demotedCount }} {{ demotedCount === 1 ? 'device' : 'devices' }} hidden — installed
+        equipment and devices that look like neighbours.
+        <button type="button" class="wireless-viewer__link" @click="showDemoted = true">
+          Show them
+        </button>
+      </p>
 
       <ObservationFocus
         v-if="viewMode === ObservationViews.Focus && selected"
@@ -307,7 +323,13 @@
     color: var(--text-muted, #8b9bab);
   }
 
-  .wireless-viewer__link {
+  .wireless-viewer__demoted {
+  margin: 0 0 0.75rem;
+  font-size: 0.8rem;
+  color: var(--text-muted, #495057);
+}
+
+.wireless-viewer__link {
     background: none;
     border: 0;
     color: var(--accent-primary, #4a9eff);

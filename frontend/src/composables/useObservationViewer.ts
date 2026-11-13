@@ -14,6 +14,7 @@ import type {
 import { ObservationFacets, ObservationViews } from '@/types/observations.type';
 import {
   ANY_DISTANCE_RANGE,
+  shownByDefault,
   distanceRangeById,
   groupIdentities,
   isRecentArrival,
@@ -41,6 +42,14 @@ export function useObservationViewer(snapshot: () => ObservationSnapshot | null)
   const facetSelection = ref<Record<string, string[]>>({});
   /** Show only identities that appeared within the recent window. */
   const onlyNew = ref(false);
+  /**
+   * Whether demoted classes (installed and outside) are revealed.
+   *
+   * Off by default, which is the whole point of the classification work: the operator's complaint
+   * was a wall of MAC addresses, and the majority of that wall is equipment and neighbours. The
+   * toggle exists so nothing is ever hidden without a way to see it.
+   */
+  const showDemoted = ref(false);
   /** Selected distance band id; the "any" range applies no filter. */
   const distanceRange = ref<string>(ANY_DISTANCE_RANGE.id);
   /** Radar span in metres, or null to scale automatically to the data. */
@@ -76,13 +85,14 @@ export function useObservationViewer(snapshot: () => ObservationSnapshot | null)
   /**
    * Apply the operator's filters.
    *
-   * "New" means recently appeared, never "untriaged": on a first run every identity is
-   * untriaged, so filtering on the decision would match everything and look broken.
+   * "New" means recently appeared, never "untriaged": on a first run every identity is untriaged,
+   * so filtering on the decision would match everything and look broken.
    */
   const visible = computed(() => {
     const selection = facetSelection.value;
     const now = Date.now();
     return identities.value.filter((identity) => {
+      if (!showDemoted.value && !shownByDefault(identity)) return false;
       if (onlyNew.value && !isRecentArrival(identity, now)) return false;
       if (!withinDistanceRange(identity, distanceRangeById(distanceRange.value))) return false;
       return Object.entries(selection).every(([facet, values]) => {
@@ -97,6 +107,17 @@ export function useObservationViewer(snapshot: () => ObservationSnapshot | null)
 
   /** Grouped sections for the list view. */
   const grouped = computed(() => groupIdentities(visible.value));
+
+  /**
+   * How many identities the default filter is hiding.
+   *
+   * Reported rather than silently dropped: a device that vanishes without explanation looks like a
+   * fault, and the operator needs to know the count to decide whether to reveal them.
+   */
+  const demotedCount = computed(() => {
+    if (showDemoted.value) return 0;
+    return identities.value.filter((identity) => !shownByDefault(identity)).length;
+  });
 
   /**
    * Isolated identity, resolved by key rather than held as an object.
@@ -158,6 +179,8 @@ export function useObservationViewer(snapshot: () => ObservationSnapshot | null)
   return {
     facetSelection,
     onlyNew,
+    showDemoted,
+    demotedCount,
     distanceRange,
     radarSpan,
     viewMode,

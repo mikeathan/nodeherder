@@ -82,6 +82,60 @@ export type ObservationIdentityView = {
   trendDeltaDb?: number;
   /** Recent signal strengths in dBm, oldest first, for a sparkline. */
   signal?: number[];
+  /**
+   * Advisory behavioural class, computed from stored evidence.
+   *
+   * Absent means the backend did not classify this identity at all, which is different from a
+   * class of "learning". Omitted rather than defaulted so the UI can tell those apart.
+   */
+  classification?: ObservationClassification;
+};
+
+/** The behavioural classes a device can be assigned. */
+export const ObservationClasses = {
+  /** Present almost all day and barely moving: installed equipment. */
+  Infrastructure: 'infrastructure',
+  /** Present part of the day and moving: a device someone carries. */
+  Personal: 'personal',
+  /** Consistently weaker than devices in the room, so probably beyond it. */
+  Neighbour: 'neighbour',
+  /** Barely heard across several days: a passer-by. */
+  Transient: 'transient',
+  /** Not enough evidence yet. A real state, never an error. */
+  Learning: 'learning',
+  /** Rotating address: someone's device, shown before any history exists. */
+  ProvisionalMobile: 'mobile-unidentifiable',
+  /** Never heard strongly: probably outside, hidden before any history exists. */
+  ProvisionalNeighbour: 'likely-neighbour',
+} as const;
+
+export type ObservationClass = (typeof ObservationClasses)[keyof typeof ObservationClasses];
+
+/**
+ * An advisory class plus the evidence behind it.
+ *
+ * The evidence travels with the class because a bare label cannot be argued with: an operator who
+ * disagrees with "infrastructure" needs "present 23 of 24 hours, never moved" to judge whether the
+ * system or their expectation is wrong.
+ */
+export type ObservationClassification = {
+  class: ObservationClass | string;
+  /** True when the class is a first-packet guess and must not be presented as settled. */
+  provisional?: boolean;
+  /** Whether the identity belongs in the default view. Decided by the backend, not re-derived. */
+  showByDefault: boolean;
+  /** A class the evidence favours that hysteresis has held back, and whether one is pending. */
+  candidate?: string;
+  changePending?: boolean;
+  /** Margin over the runner-up class, 0-1. */
+  confidence: number;
+  /** How much evidence exists, so the UI can say how far learning has to go. */
+  hoursObserved: number;
+  daysConsidered?: number;
+  /** Human-readable justification behind the class. */
+  reason?: string;
+  /** Always true for a computed class: an operator triage decision outranks it. */
+  advisory?: boolean;
 };
 
 /** How the operator wants the identities presented. */

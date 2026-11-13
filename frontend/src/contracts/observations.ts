@@ -10,6 +10,8 @@ import {
   ObservationDecisions,
   ObservationMedia,
   ObservationTrends,
+  ObservationClasses,
+  type ObservationClassification,
   type ObservationDecision,
   type ObservationIdentityView,
   type ObservationMedium,
@@ -20,7 +22,10 @@ import {
   type ObservationTrend,
 } from '@/types/observations.type';
 
-const maxima: Record<'sources' | 'identities' | 'readings' | 'media' | 'facets' | 'text' | 'signal', number> = {
+const maxima: Record<
+  'sources' | 'identities' | 'readings' | 'media' | 'facets' | 'text' | 'signal' | 'reason',
+  number
+> = {
   sources: 64,
   identities: 1000,
   readings: 64,
@@ -28,6 +33,9 @@ const maxima: Record<'sources' | 'identities' | 'readings' | 'media' | 'facets' 
   facets: 16,
   text: 512,
   signal: 128,
+  // Long enough for a full sentence from the classifier, short enough that a malformed or hostile
+  // payload cannot bloat a snapshot.
+  reason: 240,
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -36,6 +44,18 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function boundedString(value: unknown, max = maxima.text): string | null {
   return typeof value === 'string' && value.length <= max ? value : null;
+}
+
+/**
+ * Truncate explanatory text rather than dropping it.
+ *
+ * A reason is the only thing that makes a class arguable, so losing it entirely because the backend
+ * wrote an unusually long sentence would remove the explanation the operator needs. Truncation
+ * degrades the sentence; rejection removes it.
+ */
+function truncatedString(value: unknown, max: number): string | null {
+  if (typeof value !== 'string' || value.length === 0) return null;
+  return value.length <= max ? value : value.slice(0, max);
 }
 
 function finiteNumber(value: unknown): number | null {
@@ -151,6 +171,12 @@ function parseIdentity(raw: unknown): ObservationIdentityView | null {
   if (raw.trendDeltaDb !== undefined && raw.trendDeltaDb !== null && trendDeltaDb === null) return null;
   const signal = parseSignal(raw.signal);
   if (signal === null) return null;
+  // Classification is optional: an older backend simply does not send it, and the viewer then
+  // falls back to whatever it can derive locally. An unrecognised class is rejected rather than
+  // passed through, because rendering an unknown class would produce a blank badge with no
+  // explanation — worse than showing nothing.
+  const classification = parseClassification(raw.classification);
+  if (classification === null) return null;
   return {
     key,
     kind,
@@ -167,7 +193,49 @@ function parseIdentity(raw: unknown): ObservationIdentityView | null {
     ...(trend ? { trend } : {}),
     ...(trendDeltaDb === null || trendDeltaDb === undefined ? {} : { trendDeltaDb }),
     ...(signal ? { signal } : {}),
+    ...(classification ? { classification } : {}),
   };
+}
+
+/**
+ * Parse an advisory classification.
+ *
+ * Absent is allowed. An unrecognised class is rejected: the alternative is a row whose class the
+ * UI cannot name, which reads as a bug. A class the UI does not know yet is a signal that the
+ * backend is newer than the frontend, and refusing it keeps the failure visible rather than silent.
+ */
+function parseClassification(raw: unknown): ObservationClassification | undefined | null {
+  if (raw === undefined || raw === null) return undefined;
+  if (!isRecord(raw)) return null;
+
+  const known = new Set<string>(Object.values(ObservationClasses));
+  const value = boundedString(raw.class, 64);
+  if (!value || !known.has(value)) return null;
+
+  const confidence = finiteNumber(raw.confidence);
+  const hoursObserved = finiteNumber(raw.hoursObserved);
+  if (confidence === null || hoursObserved === null) return null;
+  if (typeof raw.showByDefault !== 'boolean') return null;
+
+  return {
+    class: value,
+    showByDefault: raw.showByDefault,
+    confidence: clampUnit(confidence),
+    hoursObserved: Math.max(0, Math.round(hoursObserved)),
+    ...(raw.provisional === true ? { provisional: true } : {}),
+    ...(raw.advisory === true ? { advisory: true } : {}),
+    ...(boundedString(raw.candidate, 64) ? { candidate: boundedString(raw.candidate, 64)! } : {}),
+    ...(raw.changePending === true ? { changePending: true } : {}),
+    ...(finiteNumber(raw.daysConsidered) !== null
+      ? { daysConsidered: Math.max(0, Math.round(finiteNumber(raw.daysConsidered)!)) }
+      : {}),
+    ...(truncatedString(raw.reason, maxima.reason) ? { reason: truncatedString(raw.reason, maxima.reason)! } : {}),
+  };
+}
+
+/** Bound a value into [0, 1]; a confidence outside that range is a contract violation. */
+function clampUnit(value: number): number {
+  return value < 0 ? 0 : value > 1 ? 1 : value;
 }
 
 /** Parse a trend value. Absent is allowed; an unrecognised value is rejected. */

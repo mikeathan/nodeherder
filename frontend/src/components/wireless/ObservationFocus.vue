@@ -23,6 +23,8 @@
     trendPresentation,
   } from '@/domain/observations/presentation';
   import { formatQuantity } from '@/utils/units';
+  import ClassBadge from './ClassBadge.vue';
+  import EvidenceTimeline from './EvidenceTimeline.vue';
   import UiButton from '@/components/ui/UiButton.vue';
 
   const props = withDefaults(
@@ -81,6 +83,9 @@
     return { points, min, max };
   });
 
+  /** The class reasoning, if any, so the isolated view can show why. */
+  const classificationReason = computed(() => props.identity.classification?.reason ?? '');
+
   const isUntriaged = computed(() => props.identity.decision === ObservationDecisions.Unknown);
 </script>
 
@@ -97,6 +102,23 @@
       {{ identityTitle(props.identity) }}
     </h2>
     <p class="observation-focus__key">{{ props.identity.key }}</p>
+
+    <!--
+      The class and its reasoning, shown on the isolated view because this is where the operator
+      has decided the device is worth investigating. A bare badge would be useless here: what they
+      need is the evidence, so they can judge it themselves.
+    -->
+    <div v-if="props.identity.classification" class="observation-focus__class">
+      <ClassBadge :classification="props.identity.classification" />
+      <p v-if="classificationReason" class="observation-focus__class-reason">{{ classificationReason }}</p>
+      <p class="observation-focus__class-note">
+        Advisory only — your own decision overrules it.
+      </p>
+    </div>
+
+    <!-- The evidence pane belongs on the isolated view: this is where the operator has decided a
+         device is worth understanding, so it is the right place to show why. -->
+    <EvidenceTimeline :identity-key="props.identity.key" />
 
     <!--
       Range rings, deliberately without a bearing. The inner blip sits at a radius proportional
@@ -248,7 +270,28 @@
     letter-spacing: 0.04em;
   }
 
-  .observation-focus__trend {
+  .observation-focus__class {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  max-width: 34rem;
+}
+
+.observation-focus__class-reason {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--text-muted, #495057);
+}
+
+.observation-focus__class-note {
+  margin: 0;
+  font-size: 0.7rem;
+  color: var(--text-subtle, #868e96);
+}
+
+.observation-focus__trend {
     margin: 0;
     font-size: 0.9375rem;
   }

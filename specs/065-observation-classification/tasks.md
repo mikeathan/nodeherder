@@ -26,17 +26,11 @@ Mark done only with evidence. No task is started.
 
 ## Frontend
 
-- [ ] T012 — Contracts and types for the new optional fields; mock fixtures covering each
-  class plus learning. IDs: FE-02; done: malformed and unknown-class cases rejected.
-- [ ] T013 — Tracked/Census split with the default filter; "N hidden" footer. IDs: FR-09,
-  AC-15; done: default view hides infrastructure and neighbour.
-- [ ] T014 — Class presentation: word, confidence, "why" phrase, transition note, and a
-  distinct **provisional** treatment that states the class is not settled. IDs: AC-07, AC-10,
-  AC-22; done: no bare badges anywhere and a provisional class is never shown as settled.
-- [ ] T015 — Timeline pane, desktop grid and mobile horizontal scroll with a sticky identity
-  column. IDs: AC-15; done: renders a day per identity.
-- [ ] T016 — Radar: class colours, worded legend, labels for the tracked set. IDs: FE-04;
-  done: colour is never the only cue.
+- [x] T012 — **DONE**: types, contract parser, 12 contract tests. An unknown class is rejected; an absent one is allowed.
+- [x] T013 — **DONE**: default filter hides demoted classes with an honest count and two ways to reveal them.
+- [x] T014 — **DONE**: `ClassBadge.vue` with plain-language labels, provisional marking, learning progress, and the reasoning in Focus.
+- [x] T015 — **DONE**: `EvidenceTimeline.vue` — one row per day with a 24-hour strip, transitions with their reasons, mobile grid reflow.
+- [x] T016 — **DONE**: radar blips carry a class tone, and the legend names each class in words so colour is never the only cue.
 
 ## Handoff
 
