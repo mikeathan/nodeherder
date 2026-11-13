@@ -26,6 +26,13 @@ Mark done only with evidence. No task is started.
   FR-06, FR-10, AC-01…AC-08, AC-11, AC-17.
 - [ ] T006 — Implement `classify.go` as a pure function; IDs: FR-02, FR-03; depends: T005;
   done: green, table-driven, no clock dependency outside an injected `now`.
+- [ ] T006a — Red tests for the provisional pre-filter: rotating address is mobile and shown;
+  never-strong is likely-neighbour and hidden; stable-plus-strong stays learning and shown;
+  a real class supersedes a provisional one and records the transition.
+  Paths: `provisional_test.go`. IDs: FR-11, FR-12, AC-18…AC-22; depends: T006.
+- [ ] T006b — Implement the provisional pre-filter, used only below the evidence threshold.
+  IDs: FR-11, FR-12; depends: T006a; done: green, and a test proving the full classifier
+  always wins once evidence exists.
 - [ ] T007 — Red tests for the summaries store: write floor, retention, `Prune`, absence of a
   file when there are no observations, and that **transitions are pruned on the same 30-day
   boundary as summaries**. Paths: `internal/observations/summaries/*_test.go`.
@@ -47,8 +54,9 @@ Mark done only with evidence. No task is started.
   class plus learning. IDs: FE-02; done: malformed and unknown-class cases rejected.
 - [ ] T013 — Tracked/Census split with the default filter; "N hidden" footer. IDs: FR-09,
   AC-15; done: default view hides infrastructure and neighbour.
-- [ ] T014 — Class presentation: word, confidence, "why" phrase, transition note. IDs: AC-07,
-  AC-10; done: no bare badges anywhere.
+- [ ] T014 — Class presentation: word, confidence, "why" phrase, transition note, and a
+  distinct **provisional** treatment that states the class is not settled. IDs: AC-07, AC-10,
+  AC-22; done: no bare badges anywhere and a provisional class is never shown as settled.
 - [ ] T015 — Timeline pane, desktop grid and mobile horizontal scroll with a sticky identity
   column. IDs: AC-15; done: renders a day per identity.
 - [ ] T016 — Radar: class colours, worded legend, labels for the tracked set. IDs: FE-04;

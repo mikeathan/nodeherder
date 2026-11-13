@@ -37,7 +37,8 @@ Additive fields on the existing identity object:
 
 | Field | Type | Meaning |
 | --- | --- | --- |
-| `class` | string | `infrastructure`, `personal`, `neighbour`, `transient`, or `learning` |
+| `class` | string | `infrastructure`, `personal`, `neighbour`, `transient`, `learning`, or a provisional value |
+| `provisional` | boolean | True when the class came from the first-packet pre-filter, not the classifier |
 | `confidence` | number 0–1 | Margin over the runner-up class; 0 while learning |
 | `evidence.dutyCycle` | number 0–1 | Fraction of observed hours present, over the window |
 | `evidence.hoursObserved` | integer | Hours of evidence behind the class |
@@ -50,6 +51,11 @@ Additive fields on the existing identity object:
 
 - `learning` means insufficient evidence, not "unknown class". A consumer MUST render it as a
   learning state with `hoursObserved`, never as a class.
+- **Provisional classes** (`provisional: true`) are the day-one pre-filter, available before any
+  history exists. There are two: `mobile-unidentifiable` for a rotating address, and
+  `likely-neighbour` for a device never heard strongly. A consumer MUST render them as
+  provisional and MUST NOT present them as settled. They exist so the first day is not the full
+  census, and they are superseded by a real class once evidence exists.
 - `class` is **advisory**. An operator triage decision (`decision: "known" | "ignored"`)
   takes precedence for display, and the class is still carried so the UI can show both.
 - `neighbour` is a heuristic, not a measurement. With one source it cannot be separated from

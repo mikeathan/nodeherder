@@ -105,11 +105,42 @@ fixture data.
 
 ### US-04 — Bounded, prunable storage (priority P1)
 
+Independent verification: store and recorder tests with fixture data.
+
 - AC-12: Given an identity seen in only one hour or with fewer than the packet floor, then no
   daily summary is written.
 - AC-13: Given summaries older than the retention window, then they are pruned.
 - AC-14: Given no wireless observations at all, then no database file is created and no
   goroutine runs beyond the existing service.
+
+### US-05 — Day one is already quieter (priority P1)
+
+The default filter hides infrastructure, but during learning there is no class to filter on,
+so the first day would still be the full census. Two signals require no history and are
+available on the first packet, so they carry the filter until the classifier has evidence.
+
+Independent verification: unit tests over synthetic first-session evidence; a browser check
+with only learning-state fixture data.
+
+- AC-18: Given an identity with a rotating address (`stable: false`), when less than 24 hours
+  of evidence exists, then it is classed `mobile-unidentifiable` and shown, because a rotating
+  address is a person's device rather than household equipment.
+- AC-19: Given an identity whose strongest reading in the session never exceeded the weak
+  threshold, when less than 24 hours of evidence exists, then it is classed `likely-neighbour`
+  and hidden by default.
+- AC-20: Given an identity with a stable address that has been heard strongly, when less than
+  24 hours of evidence exists, then it is shown, because it may be household equipment the
+  operator cares about.
+- AC-21: Given the provisional class is superseded by a real class, then the row's class
+  changes and the transition records that the provisional class preceded it.
+- AC-22: Given the pre-filter is active, then the row states that the class is provisional and
+  gives the hours observed, so a withheld class is never mistaken for a missing one.
+
+Rationale for the two signals: a rotating address means the device is someone's, not the
+building's, so it can never be household infrastructure. A device never heard strongly is
+outside the room, which with one anchor is the closest honest approximation of "neighbour".
+Both are weaker claims than the full classifier and are labelled as provisional for that
+reason.
 
 ### Navigation and presentation
 
@@ -136,6 +167,11 @@ fixture data.
   Acceptance: AC-14.
 - FR-10: MUST show a learning state instead of a class below the evidence threshold.
   Acceptance: AC-05.
+- FR-11: MUST apply a provisional class before the evidence threshold, using only signals
+  available on the first packet: rotating address, and strongest-reading-so-far.
+  Acceptance: AC-18, AC-19, AC-20.
+- FR-12: MUST mark a provisional class as provisional in the payload and the UI, and MUST
+  record a transition when a real class supersedes it. Acceptance: AC-21, AC-22.
 - NFR-01: Summary storage MUST stay bounded: at most one row per identity per day, with a
   stated ceiling for a typical household.
 - NFR-02: Classification MUST be computed on the aggregation worker, never per render.

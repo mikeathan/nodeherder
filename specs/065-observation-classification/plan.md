@@ -115,7 +115,27 @@ is the intended trade: slow enough that a fridge does not flap, fast enough that
 which really moved is corrected within a week. Reducing the half-life to 2 days would flip in
 about two days at the cost of more flapping; that single constant is the tuning lever.
 
-### 2.4 Classification
+### 2.4 Provisional classes before any evidence exists
+
+The default filter hides infrastructure, but classification needs 24 h, so without this the
+first day is still the full census — the exact complaint the work exists to fix. Two signals
+are available on the first packet and need no history:
+
+| Signal | Provisional class | Shown by default | Why it is safe |
+| --- | --- | --- | --- |
+| Rotating address (`stable: false`) | `mobile-unidentifiable` | yes | a rotating address is someone's device, never household equipment |
+| Never heard strongly | `likely-neighbour` | no | outside the room, so outside the property is the likely case |
+| Stable + heard strongly | `learning` | yes | may be household equipment the operator cares about |
+
+Provisional classes carry `provisional: true`, are worded as provisional in the UI, and are
+superseded by a real class when evidence arrives. The transition records that a provisional
+class preceded it, so the sequence is inspectable rather than silent.
+
+Deliberately not done here: guessing infrastructure from a stable address alone. Plenty of
+personal devices use static addresses, and hiding a device the operator wants would be worse
+than showing one they do not.
+
+### 2.5 Classification
 
 `internal/observations/classify.go`, a pure function over the rolling window so it is
 directly testable and never persisted.
@@ -159,7 +179,7 @@ Family-level classification (FR-06, AC-11): summaries for short-lived addresses 
 `Family` (vendor + AD signature from spec 064's decoder). A family with a personal profile is
 treated as personal even though no individual address survives.
 
-### 2.5 Broadcast
+### 2.6 Broadcast
 
 Additive fields on `IdentityView`:
 
