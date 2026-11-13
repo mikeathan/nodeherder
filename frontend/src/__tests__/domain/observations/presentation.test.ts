@@ -35,7 +35,6 @@ import {
   CLASS_PRESENTATION,
   classPresentation,
   classificationEvidence,
-  hiddenIdentities,
   isProvisional,
   learningProgress,
   shownByDefault,
@@ -683,13 +682,15 @@ describe('class presentation', () => {
     expect(shownByDefault(unknown as never)).toBe(true);
   });
 
-  test('hidden identities are counted for the footer', () => {
+  test('the demotion predicate identifies exactly the hidden set', () => {
+    // The count in the footer is derived by filtering on this predicate, so the predicate is the
+    // thing worth pinning rather than a second helper that duplicated it.
     const identities = [
       identity({ key: 'addr:aa:bb:cc:dd:ee:01', classification: classification({ showByDefault: true }) }),
       identity({ key: 'addr:aa:bb:cc:dd:ee:02', classification: classification({ showByDefault: false }) }),
       identity({ key: 'addr:aa:bb:cc:dd:ee:03', classification: classification({ showByDefault: false }) }),
     ];
 
-    expect(hiddenIdentities(identities as never)).toHaveLength(2);
+    expect(identities.filter((entry) => !shownByDefault(entry))).toHaveLength(2);
   });
 });

@@ -349,6 +349,9 @@ func (s *Service) record(observation model.Observation) {
 	if current.identity.Label == "" && observation.Identity.Label != "" {
 		current.identity.Label = observation.Identity.Label
 	}
+	// A distinct allocation per source reading. Assigning `&observation.RSSI` would alias the
+	// observation, which the caller may reuse for its next entry — a genuine hazard with batch
+	// decoders that decode into a reused struct.
 	rssi := observation.RSSI
 	current.sources[observation.Source] = &rssi
 	// RSSI tracks the most recent reading, not a lifetime maximum: a device that moves away
@@ -460,6 +463,9 @@ func (s *Service) snapshotLocked(now time.Time) model.Snapshot {
 		snapshot.Truncated = true
 	}
 
+	// One scan for the reference reading, not one per identity.
+	strongestRSSI := s.strongestRSSILocked()
+
 	snapshot.Identities = make([]model.IdentityView, 0, len(visible))
 	for _, current := range visible {
 		decision := decisions[current.identity.Key].Decision
@@ -493,7 +499,7 @@ func (s *Service) snapshotLocked(now time.Time) model.Snapshot {
 			attached := cached
 			view.Classification = &attached
 		} else {
-			preliminary := s.provisionalLocked(current)
+			preliminary := s.provisionalLocked(current, strongestRSSI)
 			view.Classification = &preliminary
 		}
 		snapshot.Identities = append(snapshot.Identities, view)
@@ -505,25 +511,17 @@ func (s *Service) snapshotLocked(now time.Time) model.Snapshot {
 //
 // This is what makes the first day usable: the pre-filter needs no history, so it decides
 // visibility immediately instead of leaving the operator with the full census until tomorrow.
-func (s *Service) provisionalLocked(current *aggregate) model.ClassificationView {
-	// The strongest reading in the whole snapshot is the reference for "far away". Using the
-	// identity's own history would be circular, and using a fixed dBm threshold would be wrong
-	// for every installation whose antenna gain differs.
-	strongest := 0
-	for _, other := range s.aggregates {
-		if other.rssi == nil {
-			continue
-		}
-		if strongest == 0 || *other.rssi > strongest {
-			strongest = *other.rssi
-		}
-	}
-
+//
+// strongestRSSI is computed once per snapshot and passed in. It used to be derived here by
+// scanning every aggregate, which made one snapshot O(n^2) in identities — and the snapshot is
+// built on every publish tick, with a cap of 256 identities, so that was 256 full scans every
+// 250 ms for a value that is identical for all of them.
+func (s *Service) provisionalLocked(current *aggregate, strongestRSSI int) model.ClassificationView {
 	rssi := 0
 	if current.rssi != nil {
 		rssi = *current.rssi
 	}
-	guess := provisionalClass(current.identity, rssi, strongest, s.clock.Now())
+	guess := provisionalClass(current.identity, rssi, strongestRSSI, s.clock.Now())
 	return model.ClassificationView{
 		Class:         guess.Class,
 		Provisional:   guess.Provisional,
@@ -531,6 +529,25 @@ func (s *Service) provisionalLocked(current *aggregate) model.ClassificationView
 		Reason:        guess.Reason,
 		Advisory:      true,
 	}
+}
+
+// strongestRSSILocked returns the strongest single reading in the current snapshot. Caller holds
+// the mutex.
+//
+// This is the reference for "far away" in the pre-filter. Using an identity's own history would
+// be circular, and a fixed dBm threshold would be wrong for every installation whose antenna gain
+// differs — so the room compares against itself.
+func (s *Service) strongestRSSILocked() int {
+	strongest := 0
+	for _, current := range s.aggregates {
+		if current.rssi == nil {
+			continue
+		}
+		if strongest == 0 || *current.rssi > strongest {
+			strongest = *current.rssi
+		}
+	}
+	return strongest
 }
 
 // refreshClassifications re-reads stored evidence and updates the cache.
@@ -555,7 +572,10 @@ func (s *Service) refreshClassifications(keys []string) {
 		summaries, err := s.history.Summaries(key, retentionDays)
 		if err != nil {
 			// A read failure must not clear an existing class: showing nothing is a worse answer
-			// than showing the last good evidence, and the error is already logged by the store.
+			// than showing the last good evidence. It must still be visible, though — the store
+			// returns errors rather than logging them, so swallowing one here would leave a broken
+			// database looking exactly like an installation with no history yet.
+			utils.LogErrorf("observation summaries: read %s: %v", key, err)
 			continue
 		}
 		if len(summaries) == 0 {
@@ -579,11 +599,12 @@ func (s *Service) refreshClassifications(keys []string) {
 	}
 
 	s.mutex.Lock()
-	// Merge rather than replace, so an identity that aged out of this pass keeps its last known
-	// class instead of flickering back to the pre-filter when it reappears.
-	for key, view := range refreshed {
-		s.classified[key] = view
-	}
+	// Rebuild rather than merge. Merging kept an entry for every identity ever seen, because
+	// nothing removed one when its aggregate aged out — over a day of rotating addresses that map
+	// grows without bound. Keeping only identities still present is correct as well as bounded: an
+	// identity that has aged out has no cached class to show, and when it reappears it is a fresh
+	// sighting that will be classified from stored evidence on the next pass.
+	s.classified = refreshed
 	s.lastClassify = s.clock.Now()
 	s.mutex.Unlock()
 }
@@ -658,9 +679,50 @@ func renderSignature(snapshot model.Snapshot) string {
 		for _, sample := range identity.Signal {
 			signature = appendUint64(signature, uint64(int64(sample)+128))
 		}
+		// Classification must participate or a class that changes without any other field changing
+		// would never be broadcast — the viewer would keep showing the old class indefinitely.
+		// This is the same omission as D-4 (diagnostics), found the same way: by asking what can
+		// change while the signature stays equal.
+		signature = appendClassification(signature, identity.Classification)
 		signature = append(signature, 0)
 	}
 	return string(signature)
+}
+
+// appendClassification adds a classification to a render signature.
+//
+// Every field that can differ between two snapshots is included, including the reason: when a
+// day's evidence lands the class may stay the same while its justification and hours change, and
+// that is exactly the moment the operator is watching for.
+func appendClassification(signature []byte, classification *model.ClassificationView) []byte {
+	if classification == nil {
+		return append(signature, 0)
+	}
+	signature = append(signature, 1)
+	signature = append(signature, classification.Class...)
+	signature = append(signature, 0)
+	if classification.Provisional {
+		signature = append(signature, 1)
+	} else {
+		signature = append(signature, 0)
+	}
+	if classification.ShowByDefault {
+		signature = append(signature, 1)
+	} else {
+		signature = append(signature, 0)
+	}
+	signature = append(signature, classification.Candidate...)
+	signature = append(signature, 0)
+	if classification.ChangePending {
+		signature = append(signature, 1)
+	} else {
+		signature = append(signature, 0)
+	}
+	signature = appendUint64(signature, uint64(classification.Confidence*1000))
+	signature = appendUint64(signature, uint64(classification.HoursObserved))
+	signature = appendUint64(signature, uint64(classification.DaysConsidered))
+	signature = append(signature, classification.Reason...)
+	return signature
 }
 
 // appendUint64 encodes a counter in a fixed width so the signature cannot collide with an

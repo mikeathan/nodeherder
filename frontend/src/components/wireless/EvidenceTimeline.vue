@@ -29,6 +29,16 @@
   const error = ref('');
 
   /**
+   * Sequence number of the most recent request.
+   *
+   * Selecting devices in quick succession starts overlapping requests, and they do not necessarily
+   * finish in order: a slow read for the previous identity could land after a fast one for the
+   * current one and overwrite it, leaving the pane showing another device's evidence under this
+   * device's name. Each load claims a sequence number and only writes if it is still the newest.
+   */
+  let requestSequence = 0;
+
+  /**
    * Load history whenever the identity changes.
    *
    * A failed load leaves any previous result in place rather than clearing it: showing stale
@@ -38,14 +48,21 @@
     () => props.identityKey,
     async (key) => {
       if (!key) return;
+      const request = ++requestSequence;
       loading.value = true;
       error.value = '';
       try {
-        history.value = await loadObservationHistory(key);
+        const result = await loadObservationHistory(key);
+        // Discard a superseded response instead of applying it over newer evidence.
+        if (request !== requestSequence) return;
+        history.value = result;
       } catch (failure) {
+        if (request !== requestSequence) return;
         error.value = failure instanceof Error ? failure.message : 'History could not be loaded.';
       } finally {
-        loading.value = false;
+        // Only the newest request may clear the spinner, or an older one finishing late would
+        // stop the indicator while the current request is still in flight.
+        if (request === requestSequence) loading.value = false;
       }
     },
     { immediate: true },

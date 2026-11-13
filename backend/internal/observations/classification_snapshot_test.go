@@ -7,6 +7,7 @@ package observations
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -352,5 +353,134 @@ func TestShowByDefaultForSettledClasses(t *testing.T) {
 				t.Errorf("showByDefaultFor(%q, %v) = %v, want %v", test.class, test.stable, got, test.want)
 			}
 		})
+	}
+}
+
+/*
+ * Regression guards for the review findings. Each of these was a real defect that no existing test
+ * could see, which is the reason they are written at all: a passing suite that cannot observe a
+ * class of bug gives false confidence.
+ */
+
+func TestAClassificationChangeTriggersAPublish(t *testing.T) {
+	// The render signature omitted classification, so a class that changed without any other field
+	// changing was never broadcast — the viewer would show the old class forever. This is the same
+	// omission as D-4 (diagnostics) and was found the same way: by asking what can change while the
+	// signature stays equal.
+	base := model.ClassificationView{
+		Class: "personal", ShowByDefault: true, Confidence: 0.5, HoursObserved: 30, Reason: "a",
+	}
+	changed := base
+	changed.Class = "infrastructure"
+
+	before := renderSignature(model.Snapshot{Identities: []model.IdentityView{
+		{Key: "k", Classification: &base},
+	}})
+	after := renderSignature(model.Snapshot{Identities: []model.IdentityView{
+		{Key: "k", Classification: &changed},
+	}})
+
+	if before == after {
+		t.Error("renderSignature did not change when the class changed, so the update would not broadcast")
+	}
+}
+
+func TestARefinedReasonTriggersAPublish(t *testing.T) {
+	// The class can stay the same while its justification and evidence change — that is exactly the
+	// moment a new day of evidence lands, and the one the operator is watching for.
+	base := model.ClassificationView{Class: "personal", ShowByDefault: true, HoursObserved: 24, Reason: "a"}
+	refined := base
+	refined.HoursObserved = 48
+	refined.Reason = "b"
+
+	before := renderSignature(model.Snapshot{Identities: []model.IdentityView{{Key: "k", Classification: &base}}})
+	after := renderSignature(model.Snapshot{Identities: []model.IdentityView{{Key: "k", Classification: &refined}}})
+
+	if before == after {
+		t.Error("renderSignature ignored a change in hours or reason")
+	}
+}
+
+func TestAnAbsentClassificationDiffersFromAPresentOne(t *testing.T) {
+	// "not classified" and "classified as learning" are different states; a signature that treated
+	// them alike would suppress the transition between them.
+	present := model.ClassificationView{Class: "learning", ShowByDefault: true}
+	withClass := renderSignature(model.Snapshot{Identities: []model.IdentityView{
+		{Key: "k", Classification: &present},
+	}})
+	withoutClass := renderSignature(model.Snapshot{Identities: []model.IdentityView{{Key: "k"}}})
+
+	if withClass == withoutClass {
+		t.Error("renderSignature treated an absent classification as identical to a present one")
+	}
+}
+
+func TestTheClassificationCacheDoesNotGrowWithoutBound(t *testing.T) {
+	// The cache was merged forward and never pruned, so it retained an entry for every identity ever
+	// seen. Over a day of rotating addresses that is unbounded growth in a long-lived process.
+	clock := mocks.NewMockClock(func() time.Time { return at(9, 0) })
+	history := &historyStub{byKey: map[string][]model.DailySummary{}}
+	service, _ := classifyService(t, clock, history, &recorderStub{})
+
+	// Populate the cache directly: the store returns nothing here, and the growth rule is what is
+	// under test rather than the classification itself.
+	service.mutex.Lock()
+	for index := 0; index < 100; index++ {
+		service.classified[fmt.Sprintf("addr:gone%03d", index)] = model.ClassificationView{Class: "personal"}
+	}
+	service.aggregates["addr:live"] = &aggregate{
+		identity: model.Identity{Key: "addr:live", Stable: true},
+		lastSeen: clock.Now(),
+		sources:  map[string]*int{},
+	}
+	service.mutex.Unlock()
+
+	history.byKey["addr:live"] = []model.DailySummary{
+		summaryOn(0, func(s *model.DailySummary) { s.ActiveHours = 24; s.HourMask = allDay() }),
+	}
+	service.flush()
+
+	service.mutex.Lock()
+	cached := len(service.classified)
+	service.mutex.Unlock()
+
+	if cached > 1 {
+		t.Errorf("cache holds %d entries, want only identities still present", cached)
+	}
+}
+
+func TestThePreFilterStrongestReadingIsComputedOnce(t *testing.T) {
+	// The reference reading used to be derived by scanning every aggregate inside the per-identity
+	// render path, which made one snapshot O(n^2). The behaviour must be identical; only the cost
+	// changes, so this pins the value.
+	clock := mocks.NewMockClock(func() time.Time { return at(9, 0) })
+	service, capture := classifyService(t, clock, &historyStub{}, &recorderStub{})
+
+	service.record(model.Observation{
+		Source: "esp-1", Identity: model.Identity{Key: "addr:strong", Stable: true},
+		RSSI: -50, ObservedAt: clock.Now(),
+	})
+	service.record(model.Observation{
+		Source: "esp-1", Identity: model.Identity{Key: "addr:weak", Stable: true},
+		RSSI: -95, ObservedAt: clock.Now(),
+	})
+	service.flush()
+
+	snapshot := capture.last()
+	if snapshot == nil {
+		t.Fatal("no snapshot was published")
+	}
+	var found bool
+	for _, identity := range snapshot.Identities {
+		if identity.Key != "addr:weak" {
+			continue
+		}
+		found = true
+		if identity.Classification.ShowByDefault {
+			t.Errorf("the weak device was not demoted, so the reference reading was not -50")
+		}
+	}
+	if !found {
+		t.Fatal("the weak identity was not in the snapshot")
 	}
 }

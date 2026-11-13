@@ -5,7 +5,7 @@
  * The component keeps only rendering and event wiring, matching the repository's separation of
  * pure view logic into `domain/` and shared behaviour into `composables/`.
  */
-import { computed, ref, watch } from 'vue';
+import { computed, onUnmounted, ref, watch } from 'vue';
 import type {
   ObservationIdentityView,
   ObservationSnapshot,
@@ -83,6 +83,19 @@ export function useObservationViewer(snapshot: () => ObservationSnapshot | null)
   });
 
   /**
+   * A coarse clock, so "only new" ages out without waiting for a snapshot.
+   *
+   * `Date.now()` inside a computed is not reactive: the computed only re-evaluates when one of its
+   * dependencies changes, so with a steady stream of identical snapshots an identity that is no
+   * longer new would stay in the filtered view indefinitely. A ticking ref makes elapsed time a
+   * dependency. It is one second because the window is five minutes — anything finer is wasted
+   * work, anything coarser lets a stale row linger visibly.
+   */
+  const now = ref(Date.now());
+  const clock = setInterval(() => (now.value = Date.now()), 1000);
+  onUnmounted(() => clearInterval(clock));
+
+  /**
    * Apply the operator's filters.
    *
    * "New" means recently appeared, never "untriaged": on a first run every identity is untriaged,
@@ -90,10 +103,10 @@ export function useObservationViewer(snapshot: () => ObservationSnapshot | null)
    */
   const visible = computed(() => {
     const selection = facetSelection.value;
-    const now = Date.now();
+    const cutoff = now.value;
     return identities.value.filter((identity) => {
       if (!showDemoted.value && !shownByDefault(identity)) return false;
-      if (onlyNew.value && !isRecentArrival(identity, now)) return false;
+      if (onlyNew.value && !isRecentArrival(identity, cutoff)) return false;
       if (!withinDistanceRange(identity, distanceRangeById(distanceRange.value))) return false;
       return Object.entries(selection).every(([facet, values]) => {
         if (values.length === 0) return true;
@@ -107,6 +120,17 @@ export function useObservationViewer(snapshot: () => ObservationSnapshot | null)
 
   /** Grouped sections for the list view. */
   const grouped = computed(() => groupIdentities(visible.value));
+
+  /**
+   * How many visible identities arrived recently.
+   *
+   * Computed here rather than in the component so it shares the same ticking clock as the filter:
+   * two independent `Date.now()` reads a second apart could disagree, leaving a header count that
+   * contradicts the rows beneath it.
+   */
+  const newCount = computed(
+    () => visible.value.filter((identity) => isRecentArrival(identity, now.value)).length,
+  );
 
   /**
    * How many identities the default filter is hiding.
@@ -191,6 +215,7 @@ export function useObservationViewer(snapshot: () => ObservationSnapshot | null)
     facets,
     visible,
     grouped,
+    newCount,
     selectedKey,
     selected,
     selectionLost,

@@ -625,9 +625,3 @@ export function shownByDefault(identity: ObservationIdentityView): boolean {
   return identity.classification?.showByDefault !== false;
 }
 
-/** Identities the default view hides, so the footer can say how many and why. */
-export function hiddenIdentities(
-  identities: readonly ObservationIdentityView[],
-): ObservationIdentityView[] {
-  return identities.filter((identity) => !shownByDefault(identity));
-}

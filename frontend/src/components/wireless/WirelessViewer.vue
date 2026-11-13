@@ -8,7 +8,6 @@
     autoRadarSpan,
     distanceRSSI,
     estimateDistanceMetres,
-    isRecentArrival,
     stepRadarSpan,
     snapshotSummary,
     sourceIsSilent,
@@ -46,8 +45,8 @@
     paused,
     togglePause,
     facets,
-    visible,
     grouped,
+    newCount,
     selectedKey,
     selected,
     selectionLost,
@@ -90,7 +89,6 @@
   const rangeLabel = computed(() => `${currentSpan.value} m`);
 
   const summary = computed(() => snapshotSummary(snapshot.value));
-  const newCount = computed(() => visible.value.filter((identity) => isRecentArrival(identity)).length);
   const truncated = computed(() => snapshot.value?.truncated === true);
   /** Sources that are connected but have delivered nothing, which usually means a config fault. */
   const sources = computed(() => snapshot.value?.sources ?? []);

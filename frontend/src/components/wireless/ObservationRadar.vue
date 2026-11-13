@@ -52,8 +52,24 @@
 
   const titleId = useId();
 
-  /** Outer radius in view units; the largest ring sits at the edge. */
-  const outerRadius = 100;
+  /*
+   * Canvas geometry, derived from one number.
+   *
+   * The viewBox is a 100-unit square with the centre at (50, 50), so every coordinate in the
+   * template used to repeat those figures as literals. They are named here instead: a blip drawn
+   * with one centre and a ring drawn with another would silently disagree, and that is exactly the
+   * kind of defect that looks like "the scale is broken" without being obvious to trace.
+   */
+  /** Centre of the canvas in view units. */
+  const CENTRE = 50;
+  /** Radius of the drawable area in view units. */
+  const outerRadius = CENTRE;
+  /** Padding outside the outermost ring, so its label is not clipped by the viewBox edge. */
+  const VIEWBOX_PADDING = 8;
+  /** Axis line extent, inset from the edge so the tick marks do not touch the border. */
+  const AXIS_INSET = 4;
+  /** Offset of a ring label from its circle, so the text does not sit on the stroke. */
+  const LABEL_OFFSET = 1;
 
   /** Distance for every identity that has a usable reading. */
   const measured = computed(() =>
@@ -85,8 +101,8 @@
         metres,
         // Beyond the span is drawn on the edge rather than hidden: it is still in range.
         beyondSpan: metres > activeSpan.value,
-        x: 50 + Math.sin(bearing) * ratio * outerRadius * RADAR_RADIUS_FRACTION,
-        y: 50 - Math.cos(bearing) * ratio * outerRadius * RADAR_RADIUS_FRACTION,
+        x: CENTRE + Math.sin(bearing) * ratio * outerRadius * RADAR_RADIUS_FRACTION,
+        y: CENTRE - Math.cos(bearing) * ratio * outerRadius * RADAR_RADIUS_FRACTION,
         ephemeral: isEphemeralIdentity(identity),
         // The class tone is resolved here rather than in the template so an absent classification
         // still produces a valid class name, which keeps the styling total.
@@ -143,7 +159,7 @@
       :aria-labelledby="titleId"
       class="observation-radar__canvas"
       role="img"
-      viewBox="-8 -8 116 116"
+      :viewBox="`${-VIEWBOX_PADDING} ${-VIEWBOX_PADDING} ${2 * (CENTRE + VIEWBOX_PADDING)} ${2 * (CENTRE + VIEWBOX_PADDING)}`"
     >
       <title :id="titleId">Observed devices by distance, range only, no bearing</title>
 
@@ -151,8 +167,8 @@
         v-for="ring in rings"
         :key="`ring-${ring.radius}`"
         class="observation-radar__ring"
-        cx="50"
-        cy="50"
+        :cx="CENTRE"
+        :cy="CENTRE"
         fill="none"
         :r="ring.radius"
       />
@@ -160,14 +176,26 @@
         v-for="ring in rings"
         :key="`label-${ring.radius}`"
         class="observation-radar__ring-label"
-        :x="50 + 1"
-        :y="50 - ring.radius - 1"
+        :x="CENTRE + LABEL_OFFSET"
+        :y="CENTRE - ring.radius - LABEL_OFFSET"
       >
         {{ radiusLabel(ring.metres) }}
       </text>
 
-      <line class="observation-radar__axis" x1="50" x2="50" y1="4" y2="96" />
-      <line class="observation-radar__axis" x1="4" x2="96" y1="50" y2="50" />
+      <line
+        class="observation-radar__axis"
+        :x1="CENTRE"
+        :x2="CENTRE"
+        :y1="AXIS_INSET"
+        :y2="2 * CENTRE - AXIS_INSET"
+      />
+      <line
+        class="observation-radar__axis"
+        :x1="AXIS_INSET"
+        :x2="2 * CENTRE - AXIS_INSET"
+        :y1="CENTRE"
+        :y2="CENTRE"
+      />
 
       <!--
         Each blip is a real control, not a decorative dot: clicking isolates that identity.

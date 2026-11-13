@@ -82,10 +82,9 @@ func newRouter(port int, ws ws.EventHub, hub *controllers.HubController, store s
 		return nil
 	}))
 	router.GET("/api/observations/history", api.NewObservationHistoryHandler(func() api.ObservationHistorySource {
-		if history := optionsConfigSummaryHistory(options); history != nil {
-			return history
-		}
-		return nil
+		// Captured from the already-resolved configuration rather than re-applying every option
+		// per request, which allocated a whole optionsConfig on each call for a static value.
+		return configuration.summaryHistory
 	}))
 	router.GET("/api/system/storage", api.NewSystemStorageHandler(int(store.AppConfig().HistoryRetention().Hours()/24)))
 	router.POST("/api/collect", api.NewDataCollectorHandler(hub))
@@ -221,18 +220,6 @@ type optionsConfig struct {
 	connections    *integrations.Service
 	providers      *deviceproviders.Manager
 	summaryHistory api.ObservationHistorySource
-}
-
-// optionsConfigSummaryHistory resolves the summary history source for the route closure.
-//
-// The route is registered before the store opens, so the handler cannot capture it directly. This
-// mirrors the spatial history route, which has the same ordering constraint.
-func optionsConfigSummaryHistory(options []Option) api.ObservationHistorySource {
-	config := &optionsConfig{}
-	for _, option := range options {
-		option(config)
-	}
-	return config.summaryHistory
 }
 
 // WithObservationHistory adds the protected observation history route.
