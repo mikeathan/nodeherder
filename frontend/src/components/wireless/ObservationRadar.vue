@@ -12,12 +12,16 @@
   import {
     DEFAULT_PATH_LOSS_EXPONENT,
     DEFAULT_TX_POWER_AT_1M,
-    RANGE_RINGS_M,
+    RADAR_RADIUS_FRACTION,
+    autoRadarSpan,
     bearingForIdentity,
     distanceRSSI,
     estimateDistanceMetres,
     identityTitle,
     isEphemeralIdentity,
+    radialRatio,
+    ringsForSpan,
+    type RadarSpan,
   } from '@/domain/observations/presentation';
 
   const props = withDefaults(
@@ -28,10 +32,16 @@
       /** Transmit power at one metre in dBm; sources may override the default. */
       txPowerAt1m?: number;
       pathLossExponent?: number;
+      /**
+       * Fixed span in metres, or null to scale to the data. A fixed span keeps the scale still
+       * while readings change, which is what makes small movements visible.
+       */
+      span?: RadarSpan | null;
     }>(),
     {
       txPowerAt1m: DEFAULT_TX_POWER_AT_1M,
       pathLossExponent: DEFAULT_PATH_LOSS_EXPONENT,
+      span: null,
     },
   );
 
@@ -43,45 +53,62 @@
 
   /** Outer radius in view units; the largest ring sits at the edge. */
   const outerRadius = 100;
-  const maxRing = RANGE_RINGS_M[RANGE_RINGS_M.length - 1];
 
-  /**
-   * Placeable identities only. An identity with no RSSI or an out-of-range estimate cannot be
-   * positioned, and is listed as unplaced rather than drawn at the centre, which would read
-   * as "very close".
-   */
-  const placed = computed(() =>
+  /** Distance for every identity that has a usable reading. */
+  const measured = computed(() =>
     props.identities.flatMap((identity) => {
       // Smoothed signal keeps the blip from jumping between rings on single-packet jitter.
       const metres = estimateDistanceMetres(distanceRSSI(identity), props.txPowerAt1m, props.pathLossExponent);
-      if (metres === null) return [];
-      const bearing = (bearingForIdentity(identity.key) * Math.PI) / 180;
-      // Log scale so each ring is equally readable; clamp beyond the outer ring to the edge.
-      const ratio = Math.min(Math.max(Math.log10(Math.max(metres, 0.1)) / Math.log10(maxRing), 0.04), 1);
-      return [
-        {
-          identity,
-          metres,
-          x: 50 + Math.sin(bearing) * ratio * outerRadius * 0.9,
-          y: 50 - Math.cos(bearing) * ratio * outerRadius * 0.9,
-          ephemeral: isEphemeralIdentity(identity),
-        },
-      ];
+      return metres === null ? [] : [{ identity, metres }];
     }),
   );
+
+  /**
+   * Active span. Auto follows the furthest reading, so a nearby-only household fills the canvas
+   * instead of clustering at the centre of a 30 m scale.
+   */
+  const activeSpan = computed<RadarSpan>(() =>
+    props.span ?? autoRadarSpan(measured.value.map((entry) => entry.metres)),
+  );
+
+  /**
+   * Placeable identities. An identity with no reading cannot be positioned, and is counted as
+   * unplaced rather than drawn at the centre, which would read as "very close".
+   */
+  const placed = computed(() =>
+    measured.value.map(({ identity, metres }) => {
+      const bearing = (bearingForIdentity(identity.key) * Math.PI) / 180;
+      const ratio = radialRatio(metres, activeSpan.value);
+      return {
+        identity,
+        metres,
+        // Beyond the span is drawn on the edge rather than hidden: it is still in range.
+        beyondSpan: metres > activeSpan.value,
+        x: 50 + Math.sin(bearing) * ratio * outerRadius * RADAR_RADIUS_FRACTION,
+        y: 50 - Math.cos(bearing) * ratio * outerRadius * RADAR_RADIUS_FRACTION,
+        ephemeral: isEphemeralIdentity(identity),
+      };
+    }),
+  );
+
+  /** Number of identities drawn at the edge because they exceed the span. */
+  const beyondSpan = computed(() => placed.value.filter((blip) => blip.beyondSpan).length);
 
   const unplaced = computed(() => props.identities.length - placed.value.length);
 
   /** Ring circles with their labels, drawn outermost first so labels stay legible. */
   const rings = computed(() =>
-    RANGE_RINGS_M.map((metres) => ({
-      metres,
-      radius: (Math.log10(metres) / Math.log10(maxRing)) * outerRadius * 0.9,
-    })).reverse(),
+    ringsForSpan(activeSpan.value)
+      .map((metres) => ({
+        metres,
+        radius: radialRatio(metres, activeSpan.value) * outerRadius * RADAR_RADIUS_FRACTION,
+      }))
+      .reverse(),
   );
 
+  /** Ring label. Sub-metre rings keep their decimal, or they would all read as `0 m`. */
   function radiusLabel(metres: number): string {
-    return metres < 1000 ? `${metres} m` : `${metres / 1000} km`;
+    return `${metres} m`;
   }
 </script>
 
@@ -162,6 +189,9 @@
       a few metres indoors.
       <span v-if="unplaced > 0" class="observation-radar__unplaced">
         {{ unplaced }} without a signal reading not shown.
+      </span>
+      <span v-if="beyondSpan > 0" class="observation-radar__unplaced">
+        {{ beyondSpan }} beyond {{ activeSpan }} m shown at the edge.
       </span>
     </figcaption>
   </figure>

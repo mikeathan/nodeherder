@@ -142,12 +142,32 @@ test.describe('wireless viewer', () => {
     await expect(page.locator('.observation-focus')).toHaveCount(0);
   });
 
+  test('the radar scale can be fixed manually and exposes finer bands', async ({ page }) => {
+    await signIn(page, '/wireless');
+
+    // Auto is the default: the scale follows the data.
+    const auto = page.getByRole('button', { name: 'Auto', exact: true });
+    await expect(auto).toHaveAttribute('aria-pressed', 'true');
+
+    // A fixed span keeps the scale still while readings change.
+    await page.getByRole('button', { name: '3 m', exact: true }).click();
+    await expect(page.getByRole('button', { name: '3 m', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect(auto).toHaveAttribute('aria-pressed', 'false');
+
+    // Sub-metre bands exist and are exclusive.
+    const fine = page.getByRole('button', { name: '0.5–1 m', exact: true });
+    await expect(fine).toBeVisible();
+    await fine.click();
+    await expect(fine).toHaveAttribute('aria-pressed', 'true');
+  });
+
   test('a distance band narrows the list to that range only', async ({ page }) => {
     await signIn(page, '/wireless');
     await page.getByRole('button', { name: 'List', exact: true }).click();
 
-    // The mock spans roughly 2 m, 11 m and an unplaceable one, so a band is genuinely selective.
-    const band = page.getByRole('button', { name: '< 2 m', exact: true });
+    // The mock spans roughly 1.9 m, 11 m and an unplaceable one, so a band is genuinely
+    // selective. The labelled beacon is smoothed to -66 dBm, which is 1.91 m: the 1-2 m band.
+    const band = page.getByRole('button', { name: '1–2 m', exact: true });
     await expect(band).toBeVisible();
     await band.click();
     await expect(band).toHaveAttribute('aria-pressed', 'true');
@@ -156,6 +176,10 @@ test.describe('wireless viewer', () => {
 
     // A band that excludes the near device must exclude it, not merely reorder.
     await page.getByRole('button', { name: '5–10 m', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Isolate Front door tag', exact: true })).toHaveCount(0);
+
+    // A band with no devices is empty rather than falling back to everything.
+    await page.getByRole('button', { name: '0.5–1 m', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Isolate Front door tag', exact: true })).toHaveCount(0);
 
     // Any clears the filter.

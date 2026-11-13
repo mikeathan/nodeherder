@@ -14,8 +14,66 @@ import type {
 } from '@/types/observations.type';
 import { ObservationDecisions, ObservationTrends } from '@/types/observations.type';
 
-/** Log range rings in metres. RSSI error is multiplicative, so linear rings would mislead. */
-export const RANGE_RINGS_M = [1, 3, 10, 30] as const;
+/**
+ * Log range rings in metres.
+ *
+ * RSSI error is multiplicative, so rings are logarithmic. The set reaches below a metre because
+ * a nearby device is the common case and was previously indistinguishable from the origin.
+ */
+export const RANGE_RINGS_M = [0.5, 1, 3, 10, 30] as const;
+
+/**
+ * Smallest distance the radial projection will place, in metres.
+ *
+ * The log projection needs a positive floor: `log10(1) == 0` collapses anything at or below 1 m
+ * onto the exact centre, so a device half a metre away drew the same dot as one at the antenna.
+ * Flooring slightly below the smallest ring keeps sub-metre readings distinguishable.
+ */
+export const MIN_PROJECTED_METRES = 0.2;
+
+/**
+ * Fraction of the canvas radius used by the outermost ring, leaving room for labels.
+ * Shared by the projection and the ring drawing so the two cannot disagree.
+ */
+export const RADAR_RADIUS_FRACTION = 0.9;
+
+/**
+ * Radial position of a distance on the canvas, as a fraction of the canvas radius.
+ *
+ * Returns a value in (0, 1]: 1 is the outermost ring. Monotonic, so a closer device is never
+ * drawn further out than a distant one.
+ */
+export function radialRatio(
+  metres: number,
+  maxRing: number = RANGE_RINGS_M[RANGE_RINGS_M.length - 1],
+): number {
+  if (!Number.isFinite(metres) || !Number.isFinite(maxRing) || maxRing <= MIN_PROJECTED_METRES) return 0;
+  const clamped = Math.min(Math.max(metres, MIN_PROJECTED_METRES), maxRing);
+  const ratio = Math.log10(clamped / MIN_PROJECTED_METRES) / Math.log10(maxRing / MIN_PROJECTED_METRES);
+  return Math.min(Math.max(ratio, 0.02), 1);
+}
+
+/** Span presets for the radar scale, in metres. */
+export const RADAR_SPANS_M = [3, 10, 30] as const;
+
+export type RadarSpan = (typeof RADAR_SPANS_M)[number];
+
+/**
+ * Choose a span from the data, rounding up to the smallest preset that contains it.
+ *
+ * Scaling to the data is what makes sub-metre bands legible: on a 30 m scale every nearby device
+ * collapses into the middle few percent of the canvas.
+ */
+export function autoRadarSpan(metres: readonly number[]): RadarSpan {
+  const largest = metres.reduce((max, value) => (Number.isFinite(value) && value > max ? value : max), 0);
+  return RADAR_SPANS_M.find((span) => largest <= span) ?? RADAR_SPANS_M[RADAR_SPANS_M.length - 1];
+}
+
+/** Rings to draw for a span: every standard ring inside it, plus the span edge itself. */
+export function ringsForSpan(span: number): number[] {
+  const within = RANGE_RINGS_M.filter((ring) => ring < span);
+  return [...within, span];
+}
 
 /** Calibrated transmit power at one metre, in dBm, used for the range estimate. */
 export const DEFAULT_TX_POWER_AT_1M = -59;
@@ -224,10 +282,19 @@ export type DistanceRange = {
   label: string;
 };
 
-/** Ranges offered as a segmented control, smallest first. */
+/**
+ * Ranges offered as a segmented control, smallest first.
+ *
+ * Resolution is finer near the antenna because that is where the estimate is most trustworthy and
+ * where the interesting question lives ("is this on my desk or across the room"). Above 10 m the
+ * log-distance error is several metres, so further subdivision would imply precision that does
+ * not exist.
+ */
 export const DISTANCE_RANGES: readonly DistanceRange[] = [
   { id: 'any', min: null, max: null, label: 'Any' },
-  { id: 'under2', min: null, max: 2, label: '< 2 m' },
+  { id: 'under05', min: null, max: 0.5, label: '< 0.5 m' },
+  { id: '05to1', min: 0.5, max: 1, label: '0.5–1 m' },
+  { id: '1to2', min: 1, max: 2, label: '1–2 m' },
   { id: '2to5', min: 2, max: 5, label: '2–5 m' },
   { id: '5to10', min: 5, max: 10, label: '5–10 m' },
   { id: 'over10', min: 10, max: null, label: '≥ 10 m' },

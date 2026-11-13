@@ -23,8 +23,10 @@
     sourceStatus,
     vendorHex,
     ANY_DISTANCE_RANGE,
+    RADAR_SPANS_M,
     distanceRangeById,
     withinDistanceRange,
+    type RadarSpan,
   } from '@/domain/observations/presentation';
   import ObservationRadar from './ObservationRadar.vue';
   import ObservationTable from './ObservationTable.vue';
@@ -48,6 +50,8 @@
   const viewMode = ref<ObservationViewMode>(ObservationViews.Radar);
   /** Selected distance band id; the "any" range applies no filter. */
   const distanceRange = ref<string>(ANY_DISTANCE_RANGE.id);
+  /** Radar span in metres, or null to scale automatically to the data. */
+  const radarSpan = ref<RadarSpan | null>(null);
   /** Keys with a save in flight, so the row reports progress rather than looking inert. */
   const pending = ref<Set<string>>(new Set());
 
@@ -284,11 +288,41 @@
       />
 
       <div v-else-if="viewMode === ObservationViews.Radar" class="wireless-viewer__layout">
-        <ObservationRadar
-          :identities="scoped"
-          :selected-key="selectedKey"
-          @select="selectIdentity"
-        />
+        <div class="wireless-viewer__radar-pane">
+          <ObservationRadar
+            :identities="scoped"
+            :selected-key="selectedKey"
+            :span="radarSpan"
+            @select="selectIdentity"
+          />
+          <!--
+            Scale control. Auto follows the data so a nearby-only household fills the canvas;
+            a fixed span keeps the scale still, which is what makes small movements visible.
+          -->
+          <div class="wireless-viewer__scale" role="group" aria-label="Radar scale">
+            <span class="wireless-viewer__scale-label">Scale</span>
+            <button
+              type="button"
+              class="wireless-viewer__scale-option"
+              :class="{ 'is-active': radarSpan === null }"
+              :aria-pressed="radarSpan === null"
+              @click="radarSpan = null"
+            >
+              Auto
+            </button>
+            <button
+              v-for="span in RADAR_SPANS_M"
+              :key="span"
+              type="button"
+              class="wireless-viewer__scale-option"
+              :class="{ 'is-active': radarSpan === span }"
+              :aria-pressed="radarSpan === span"
+              @click="radarSpan = span"
+            >
+              {{ span }} m
+            </button>
+          </div>
+        </div>
         <div class="wireless-viewer__detail">
           <ObservationTable
             :identities="scoped"
@@ -442,6 +476,51 @@
     gap: 1.5rem;
     grid-template-columns: minmax(0, 1fr) minmax(17rem, 24rem);
     align-items: start;
+  }
+
+  .wireless-viewer__radar-pane {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .wireless-viewer__scale {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .wireless-viewer__scale-label {
+    color: var(--text-muted, #8b9bab);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-right: 0.25rem;
+  }
+
+  .wireless-viewer__scale-option {
+    background: transparent;
+    border: 1px solid var(--border-subtle, #2a3441);
+    color: inherit;
+    font: inherit;
+    font-size: 0.8125rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+
+  .wireless-viewer__scale-option.is-active {
+    background: var(--accent-primary, #4a9eff);
+    border-color: var(--accent-primary, #4a9eff);
+    color: #04121f;
+  }
+
+  .wireless-viewer__scale-option:focus-visible {
+    outline: 2px solid var(--accent-primary, #4a9eff);
+    outline-offset: 2px;
   }
 
   .wireless-viewer__detail {

@@ -24,6 +24,9 @@ import {
   withinDistanceRange,
   distanceRangeById,
   DISTANCE_RANGES,
+  autoRadarSpan,
+  radialRatio,
+  ringsForSpan,
 } from '@/domain/observations/presentation';
 import type { ObservationIdentityView, ObservationSnapshot, ObservationSourceDescriptor } from '@/types/observations.type';
 
@@ -315,19 +318,90 @@ describe('withinDistanceRange', () => {
 
   test('an identity with no reading belongs to no band but any', () => {
     // Assuming "near" would put an unmeasured device in the closest band.
-    for (const id of ['under2', '2to5', '5to10', 'over10']) {
+    for (const id of ['under05', '05to1', '1to2', '2to5', '5to10', 'over10']) {
       expect(withinDistanceRange({}, range(id))).toBe(false);
     }
     expect(withinDistanceRange({}, range('any'))).toBe(true);
   });
 
   test('uses the smoothed value when both are present', () => {
-    expect(withinDistanceRange({ rssi: -62, rssiSmoothed: -90 }, range('under2'))).toBe(false);
+    // Raw -62 reads as under a metre, smoothed -90 as far: the filter must follow the smoothed
+    // value, which is what the displayed distance uses.
+    expect(withinDistanceRange({ rssi: -62, rssiSmoothed: -90 }, range('under05'))).toBe(false);
     expect(withinDistanceRange({ rssi: -62, rssiSmoothed: -90 }, range('over10'))).toBe(true);
   });
 
   test('an unknown range id falls back to any rather than hiding everything', () => {
     expect(distanceRangeById('nonsense').id).toBe('any');
+  });
+});
+
+describe('radialRatio', () => {
+  test('places the span edge at the radius edge', () => {
+    expect(radialRatio(30, 30)).toBeCloseTo(1, 5);
+  });
+
+  test('never collapses a sub-metre reading onto the centre', () => {
+    // The old projection used log10(metres)/log10(30), and log10(1) is 0, so anything at or
+    // below 1 m drew on the exact centre: a device on the desk looked like one at the antenna.
+    const half = radialRatio(0.5, 30);
+    const one = radialRatio(1, 30);
+    expect(half).toBeGreaterThan(0);
+    expect(one).toBeGreaterThan(half);
+  });
+
+  test('is monotonic, so a nearer device is never drawn further out', () => {
+    const samples = [0.2, 0.5, 1, 2, 3, 5, 10, 30];
+    const ratios = samples.map((metres) => radialRatio(metres, 30));
+    for (let i = 1; i < ratios.length; i += 1) {
+      expect(ratios[i]).toBeGreaterThanOrEqual(ratios[i - 1]);
+    }
+  });
+
+  test('clamps beyond the span to the edge rather than overshooting', () => {
+    expect(radialRatio(500, 10)).toBeCloseTo(1, 5);
+  });
+
+  test('a device at 1 m sits visibly closer than one at 5 m on a tight span', () => {
+    // This is what makes the sub-2 m bands legible: without separation they are indistinguishable.
+    const tight = radialRatio(1, 3);
+    const further = radialRatio(2.5, 3);
+    expect(further - tight).toBeGreaterThan(0.2);
+  });
+
+  test('rejects nonsense inputs rather than producing NaN coordinates', () => {
+    expect(radialRatio(Number.NaN, 30)).toBe(0);
+    expect(radialRatio(1, 0)).toBe(0);
+  });
+});
+
+describe('autoRadarSpan', () => {
+  test('picks the smallest preset that contains the furthest reading', () => {
+    expect(autoRadarSpan([0.4, 1.2])).toBe(3);
+    expect(autoRadarSpan([2, 8])).toBe(10);
+    expect(autoRadarSpan([4, 25])).toBe(30);
+  });
+
+  test('falls back to the largest preset when a reading exceeds all of them', () => {
+    expect(autoRadarSpan([120])).toBe(30);
+  });
+
+  test('an empty or unmeasured set still yields a usable span', () => {
+    expect(autoRadarSpan([])).toBe(3);
+    expect(autoRadarSpan([Number.NaN])).toBe(3);
+  });
+});
+
+describe('ringsForSpan', () => {
+  test('includes every standard ring inside the span plus the span edge', () => {
+    expect(ringsForSpan(3)).toEqual([0.5, 1, 3]);
+    expect(ringsForSpan(10)).toEqual([0.5, 1, 3, 10]);
+  });
+
+  test('never repeats the edge as both a standard ring and the span', () => {
+    const rings = ringsForSpan(30);
+    expect(new Set(rings).size).toBe(rings.length);
+    expect(rings[rings.length - 1]).toBe(30);
   });
 });
 
