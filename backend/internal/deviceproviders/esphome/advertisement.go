@@ -14,12 +14,12 @@ import (
 	"github.com/mycontroller-org/esphome_api/pkg/api"
 )
 
-// bleFacets are the filter dimensions this source can populate, declared to the viewer so it
-// renders controls from data rather than from knowledge of this provider.
-var bleFacets = []string{"kind", "vendor", "addressType"}
-
-// bleMedia is the set of media this source can observe.
-var bleMedia = []model.Medium{model.MediumBLEAdvertisement}
+// The facets and media this source declares. They are copied on every use so a consumer cannot
+// mutate a shared slice and silently change what the source claims to provide.
+var (
+	bleFacets = []string{"kind", "vendor", "addressType"}
+	bleMedia  = []model.Medium{model.MediumBLEAdvertisement}
+)
 
 // Observer receives normalised observations from a session. It is optional: a driver that
 // cannot observe a medium does not implement it, and Session.Run then sends no observation
@@ -89,12 +89,9 @@ func (s *observingSink) recordActivity(raw, decoded int) {
 
 // SourceDescriptor reports this device's identity and declared observation facets.
 func (s *observingSink) SourceDescriptor() (string, string, []model.Medium, []string) {
-	return s.sourceID, s.sourceName, bleMedia, bleFacets
-}
-
-// RegisterSourceProvider attaches the aggregator that should learn this source's descriptor.
-func (s *observingSink) RegisterSourceProvider(registry sourceRegistry) {
-	s.registry = registry
+	return s.sourceID, s.sourceName,
+		append([]model.Medium(nil), bleMedia...),
+		append([]string(nil), bleFacets...)
 }
 
 // resolveObservingSink finds the observing sink inside a session sink.

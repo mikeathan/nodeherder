@@ -81,9 +81,6 @@ export const DEFAULT_TX_POWER_AT_1M = -59;
 /** Indoor path-loss exponent. 2 is free space; 2.5-3.5 is typical indoors. */
 export const DEFAULT_PATH_LOSS_EXPONENT = 2.5;
 
-/** Tolerance applied to per-packet RSSI before it is treated as a real change. */
-export const RSSI_SMOOTHING_DB = 4;
-
 /**
  * Estimate distance from RSSI using log-distance path loss.
  *
@@ -120,13 +117,6 @@ export function isEphemeralIdentity(identity: ObservationIdentityView): boolean 
   return !identity.stable;
 }
 
-/** Human label for a triage decision. */
-export const DECISION_LABELS: Record<ObservationDecision, string> = {
-  [ObservationDecisions.Unknown]: 'Unknown',
-  [ObservationDecisions.Known]: 'Known',
-  [ObservationDecisions.Ignored]: 'Ignored',
-};
-
 /**
  * Render a BLE company identifier the way people recognise it, e.g. `0x004C` for Apple.
  * Returns an empty string when the identity carries no vendor, so the facet never invents one.
@@ -141,12 +131,6 @@ export function identityTitle(identity: ObservationIdentityView): string {
   if (identity.label) return identity.label;
   if (identity.kind && identity.kind !== 'adv') return identity.kind;
   return identity.key.length > 24 ? `${identity.key.slice(0, 24)}…` : identity.key;
-}
-
-/** Count of identities that are either new or ephemeral, used in the summary line. */
-export function untriagedCount(snapshot: ObservationSnapshot | null): number {
-  if (!snapshot) return 0;
-  return snapshot.identities.filter((identity) => identity.decision === ObservationDecisions.Unknown).length;
 }
 
 /**

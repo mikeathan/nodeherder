@@ -1,8 +1,23 @@
+// Package observations turns raw radio observations into a bounded, change-driven snapshot.
+//
+// Layout:
+//
+//	ble.go       identity resolution from a Bluetooth advertisement (medium logic, transport-free)
+//	trend.go     direction of change and the smoothed signal median (pure functions)
+//	service.go   aggregation, the bounded queue, and the snapshot contract
+//
+// Design constraints that shaped it:
+//
+//   - Observations arrive far faster than a UI can use them, so the queue is bounded and
+//     rejects at enqueue rather than growing. Drops are counted per source, so a saturated
+//     queue is visible instead of silent (NH-06).
+//   - A rejected batch is the *newest*, not the oldest: the channel is full of data that
+//     already arrived, and discarding it to admit newer packets would make the viewer stutter
+//     backwards in time.
+//   - State is memory-only. A restart loses the live view and nothing else; nothing here
+//     persists an observation, and identity triage lives in settings.
 package observations
 
-// This file aggregates raw observations into a bounded, change-driven snapshot for the
-// browser. It owns one worker and one bounded queue: observations arrive far faster than any
-// UI needs them, so the queue drops oldest and counts the loss (NH-06) instead of growing.
 import (
 	"context"
 	"sort"
@@ -194,14 +209,16 @@ func (s *Service) UnregisterSource(id string) {
 // ObserveAdvertisements enqueues a batch of observations without blocking. When the queue is
 // full the batch is dropped and counted rather than stalling the source's session. The name
 // avoids colliding with the ESPHome sink's Observe, which carries a different payload.
+//
+// Drops are counted once per rejected batch rather than once per packet: the purpose is to make
+// a saturated queue visible, and taking the service mutex per packet on a hot path would make
+// saturation worse. The loop stops at the first rejection, so a burst cannot thrash it.
 func (s *Service) ObserveAdvertisements(_ context.Context, batch []model.Observation) error {
 	for _, observation := range batch {
 		select {
 		case s.queue <- observation:
 		default:
-			// Attribute the drop to its source so a saturated queue is visible per device
-			// rather than as an unattributed global counter.
-			s.noteDrop(observation.Source)
+			s.noteDroppedBatch(observation.Source)
 			if s.dropped != nil {
 				s.dropped()
 			}
@@ -211,8 +228,9 @@ func (s *Service) ObserveAdvertisements(_ context.Context, batch []model.Observa
 	return nil
 }
 
-// noteDrop increments the drop counter for one source descriptor.
-func (s *Service) noteDrop(source string) {
+// noteDroppedBatch increments the drop counter for one source once. Attribution keeps a
+// saturated queue visible per device instead of as an unattributed global number.
+func (s *Service) noteDroppedBatch(source string) {
 	if source == "" {
 		return
 	}

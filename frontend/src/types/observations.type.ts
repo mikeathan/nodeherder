@@ -111,5 +111,3 @@ export const ObservationFacets = {
   Vendor: 'vendor',
   AddressType: 'addressType',
 } as const;
-
-export type ObservationFacet = (typeof ObservationFacets)[keyof typeof ObservationFacets];

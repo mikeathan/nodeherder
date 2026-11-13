@@ -1,33 +1,19 @@
 <script setup lang="ts">
-  /*
-   * Wireless observation viewer (spec 064).
-   *
-   * A hub-level live instrument, not configuration: it shows whatever any enrolled observing
-   * source reports. Nothing here names a provider, so a new source kind appears without a
-   * component change.
-   *
-   * Live snapshots arrive several times a second, so the view offers a freeze control: a table
-   * that reorders while you read it is unusable for triage.
-   */
-  import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
-  // The app installs the store under a Symbol injection key, so vuex's bare useStore() cannot
-  // find it. Components use the singleton, as the rest of the codebase does.
+  import { computed, onMounted, onUnmounted, ref } from 'vue';
   import { store } from '@/store';
-  import type { ObservationDecision, ObservationIdentityView, ObservationViewMode } from '@/types/observations.type';
-  import { ObservationFacets, ObservationViews } from '@/types/observations.type';
+  import type { ObservationDecision, ObservationViewMode } from '@/types/observations.type';
+  import { ObservationViews } from '@/types/observations.type';
   import {
-    groupIdentities,
+    RADAR_SPANS_M,
     isRecentArrival,
     snapshotSummary,
     sourceIsSilent,
     sourceStatus,
-    vendorHex,
-    ANY_DISTANCE_RANGE,
-    RADAR_SPANS_M,
-    distanceRangeById,
-    withinDistanceRange,
-    type RadarSpan,
   } from '@/domain/observations/presentation';
+  import {
+    OBSERVATION_VIEW_LABELS,
+    useObservationViewer,
+  } from '@/composables/useObservationViewer';
   import ObservationRadar from './ObservationRadar.vue';
   import ObservationTable from './ObservationTable.vue';
   import ObservationFilters from './ObservationFilters.vue';
@@ -40,112 +26,35 @@
   // Derived from the canonical socket status rather than a parallel flag of our own, so the
   // warning cannot disagree with the connection indicator in the header.
   const stale = computed(() => store.getters['ws/getConnectionStatus'] !== 'connected');
-  /** Live identities exactly as the hub last reported them. */
-  const liveIdentities = computed<ObservationIdentityView[]>(() => snapshot.value?.identities ?? []);
 
-  /** Facet filter selections, distinct from the isolated identity. */
-  const facetSelection = ref<Record<string, string[]>>({});
-  /** Show only identities that appeared within the recent window. */
-  const onlyNew = ref(false);
-  const viewMode = ref<ObservationViewMode>(ObservationViews.Radar);
-  /** Selected distance band id; the "any" range applies no filter. */
-  const distanceRange = ref<string>(ANY_DISTANCE_RANGE.id);
-  /** Radar span in metres, or null to scale automatically to the data. */
-  const radarSpan = ref<RadarSpan | null>(null);
   /** Keys with a save in flight, so the row reports progress rather than looking inert. */
   const pending = ref<Set<string>>(new Set());
 
-  /**
-   * Frozen identities, captured when paused. A copy is kept rather than updates being ignored,
-   * so triage actions still land on what is on screen.
-   */
-  const frozen = ref<ObservationIdentityView[] | null>(null);
-  const paused = computed(() => frozen.value !== null);
-
-  /** Identities to render: the frozen copy while paused, otherwise the live snapshot. */
-  const identities = computed(() => frozen.value ?? liveIdentities.value);
-
-  function togglePause(): void {
-    frozen.value = paused.value ? null : liveIdentities.value.map((identity) => ({ ...identity }));
-  }
-
-  /** Facets declared by any source; the filter component renders only these. */
-  const facets = computed(() => {
-    const declared = new Set<string>();
-    for (const source of snapshot.value?.sources ?? []) {
-      for (const facet of source.facets) declared.add(facet);
-    }
-    return [...declared];
-  });
-
-  /** Apply the operator's facet selection, the recent-only toggle and the frozen view. */
-  const visible = computed(() => {
-    const selection = facetSelection.value;
-    const now = Date.now();
-    return identities.value.filter((identity) => {
-      // "New" means recently appeared, never "untriaged": on a first run every identity is
-      // untriaged, so filtering on the decision matches everything and looks broken.
-      if (onlyNew.value && !isRecentArrival(identity, now)) return false;
-      if (!withinDistanceRange(identity, distanceRangeById(distanceRange.value))) return false;
-      return Object.entries(selection).every(([facet, values]) => {
-        if (values.length === 0) return true;
-        if (facet === ObservationFacets.Kind) return values.includes(identity.kind);
-        if (facet === ObservationFacets.Vendor) return values.includes(vendorHex(identity.vendor));
-        // An unknown facet cannot be filtered here; ignoring it keeps a newer backend usable.
-        return true;
-      });
-    });
-  });
-
-  /** Grouped sections for the list view. */
-  const grouped = computed(() => groupIdentities(visible.value));
-
-  /**
-   * Isolated identity, resolved from the live set by key.
-   *
-   * Held as a key rather than an object so a snapshot update cannot replace the selected
-   * identity with a stale copy, and so an identity that ages out is detectable.
-   */
-  const selectedKey = ref<string | null>(null);
-  const selected = computed(() => identities.value.find((identity) => identity.key === selectedKey.value) ?? null);
-  /** True when a selection was made but the identity has since left the snapshot. */
-  const selectionLost = computed(() => selectedKey.value !== null && selected.value === null);
-
-  function selectIdentity(key: string): void {
-    selectedKey.value = key;
-    viewMode.value = ObservationViews.Focus;
-  }
-
-  function clearSelection(): void {
-    selectedKey.value = null;
-    if (viewMode.value === ObservationViews.Focus) viewMode.value = ObservationViews.Radar;
-  }
-
-  /**
-   * Identities the radar and list render. Isolation is applied here rather than inside each
-   * child so every view agrees on what is shown.
-   */
-  const scoped = computed(() => (selected.value ? [selected.value] : visible.value));
-
-  /**
-   * Views offered right now. Focus is only meaningful with a selection, so it is not offered
-   * while nothing is isolated; it would otherwise render an empty panel.
-   */
-  const availableViews = computed<ObservationViewMode[]>(() =>
-    selected.value
-      ? [ObservationViews.Focus, ObservationViews.Radar, ObservationViews.List]
-      : [ObservationViews.Radar, ObservationViews.List],
-  );
-
-  const VIEW_LABELS: Readonly<Record<ObservationViewMode, string>> = {
-    radar: 'Radar',
-    list: 'List',
-    focus: 'Focus',
-  };
+  const {
+    facetSelection,
+    onlyNew,
+    distanceRange,
+    radarSpan,
+    viewMode,
+    identities,
+    paused,
+    togglePause,
+    facets,
+    visible,
+    grouped,
+    selectedKey,
+    selected,
+    selectionLost,
+    selectIdentity,
+    clearSelection,
+    applyDecisionToFrozen,
+    scoped,
+    availableViews,
+  } = useObservationViewer(() => snapshot.value);
 
   /** Label for a view tab. */
   function viewLabel(mode: ObservationViewMode): string {
-    return VIEW_LABELS[mode];
+    return OBSERVATION_VIEW_LABELS[mode];
   }
 
   const summary = computed(() => snapshotSummary(snapshot.value));
@@ -158,15 +67,10 @@
   /**
    * Persist a triage decision. The row is marked pending until the request settles, and the
    * snapshot is not updated locally: the backend is the authority and broadcasts the result.
-   * While paused the frozen copy is updated so the operator sees their own change land.
    */
   function decide(key: string, decision: ObservationDecision): void {
     pending.value = new Set(pending.value).add(key);
-    if (frozen.value) {
-      frozen.value = frozen.value.map((identity) =>
-        identity.key === key ? { ...identity, decision } : identity,
-      );
-    }
+    applyDecisionToFrozen(key, decision);
     void store
       .dispatch('ws/emit', {
         event: 'saveObservationIdentity',
@@ -178,14 +82,6 @@
         pending.value = next;
       });
   }
-
-  // While frozen, drop rows the live snapshot no longer contains. Otherwise resuming would show
-  // identities that aged out minutes ago as though they were still present.
-  watch(liveIdentities, (next) => {
-    if (!frozen.value) return;
-    const live = new Set(next.map((identity) => identity.key));
-    frozen.value = frozen.value.filter((identity) => live.has(identity.key));
-  });
 
   // Escape leaves isolation, the expected way out of a selected detail view. Listening on the
   // window keeps it working wherever focus sits inside the view.

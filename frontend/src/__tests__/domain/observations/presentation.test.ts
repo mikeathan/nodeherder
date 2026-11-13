@@ -20,7 +20,6 @@ import {
   sourceIsSilent,
   sourceStatus,
   trendPresentation,
-  untriagedCount,
   withinDistanceRange,
   distanceRangeById,
   DISTANCE_RANGES,
@@ -444,7 +443,7 @@ describe('trendPresentation', () => {
   });
 });
 
-describe('untriagedCount and snapshotSummary', () => {
+describe('snapshotSummary', () => {
   const snapshot: ObservationSnapshot = {
     at: '2026-11-11T10:00:00Z',
     truncated: false,
@@ -456,11 +455,6 @@ describe('untriagedCount and snapshotSummary', () => {
     ],
     arrivals: 2,
   };
-
-  test('counts only untriaged identities', () => {
-    expect(untriagedCount(snapshot)).toBe(2);
-    expect(untriagedCount(null)).toBe(0);
-  });
 
   test('summarises counts and arrivals without inventing detail', () => {
     expect(snapshotSummary(snapshot)).toContain('3 devices');

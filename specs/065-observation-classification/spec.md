@@ -90,9 +90,9 @@ fixture data.
   the row states the previous class.
 - AC-08: Given a single day of contrary evidence against a long history, then the class does
   not change; recency is weighted but a change must hold across evaluations.
-- AC-17: Given a sustained behaviour change, then the class changes in roughly five days of
-  consistent new evidence, not sooner. This is the measured consequence of the weighting and
-  is stated so the delay is a decision, not a surprise.
+- AC-17: Given a sustained behaviour change, then the class changes in roughly two days of
+  consistent new evidence, not sooner. This is the measured consequence of the 2-day
+  half-life and is stated so the delay is a decision, not a surprise.
 - AC-09: Given an operator triage decision, then that decision overrides the class for
   display permanently, and the class is still shown as advisory.
 

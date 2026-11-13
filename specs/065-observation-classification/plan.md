@@ -93,27 +93,26 @@ outlive the evidence that justified it, or the UI could show a change it cannot 
 
 ### 2.3 Reclassification speed, measured
 
-Recency weighting uses a 5-day half-life. The arithmetic, recorded so the delay is a decision
-rather than a surprise:
+Recency weighting uses a **2-day half-life** (maintainer decision, 2026-11-12). The
+arithmetic, recorded so the delay is a decision rather than a surprise:
 
 | Evidence | Weighted day-equivalents |
 | --- | --- |
-| 21 days as infrastructure | 7.30 |
+| 21 days as infrastructure | 3.41 |
 | 2 hours of new behaviour, today | 0.08 |
 
-So a single unusual day cannot move a long-standing class. How long sustained contrary
+A single unusual day still cannot move a long-standing class. How long sustained contrary
 behaviour needs before it wins:
 
 | New behaviour held for | New | Old | Flips |
 | --- | --- | --- | --- |
-| 1 day | 1.87 | 5.43 | no |
-| 3 days | 3.29 | 4.02 | no |
-| 5 days | 4.36 | 2.94 | yes |
+| 1 day | 1.00 | 2.41 | no |
+| 2 days | 1.71 | 1.70 | yes |
 
-**A genuine reclassification therefore takes about five days of consistent evidence.** That
-is the intended trade: slow enough that a fridge does not flap, fast enough that a device
-which really moved is corrected within a week. Reducing the half-life to 2 days would flip in
-about two days at the cost of more flapping; that single constant is the tuning lever.
+**A genuine reclassification therefore takes about two days of consistent evidence.** Chosen
+over a 5-day half-life because the operator had already spent weeks on data they did not
+trust: three days to a judgement beats a week. The cost is more flapping, which the
+transitions log makes visible and the half-life constant makes reversible.
 
 ### 2.4 Provisional classes before any evidence exists
 
