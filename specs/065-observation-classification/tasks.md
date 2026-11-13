@@ -20,13 +20,9 @@ Mark done only with evidence. No task is started.
 - [x] T006b — **DONE**: `provisional.go`. `Provisional.asClassified` is the single bridge to the classifier's type.
 - [x] T007 — **DONE**: `summaries/store_test.go`, 11 tests. Includes the prefix-collision guard, which caught a real key-layout bug.
 - [x] T008 — **DONE**: `summaries/store.go` + `observations/summarise.go`. The recorder lives in `observations` because it needs the accumulator; the dependency runs one way only.
-- [ ] T009 — Wire the summariser into the service and add the additive snapshot fields.
-  IDs: FR-01, FR-02, FR-04; depends: T004, T006, T008; done: snapshot carries class and
-  evidence; transitions recorded on change only.
-- [ ] T010 — Add the summary history route, protected, bounded. IDs: AC-10; depends: T008;
-  done: route test with a bounded response.
-- [ ] T011 — Triage override and class advisory precedence. IDs: FR-05, AC-09; done: snapshot
-  shows both.
+- [x] T009 — **DONE**: class reaches the snapshot; the store is read on a slow interval outside the aggregation lock, and a read failure keeps the last good class.
+- [x] T010 — **DONE**: `GET /api/observations/history?key=…`, protected, bounded to 30 rows, returns summaries and transitions together.
+- [x] T011 — **DONE**: `Advisory: true` in the payload, and a test proving an ignored identity never appears regardless of its class.
 
 ## Frontend
 

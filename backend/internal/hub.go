@@ -17,6 +17,7 @@ import (
 	metrics "node-herder/internal/metrics/services"
 	"node-herder/internal/mqtt"
 	"node-herder/internal/observations"
+	"node-herder/internal/observations/summaries"
 	"node-herder/internal/ratelimiter"
 	"node-herder/internal/spatialhistory"
 	"node-herder/internal/ws"
@@ -77,6 +78,12 @@ func newRouter(port int, ws ws.EventHub, hub *controllers.HubController, store s
 	router.GET("/api/spatial/history", api.NewSpatialHistoryHandler(func() api.SpatialHistorySource {
 		if service := hub.SpatialHistoryService(); service != nil {
 			return service
+		}
+		return nil
+	}))
+	router.GET("/api/observations/history", api.NewObservationHistoryHandler(func() api.ObservationHistorySource {
+		if history := optionsConfigSummaryHistory(options); history != nil {
+			return history
 		}
 		return nil
 	}))
@@ -147,8 +154,10 @@ func Register(port int, store store.AppStore, ctx context.Context, options ...Op
 	if hub == nil {
 		return nil, fmt.Errorf("failed to register hub controller")
 	}
-	// Observation state is memory-only; a restart loses the live view and nothing else.
-	observationService := observations.NewService(observations.Deps{
+	// Live observation state is memory-only; a restart loses the live view and nothing else.
+	// Daily evidence is the exception: it is stored so classification can reason across days,
+	// which is the whole point of spec 065.
+	observationDeps := observations.Deps{
 		Store: store.AppConfig(),
 		Clock: utils.NewRealClock(),
 		// A saturated queue must be observable rather than silent: the counter reaches the
@@ -159,7 +168,21 @@ func Register(port int, store store.AppStore, ctx context.Context, options ...Op
 				utils.LogErrorf("Failed to broadcast observations: %v", err)
 			}
 		},
-	})
+	}
+	// Evidence storage is optional by design. If it cannot be opened, the viewer still works: it
+	// falls back to the first-packet pre-filter, which is the same state as a first-day install.
+	// Refusing to start would turn a decomposition problem into an outage.
+	var summaryRecorder *observations.SummarisingRecorder
+	if summaryStore, err := summaries.Open(); err != nil {
+		utils.LogErrorf("observation summaries: open store, classification disabled: %v", err)
+	} else {
+		summaryRecorder = observations.NewSummarisingRecorder(summaryStore, utils.NewRealClock())
+		summaryRecorder.Start()
+		observationDeps.History = summaryStore
+		observationDeps.Recorder = summaryRecorder
+		options = append(options, WithObservationHistory(summaryStore))
+	}
+	observationService := observations.NewService(observationDeps)
 	observationService.Start(ctx)
 	registerObservationHandlers(eventHub, store.AppConfig())
 	providerManager := startDeviceProviders(ctx, hub, observationService)
@@ -173,6 +196,21 @@ func Register(port int, store store.AppStore, ctx context.Context, options ...Op
 		defer cancel()
 		_ = providerManager.Close(closeCtx)
 	}
+	// A failed registration returns a nil server, so shutdown hooks may only be attached once it
+	// succeeded. Close the recorder directly in the failure path instead, or the day in progress
+	// would be lost and the database left locked.
+	if summaryRecorder != nil {
+		if err == nil {
+			// The recorder owns the store's lifetime; closing it flushes the day in progress and
+			// releases the database, in that order.
+			server.AddShutdownHook(func(context.Context) error {
+				summaryRecorder.Close()
+				return nil
+			})
+		} else {
+			summaryRecorder.Close()
+		}
+	}
 	if err == nil && providerManager != nil {
 		server.AddShutdownHook(providerManager.Close)
 	}
@@ -180,8 +218,26 @@ func Register(port int, store store.AppStore, ctx context.Context, options ...Op
 }
 
 type optionsConfig struct {
-	connections *integrations.Service
-	providers   *deviceproviders.Manager
+	connections    *integrations.Service
+	providers      *deviceproviders.Manager
+	summaryHistory api.ObservationHistorySource
+}
+
+// optionsConfigSummaryHistory resolves the summary history source for the route closure.
+//
+// The route is registered before the store opens, so the handler cannot capture it directly. This
+// mirrors the spatial history route, which has the same ordering constraint.
+func optionsConfigSummaryHistory(options []Option) api.ObservationHistorySource {
+	config := &optionsConfig{}
+	for _, option := range options {
+		option(config)
+	}
+	return config.summaryHistory
+}
+
+// WithObservationHistory adds the protected observation history route.
+func WithObservationHistory(source api.ObservationHistorySource) Option {
+	return func(c *optionsConfig) { c.summaryHistory = source }
 }
 
 // Option composes optional features without expanding AppStore or device test doubles.

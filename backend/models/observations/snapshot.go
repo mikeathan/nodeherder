@@ -85,6 +85,46 @@ type IdentityView struct {
 	// Signal is the recent smoothed history as signal strengths in dBm, oldest first, for a
 	// sparkline. It is bounded by the aggregation window and never persisted.
 	Signal []int `json:"signal,omitempty"`
+
+	// Classification is the advisory behavioural class, computed from stored evidence.
+	//
+	// It is omitted entirely when no summaries exist for the identity, so a consumer can tell
+	// "not classified" from "classified as learning". The class is always advisory: the triage
+	// decision above outranks it for display, and both are carried so the UI can show the
+	// disagreement rather than silently picking one.
+	Classification *ClassificationView `json:"classification,omitempty"`
+}
+
+// ClassificationView is the class and the evidence behind it, as rendered.
+//
+// The evidence travels with the class because a bare label cannot be argued with. An operator
+// who disagrees with "infrastructure" needs to see "present 23 of 24 hours, never moved" to
+// decide whether the system or their expectation is wrong.
+type ClassificationView struct {
+	// Class is the advisory class, or "learning" when evidence is insufficient.
+	Class string `json:"class"`
+	// Provisional is true when the class came from the first-packet pre-filter, so the UI can
+	// present it as unsettled rather than as a verdict.
+	Provisional bool `json:"provisional,omitempty"`
+	// ShowByDefault reports whether the identity belongs in the default view. The pre-filter
+	// decides this before any history exists, so it must travel with the class rather than being
+	// re-derived by every consumer.
+	ShowByDefault bool `json:"showByDefault"`
+	// Candidate and ChangePending describe a class change held back by hysteresis.
+	Candidate     string `json:"candidate,omitempty"`
+	ChangePending bool   `json:"changePending,omitempty"`
+	// Confidence is the margin over the runner-up class, 0-1.
+	Confidence float64 `json:"confidence"`
+	// HoursObserved is how much evidence exists, so the UI can say how far learning has to go.
+	HoursObserved int `json:"hoursObserved"`
+	// DaysConsidered is how many stored days contributed.
+	DaysConsidered int `json:"daysConsidered,omitempty"`
+	// Reason is the human-readable justification behind the class.
+	Reason string `json:"reason,omitempty"`
+	// Advisory is always true for a computed class, and states the precedence rule in the payload
+	// rather than only in the UI: the operator's triage decision outranks this, and a consumer that
+	// presents a class as a fact instead of a suggestion is misusing it.
+	Advisory bool `json:"advisory"`
 }
 
 // Snapshot is one complete, self-contained broadcast. It is never a delta: a consumer that

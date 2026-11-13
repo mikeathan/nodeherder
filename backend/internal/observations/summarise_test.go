@@ -100,7 +100,7 @@ func newTestRecorder(t *testing.T, start time.Time) (*SummarisingRecorder, *reco
 	t.Helper()
 	repo := &recordingRepository{}
 	clock := &fixedClock{now: start}
-	recorder := newSummarisingRecorder(repo, clock)
+	recorder := NewSummarisingRecorder(repo, clock)
 	return recorder, repo, clock
 }
 

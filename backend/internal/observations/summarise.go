@@ -85,8 +85,8 @@ type dayAccumulator struct {
 	state  evidence
 }
 
-// newSummarisingRecorder builds a recorder. The caller must call Start and Close.
-func newSummarisingRecorder(repo summaries.Repository, clock Now) *SummarisingRecorder {
+// NewSummarisingRecorder builds a recorder. The caller must call Start and Close.
+func NewSummarisingRecorder(repo summaries.Repository, clock Now) *SummarisingRecorder {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &SummarisingRecorder{
 		repo:       repo,

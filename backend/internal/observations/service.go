@@ -36,6 +36,10 @@ const (
 	defaultPublishGap    = 250 * time.Millisecond
 	defaultStaleIdentity = 10 * time.Minute
 	maxSources           = 32
+	// defaultClassifyInterval bounds how often stored evidence is re-read. A device's class can
+	// only change when a day of evidence is written, so re-reading more than once a minute would
+	// be wasted work; a minute is fast enough that a completed day reaches the viewer promptly.
+	defaultClassifyInterval = time.Minute
 )
 
 // Proximity trend limits.
@@ -59,6 +63,16 @@ type IdentityStore interface {
 	ObservationIdentities() map[string]settings.ObservationIdentity
 }
 
+// HistoryReader supplies the stored evidence classification reads.
+//
+// It is separate from IdentityStore because the two have different lifetimes and different
+// owners: decisions live in settings and are authoritative, while summaries live in their own
+// database and are advisory evidence. A nil reader means classification is unavailable, not that
+// it is broken, so the service degrades to the pre-filter rather than refusing to start.
+type HistoryReader interface {
+	Summaries(key string, limit int) ([]model.DailySummary, error)
+}
+
 // Deps are the service's collaborators. Every field is injected so tests use a fake clock and
 // a stub store, and the service owns no global state.
 type Deps struct {
@@ -75,17 +89,33 @@ type Deps struct {
 	StaleAfter time.Duration
 	// Dropped observes discarded batches, so a saturated queue is visible rather than silent.
 	Dropped func()
+	// History reads stored daily evidence for classification; nil disables classification.
+	History HistoryReader
+	// Recorder receives every observation so evidence accumulates for later classification.
+	// Nil disables accumulation.
+	Recorder ObservationRecorder
+	// ClassifyInterval bounds how often stored evidence is re-read; 0 uses
+	// defaultClassifyInterval.
+	ClassifyInterval time.Duration
+}
+
+// ObservationRecorder accepts observations for evidence accumulation.
+type ObservationRecorder interface {
+	Observe(observation model.Observation)
 }
 
 // Service aggregates observations from every observing source into one snapshot stream.
 type Service struct {
-	store      IdentityStore
-	clock      utils.Clock
-	publish    func(model.Snapshot)
-	queue      chan model.Observation
-	dropped    func()
-	publishGap time.Duration
-	staleAfter time.Duration
+	store         IdentityStore
+	clock         utils.Clock
+	publish       func(model.Snapshot)
+	queue         chan model.Observation
+	dropped       func()
+	publishGap    time.Duration
+	staleAfter    time.Duration
+	history       HistoryReader
+	recorder      ObservationRecorder
+	classifyEvery time.Duration
 
 	mutex       sync.Mutex
 	sources     map[string]*sourceState
@@ -93,6 +123,11 @@ type Service struct {
 	arrivals    int
 	lastState   string
 	lastPublish time.Time
+	// classified caches each identity's class so the store is read on a slow interval rather than
+	// once per snapshot. Classification depends on stored evidence, which changes at most once a
+	// day, so re-reading it every 250 ms would be pure waste.
+	classified   map[string]model.ClassificationView
+	lastClassify time.Time
 }
 
 // sourceState is one registered observing device's identity and declared facets.
@@ -136,16 +171,24 @@ func NewService(deps Deps) *Service {
 	if staleAfter <= 0 {
 		staleAfter = defaultStaleIdentity
 	}
+	classifyEvery := deps.ClassifyInterval
+	if classifyEvery <= 0 {
+		classifyEvery = defaultClassifyInterval
+	}
 	return &Service{
-		store:      deps.Store,
-		clock:      deps.Clock,
-		publish:    deps.Publish,
-		queue:      make(chan model.Observation, queue),
-		dropped:    deps.Dropped,
-		publishGap: publishGap,
-		staleAfter: staleAfter,
-		sources:    map[string]*sourceState{},
-		aggregates: map[string]*aggregate{},
+		store:         deps.Store,
+		clock:         deps.Clock,
+		publish:       deps.Publish,
+		queue:         make(chan model.Observation, queue),
+		dropped:       deps.Dropped,
+		publishGap:    publishGap,
+		staleAfter:    staleAfter,
+		history:       deps.History,
+		recorder:      deps.Recorder,
+		classifyEvery: classifyEvery,
+		sources:       map[string]*sourceState{},
+		aggregates:    map[string]*aggregate{},
+		classified:    map[string]model.ClassificationView{},
 	}
 }
 
@@ -273,6 +316,12 @@ func (s *Service) record(observation model.Observation) {
 	if observation.Identity.Key == "" {
 		return
 	}
+	// Accumulate evidence for later classification. Done on this worker so accumulation is
+	// serialised with aggregation, and before the mutex because the recorder has its own queue and
+	// must never be reached while holding this lock.
+	if s.recorder != nil {
+		s.recorder.Observe(observation)
+	}
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
@@ -321,6 +370,26 @@ func (s *Service) flush() {
 			delete(s.aggregates, key)
 		}
 	}
+	// Collect the identities whose evidence is stale in the cache, then release the lock before
+	// touching the database. Reading the store under this lock would let a slow disk stall the
+	// radio, which is the one thing this service must never do.
+	due := s.lastClassify.IsZero() || now.Sub(s.lastClassify) >= s.classifyEvery
+	var pending []string
+	if due {
+		pending = make([]string, 0, len(s.aggregates))
+		for key := range s.aggregates {
+			pending = append(pending, key)
+		}
+	}
+	s.mutex.Unlock()
+
+	if due {
+		// Refresh first, then build the snapshot once. Refreshing after building would publish a
+		// stale class and then immediately publish again, doubling the broadcast for no gain.
+		s.refreshClassifications(pending)
+	}
+
+	s.mutex.Lock()
 	snapshot := s.snapshotLocked(now)
 	rendered := renderSignature(snapshot)
 	changed := rendered != s.lastState && now.Sub(s.lastPublish) >= s.publishGap
@@ -333,6 +402,14 @@ func (s *Service) flush() {
 	if changed && s.publish != nil {
 		s.publish(snapshot)
 	}
+}
+
+// rebuild re-renders a snapshot after the classification cache changed.
+func (s *Service) rebuild(now time.Time) (model.Snapshot, string) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	snapshot := s.snapshotLocked(now)
+	return snapshot, renderSignature(snapshot)
 }
 
 // snapshotLocked builds the renderable snapshot. The caller holds the mutex.
@@ -409,9 +486,127 @@ func (s *Service) snapshotLocked(now time.Time) model.Snapshot {
 		} else {
 			view.Label = current.identity.Label
 		}
+		// A stored classification is attached when available; otherwise the first-packet
+		// pre-filter decides. Both paths carry ShowByDefault, so the viewer never has to guess
+		// whether a missing class means "hidden" or "not yet known".
+		if cached, ok := s.classified[current.identity.Key]; ok {
+			attached := cached
+			view.Classification = &attached
+		} else {
+			preliminary := s.provisionalLocked(current)
+			view.Classification = &preliminary
+		}
 		snapshot.Identities = append(snapshot.Identities, view)
 	}
 	return snapshot
+}
+
+// provisionalLocked renders the first-packet pre-filter for one identity. Caller holds the mutex.
+//
+// This is what makes the first day usable: the pre-filter needs no history, so it decides
+// visibility immediately instead of leaving the operator with the full census until tomorrow.
+func (s *Service) provisionalLocked(current *aggregate) model.ClassificationView {
+	// The strongest reading in the whole snapshot is the reference for "far away". Using the
+	// identity's own history would be circular, and using a fixed dBm threshold would be wrong
+	// for every installation whose antenna gain differs.
+	strongest := 0
+	for _, other := range s.aggregates {
+		if other.rssi == nil {
+			continue
+		}
+		if strongest == 0 || *other.rssi > strongest {
+			strongest = *other.rssi
+		}
+	}
+
+	rssi := 0
+	if current.rssi != nil {
+		rssi = *current.rssi
+	}
+	guess := provisionalClass(current.identity, rssi, strongest, s.clock.Now())
+	return model.ClassificationView{
+		Class:         guess.Class,
+		Provisional:   guess.Provisional,
+		ShowByDefault: guess.ShowByDefault,
+		Reason:        guess.Reason,
+		Advisory:      true,
+	}
+}
+
+// refreshClassifications re-reads stored evidence and updates the cache.
+//
+// It is called on the slow interval, outside the service mutex, because it touches the database.
+// Reading the store while holding the aggregation lock would let a slow disk stall the radio,
+// which is the one thing this service must never do.
+func (s *Service) refreshClassifications(keys []string) {
+	if s.history == nil {
+		return
+	}
+
+	s.mutex.Lock()
+	stable := make(map[string]bool, len(s.aggregates))
+	for key, current := range s.aggregates {
+		stable[key] = current.identity.Stable
+	}
+	s.mutex.Unlock()
+
+	refreshed := make(map[string]model.ClassificationView, len(keys))
+	for _, key := range keys {
+		summaries, err := s.history.Summaries(key, retentionDays)
+		if err != nil {
+			// A read failure must not clear an existing class: showing nothing is a worse answer
+			// than showing the last good evidence, and the error is already logged by the store.
+			continue
+		}
+		if len(summaries) == 0 {
+			// Nothing stored yet. Leaving the key absent lets the pre-filter answer, which is the
+			// correct first-day behaviour rather than an empty class.
+			continue
+		}
+		result := classify(summaries, s.clock.Now())
+		refreshed[key] = model.ClassificationView{
+			Class:          result.Class,
+			Provisional:    result.Provisional,
+			ShowByDefault:  showByDefaultFor(result.Class, stable[key]),
+			Candidate:      result.Candidate,
+			ChangePending:  result.ChangePending,
+			Confidence:     result.Confidence,
+			HoursObserved:  result.HoursObserved,
+			DaysConsidered: result.DaysConsidered,
+			Reason:         result.Evidence.Reason,
+			Advisory:       true,
+		}
+	}
+
+	s.mutex.Lock()
+	// Merge rather than replace, so an identity that aged out of this pass keeps its last known
+	// class instead of flickering back to the pre-filter when it reappears.
+	for key, view := range refreshed {
+		s.classified[key] = view
+	}
+	s.lastClassify = s.clock.Now()
+	s.mutex.Unlock()
+}
+
+// showByDefaultFor decides the default visibility of a settled class.
+//
+// Infrastructure and neighbour are hidden because they are the noise the operator complained
+// about; everything else is shown. A provisional result keeps its own decision, because the
+// pre-filter is more conservative than this rule and its reasoning is about position rather
+// than about class.
+func showByDefaultFor(class string, stable bool) bool {
+	switch class {
+	case ClassInfrastructure:
+		// A rotating address cannot be household equipment even if the evidence looks like it, so
+		// trust movement over presence when the two disagree and keep it visible for inspection.
+		return !stable
+	case ClassNeighbour:
+		return false
+	default:
+		// Personal, transient and learning are all shown: they are either the operator's own
+		// devices or things they may want to triage.
+		return true
+	}
 }
 
 // sourceReadings renders per-source RSSI in a stable order.
