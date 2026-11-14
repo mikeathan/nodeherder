@@ -270,10 +270,19 @@ describe('roundedDistanceMetres', () => {
     expect(roundedDistanceMetres(7.6)).toBe(8);
   });
 
-  test('rounds to five-metre steps above ten, because metre precision is not real', () => {
-    expect(roundedDistanceMetres(11.2)).toBe(10);
-    expect(roundedDistanceMetres(13.4)).toBe(15);
-    expect(roundedDistanceMetres(22)).toBe(20);
+  test('rounds to whole metres at every distance', () => {
+    expect(roundedDistanceMetres(11.2)).toBe(11);
+    expect(roundedDistanceMetres(13.4)).toBe(13);
+    expect(roundedDistanceMetres(22)).toBe(22);
+  });
+
+  test('a small move never swings the displayed figure by more than the rounding', () => {
+    // Coarse 5 m steps above 10 m were tried and rejected: a device moving 12 m -> 13 m changed the
+    // card from "10 m" to "15 m" while its radar position barely moved. The label has to describe
+    // the same value the picture shows.
+    const a = roundedDistanceMetres(12) as number;
+    const b = roundedDistanceMetres(13) as number;
+    expect(Math.abs(b - a)).toBeLessThanOrEqual(1);
   });
 
   test('never rounds a real reading down to zero', () => {

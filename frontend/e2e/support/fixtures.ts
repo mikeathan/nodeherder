@@ -2,6 +2,17 @@ import { test as base, expect, Page } from '@playwright/test';
 
 export const HUB_API = process.env.E2E_HUB_API ?? 'http://localhost:4110/api';
 
+/**
+ * Clear state the mock accumulated in earlier specs.
+ *
+ * The mock server is shared by every browser test in a run, so a triage decision made by one spec
+ * was still applied in the next — desktop marked a device known and mobile then started without it,
+ * which surfaced as an intermittent failure that passed in isolation.
+ */
+export async function resetMockState(page: Page): Promise<void> {
+  await page.request.post(`${HUB_API}/__test/reset`).catch(() => undefined);
+}
+
 export type Frame = { type: string; payload: any };
 
 /** Records every WebSocket frame the page sends and receives (wire-contract assertions). */

@@ -5,7 +5,7 @@
  * The component keeps only rendering and event wiring, matching the repository's separation of
  * pure view logic into `domain/` and shared behaviour into `composables/`.
  */
-import { computed, onUnmounted, ref, watch } from 'vue';
+import { computed, getCurrentInstance, onUnmounted, ref, watch } from 'vue';
 import type {
   ObservationIdentityView,
   ObservationSnapshot,
@@ -99,7 +99,12 @@ export function useObservationViewer(snapshot: () => ObservationSnapshot | null)
    */
   const now = ref(Date.now());
   const clock = setInterval(() => (now.value = Date.now()), 1000);
-  onUnmounted(() => clearInterval(clock));
+  // Guarded because this composable is also called from tests, where there is no component
+  // instance to unmount. `onUnmounted` outside one only warns, leaving a real 1 s interval running
+  // for the life of the process — harmless in a browser, a leak in a test run or a worker.
+  if (getCurrentInstance()) {
+    onUnmounted(() => clearInterval(clock));
+  }
 
   /**
    * Apply the operator's filters.
@@ -113,10 +118,13 @@ export function useObservationViewer(snapshot: () => ObservationSnapshot | null)
   const visible = computed(() => {
     const selection = facetSelection.value;
     const cutoff = now.value;
+    // Resolved once per evaluation, not once per device. Calling distanceRangeById inside the
+    // predicate ran an array search for every identity on every filter pass.
+    const range = distanceRangeById(distanceRange.value);
     return identities.value.filter((identity) => {
       if (!showDemoted.value && !shownByDefault(identity)) return false;
       if (onlyNew.value && identity.decision !== ObservationDecisions.Unknown) return false;
-      if (!withinDistanceRange(identity, distanceRangeById(distanceRange.value))) return false;
+      if (!withinDistanceRange(identity, range)) return false;
       return Object.entries(selection).every(([facet, values]) => {
         if (values.length === 0) return true;
         if (facet === ObservationFacets.Kind) return values.includes(identity.kind);

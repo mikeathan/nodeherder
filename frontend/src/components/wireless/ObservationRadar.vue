@@ -126,10 +126,15 @@
    * ("there are nine unidentifiable devices around 3 m") and drops the noise.
    */
   const rotatingBands = computed(() => {
+    // Boundaries are computed once per span, not once per device. Rebuilding the ring set inside
+    // the loop made this O(devices x rings) on every render for a value that is identical for all
+    // of them — 28 devices meant 28 throwaway arrays.
+    const boundaries = ringBandsForSpan(activeSpan.value);
     const bandCounts = new Map<string, { label: string; count: number }>();
+
     for (const entry of rotating.value) {
       const ratio = radialRatio(entry.metres, activeSpan.value);
-      const band = ringBandFor(ratio, activeSpan.value);
+      const band = bandForRatio(boundaries, ratio);
       const existing = bandCounts.get(band.id);
       if (existing) existing.count++;
       else bandCounts.set(band.id, { label: band.label, count: 1 });
@@ -152,7 +157,6 @@
         beyondSpan: metres > activeSpan.value,
         x: CENTRE + Math.sin(bearing) * ratio * outerRadius * RADAR_RADIUS_FRACTION,
         y: CENTRE - Math.cos(bearing) * ratio * outerRadius * RADAR_RADIUS_FRACTION,
-        ephemeral: isEphemeralIdentity(identity),
         // The class tone is resolved here rather than in the template so an absent classification
         // still produces a valid class name, which keeps the styling total.
         tone: classPresentation(identity.classification).tone,
@@ -164,7 +168,7 @@
         // earlier position makes that motion legible as a direction, which is the thing the trend
         // is actually claiming. Only drawn for approaching/receding, so a steady device adds no
         // noise.
-        tail: tailFor(identity, metres, activeSpan.value, bearing),
+        tail: tailFor(identity, activeSpan.value, bearing),
       };
     }),
   );
@@ -236,7 +240,6 @@
    */
   function tailFor(
     identity: ObservationIdentityView,
-    currentMetres: number,
     span: RadarSpan,
     bearing: number,
   ): { x: number; y: number } | null {
@@ -262,13 +265,24 @@
    * Bands come from the same `rings` the canvas draws, so a count always describes a region the
    * operator can see. Returns the innermost band below the first ring for anything closer.
    */
-  function ringBandFor(ratio: number, span: RadarSpan): { id: string; label: string } {
-    // Boundary ratios are fixed fractions of the radius, so they are produced from the span rather
-    // than read back from the rendered rings. Reading the rendered set here ran before the canvas
-    // had recomputed, which is how a 5 m span produced a band labelled "under 10 m".
-    const boundaries = ringsForSpan(span)
+  /**
+   * Band boundaries for a span, innermost first.
+   *
+   * Produced from the span rather than read back from the rendered rings: reading the rendered set
+   * ran before the canvas had recomputed, which is how a 5 m span produced a band labelled
+   * "under 10 m".
+   */
+  function ringBandsForSpan(span: RadarSpan): { metres: number; ratio: number }[] {
+    return ringsForSpan(span)
       .map((ring) => ({ metres: ring.metres, ratio: ring.ratio }))
       .sort((a, b) => a.ratio - b.ratio);
+  }
+
+  /** Which band a radial ratio falls in, given boundaries already computed for the span. */
+  function bandForRatio(
+    boundaries: readonly { metres: number; ratio: number }[],
+    ratio: number,
+  ): { id: string; label: string } {
     for (const boundary of boundaries) {
       if (ratio <= boundary.ratio) {
         return { id: `under-${boundary.metres}`, label: `under ${formatMetres(boundary.metres)}` };
@@ -278,13 +292,15 @@
     return { id: `over-${outermost?.metres ?? 0}`, label: `over ${formatMetres(outermost?.metres ?? 0)}` };
   }
 
-  /** Distance for a band label, matching the ring label formatting. */
+  /**
+   * Distance for a label, in metres.
+   *
+   * One formatter for ring labels and band counts. Two existed and disagreed: rings printed the
+   * stored value while bands rounded, so the same boundary could read "1.4 m" on a circle and
+   * "under 1 m" in the count beside it. Ring values are already rounded to two significant digits
+   * where they are produced, so no further rounding is needed here.
+   */
   function formatMetres(metres: number): string {
-    return metres < 1 ? `${metres.toFixed(1)} m` : `${Math.round(metres)} m`;
-  }
-
-  /** Ring label. Sub-metre rings keep their decimal, or they would all read as `0 m`. */
-  function radiusLabel(metres: number): string {
     return `${metres} m`;
   }
 </script>
@@ -331,7 +347,7 @@
         :y="CENTRE + ring.radius * 0.707 - 1.5"
         text-anchor="start"
       >
-        {{ radiusLabel(ring.metres) }}
+        {{ formatMetres(ring.metres) }}
       </text>
 
       <!--
@@ -690,13 +706,6 @@
   }
 
   /* A rotating address is explicitly hollow: it is not a stable device. */
-  .observation-radar__blip--ephemeral {
-    fill: none;
-    stroke: var(--text-muted, #8b9bab);
-    stroke-width: 0.7;
-    stroke-dasharray: 1 0.8;
-  }
-
   .observation-radar__caption {
     color: var(--text-muted, #8b9bab);
     font-size: 0.8125rem;

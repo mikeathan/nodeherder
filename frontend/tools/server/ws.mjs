@@ -308,6 +308,18 @@ function safeParse(message) {
  */
 const observationDecisions = new Map();
 
+/**
+ * Clear every triage decision recorded in this process.
+ *
+ * The mock is one long-lived server shared by every browser spec, so a decision made in one test
+ * was still applied in the next: desktop triaged a device and mobile then started with it already
+ * triaged, which looked like a flaky failure rather than leaked state. Tests reset through the
+ * `__test/reset` route.
+ */
+export function resetObservationDecisions() {
+  observationDecisions.clear();
+}
+
 /** Apply a triage decision to the fixture, so a rebroadcast reflects it. */
 function applyObservationDecision(message) {
   if (!message || typeof message.key !== 'string' || typeof message.decision !== 'string') return;

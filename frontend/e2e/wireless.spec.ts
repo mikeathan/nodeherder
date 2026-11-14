@@ -1,4 +1,4 @@
-import { test, expect, signIn } from './support/fixtures';
+import { test, expect, signIn, resetMockState } from './support/fixtures';
 
 /*
  * Wireless observation viewer (spec 064).
@@ -47,6 +47,9 @@ test.describe('wireless viewer', () => {
   });
 
   test('needs triage narrows to untriaged devices and drops them once triaged', async ({ page }) => {
+    // This spec writes a triage decision into the shared mock, so it starts from a clean fixture
+    // rather than inheriting whatever a previous spec decided.
+    await resetMockState(page);
     await signIn(page, '/wireless');
     const list = page.locator('.observ-cards');
 
@@ -331,6 +334,7 @@ test.describe('wireless viewer', () => {
   });
 
   test('triage controls are keyboard reachable and report a decision', async ({ page }) => {
+    await resetMockState(page);
     await signIn(page, '/wireless');
     const known = page.getByRole('button', { name: 'Known', exact: true }).first();
     await known.focus();

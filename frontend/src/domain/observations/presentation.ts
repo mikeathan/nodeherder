@@ -480,8 +480,15 @@ export function distanceRSSI(identity: Pick<ObservationIdentityView, 'rssi' | 'r
  */
 export function roundedDistanceMetres(metres: number | null | undefined): number | null {
   if (typeof metres !== 'number' || !Number.isFinite(metres)) return null;
-  if (metres < 10) return Math.max(1, Math.round(metres));
-  return Math.round(metres / 5) * 5;
+  // Whole metres throughout. Coarse 5 m steps above 10 m were tried and rejected: they made the
+  // displayed figure disagree with the device's position on the radar by up to 2 m, and a 1 m move
+  // across a step boundary swung the number by 3. The radar plots the raw distance, so the card has
+  // to describe the same value — a label that contradicts the picture beside it is worse than one
+  // with a digit the estimate cannot really support.
+  //
+  // Never rounds to zero: a positive estimate under a metre reads `1 m` rather than claiming the
+  // device is at the antenna.
+  return Math.max(1, Math.round(metres));
 }
 
 /**
