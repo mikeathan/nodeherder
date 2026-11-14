@@ -408,6 +408,35 @@ function buildObservationSnapshot() {
           advisory: true,
         },
       },
+      // A busy household: 28 rotating addresses at mixed distances, which is what made the radar
+      // unreadable — thirty identical hollow circles and no way to tell them apart.
+      ...Array.from({ length: 28 }, (_, index) => {
+        const rssi = -50 - index * 1.4;
+        return {
+          key: `fp:crowd${String(index).padStart(2, '0')}`,
+          kind: 'adv',
+          stable: false,
+          decision: 'unknown',
+          firstSeen: at(120 + index * 7),
+          lastSeen: at(2 + index),
+          packets: 3 + index,
+          rssi,
+          rssiSmoothed: rssi,
+          trend: index % 3 === 0 ? 'approaching' : 'steady',
+          trendDeltaDb: index % 3 === 0 ? 3.5 : 0,
+          signal: [rssi - 4, rssi - 2, rssi],
+          sources: [{ id: 'mock-proxy-1', rssi }],
+          classification: {
+            class: 'mobile-unidentifiable',
+            provisional: true,
+            showByDefault: true,
+            confidence: 0,
+            hoursObserved: 0,
+            reason: 'Address rotates, so this is a person\'s device rather than household equipment.',
+            advisory: true,
+          },
+        };
+      }),
       {
         key: 'addr:aa:bb:cc:dd:ee:02',
         kind: 'adv',

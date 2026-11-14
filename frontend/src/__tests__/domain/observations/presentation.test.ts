@@ -695,31 +695,37 @@ describe('class presentation', () => {
   });
 });
 
-describe('autoRadarSpan with outliers', () => {
-  test('ignores the furthest reading rather than scaling to it', () => {
-    // The bug this fixes: one distant device forced the whole scale wide and crushed everything
-    // nearby into the middle of the canvas. A real household reported 44 devices, 43 of them
-    // inside 12 m, with the scale set to 50 m by a single reading.
+describe('autoRadarSpan', () => {
+  test('a lone device is framed exactly, with no invented headroom', () => {
+    // Headroom exists to leave room around a distribution; a single device has none, so a device
+    // at 2 m belongs on a 2 m scale rather than a 3 m one.
+    expect(autoRadarSpan([2])).toBe(2);
+    expect(autoRadarSpan([45])).toBe(50);
+  });
+
+  test('a coherent set is covered completely', () => {
+    // No tail to ignore, so nothing may be clipped — a two-device household must frame both.
+    expect(autoRadarSpan([1, 2, 3, 4, 5])).toBe(5);
+    expect(autoRadarSpan([1.9, 5.7])).toBe(10);
+  });
+
+  test('scales to the typical device, not to a distant tail', () => {
+    // The bug this fixes: one distant device forced the scale wide and crushed everything nearby
+    // into the middle. A real household reported 44 devices, 43 inside 12 m, with the scale set
+    // to 50 m by a single reading.
     const household = [...Array(43)].map((_, index) => 1 + (index / 43) * 11);
     household.push(45);
-
-    // Scaling to the maximum would give 50 m; the 90th percentile gives 20 m.
-    expect(autoRadarSpan(household)).toBe(20);
+    expect(autoRadarSpan(household)).toBe(10);
   });
 
-  test('a lone reading still sets a sensible scale', () => {
-    // With one device there is no distribution to take a percentile of, so it decides alone.
-    expect(autoRadarSpan([45])).toBe(50);
-    expect(autoRadarSpan([2])).toBe(2);
-  });
-
-  test('a tight set of readings scales to fit them', () => {
-    expect(autoRadarSpan([1, 2, 3, 4, 5])).toBe(5);
+  test('a wide spread does not let the far tail set the scale', () => {
+    const spread = [0.5, 0.8, 1, 1, 1.2, 2, 2, 3, 15, 50];
+    expect(autoRadarSpan(spread)).toBe(3);
   });
 
   test('ignores non-finite and non-positive readings', () => {
     // A zero or NaN distance is unmeasured, not "at the antenna".
-    expect(autoRadarSpan([Number.NaN, 0, -3, 2, 3])).toBe(3);
+    expect(autoRadarSpan([Number.NaN, 0, -3, 2, 3])).toBe(5);
   });
 
   test('an empty set falls back to the default rather than the narrowest', () => {

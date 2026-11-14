@@ -5,9 +5,7 @@
   import { ObservationViews } from '@/types/observations.type';
   import {
     RADAR_SPANS_M,
-    autoRadarSpan,
-    distanceRSSI,
-    estimateDistanceMetres,
+    DEFAULT_RADAR_SPAN,
     stepRadarSpan,
     snapshotSummary,
     sourceIsSilent,
@@ -64,21 +62,23 @@
   }
 
   /**
-   * Zoom by one stop. `radarSpan` is a span in metres, so zooming in means a *smaller* number.
+   * The radar's actual span, reported upward.
    *
-   * When the span is null the radar is in Auto and follows the data, so the first step starts from
-   * whatever is currently drawn rather than from an arbitrary preset — otherwise pressing "+" could
-   * jump to a wider range than what is on screen.
+   * This is the single source of truth for the readout and the zoom step. The viewer used to
+   * compute its own auto-span from every identity, while the radar computed one from the
+   * identifiable identities only — so at Auto the readout said 5 m while the rings were drawn at
+   * 10 m, and the zoom controls stepped from a number the canvas was not using. The radar emits
+   * what it settled on instead, and everything else reads that.
    */
-  const currentSpan = computed(() => radarSpan.value ?? autoRadarSpan(scopedMetres.value));
+  const reportedSpan = ref<number | null>(null);
+  const currentSpan = computed(() => reportedSpan.value ?? DEFAULT_RADAR_SPAN);
 
-  const scopedMetres = computed(() =>
-    scoped.value.flatMap((identity) => {
-      const metres = estimateDistanceMetres(distanceRSSI(identity));
-      return metres === null ? [] : [metres];
-    }),
-  );
-
+  /**
+   * Zoom by one stop. The span is in metres, so zooming in means a *smaller* number.
+   *
+   * Stepping starts from the span actually drawn, so pressing "+" cannot jump to a range wider
+   * than the screen shows.
+   */
   function zoom(direction: -1 | 1): void {
     radarSpan.value = stepRadarSpan(currentSpan.value, direction);
   }
@@ -301,8 +301,10 @@
             >
               Auto
             </button>
-            <!-- Labels crowd at a narrow zoom, so they are prunable rather than permanent. The
-                 circles stay drawn either way: the label is the aid, not the information. -->
+            <!--
+              Ring distances, not device names. The button used to read "Labels", which was taken
+              to mean device labels — a different feature. "Rings" says exactly what it toggles.
+            -->
             <button
               type="button"
               class="wireless-viewer__scale-option"
@@ -310,7 +312,7 @@
               :aria-pressed="showRingLabels"
               @click="showRingLabels = !showRingLabels"
             >
-              Labels
+              Rings
             </button>
           </div>
 
@@ -320,6 +322,7 @@
             :span="radarSpan"
             :show-labels="showRingLabels"
             @select="selectIdentity"
+            @span-changed="reportedSpan = $event"
           />
         </div>
         <div class="wireless-viewer__detail">

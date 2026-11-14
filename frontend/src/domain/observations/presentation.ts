@@ -92,20 +92,31 @@ export function stepRadarSpan(current: number, direction: -1 | 1): RadarSpan {
 }
 
 /**
- * Percentile of the readings that Auto scales to, rather than the furthest one.
+ * How many times the median device distance the Auto span covers.
  *
  * Scaling to the furthest reading sounds right and looks wrong: RSSI estimates are noisy and a
  * single distant device — a neighbour's meter, a car outside — forces the whole scale wide and
- * crushes the devices the operator cares about into the middle of the canvas. In a real household
- * that was 43 devices inside 12 m compressed by one reading at 45 m.
+ * crushes everything the operator cares about into the middle. A percentile helps but is still
+ * pulled by the tail: with devices from 1 m to 50 m the 90th percentile landed on 50 m and the
+ * near cluster occupied about a tenth of the radius.
  *
- * The 90th percentile keeps almost everything in view while ignoring the tail, and anything beyond
- * is still drawn at the edge and counted, so nothing disappears.
+ * Scaling to a multiple of the *median* frames the typical device whatever the spread. The
+ * multiple was tuned against realistic sets rather than picked: at 1.2x the median device sat too
+ * near the edge, at 2.5x a tight 1-5 m household was pushed to a 10 m scale it did not need.
  */
-export const AUTO_SPAN_PERCENTILE = 0.9;
+export const AUTO_SPAN_MEDIAN_MULTIPLE = 1.5;
 
 /**
- * Choose a span from the data, using a high percentile rather than the maximum.
+ * How far beyond the median a reading can be before it counts as a tail rather than the data.
+ *
+ * With no tail the scale must cover everything, or a two-device household would clip one of them.
+ * Past this ratio the far devices are drawn at the edge and counted, which is the documented
+ * behaviour for anything beyond the span.
+ */
+export const AUTO_SPAN_TAIL_RATIO = 2;
+
+/**
+ * Choose a span from the data, framed on the typical device rather than the extremes.
  *
  * Scaling to the data is what makes sub-metre bands legible: on a 30 m scale every nearby device
  * collapses into the middle few percent of the canvas. With no readings the default span is used
@@ -115,10 +126,34 @@ export function autoRadarSpan(metres: readonly number[]): RadarSpan {
   const finite = metres.filter((value) => Number.isFinite(value) && value > 0).sort((a, b) => a - b);
   if (finite.length === 0) return DEFAULT_RADAR_SPAN;
 
-  // A single device is its own percentile, so a lone reading still gets a sensible scale.
-  const index = Math.min(finite.length - 1, Math.floor(finite.length * AUTO_SPAN_PERCENTILE));
-  const reference = finite[index];
+  // A single device has no distribution, so headroom would only inflate the scale: a device at
+  // exactly 2 m belongs on a 2 m scale, not a 3 m one.
+  if (finite.length === 1) {
+    return RADAR_SPANS_M.find((span) => finite[0] <= span) ?? RADAR_SPANS_M[RADAR_SPANS_M.length - 1];
+  }
+
+  const median = medianOf(finite);
+  const outermost = finite[finite.length - 1];
+  // A coherent set has no meaningful tail, so it is covered completely — otherwise a two-device
+  // household would clip one of its devices for no reason.
+  const reference =
+    outermost <= median * AUTO_SPAN_TAIL_RATIO
+      ? Math.max(median * AUTO_SPAN_MEDIAN_MULTIPLE, outermost)
+      : median * AUTO_SPAN_MEDIAN_MULTIPLE;
+
   return RADAR_SPANS_M.find((span) => reference <= span) ?? RADAR_SPANS_M[RADAR_SPANS_M.length - 1];
+}
+
+/**
+ * Median of a sorted slice.
+ *
+ * The median rather than the mean: one device at 50 m among forty at 2 m moves a mean to about
+ * 3.2 m but leaves the median at 2 m, and it is the typical device the scale should frame.
+ */
+function medianOf(sorted: readonly number[]): number {
+  const middle = Math.floor(sorted.length / 2);
+  if (sorted.length % 2 === 1) return sorted[middle];
+  return (sorted[middle - 1] + sorted[middle]) / 2;
 }
 
 /**

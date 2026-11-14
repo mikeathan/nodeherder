@@ -7,7 +7,7 @@
    * range, so movement reads as radial drift. The legend states range-only explicitly: this
    * view must never imply a position it cannot compute.
    */
-  import { computed, useId } from 'vue';
+  import { computed, useId, watch } from 'vue';
   import type { ObservationIdentityView } from '@/types/observations.type';
   import {
     DEFAULT_PATH_LOSS_EXPONENT,
@@ -52,6 +52,14 @@
 
   const emit = defineEmits<{
     (event: 'select', key: string): void;
+    /**
+     * The span in metres that this canvas actually drew.
+     *
+     * Emitted rather than recomputed by the caller: Auto excludes rotating addresses here, so a
+     * second calculation elsewhere would disagree with what is on screen — which is exactly how a
+     * readout came to say 5 m while the rings were drawn at 10 m.
+     */
+    (event: 'span-changed', metres: number): void;
   }>();
 
   const titleId = useId();
@@ -83,19 +91,58 @@
   );
 
   /**
-   * Active span. Auto follows the furthest reading, so a nearby-only household fills the canvas
-   * instead of clustering at the centre of a 30 m scale.
+   * Active span, from the devices the operator can actually identify.
+   *
+   * Rotating addresses are excluded from the calculation on purpose. There are typically far more
+   * of them than anything else, and they are the *least* useful to frame: a phone that re-keys
+   * every few minutes cannot be tracked, so letting its distance set the scale repeats the outlier
+   * mistake with a bigger crowd. If nothing identifiable is in range the whole set is used, so an
+   * all-rotating house still gets a sensible scale.
    */
-  const activeSpan = computed<RadarSpan>(() =>
-    props.span ?? autoRadarSpan(measured.value.map((entry) => entry.metres)),
+  const activeSpan = computed<RadarSpan>(() => {
+    if (props.span) return props.span;
+    const identifiable = measured.value.filter((entry) => !isEphemeralIdentity(entry.identity));
+    const source = identifiable.length > 0 ? identifiable : measured.value;
+    return autoRadarSpan(source.map((entry) => entry.metres));
+  });
+
+  // Report the settled span whenever it changes, so the toolbar readout and the zoom step agree
+  // with the canvas by construction.
+  watch(
+    activeSpan,
+    (span) => emit('span-changed', span),
+    { immediate: true },
   );
+
+  /** Rotating-address devices, which are drawn as a count rather than as individual blips. */
+  const rotating = computed(() => measured.value.filter((entry) => isEphemeralIdentity(entry.identity)));
+
+  /**
+   * How many rotating devices sit at each ring band.
+   *
+   * Drawn as a count next to the band rather than as one hollow circle each. Thirty identical
+   * hollow circles carry no information — you cannot tell them apart, cannot see them change, and
+   * they bury the handful of devices you can actually identify. The count keeps the information
+   * ("there are nine unidentifiable devices around 3 m") and drops the noise.
+   */
+  const rotatingBands = computed(() => {
+    const bandCounts = new Map<string, { label: string; count: number }>();
+    for (const entry of rotating.value) {
+      const ratio = radialRatio(entry.metres, activeSpan.value);
+      const band = ringBandFor(ratio, activeSpan.value);
+      const existing = bandCounts.get(band.id);
+      if (existing) existing.count++;
+      else bandCounts.set(band.id, { label: band.label, count: 1 });
+    }
+    return [...bandCounts.values()];
+  });
 
   /**
    * Placeable identities. An identity with no reading cannot be positioned, and is counted as
    * unplaced rather than drawn at the centre, which would read as "very close".
    */
   const placed = computed(() =>
-    measured.value.map(({ identity, metres }) => {
+    measured.value.filter(({ identity }) => !isEphemeralIdentity(identity)).map(({ identity, metres }) => {
       const bearing = (bearingForIdentity(identity.key) * Math.PI) / 180;
       const ratio = radialRatio(metres, activeSpan.value);
       return {
@@ -138,7 +185,15 @@
   /** Number of identities drawn at the edge because they exceed the span. */
   const beyondSpan = computed(() => placed.value.filter((blip) => blip.beyondSpan).length);
 
-  const unplaced = computed(() => props.identities.length - placed.value.length);
+  /**
+   * Devices with no usable reading at all.
+   *
+   * Rotating devices are counted separately, so they must not be double-reported here: the caption
+   * said "28 without a signal reading not shown" about devices it had just described as counted.
+   */
+  const unplaced = computed(() =>
+    props.identities.length - placed.value.length - rotating.value.length,
+  );
 
   /**
    * Ring circles with their labels, drawn outermost first so labels stay legible.
@@ -201,6 +256,33 @@
     };
   }
 
+  /**
+   * Which ring band a radial ratio falls in, for grouping rotating devices.
+   *
+   * Bands come from the same `rings` the canvas draws, so a count always describes a region the
+   * operator can see. Returns the innermost band below the first ring for anything closer.
+   */
+  function ringBandFor(ratio: number, span: RadarSpan): { id: string; label: string } {
+    // Boundary ratios are fixed fractions of the radius, so they are produced from the span rather
+    // than read back from the rendered rings. Reading the rendered set here ran before the canvas
+    // had recomputed, which is how a 5 m span produced a band labelled "under 10 m".
+    const boundaries = ringsForSpan(span)
+      .map((ring) => ({ metres: ring.metres, ratio: ring.ratio }))
+      .sort((a, b) => a.ratio - b.ratio);
+    for (const boundary of boundaries) {
+      if (ratio <= boundary.ratio) {
+        return { id: `under-${boundary.metres}`, label: `under ${formatMetres(boundary.metres)}` };
+      }
+    }
+    const outermost = boundaries[boundaries.length - 1];
+    return { id: `over-${outermost?.metres ?? 0}`, label: `over ${formatMetres(outermost?.metres ?? 0)}` };
+  }
+
+  /** Distance for a band label, matching the ring label formatting. */
+  function formatMetres(metres: number): string {
+    return metres < 1 ? `${metres.toFixed(1)} m` : `${Math.round(metres)} m`;
+  }
+
   /** Ring label. Sub-metre rings keep their decimal, or they would all read as `0 m`. */
   function radiusLabel(metres: number): string {
     return `${metres} m`;
@@ -250,6 +332,21 @@
         text-anchor="start"
       >
         {{ radiusLabel(ring.metres) }}
+      </text>
+
+      <!--
+        Unidentifiable devices, as counts rather than blips. Each line names a band and how many
+        rotating-address devices sit inside it, which is the information those hollow circles were
+        carrying — without thirty identical marks burying everything that can be identified.
+      -->
+      <text
+        v-for="(band, index) in rotatingBands"
+        :key="band.label"
+        class="observation-radar__rotating-count"
+        :x="CENTRE + 3"
+        :y="CENTRE + 12 + index * 4.2"
+      >
+        {{ band.count }} rotating {{ band.label }}
       </text>
 
       <line
@@ -314,7 +411,6 @@
           class="observation-radar__blip"
           :class="[
             {
-              'observation-radar__blip--ephemeral': blip.ephemeral,
               'observation-radar__blip--known': blip.identity.decision === 'known',
             },
             `observation-radar__blip--${blip.tone}`,
@@ -344,6 +440,10 @@
       </span>
       Range only · no bearing. Distances are estimated from signal strength and are accurate to
       a few metres indoors.
+      <span v-if="rotating.length > 0" class="observation-radar__unplaced">
+        {{ rotating.length }} with rotating addresses are counted by distance, not drawn
+        individually — they cannot be told apart.
+      </span>
       <span v-if="unplaced > 0" class="observation-radar__unplaced">
         {{ unplaced }} without a signal reading not shown.
       </span>
@@ -422,6 +522,17 @@
   .observation-radar__tail--receding {
     stroke: var(--text-subtle, #868e96);
     stroke-dasharray: 1.5 1;
+  }
+
+  /*
+   * Rotating-device counts. Dimmer than a blip because they are context, not targets: they say how
+   * much unidentifiable traffic is around without competing with the devices that have names.
+   */
+  .observation-radar__rotating-count {
+    fill: var(--text-subtle, #7c8b9c);
+    font-size: 3.2px;
+    pointer-events: none;
+    user-select: none;
   }
 
   .observation-radar__ring-label {
