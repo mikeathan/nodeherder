@@ -92,17 +92,33 @@ export function stepRadarSpan(current: number, direction: -1 | 1): RadarSpan {
 }
 
 /**
- * Choose a span from the data, rounding up to the smallest preset that contains the furthest
- * reading.
+ * Percentile of the readings that Auto scales to, rather than the furthest one.
+ *
+ * Scaling to the furthest reading sounds right and looks wrong: RSSI estimates are noisy and a
+ * single distant device — a neighbour's meter, a car outside — forces the whole scale wide and
+ * crushes the devices the operator cares about into the middle of the canvas. In a real household
+ * that was 43 devices inside 12 m compressed by one reading at 45 m.
+ *
+ * The 90th percentile keeps almost everything in view while ignoring the tail, and anything beyond
+ * is still drawn at the edge and counted, so nothing disappears.
+ */
+export const AUTO_SPAN_PERCENTILE = 0.9;
+
+/**
+ * Choose a span from the data, using a high percentile rather than the maximum.
  *
  * Scaling to the data is what makes sub-metre bands legible: on a 30 m scale every nearby device
  * collapses into the middle few percent of the canvas. With no readings the default span is used
  * rather than the narrowest, so an empty radar does not claim a one-metre range.
  */
 export function autoRadarSpan(metres: readonly number[]): RadarSpan {
-  const largest = metres.reduce((max, value) => (Number.isFinite(value) && value > max ? value : max), 0);
-  if (largest <= 0) return DEFAULT_RADAR_SPAN;
-  return RADAR_SPANS_M.find((span) => largest <= span) ?? RADAR_SPANS_M[RADAR_SPANS_M.length - 1];
+  const finite = metres.filter((value) => Number.isFinite(value) && value > 0).sort((a, b) => a - b);
+  if (finite.length === 0) return DEFAULT_RADAR_SPAN;
+
+  // A single device is its own percentile, so a lone reading still gets a sensible scale.
+  const index = Math.min(finite.length - 1, Math.floor(finite.length * AUTO_SPAN_PERCENTILE));
+  const reference = finite[index];
+  return RADAR_SPANS_M.find((span) => reference <= span) ?? RADAR_SPANS_M[RADAR_SPANS_M.length - 1];
 }
 
 /**
@@ -214,8 +230,12 @@ function roundRing(metres: number): number {
   const magnitude = Math.pow(10, Math.ceil(Math.log10(metres)) - 2);
   // Round the quotient first, then scale. Scaling an untidy quotient produces binary-float
   // artefacts — 3.7614 became "3.8000000000000003 m" on the ring label — which read as a bug.
-  // Two decimal places below 10 m and none above matches the projection's real precision.
   const scaled = Math.round(metres / magnitude) * magnitude;
+  // Two significant digits, measured rather than guessed. A tidier one-decimal label was tried and
+  // rejected: at a 3 m span the ring truly at 1.52 m would read "2 m", and a device actually at
+  // 2 m is a tenth of the radius away from that circle — the label would lie about where 2 m is.
+  // Two digits hold the disagreement under 1% of the radius at every span, so the ring is where
+  // its label says it is. "0.53 m" is awkward; a tidy number in the wrong place is worse.
   return metres < 10 ? Math.round(scaled * 100) / 100 : Math.round(scaled);
 }
 

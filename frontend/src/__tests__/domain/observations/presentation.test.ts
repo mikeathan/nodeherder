@@ -694,3 +694,35 @@ describe('class presentation', () => {
     expect(identities.filter((entry) => !shownByDefault(entry))).toHaveLength(2);
   });
 });
+
+describe('autoRadarSpan with outliers', () => {
+  test('ignores the furthest reading rather than scaling to it', () => {
+    // The bug this fixes: one distant device forced the whole scale wide and crushed everything
+    // nearby into the middle of the canvas. A real household reported 44 devices, 43 of them
+    // inside 12 m, with the scale set to 50 m by a single reading.
+    const household = [...Array(43)].map((_, index) => 1 + (index / 43) * 11);
+    household.push(45);
+
+    // Scaling to the maximum would give 50 m; the 90th percentile gives 20 m.
+    expect(autoRadarSpan(household)).toBe(20);
+  });
+
+  test('a lone reading still sets a sensible scale', () => {
+    // With one device there is no distribution to take a percentile of, so it decides alone.
+    expect(autoRadarSpan([45])).toBe(50);
+    expect(autoRadarSpan([2])).toBe(2);
+  });
+
+  test('a tight set of readings scales to fit them', () => {
+    expect(autoRadarSpan([1, 2, 3, 4, 5])).toBe(5);
+  });
+
+  test('ignores non-finite and non-positive readings', () => {
+    // A zero or NaN distance is unmeasured, not "at the antenna".
+    expect(autoRadarSpan([Number.NaN, 0, -3, 2, 3])).toBe(3);
+  });
+
+  test('an empty set falls back to the default rather than the narrowest', () => {
+    expect(autoRadarSpan([])).toBe(DEFAULT_RADAR_SPAN);
+  });
+});

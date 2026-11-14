@@ -124,14 +124,14 @@ test.describe('wireless viewer', () => {
     await page.locator('.observation-groups').getByRole('button', { name: /Front door tag/ }).first().click();
 
     const focus = page.locator('.observation-focus');
-    // Distance is formatted by the shared formatter, so a unit always accompanies the figure.
+    // Distance and motion are presented as one statement, because together they answer "where is
+    // it and is it coming closer" — the question the panel exists for.
     await expect(focus.locator('.observation-focus__value')).toContainText('m');
-    await expect(focus.getByText(/near|mid|far/)).toBeVisible();
+    await expect(focus.locator('.observation-focus__band-line')).toContainText(/near|mid|far/);
     // The trend pairs an arrow with a word, never a colour or arrow alone.
     await expect(focus.getByText(/Approaching|Receding|Steady|No trend yet/)).toBeVisible();
-    // The caption lives on the sparkline figure, which needs two samples; the guidance sentence
-    // is the fallback when there are not yet enough.
-    await expect(focus.getByText(/Estimated from signal strength only|A direction needs a few readings/)).toBeVisible();
+    // Measurement detail lives here rather than on the card, where it was one of eight columns.
+    await expect(focus.locator('.observation-focus__facts')).toBeVisible();
   });
 
   test('escape clears isolation and returns to the full view', async ({ page }) => {
@@ -337,8 +337,12 @@ test.describe('wireless viewer', () => {
     // Visible focus is an FE-04 requirement, not decoration.
     await expect(known).toBeFocused();
     await known.press('Enter');
-    // The mock acknowledges the action; the control must remain usable afterwards.
-    await expect(known).toBeEnabled();
+
+    // The decision is applied and rebroadcast, so the triaged device leaves an untriaged filter and
+    // the button disappears for it. Asserting "still enabled" would pass on a mock that only
+    // acknowledged and never applied anything — which is exactly what this suite used to do, and
+    // why a real triage defect went unnoticed.
+    await expect(page.getByRole('button', { name: 'Known', exact: true }).first()).not.toBeFocused();
   });
 
   test('layout fits at desktop and phone widths', async ({ page }) => {

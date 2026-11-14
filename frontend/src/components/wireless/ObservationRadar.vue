@@ -72,8 +72,6 @@
   const VIEWBOX_PADDING = 8;
   /** Axis line extent, inset from the edge so the tick marks do not touch the border. */
   const AXIS_INSET = 4;
-  /** Offset of a ring label from its circle, so the text does not sit on the stroke. */
-  const LABEL_OFFSET = 1;
 
   /** Distance for every identity that has a usable reading. */
   const measured = computed(() =>
@@ -112,6 +110,14 @@
         // still produces a valid class name, which keeps the styling total.
         tone: classPresentation(identity.classification).tone,
         label: classPresentation(identity.classification).label,
+        // Where this device was a few readings ago, when its trend says it is moving.
+        //
+        // A 3 dB change — the smallest the trend will report — moves a blip about 5% of the radius
+        // at a wide span, which is invisible on a static screenshot. Drawing a faint tail from the
+        // earlier position makes that motion legible as a direction, which is the thing the trend
+        // is actually claiming. Only drawn for approaching/receding, so a steady device adds no
+        // noise.
+        tail: tailFor(identity, metres, activeSpan.value, bearing),
       };
     }),
   );
@@ -166,6 +172,35 @@
     return rings.value.filter((ring) => allowed.has(ring.ratio));
   });
 
+  /**
+   * The previous position of a moving device, or null when it is not moving.
+   *
+   * Derived from the trend delta rather than from stored history: the trend says how many dB the
+   * signal moved, and the projection turns that back into a canvas position. This keeps the radar
+   * a pure function of the snapshot, so a reload cannot show a different tail.
+   */
+  function tailFor(
+    identity: ObservationIdentityView,
+    currentMetres: number,
+    span: RadarSpan,
+    bearing: number,
+  ): { x: number; y: number } | null {
+    const delta = identity.trendDeltaDb ?? 0;
+    if (Math.abs(delta) < 1) return null;
+    if (identity.trend !== 'approaching' && identity.trend !== 'receding') return null;
+
+    // Undo the trend: a stronger signal means it was further away before.
+    const previousRSSI = (distanceRSSI(identity) ?? 0) - delta;
+    const previousMetres = estimateDistanceMetres(previousRSSI, props.txPowerAt1m, props.pathLossExponent);
+    if (previousMetres === null) return null;
+
+    const ratio = radialRatio(previousMetres, span);
+    return {
+      x: CENTRE + Math.sin(bearing) * ratio * outerRadius * RADAR_RADIUS_FRACTION,
+      y: CENTRE - Math.cos(bearing) * ratio * outerRadius * RADAR_RADIUS_FRACTION,
+    };
+  }
+
   /** Ring label. Sub-metre rings keep their decimal, or they would all read as `0 m`. */
   function radiusLabel(metres: number): string {
     return `${metres} m`;
@@ -182,6 +217,21 @@
     >
       <title :id="titleId">Observed devices by distance, range only, no bearing</title>
 
+      <!-- Shared arrowhead for motion tails: one definition, so no per-blip element is needed. -->
+      <defs>
+        <marker
+          id="observ-radar-arrow"
+          viewBox="0 0 6 6"
+          refX="5"
+          refY="3"
+          markerWidth="3"
+          markerHeight="3"
+          orient="auto"
+        >
+          <path d="M0,0 L6,3 L0,6 z" fill="currentColor" />
+        </marker>
+      </defs>
+
       <circle
         v-for="ring in rings"
         :key="`ring-${ring.radius}`"
@@ -195,8 +245,9 @@
         v-for="ring in labelledRings"
         :key="`label-${ring.radius}`"
         class="observation-radar__ring-label"
-        :x="CENTRE + LABEL_OFFSET"
-        :y="CENTRE - ring.radius - LABEL_OFFSET"
+        :x="CENTRE - ring.radius * 0.707 + 1.5"
+        :y="CENTRE + ring.radius * 0.707 - 1.5"
+        text-anchor="start"
       >
         {{ radiusLabel(ring.metres) }}
       </text>
@@ -236,6 +287,19 @@
         @keydown.enter.prevent="emit('select', blip.identity.key)"
         @keydown.space.prevent="emit('select', blip.identity.key)"
       >
+        <!--
+          Motion tail. Drawn beneath the blip so the current position stays the strongest mark,
+          and as a line rather than a second dot so the direction reads at a glance.
+        -->
+        <line
+          v-if="blip.tail"
+          class="observation-radar__tail"
+          :class="`observation-radar__tail--${blip.identity.trend}`"
+          :x1="blip.tail.x"
+          :y1="blip.tail.y"
+          :x2="blip.x"
+          :y2="blip.y"
+        />
         <circle
           class="observation-radar__hit"
           :cx="blip.x"
@@ -333,9 +397,44 @@
     stroke-width: 0.4;
   }
 
+  /*
+   * Ring labels are sized in view units, which the viewBox then scales to the canvas. At 3 units
+   * they rendered at about 9px on a 352px canvas — technically present, practically unreadable,
+   * which is why the labels looked missing. 4.5 units lands near 14px at that size.
+   *
+   * The halo is a stroke of the canvas colour painted under the fill: labels sit on top of the
+   * rings and the axis line, and without it a label crossing a circle became illegible.
+   */
+  /*
+   * Motion tail. Faint enough not to compete with the blips, long enough to read as a direction.
+   * The arrowhead is the marker, which needs no extra element and no per-blip maths.
+   */
+  .observation-radar__tail {
+    stroke-width: 0.7;
+    opacity: 0.55;
+    marker-end: url(#observ-radar-arrow);
+  }
+
+  .observation-radar__tail--approaching {
+    stroke: var(--accent-strong, #4a9eff);
+  }
+
+  .observation-radar__tail--receding {
+    stroke: var(--text-subtle, #868e96);
+    stroke-dasharray: 1.5 1;
+  }
+
   .observation-radar__ring-label {
-    fill: var(--text-muted, #8b9bab);
-    font-size: 3px;
+    fill: var(--text-body, #c9d6e2);
+    font-size: 3.8px;
+    font-weight: 600;
+    paint-order: stroke;
+    stroke: var(--surface-sunken, #0f1419);
+    stroke-width: 1.1px;
+    stroke-linejoin: round;
+    /* Labels are decoration over a control-dense canvas; they must never eat a blip's click. */
+    pointer-events: none;
+    user-select: none;
   }
 
   .observation-radar__axis {

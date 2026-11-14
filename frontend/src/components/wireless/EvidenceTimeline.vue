@@ -115,7 +115,15 @@
 
     <p v-if="loading" class="evidence-timeline__note" role="status">Loading history…</p>
 
-    <p v-else-if="error" class="evidence-timeline__error" role="alert">{{ error }}</p>
+    <!--
+      Not every deployment serves the history route yet, and on a first day there is nothing to
+      serve. Either way the answer is the same sentence rather than a red alert: this pane is
+      supplementary, and an error styling would tell the operator something is broken when the
+      likely truth is that classification has not started.
+    -->
+    <p v-else-if="error" class="evidence-timeline__note">
+      Stored history is not available yet. It appears once classification has run for a day.
+    </p>
 
     <p v-else-if="empty" class="evidence-timeline__note">
       No stored days yet. A day is kept once a device has been heard in at least two different hours

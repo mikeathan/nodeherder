@@ -42,6 +42,9 @@
   const band = computed(() => distanceBand(metres.value));
   const trend = computed(() => trendPresentation(props.identity.trend));
   const provisional = computed(() => isProvisional(props.identity.classification));
+
+  /** Motion tone, so "approaching" reads as a state rather than as one word among many. */
+  const motionTone = computed(() => props.identity.trend ?? 'unknown');
   const isUntriaged = computed(() => props.identity.decision === ObservationDecisions.Unknown);
 
   /**
@@ -96,16 +99,19 @@
     </h2>
     <p class="observation-focus__key">{{ props.identity.key }}</p>
 
-    <!-- Distance is the headline figure: it states numerically what the radar shows as a radius,
-         so the operator does not have to estimate from the blip's position. -->
-    <p class="observation-focus__distance">
+    <!--
+      One sentence about position and movement, rather than a distance and a trend as two unrelated
+      lines. The operator opened this panel to answer "where is it and is it coming closer", and
+      "2 m · approaching" answers both in the space one fact took before.
+    -->
+    <p class="observation-focus__headline" role="status">
       <span class="observation-focus__value">{{ distanceText }}</span>
-      <span class="observation-focus__band">{{ DISTANCE_BAND_LABELS[band] }}</span>
+      <span class="observation-focus__motion" :class="`is-${motionTone}`">
+        <span v-if="trend.arrow" aria-hidden="true">{{ trend.arrow }}</span>
+        {{ trend.label }}
+      </span>
     </p>
-    <p class="observation-focus__trend" role="status">
-      <span v-if="trend.arrow" class="observation-focus__arrow" aria-hidden="true">{{ trend.arrow }}</span>
-      {{ trend.label }}
-    </p>
+    <p class="observation-focus__band-line">{{ DISTANCE_BAND_LABELS[band] }} range</p>
 
     <!--
       The class and its reasoning. A bare badge would be useless here: this is the panel the
@@ -114,20 +120,17 @@
     <section v-if="props.identity.classification" class="observation-focus__class">
       <ClassBadge :classification="props.identity.classification" compact />
       <p v-if="reason" class="observation-focus__reason">{{ reason }}</p>
-      <p v-if="provisional" class="observation-focus__note">
-        A guess from the first packet, not a verdict.
+      <p class="observation-focus__note">
+        <template v-if="provisional">A guess from the first packet, not a verdict. </template>
+        Advisory only — your own decision overrules it.
       </p>
-      <p class="observation-focus__note">Advisory only — your own decision overrules it.</p>
     </section>
 
     <figure v-if="spark" class="observation-focus__spark">
       <svg viewBox="0 0 100 30" preserveAspectRatio="none" role="img" aria-label="Recent signal strength">
         <polyline class="observation-focus__spark-line" :points="spark.points" />
       </svg>
-      <figcaption>
-        Recent signal strength, {{ spark.min }} to {{ spark.max }} dBm. Estimated from signal
-        strength only, accurate to a few metres indoors.
-      </figcaption>
+      <figcaption>{{ spark.min }} to {{ spark.max }} dBm over the recent window.</figcaption>
     </figure>
 
     <p v-else class="observation-focus__note">
@@ -227,11 +230,32 @@
     overflow-wrap: anywhere;
   }
 
-  .observation-focus__distance {
+  .observation-focus__headline {
     display: flex;
     align-items: baseline;
+    flex-wrap: wrap;
     gap: 0.5rem;
     margin: 0.25rem 0 0;
+  }
+
+  .observation-focus__motion {
+    font-size: 0.8rem;
+    color: var(--text-muted, #495057);
+  }
+
+  /* Only the actionable states get colour; "steady" deliberately does not draw the eye. */
+  .observation-focus__motion.is-approaching {
+    color: var(--accent-strong, #4a9eff);
+  }
+
+  .observation-focus__motion.is-receding {
+    color: var(--warning, #b8860b);
+  }
+
+  .observation-focus__band-line {
+    margin: -0.25rem 0 0;
+    font-size: 0.7rem;
+    color: var(--text-subtle, #868e96);
   }
 
   .observation-focus__value {
@@ -244,12 +268,6 @@
   .observation-focus__band {
     font-size: 0.75rem;
     color: var(--text-subtle, #868e96);
-  }
-
-  .observation-focus__trend {
-    margin: 0;
-    font-size: 0.78rem;
-    color: var(--text-muted, #495057);
   }
 
   .observation-focus__class {
@@ -275,14 +293,20 @@
     color: var(--text-subtle, #868e96);
   }
 
+
   .observation-focus__spark {
+    /* A sparkline is a glance, not a chart. It was stretching to fill the panel because the flex
+       column had spare height, which left a large empty box above the numbers. */
+    flex: 0 0 auto;
+    /* Browsers give <figure> a default block margin, which opened a gap below the sparkline that
+       looked like a broken layout. */
     margin: 0.25rem 0 0;
   }
 
   .observation-focus__spark svg {
     display: block;
     width: 100%;
-    height: 2.5rem;
+    height: 3rem;
   }
 
   .observation-focus__spark-line {
