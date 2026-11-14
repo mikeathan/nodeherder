@@ -741,3 +741,23 @@ describe('autoRadarSpan', () => {
     expect(autoRadarSpan([])).toBe(DEFAULT_RADAR_SPAN);
   });
 });
+
+describe('autoRadarSpan uses every device, not only identifiable ones', () => {
+  test('a single known device must not collapse the scale', () => {
+    // The report: one identifiable device at 0.3 m and twelve rotating ones out to 25 m. Excluding
+    // the rotating devices from the scale calculation collapsed the span to 1 m, so every far
+    // device was clamped to the edge — stacked on one another, which read as a single dot — and
+    // bucketed as "under 1 m" while its card correctly said 17 m.
+    const all = [0.3, 0.4, 1, 2, 3, 5, 8, 13, 17, 25];
+    const span = autoRadarSpan(all);
+
+    // The scale must cover the bulk of the room rather than one nearby device. 1 m was the bug.
+    expect(span).toBeGreaterThan(1);
+
+    // Most devices are now inside the span rather than all of them piled on the edge. A long tail
+    // is still drawn at the edge and reported, which is deliberate — the mistake was that *every*
+    // device beyond the single near one was treated as tail.
+    const inside = all.filter((metres) => radialRatio(metres, span) < 1);
+    expect(inside.length).toBeGreaterThanOrEqual(7);
+  });
+});

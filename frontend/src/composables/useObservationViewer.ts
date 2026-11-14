@@ -58,8 +58,16 @@ export function useObservationViewer(snapshot: () => ObservationSnapshot | null)
   const distanceRange = ref<string>(ANY_DISTANCE_RANGE.id);
   /** Radar span in metres, or null to scale automatically to the data. */
   const radarSpan = ref<RadarSpan | null>(null);
-  /** Whether ring labels are drawn. On by default; the circles carry the scale either way. */
+  /** Whether ring distance labels are drawn. On by default; the circles carry the scale. */
   const showRingLabels = ref(true);
+  /**
+   * Whether device names are drawn beside their blips.
+   *
+   * Separate from ring labels because they answer different questions — "how far is that circle"
+   * versus "which device is that" — and because the name has to be dropped selectively when devices
+   * crowd, while a ring label never does.
+   */
+  const showDeviceNames = ref(true);
   const viewMode = ref<ObservationViewMode>(ObservationViews.Radar);
 
   /** Live identities exactly as the hub last reported them. */
@@ -225,6 +233,7 @@ export function useObservationViewer(snapshot: () => ObservationSnapshot | null)
     distanceRange,
     radarSpan,
     showRingLabels,
+    showDeviceNames,
     viewMode,
     liveIdentities,
     identities,

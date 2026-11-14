@@ -423,7 +423,9 @@ function buildObservationSnapshot() {
       // A busy household: 28 rotating addresses at mixed distances, which is what made the radar
       // unreadable — thirty identical hollow circles and no way to tell them apart.
       ...Array.from({ length: 28 }, (_, index) => {
-        const rssi = -50 - index * 1.4;
+        // Spread across the full range rather than a tight cluster: the report was one identifiable
+        // device near the antenna and a dozen rotating ones far away, which collapsed the scale.
+        const rssi = -48 - index * 1.9;
         return {
           key: `fp:crowd${String(index).padStart(2, '0')}`,
           kind: 'adv',

@@ -39,6 +39,7 @@
     distanceRange,
     radarSpan,
     showRingLabels,
+    showDeviceNames,
     viewMode,
     identities,
     paused,
@@ -314,6 +315,17 @@
             >
               Rings
             </button>
+            <!-- Device names are a separate control from ring distances: one labels the scale,
+                 the other labels the devices. -->
+            <button
+              type="button"
+              class="wireless-viewer__scale-option"
+              :class="{ 'is-active': showDeviceNames }"
+              :aria-pressed="showDeviceNames"
+              @click="showDeviceNames = !showDeviceNames"
+            >
+              Names
+            </button>
           </div>
 
           <ObservationRadar
@@ -321,6 +333,7 @@
             :selected-key="selectedKey"
             :span="radarSpan"
             :show-labels="showRingLabels"
+            :show-names="showDeviceNames"
             @select="selectIdentity"
             @span-changed="reportedSpan = $event"
           />

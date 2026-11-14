@@ -39,14 +39,17 @@
        * while readings change, which is what makes small movements visible.
        */
       span?: RadarSpan | null;
-      /** Whether ring labels are drawn. The circles always draw; labels are an aid. */
+      /** Whether ring distance labels are drawn. The circles always draw; labels are an aid. */
       showLabels?: boolean;
+      /** Whether device names are drawn beside their blips. */
+      showNames?: boolean;
     }>(),
     {
       txPowerAt1m: DEFAULT_TX_POWER_AT_1M,
       pathLossExponent: DEFAULT_PATH_LOSS_EXPONENT,
       span: null,
       showLabels: true,
+      showNames: true,
     },
   );
 
@@ -80,6 +83,9 @@
   const VIEWBOX_PADDING = 8;
   /** Axis line extent, inset from the edge so the tick marks do not touch the border. */
   const AXIS_INSET = 4;
+  /** Device-name font size in view units, and the longest name that can fit beside a blip. */
+  const LABEL_FONT = 3.2;
+  const LABEL_MAX_CHARS = 18;
 
   /** Distance for every identity that has a usable reading. */
   const measured = computed(() =>
@@ -91,19 +97,21 @@
   );
 
   /**
-   * Active span, from the devices the operator can actually identify.
+   * Active span, from every device in range.
    *
-   * Rotating addresses are excluded from the calculation on purpose. There are typically far more
-   * of them than anything else, and they are the *least* useful to frame: a phone that re-keys
-   * every few minutes cannot be tracked, so letting its distance set the scale repeats the outlier
-   * mistake with a bigger crowd. If nothing identifiable is in range the whole set is used, so an
-   * all-rotating house still gets a sensible scale.
+   * Excluding rotating addresses from this calculation was a mistake, and a visible one: with a
+   * single identifiable device at 0.3 m the scale collapsed to 1 m, so twelve devices out to 25 m
+   * were all clamped to the canvas edge, stacked on top of each other, and reported as "under 1 m"
+   * in the counts while their cards said 17 m. The scale has to describe what is drawn.
+   *
+   * Rotating devices are collapsed into counts rather than blips, but they are still the majority
+   * of what is out there, and a radar that does not reach them is not describing the room.
+   * `autoRadarSpan` already frames the median rather than the maximum, so a long tail does not drag
+   * the scale wide.
    */
   const activeSpan = computed<RadarSpan>(() => {
     if (props.span) return props.span;
-    const identifiable = measured.value.filter((entry) => !isEphemeralIdentity(entry.identity));
-    const source = identifiable.length > 0 ? identifiable : measured.value;
-    return autoRadarSpan(source.map((entry) => entry.metres));
+    return autoRadarSpan(measured.value.map((entry) => entry.metres));
   });
 
   // Report the settled span whenever it changes, so the toolbar readout and the zoom step agree
@@ -133,14 +141,32 @@
     const bandCounts = new Map<string, { label: string; count: number }>();
 
     for (const entry of rotating.value) {
-      const ratio = radialRatio(entry.metres, activeSpan.value);
-      const band = bandForRatio(boundaries, ratio);
+      // Anything beyond the span is bucketed by its *actual* distance, not by where it was drawn.
+      // Clamping first put a device at 25 m into the outermost ring and labelled it "under 1 m",
+      // contradicting the card beside it which correctly said 25 m.
+      const band =
+        entry.metres > activeSpan.value
+          ? beyondSpanBand(entry.metres)
+          : bandForRatio(boundaries, radialRatio(entry.metres, activeSpan.value));
+
       const existing = bandCounts.get(band.id);
       if (existing) existing.count++;
       else bandCounts.set(band.id, { label: band.label, count: 1 });
     }
     return [...bandCounts.values()];
   });
+
+  /**
+   * The bucket for a device beyond the span.
+   *
+   * Grouped on a 1-2-5 ladder so a handful of far devices become one or two readable lines rather
+   * than one line each, and labelled with the distance it actually is.
+   */
+  function beyondSpanBand(metres: number): { id: string; label: string } {
+    const steps = [2, 5, 10, 20, 50, 100, 200];
+    const step = steps.find((value) => metres <= value) ?? Math.ceil(metres / 100) * 100;
+    return { id: `beyond-${step}`, label: `beyond span, up to ${step} m` };
+  }
 
   /**
    * Placeable identities. An identity with no reading cannot be positioned, and is counted as
@@ -187,7 +213,86 @@
   });
 
   /** Number of identities drawn at the edge because they exceed the span. */
-  const beyondSpan = computed(() => placed.value.filter((blip) => blip.beyondSpan).length);
+  /**
+   * Devices drawn at the edge because they exceed the span.
+   *
+   * Counts the rotating devices too. They are no longer drawn as blips, but they are still
+   * positioned beyond the span, so excluding them from this count meant the caption said nothing
+   * while a dozen devices sat clamped on the same spot — which read as a single dot.
+   */
+  const beyondSpan = computed(
+    () =>
+      placed.value.filter((blip) => blip.beyondSpan).length +
+      rotating.value.filter((entry) => entry.metres > activeSpan.value).length,
+  );
+
+  /**
+   * Device names that can be drawn without colliding.
+   *
+   * This is the placement problem the feature turns on: a 20-character label is roughly half the
+   * canvas width, so with a roomful of devices only a handful can ever fit. Rather than shrinking
+   * the text or letting labels overlap, they are placed greedily by priority and the rest are
+   * omitted — the blip and its tooltip remain, so nothing becomes unreachable.
+   *
+   * Priority is deliberate: the selected device always gets a name, then the nearest devices, since
+   * those are what an operator is looking for. Text width is estimated rather than measured; exact
+   * measurement needs a layout pass per render for a decision that only has to be about right.
+   */
+  const namedBlips = computed(() => {
+    if (!props.showNames) return [] as typeof placed.value;
+    const boxes: { x: number; y: number; width: number; height: number }[] = [];
+    const shown: typeof placed.value = [];
+
+    const ordered = [...placed.value].sort((a, b) => {
+      const aSelected = a.identity.key === props.selectedKey ? 0 : 1;
+      const bSelected = b.identity.key === props.selectedKey ? 0 : 1;
+      if (aSelected !== bSelected) return aSelected - bSelected;
+      return a.metres - b.metres;
+    });
+
+    for (const blip of ordered) {
+      const box = labelBoxFor(blip);
+      if (boxes.some((other) => overlaps(box, other))) continue;
+      boxes.push(box);
+      shown.push(blip);
+    }
+    return shown;
+  });
+
+  /** Where a blip's name sits, and the space it needs. */
+  function labelBoxFor(blip: (typeof placed.value)[number]) {
+    const text = shortLabel(blip);
+    // Approximate advance width for the label font, plus padding.
+    const width = text.length * 0.52 * LABEL_FONT + 1;
+    const height = LABEL_FONT + 1.2;
+    return { x: blip.x + 3.4, y: blip.y - 1, width, height };
+  }
+
+  /** Whether two label boxes overlap, with a margin so they never touch. */
+  function overlaps(
+    a: { x: number; y: number; width: number; height: number },
+    b: { x: number; y: number; width: number; height: number },
+  ): boolean {
+    const margin = 0.8;
+    return (
+      a.x < b.x + b.width + margin &&
+      b.x < a.x + a.width + margin &&
+      a.y < b.y + b.height + margin &&
+      b.y < a.y + a.height + margin
+    );
+  }
+
+  /**
+   * Short name for a blip.
+   *
+   * Truncated to a fixed budget because the label competes for a fixed amount of canvas. A MAC
+   * address has to lose characters to fit, and losing them deliberately reads better than
+   * overflowing into the next device.
+   */
+  function shortLabel(blip: (typeof placed.value)[number]): string {
+    const name = blip.identity.label || blip.identity.key;
+    return name.length > LABEL_MAX_CHARS ? `${name.slice(0, LABEL_MAX_CHARS - 1)}…` : name;
+  }
 
   /**
    * Devices with no usable reading at all.
@@ -350,21 +455,6 @@
         {{ formatMetres(ring.metres) }}
       </text>
 
-      <!--
-        Unidentifiable devices, as counts rather than blips. Each line names a band and how many
-        rotating-address devices sit inside it, which is the information those hollow circles were
-        carrying — without thirty identical marks burying everything that can be identified.
-      -->
-      <text
-        v-for="(band, index) in rotatingBands"
-        :key="band.label"
-        class="observation-radar__rotating-count"
-        :x="CENTRE + 3"
-        :y="CENTRE + 12 + index * 4.2"
-      >
-        {{ band.count }} rotating {{ band.label }}
-      </text>
-
       <line
         class="observation-radar__axis"
         :x1="CENTRE"
@@ -440,6 +530,22 @@
           {{ blip.label }}
         </title>
       </g>
+      <!--
+        Device names, drawn in their own layer above the blips rather than inside each interactive
+        group. A <text> inside the group inflated its bounding box — the clickable centre moved off
+        the dot and onto empty canvas — so labels are rendered separately and made untouchable.
+      -->
+      <g class="observation-radar__labels" aria-hidden="true">
+        <text
+          v-for="blip in namedBlips"
+          :key="`name-${blip.identity.key}`"
+          class="observation-radar__blip-label"
+          :x="blip.x + 3.4"
+          :y="blip.y + 1.4"
+        >
+          {{ shortLabel(blip) }}
+        </text>
+      </g>
     </svg>
 
     <figcaption class="observation-radar__caption">
@@ -456,15 +562,25 @@
       </span>
       Range only · no bearing. Distances are estimated from signal strength and are accurate to
       a few metres indoors.
-      <span v-if="rotating.length > 0" class="observation-radar__unplaced">
-        {{ rotating.length }} with rotating addresses are counted by distance, not drawn
-        individually — they cannot be told apart.
+      <!--
+        Unidentifiable devices, as counts rather than blips. Rendered as HTML below the canvas
+        rather than as SVG text inside it: the labels were long enough to run past the viewBox edge
+        and be clipped, and SVG text cannot wrap.
+      -->
+      <span v-if="rotatingBands.length > 0" class="observation-radar__buckets">
+        <span class="observation-radar__buckets-title">
+          {{ rotating.length }} with rotating addresses, by distance:
+        </span>
+        <span v-for="band in rotatingBands" :key="band.label" class="observation-radar__bucket">
+          {{ band.count }} {{ band.label }}
+        </span>
       </span>
       <span v-if="unplaced > 0" class="observation-radar__unplaced">
         {{ unplaced }} without a signal reading not shown.
       </span>
       <span v-if="beyondSpan > 0" class="observation-radar__unplaced">
-        {{ beyondSpan }} beyond {{ activeSpan }} m shown at the edge.
+        {{ beyondSpan }} beyond {{ activeSpan }} m — identified ones are drawn at the edge, the rest
+        are in the counts above.
       </span>
     </figcaption>
   </figure>
@@ -541,12 +657,40 @@
   }
 
   /*
-   * Rotating-device counts. Dimmer than a blip because they are context, not targets: they say how
-   * much unidentifiable traffic is around without competing with the devices that have names.
+   * Rotating-device counts, below the canvas. Dimmer than the device list because they are
+   * context: they say how much unidentifiable traffic is around without competing with the devices
+   * that have names.
    */
-  .observation-radar__rotating-count {
-    fill: var(--text-subtle, #7c8b9c);
+  .observation-radar__buckets {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 0.75rem;
+    margin-bottom: 0.3rem;
+    font-size: 0.75rem;
+    color: var(--text-subtle, #7c8b9c);
+  }
+
+  .observation-radar__buckets-title {
+    font-weight: 600;
+  }
+
+  .observation-radar__bucket {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /*
+   * Device names. Same treatment as ring labels — halo so the text survives crossing a circle or
+   * another blip — but a brighter fill, because a name is the thing being looked for.
+   */
+  .observation-radar__blip-label {
+    fill: var(--text-body, #e6edf5);
     font-size: 3.2px;
+    font-weight: 600;
+    paint-order: stroke;
+    stroke: var(--surface-sunken, #0f1419);
+    stroke-width: 1.1px;
+    stroke-linejoin: round;
     pointer-events: none;
     user-select: none;
   }
