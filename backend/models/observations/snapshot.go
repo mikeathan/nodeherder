@@ -137,4 +137,29 @@ type Snapshot struct {
 	// Arrivals counts stable identities first seen in this process, which is what an
 	// operator means by "new".
 	Arrivals int `json:"arrivals"`
+
+	// Classification says how far the evidence needed to classify has got.
+	//
+	// It exists because a first day of observation looks identical to a broken classifier: both
+	// show every row as "learning". Without this the operator cannot tell "still gathering" from
+	// "not working", and the honest state is indistinguishable from a fault.
+	Classification ClassificationProgress `json:"classification"`
+}
+
+// ClassificationProgress reports whether classification has enough evidence to run.
+type ClassificationProgress struct {
+	// Identities is how many identities are currently being tracked this process.
+	Identities int `json:"identities"`
+	// DaysStored is how many identities have at least one stored day of evidence.
+	DaysStored int `json:"daysStored"`
+	// HoursObserved is the best evidence any single identity has, in observed hours.
+	//
+	// It is a maximum rather than a total because classification is per identity: one device with
+	// 24 hours is enough for that device, while forty devices with one hour each classify nothing.
+	HoursObserved int `json:"hoursObserved"`
+	// Ready is true once at least one identity has enough evidence to be classified.
+	Ready bool `json:"ready"`
+	// Note is a sentence the viewer can show verbatim, so the explanation of the waiting state
+	// lives with the data that determines it.
+	Note string `json:"note,omitempty"`
 }

@@ -8,7 +8,7 @@
    */
   import { computed } from 'vue';
   import type { ObservationIdentityView } from '@/types/observations.type';
-  import { ObservationFacets, ObservationDecisions } from '@/types/observations.type';
+  import { ObservationFacets } from '@/types/observations.type';
   import {
     DISTANCE_RANGES,
     isUsefulFacet,
@@ -124,7 +124,7 @@
       :aria-pressed="onlyNew"
       @click="toggleOnlyNew"
     >
-      Only new
+      Needs triage
     </button>
 
     <!--
@@ -177,10 +177,6 @@
 
     <p v-if="supported.length === 0" class="observation-filters__empty">
       No source declares filterable facets yet.
-    </p>
-    <p class="observation-filters__hint" aria-live="polite">
-      {{ identities.length }} shown
-      <span v-if="onlyNew">· {{ identities.filter((i) => i.decision === ObservationDecisions.Unknown).length }} new</span>
     </p>
   </div>
 </template>

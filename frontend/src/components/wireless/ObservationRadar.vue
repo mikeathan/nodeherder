@@ -21,6 +21,7 @@
     identityTitle,
     isEphemeralIdentity,
     radialRatio,
+    labelableRings,
     ringsForSpan,
     type RadarSpan,
   } from '@/domain/observations/presentation';
@@ -38,11 +39,14 @@
        * while readings change, which is what makes small movements visible.
        */
       span?: RadarSpan | null;
+      /** Whether ring labels are drawn. The circles always draw; labels are an aid. */
+      showLabels?: boolean;
     }>(),
     {
       txPowerAt1m: DEFAULT_TX_POWER_AT_1M,
       pathLossExponent: DEFAULT_PATH_LOSS_EXPONENT,
       span: null,
+      showLabels: true,
     },
   );
 
@@ -140,12 +144,27 @@
   const rings = computed(() =>
     ringsForSpan(activeSpan.value)
       .map((ring) => ({
+        ratio: ring.ratio,
         metres: ring.metres,
         outer: ring.outer,
         radius: ring.ratio * outerRadius * RADAR_RADIUS_FRACTION,
       }))
       .reverse(),
   );
+
+  /**
+   * Rings that get a label.
+   *
+   * Pruned so labels never overlap when the scale is crowded, and empty when the operator turns
+   * labels off. The circles are drawn from `rings`, not from this, so turning labels off never
+   * changes the geometry.
+   */
+  const labelledRings = computed(() => {
+    if (!props.showLabels) return [];
+    // labelableRings sorts its own input, so it does not care that `rings` is outer-first here.
+    const allowed = new Set(labelableRings(rings.value).map((ring) => ring.ratio));
+    return rings.value.filter((ring) => allowed.has(ring.ratio));
+  });
 
   /** Ring label. Sub-metre rings keep their decimal, or they would all read as `0 m`. */
   function radiusLabel(metres: number): string {
@@ -173,7 +192,7 @@
         :r="ring.radius"
       />
       <text
-        v-for="ring in rings"
+        v-for="ring in labelledRings"
         :key="`label-${ring.radius}`"
         class="observation-radar__ring-label"
         :x="CENTRE + LABEL_OFFSET"
@@ -211,7 +230,7 @@
         role="button"
         tabindex="0"
         :aria-pressed="props.selectedKey === blip.identity.key"
-        :aria-label="`Isolate ${identityTitle(blip.identity)}, ${Math.round(blip.metres)} metres`"
+        :aria-label="`Isolate ${identityTitle(blip.identity)}, ${Math.round(blip.metres)} m`"
         :data-identity-key="blip.identity.key"
         @click="emit('select', blip.identity.key)"
         @keydown.enter.prevent="emit('select', blip.identity.key)"
@@ -288,15 +307,23 @@
    */
   .observation-radar__canvas {
     display: block;
-    width: 100%;
+    /*
+     * Bounded by *width*, because the element is square: `width:100%` plus `aspect-ratio:1` makes
+     * height follow width, so a max-height alone is ignored and the canvas overruns the fold. A
+     * width cap is the only constraint that actually binds for a square element in a wide column.
+     */
+    width: min(100%, 22rem);
     height: auto;
     aspect-ratio: 1;
     /*
-     * Height grows with the viewport rather than the content column: the canvas is square, so a
-     * modest height cap would silently shrink it. 82vh keeps the caption and toolbar on screen
-     * at typical desktop heights while still letting the radar dominate.
+     * Sized by height budget rather than by the column. A square element with width:100% grows to
+     * whatever the column allows, so in the radar's wide column it ran past the bottom of the
+     * screen — the controls above it were reachable but the lower half of the radar, and the
+     * caption under it, were not. Capping the height and centring fixes that without shrinking the
+     * usable drawing area, because the viewBox scales uniformly.
      */
-    max-height: 82vh;
+    max-height: 22rem;
+    margin-inline: auto;
     background: var(--surface-sunken, #0f1419);
     border-radius: 50%;
   }

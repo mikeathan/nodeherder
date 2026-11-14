@@ -11,7 +11,11 @@ import type {
   ObservationSnapshot,
   ObservationViewMode,
 } from '@/types/observations.type';
-import { ObservationFacets, ObservationViews } from '@/types/observations.type';
+import {
+  ObservationDecisions,
+  ObservationFacets,
+  ObservationViews,
+} from '@/types/observations.type';
 import {
   ANY_DISTANCE_RANGE,
   shownByDefault,
@@ -54,6 +58,8 @@ export function useObservationViewer(snapshot: () => ObservationSnapshot | null)
   const distanceRange = ref<string>(ANY_DISTANCE_RANGE.id);
   /** Radar span in metres, or null to scale automatically to the data. */
   const radarSpan = ref<RadarSpan | null>(null);
+  /** Whether ring labels are drawn. On by default; the circles carry the scale either way. */
+  const showRingLabels = ref(true);
   const viewMode = ref<ObservationViewMode>(ObservationViews.Radar);
 
   /** Live identities exactly as the hub last reported them. */
@@ -98,15 +104,18 @@ export function useObservationViewer(snapshot: () => ObservationSnapshot | null)
   /**
    * Apply the operator's filters.
    *
-   * "New" means recently appeared, never "untriaged": on a first run every identity is untriaged,
-   * so filtering on the decision would match everything and look broken.
+   * "Needs triage" means the decision is still unknown, so triaging a device removes it from the
+   * filtered list. It previously meant "arrived in the last five minutes", which looked broken:
+   * marking a device known left it on screen, because the filter never considered the decision.
+   * The two ideas are kept apart now — `newCount` still counts recent arrivals, which is a
+   * different question and a different word.
    */
   const visible = computed(() => {
     const selection = facetSelection.value;
     const cutoff = now.value;
     return identities.value.filter((identity) => {
       if (!showDemoted.value && !shownByDefault(identity)) return false;
-      if (onlyNew.value && !isRecentArrival(identity, cutoff)) return false;
+      if (onlyNew.value && identity.decision !== ObservationDecisions.Unknown) return false;
       if (!withinDistanceRange(identity, distanceRangeById(distanceRange.value))) return false;
       return Object.entries(selection).every(([facet, values]) => {
         if (values.length === 0) return true;
@@ -207,6 +216,7 @@ export function useObservationViewer(snapshot: () => ObservationSnapshot | null)
     demotedCount,
     distanceRange,
     radarSpan,
+    showRingLabels,
     viewMode,
     liveIdentities,
     identities,

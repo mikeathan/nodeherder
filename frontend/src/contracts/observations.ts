@@ -12,6 +12,7 @@ import {
   ObservationTrends,
   ObservationClasses,
   type ObservationClassification,
+  type ObservationClassificationProgress,
   type ObservationDecision,
   type ObservationIdentityView,
   type ObservationMedium,
@@ -266,6 +267,10 @@ function parseSignal(raw: unknown): number[] | undefined | null {
  */
 export function parseObservationSnapshot(payload: unknown): ObservationSnapshot | null {
   if (!isRecord(payload)) return null;
+  // Progress is optional so a snapshot from an older backend still parses; the viewer then omits
+  // the waiting banner rather than claiming classification is ready.
+  const progress = parseClassificationProgress(payload.classification);
+  if (progress === null) return null;
   const at = boundedString(payload.at, 64);
   if (!at || Number.isNaN(Date.parse(at))) return null;
   if (typeof payload.truncated !== 'boolean') return null;
@@ -286,5 +291,37 @@ export function parseObservationSnapshot(payload: unknown): ObservationSnapshot 
     if (!identity) return null;
     identities.push(identity);
   }
-  return { at, truncated: payload.truncated, sources, identities, arrivals };
+  return {
+    at,
+    truncated: payload.truncated,
+    sources,
+    identities,
+    arrivals,
+    ...(progress ? { classification: progress } : {}),
+  };
+}
+
+/**
+ * Parse classification progress.
+ *
+ * Absent is allowed so an older backend's snapshot still parses. The counters are clamped rather
+ * than trusted, because a negative or absurd value would render as a nonsensical banner.
+ */
+function parseClassificationProgress(
+  raw: unknown,
+): ObservationClassificationProgress | undefined | null {
+  if (raw === undefined || raw === null) return undefined;
+  if (!isRecord(raw)) return null;
+  const identities = finiteNumber(raw.identities);
+  const daysStored = finiteNumber(raw.daysStored);
+  const hoursObserved = finiteNumber(raw.hoursObserved);
+  if (identities === null || daysStored === null || hoursObserved === null) return null;
+  if (typeof raw.ready !== 'boolean') return null;
+  return {
+    identities: Math.max(0, Math.round(identities)),
+    daysStored: Math.max(0, Math.round(daysStored)),
+    hoursObserved: Math.max(0, Math.round(hoursObserved)),
+    ready: raw.ready,
+    ...(boundedString(raw.note, maxima.reason) ? { note: boundedString(raw.note, maxima.reason)! } : {}),
+  };
 }

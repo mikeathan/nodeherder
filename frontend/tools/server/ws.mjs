@@ -245,11 +245,16 @@ export function registerWebsocket(app, server) {
         case 'pong':
           break;
         case 'saveObservationIdentity':
-        case 'deleteObservationIdentity':
-          // The real backend persists the decision and rebroadcasts a snapshot; the mock
-          // acknowledges the same way so triage controls can be exercised in a browser.
+        case 'deleteObservationIdentity': {
+          // The real backend persists the decision *and rebroadcasts the snapshot*. The mock used
+          // to only acknowledge, so a triaged device never left a "needs triage" filter and the
+          // control looked inert in the browser — the test could not tell a real defect from a
+          // faithful-mock gap. Apply the decision to the fixture and resend.
+          applyObservationDecision(obj.payload);
           sendOperationSuccess(ws);
+          if (connected) sendMessage(ws, 'observations', buildObservationSnapshot());
           break;
+        }
         default:
           console.log('ws unhandled type:', msg);
           break;
@@ -295,6 +300,20 @@ function safeParse(message) {
  * handle — a stable beacon with an operator label, a rotating address, a known device, and a
  * source that is connected but has delivered nothing.
  */
+/**
+ * Decisions the browser has made during this session.
+ *
+ * Kept because the mock has no store: without it, a rebroadcast would undo the decision that
+ * triggered it, and the viewer would snap back to the pre-triage state.
+ */
+const observationDecisions = new Map();
+
+/** Apply a triage decision to the fixture, so a rebroadcast reflects it. */
+function applyObservationDecision(message) {
+  if (!message || typeof message.key !== 'string' || typeof message.decision !== 'string') return;
+  observationDecisions.set(message.key, message.decision);
+}
+
 function buildObservationSnapshot() {
   const now = Date.now();
   const at = (offsetSeconds) => new Date(now - offsetSeconds * 1000).toISOString();
@@ -415,7 +434,10 @@ function buildObservationSnapshot() {
           advisory: true,
         },
       },
-    ],
+    ].map((identity) => {
+      const decided = observationDecisions.get(identity.key);
+      return decided ? { ...identity, decision: decided } : identity;
+    }),
     arrivals: 1,
   };
 }

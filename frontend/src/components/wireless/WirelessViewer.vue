@@ -18,7 +18,7 @@
     useObservationViewer,
   } from '@/composables/useObservationViewer';
   import ObservationRadar from './ObservationRadar.vue';
-  import ObservationTable from './ObservationTable.vue';
+  import ObservationCards from './ObservationCards.vue';
   import ObservationFilters from './ObservationFilters.vue';
   import ObservationGroupList from './ObservationGroupList.vue';
   import ObservationFocus from './ObservationFocus.vue';
@@ -40,13 +40,14 @@
     demotedCount,
     distanceRange,
     radarSpan,
+    showRingLabels,
     viewMode,
     identities,
     paused,
     togglePause,
     facets,
     grouped,
-    newCount,
+    visible,
     selectedKey,
     selected,
     selectionLost,
@@ -87,6 +88,16 @@
 
   /** Current range, so the zoom direction is never ambiguous. */
   const rangeLabel = computed(() => `${currentSpan.value} m`);
+
+  /**
+   * Whether classification has enough evidence yet.
+   *
+   * Undefined means an older backend that does not report progress; the banner is omitted rather
+   * than guessed at, because claiming "not ready" when the backend simply does not say would be a
+   * lie in the other direction.
+   */
+  const progress = computed(() => snapshot.value?.classification);
+  const waitingForEvidence = computed(() => progress.value !== undefined && !progress.value.ready);
 
   const summary = computed(() => snapshotSummary(snapshot.value));
   const truncated = computed(() => snapshot.value?.truncated === true);
@@ -129,7 +140,6 @@
         <h1 id="wireless-title">Wireless</h1>
         <p class="wireless-viewer__summary" aria-live="polite">
           {{ summary }}
-          <span v-if="newCount > 0">· {{ newCount }} new</span>
         </p>
       </div>
       <p v-if="stale" class="wireless-viewer__stale" role="status">
@@ -151,12 +161,20 @@
         status. Without this an empty viewer could mean an unreachable host, a device without
         bluetooth_proxy, or genuinely nothing in range.
       -->
-      <ul v-if="sources.length > 0" class="wireless-viewer__sources">
+      <!--
+        Source health is a diagnostic, not the main content. It sits behind a disclosure so it is
+        available when something looks wrong without occupying the top of the page on every visit;
+        a silent source still forces the notice below, so a fault cannot hide in here.
+      -->
+      <details v-if="sources.length > 0" class="wireless-viewer__sources-details">
+        <summary>{{ sources.length }} {{ sources.length === 1 ? 'source' : 'sources' }}</summary>
+      <ul class="wireless-viewer__sources">
         <li v-for="source in sources" :key="source.id" :class="{ 'is-silent': sourceIsSilent(source) }">
           <strong>{{ source.name }}</strong>
           <span>{{ sourceStatus(source) }}</span>
         </li>
       </ul>
+      </details>
 
       <p v-if="silentSources.length > 0" class="wireless-viewer__notice" role="status">
         {{ silentSources.length === 1 ? 'One source is' : `${silentSources.length} sources are` }}
@@ -164,11 +182,27 @@
         <code>bluetooth_proxy</code> in its ESPHome configuration.
       </p>
 
+      <!--
+        Waiting state. A first day of observation and a broken classifier look identical — both
+        show every row as learning — so this states which one it is. Without it the feature is
+        indistinguishable from one that does not work.
+      -->
+      <p v-if="waitingForEvidence" class="wireless-viewer__waiting" role="status">
+        <strong>Still gathering evidence.</strong>
+        {{ progress?.note }}
+        <span v-if="progress && progress.hoursObserved > 0" class="wireless-viewer__waiting-count">
+          Best device so far: {{ progress.hoursObserved }} of 24 hours.
+        </span>
+      </p>
+
       <div class="wireless-viewer__toolbar">
         <UiButton :variant="paused ? 'primary' : 'default'" :aria-pressed="paused" @click="togglePause">
           {{ paused ? 'Resume updates' : 'Pause updates' }}
         </UiButton>
         <span v-if="paused" class="wireless-viewer__paused" role="status">Frozen</span>
+        <span class="wireless-viewer__count">
+          {{ visible.length }} of {{ identities.length }} shown
+        </span>
 
         <div class="wireless-viewer__views" role="group" aria-label="View">
           <button
@@ -211,34 +245,28 @@
         Hidden-by-class notice. The count is always present when anything is hidden, because a
         device that disappears without explanation reads as a fault rather than as a filter.
       -->
+      <!--
+        One status line rather than two. "4 shown" and the hidden count were separate paragraphs,
+        each costing a row of vertical space above the radar; together they read as one sentence
+        about the current view and reclaim room for the canvas.
+      -->
       <p v-if="demotedCount > 0" class="wireless-viewer__demoted" role="status">
-        {{ demotedCount }} {{ demotedCount === 1 ? 'device' : 'devices' }} hidden — installed
-        equipment and devices that look like neighbours.
+        {{ demotedCount }} of {{ identities.length }} {{ identities.length === 1 ? 'device' : 'devices' }}
+        hidden — installed equipment and devices that look like neighbours.
         <button type="button" class="wireless-viewer__link" @click="showDemoted = true">
           Show them
         </button>
       </p>
 
-      <ObservationFocus
-        v-if="viewMode === ObservationViews.Focus && selected"
-        :identity="selected"
-        :pending="pending.has(selected.key)"
-        @decide="decide"
-        @clear="clearSelection"
-      />
-
-      <div v-else-if="viewMode === ObservationViews.Radar" class="wireless-viewer__layout">
+      <div
+        v-if="viewMode !== ObservationViews.List"
+        class="wireless-viewer__layout"
+      >
         <div class="wireless-viewer__radar-pane">
-          <ObservationRadar
-            :identities="scoped"
-            :selected-key="selectedKey"
-            :span="radarSpan"
-            @select="selectIdentity"
-          />
           <!--
-            Zoom control. Plus zooms in, which *narrows* the span: a narrower span draws the same
-            space larger, and that is the direction the word means. The readout states the current
-            range so the direction is never ambiguous, and Auto returns to following the data.
+            The scale bar sits above the canvas. It used to sit below it, which put zoom and the
+            label toggle off the bottom of the screen once the radar was tall enough to be useful —
+            the one place they are needed was the one place they could not be reached.
           -->
           <div class="wireless-viewer__scale" role="group" aria-label="Radar range">
             <button
@@ -273,10 +301,45 @@
             >
               Auto
             </button>
+            <!-- Labels crowd at a narrow zoom, so they are prunable rather than permanent. The
+                 circles stay drawn either way: the label is the aid, not the information. -->
+            <button
+              type="button"
+              class="wireless-viewer__scale-option"
+              :class="{ 'is-active': showRingLabels }"
+              :aria-pressed="showRingLabels"
+              @click="showRingLabels = !showRingLabels"
+            >
+              Labels
+            </button>
           </div>
+
+          <ObservationRadar
+            :identities="scoped"
+            :selected-key="selectedKey"
+            :span="radarSpan"
+            :show-labels="showRingLabels"
+            @select="selectIdentity"
+          />
         </div>
         <div class="wireless-viewer__detail">
-          <ObservationTable
+          <!--
+            Isolating a device replaces the card list with its detail panel and keeps the radar.
+            Replacing the radar as well meant selecting something threw away the view you selected
+            it from, and the old Focus screen had its own mini radar with its own geometry, so the
+            two could disagree about where a device was.
+          -->
+          <ObservationFocus
+            v-if="selected"
+            :identity="selected"
+            :pending="pending.has(selected.key)"
+            @decide="decide"
+            @clear="clearSelection"
+          />
+          <!-- Cards rather than a table: almost every row shares the same kind, address type and
+               vendor, so columns made the sameness louder instead of revealing what differs. -->
+          <ObservationCards
+            v-else
             :identities="scoped"
             :pending="pending"
             :selected-key="selectedKey"
@@ -302,8 +365,10 @@
   .wireless-viewer {
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
-    padding: 1.5rem;
+    /* Tighter than the previous 1.25rem: with the sources collapsed and the filters on one line,
+       that gap left visible dead space between every band and pushed the content down. */
+    gap: 0.75rem;
+    padding: 1.25rem;
   }
 
   .wireless-viewer__header {
@@ -361,6 +426,24 @@
 
   .wireless-viewer__sources li span {
     color: var(--text-muted, #8b9bab);
+  }
+
+  .wireless-viewer__waiting {
+    margin: 0;
+    padding: 0.6rem 0.75rem;
+    border-left: 3px solid var(--accent-border, #a5d8ff);
+    background: var(--surface-raised, #f1f3f5);
+    border-radius: 0 0.25rem 0.25rem 0;
+    font-size: 0.8rem;
+    line-height: 1.45;
+    color: var(--text-muted, #495057);
+  }
+
+  .wireless-viewer__waiting-count {
+    display: block;
+    margin-top: 0.15rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-subtle, #868e96);
   }
 
   .wireless-viewer__demoted {
@@ -441,6 +524,8 @@
     flex-direction: column;
     gap: 0.5rem;
     min-width: 0;
+    /* Bound the radar by the column, so it can never push the side list out of view. */
+    max-width: min(100%, 52vh);
   }
 
   .wireless-viewer__scale {

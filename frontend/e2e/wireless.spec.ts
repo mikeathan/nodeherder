@@ -16,16 +16,19 @@ test.describe('wireless viewer', () => {
 
     // Assertions are scoped to the table: the radar draws the same identity text in SVG
     // <title> tooltips, so an unscoped text match is ambiguous by design.
-    const table = page.locator('.observation-table');
+    const table = page.locator('.observ-cards');
     await expect(table.getByText('Front door tag')).toBeVisible();
-    await expect(table.getByRole('button', { name: 'Isolate addr:aa:bb:cc:dd:ee:01', exact: true })).toBeVisible();
-    await expect(table.getByRole('button', { name: 'Isolate fp:9c02ab41', exact: true })).toBeVisible();
+    await expect(table.getByRole('button', { name: /^Isolate addr:aa:bb:cc:dd:ee:01, /, exact: false })).toBeVisible();
+    await expect(table.getByRole('button', { name: /^Isolate fp:9c02ab41, /, exact: false })).toBeVisible();
 
-    // The source that delivers traffic reports it; the silent one explains itself rather than
-    // leaving an empty screen.
+    // Source health sits behind a disclosure now: it is a diagnostic, and keeping it expanded
+    // pushed the radar and device list below the fold on every visit. A silent source still forces
+    // its notice into view, so a fault cannot hide here.
+    await page.locator('.wireless-viewer__sources-details summary').click();
     await expect(page.getByText('Mock hall proxy')).toBeVisible();
     await expect(page.getByText(/Scanning · 128 advertisements/)).toBeVisible();
     await expect(page.getByText(/no advertisements received/i)).toBeVisible();
+    await expect(page.getByText(/One source is connected but not sending/i)).toBeVisible();
   });
 
   test('the range display is explicitly bearing-less', async ({ page }) => {
@@ -40,33 +43,35 @@ test.describe('wireless viewer', () => {
     await expect(filters).toBeVisible();
     // Empty state must not appear: this is the D-1 regression guard.
     await expect(page.getByText('No source declares filterable facets yet.')).toHaveCount(0);
-    await expect(filters.getByRole('button', { name: 'Only new', exact: true })).toBeVisible();
+    await expect(filters.getByRole('button', { name: 'Needs triage', exact: true })).toBeVisible();
   });
 
-  test('isolating new identities narrows the table', async ({ page }) => {
+  test('needs triage narrows to untriaged devices and drops them once triaged', async ({ page }) => {
     await signIn(page, '/wireless');
-    const table = page.locator('.observation-table');
-    // The recently-appeared beacon and an older device both start visible.
-    await expect(table.getByText('Front door tag')).toBeVisible();
-    await expect(table.getByRole('button', { name: 'Isolate addr:aa:bb:cc:dd:ee:01', exact: true })).toBeVisible();
+    const list = page.locator('.observ-cards');
 
-    await page.getByRole('button', { name: 'Only new', exact: true }).click();
+    await page.getByRole('button', { name: 'Needs triage', exact: true }).click();
 
-    // "New" means recently appeared, not untriaged: the older identity is filtered out even
-    // though it has never been triaged. Filtering on triage state would match everything here,
-    // which is the bug this replaces.
-    await expect(table.getByText('Front door tag')).toBeVisible();
-    await expect(table.getByRole('button', { name: 'Isolate addr:aa:bb:cc:dd:ee:01', exact: true })).toHaveCount(0);
+    // Only devices whose decision is still unknown remain. The beacon is already marked known in
+    // the fixture, so it is gone; the untriaged identities stay.
+    await expect(list.getByText('Front door tag')).toHaveCount(0);
+    await expect(list.getByRole('button', { name: /^Isolate addr:aa:bb:cc:dd:ee:01, /, exact: false })).toBeVisible();
+
+    // Triaging a device removes it from the filtered view. This is the behaviour that was broken:
+    // the filter used to consider only arrival time, so marking a device known left it on screen
+    // and the control looked inert.
+    await list.getByRole('button', { name: 'Known', exact: true }).first().click();
+    await expect(list.getByRole('button', { name: /^Isolate addr:aa:bb:cc:dd:ee:01, /, exact: false })).toHaveCount(0);
   });
 
-  test('pausing freezes the rows so they can be read', async ({ page }) => {
+  test('pausing freezes the cards so they can be read', async ({ page }) => {
     await signIn(page, '/wireless');
     await page.getByRole('button', { name: 'Pause updates', exact: true }).click();
 
     await expect(page.getByRole('button', { name: 'Resume updates', exact: true })).toBeVisible();
     await expect(page.getByText('Frozen', { exact: true })).toBeVisible();
     // The table keeps rendering while frozen; it is a snapshot, not an empty state.
-    await expect(page.locator('.observation-table').getByText('Front door tag')).toBeVisible();
+    await expect(page.locator('.observ-card').getByText('Front door tag')).toBeVisible();
 
     await page.getByRole('button', { name: 'Resume updates', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Pause updates', exact: true })).toBeVisible();
@@ -96,22 +101,27 @@ test.describe('wireless viewer', () => {
 
   test('isolating an identity shows only that identity in Focus', async ({ page }) => {
     await signIn(page, '/wireless');
-    // Start from the list, then isolate one identity by name.
+    // Start from the grouped list, then isolate one identity by name.
     await page.getByRole('button', { name: 'List', exact: true }).click();
-    await page.getByRole('button', { name: 'Isolate Front door tag', exact: true }).click();
+    await page.locator('.observation-groups').getByRole('button', { name: /Front door tag/ }).first().click();
 
     const focus = page.locator('.observation-focus');
     await expect(focus).toBeVisible();
     await expect(focus.getByRole('heading', { name: 'Front door tag' })).toBeVisible();
-    // Only the isolated identity is present; the others are gone from every view.
-    await expect(page.getByRole('button', { name: 'Isolate addr:aa:bb:cc:dd:ee:01', exact: true })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Isolate fp:9c02ab41', exact: true })).toHaveCount(0);
+    // Only the isolated identity is present in the list; the others are gone from it.
+    await expect(page.locator('.observ-card')).toHaveCount(0);
+
+    // The radar stays visible with the selection. It used to be replaced by a separate Focus
+    // screen with its own mini radar, so selecting a device threw away the view you selected it
+    // from and the two radars could disagree about distance.
+    await expect(page.locator('.observation-radar')).toBeVisible();
+    await expect(page.locator('.observation-radar__blip-group.is-selected')).toHaveCount(1);
   });
 
   test('Focus shows distance, band and trend', async ({ page }) => {
     await signIn(page, '/wireless');
     await page.getByRole('button', { name: 'List', exact: true }).click();
-    await page.getByRole('button', { name: 'Isolate Front door tag', exact: true }).click();
+    await page.locator('.observation-groups').getByRole('button', { name: /Front door tag/ }).first().click();
 
     const focus = page.locator('.observation-focus');
     // Distance is formatted by the shared formatter, so a unit always accompanies the figure.
@@ -119,26 +129,29 @@ test.describe('wireless viewer', () => {
     await expect(focus.getByText(/near|mid|far/)).toBeVisible();
     // The trend pairs an arrow with a word, never a colour or arrow alone.
     await expect(focus.getByText(/Approaching|Receding|Steady|No trend yet/)).toBeVisible();
-    await expect(focus.getByText(/Estimated from signal strength only/)).toBeVisible();
+    // The caption lives on the sparkline figure, which needs two samples; the guidance sentence
+    // is the fallback when there are not yet enough.
+    await expect(focus.getByText(/Estimated from signal strength only|A direction needs a few readings/)).toBeVisible();
   });
 
   test('escape clears isolation and returns to the full view', async ({ page }) => {
     await signIn(page, '/wireless');
     await page.getByRole('button', { name: 'List', exact: true }).click();
-    await page.getByRole('button', { name: 'Isolate Front door tag', exact: true }).click();
+    await page.locator('.observation-groups').getByRole('button', { name: /Front door tag/ }).first().click();
     await expect(page.locator('.observation-focus')).toBeVisible();
 
     await page.keyboard.press('Escape');
     await expect(page.locator('.observation-focus')).toHaveCount(0);
-    // Back to the unfiltered set, so the other identities are reachable again.
-    await expect(page.getByRole('button', { name: 'Isolate Front door tag', exact: true })).toHaveCount(1);
+    // Back to the unfiltered set, so the other identities are reachable again. After Escape the
+    // view returns to the radar layout, where the card carries the distance in its label.
+    await expect(page.locator('.observ-cards').getByText('Front door tag')).toHaveCount(1);
   });
 
   test('the All identities control also leaves isolation', async ({ page }) => {
     await signIn(page, '/wireless');
     await page.getByRole('button', { name: 'List', exact: true }).click();
-    await page.getByRole('button', { name: 'Isolate Front door tag', exact: true }).click();
-    await page.getByRole('button', { name: '‹ All identities', exact: true }).click();
+    await page.locator('.observation-groups').getByRole('button', { name: /Front door tag/ }).first().click();
+    await page.getByRole('button', { name: '‹ All devices', exact: true }).click();
     await expect(page.locator('.observation-focus')).toHaveCount(0);
   });
 
@@ -214,21 +227,22 @@ test.describe('wireless viewer', () => {
     await expect(band).toBeVisible();
     await band.click();
     await expect(band).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.getByRole('button', { name: 'Isolate Front door tag', exact: true })).toHaveCount(1);
-    await expect(page.getByRole('button', { name: 'Isolate addr:aa:bb:cc:dd:ee:01', exact: true })).toHaveCount(0);
+    const groups = page.locator('.observation-groups');
+    await expect(groups.getByText('Front door tag')).toHaveCount(1);
+    await expect(groups.getByText('addr:aa:bb:cc:dd:ee:01')).toHaveCount(0);
 
     // A band that excludes the near device must exclude it, not merely reorder.
     await page.getByRole('button', { name: '5–10 m', exact: true }).click();
-    await expect(page.getByRole('button', { name: 'Isolate Front door tag', exact: true })).toHaveCount(0);
+    await expect(groups.getByText('Front door tag')).toHaveCount(0);
 
     // A band with no devices is empty rather than falling back to everything.
     await page.getByRole('button', { name: '0.5–1 m', exact: true }).click();
-    await expect(page.getByRole('button', { name: 'Isolate Front door tag', exact: true })).toHaveCount(0);
+    await expect(groups.getByText('Front door tag')).toHaveCount(0);
 
-    // Any clears the filter.
+    // Any clears the filter. The list view is still active, so its own controls are asserted.
     await page.getByRole('button', { name: 'Any', exact: true }).click();
-    await expect(page.getByRole('button', { name: 'Isolate Front door tag', exact: true })).toHaveCount(1);
-    await expect(page.getByRole('button', { name: 'Isolate addr:aa:bb:cc:dd:ee:01', exact: true })).toHaveCount(1);
+    await expect(groups.getByText('Front door tag')).toHaveCount(1);
+    await expect(groups.getByText('addr:aa:bb:cc:dd:ee:01')).toHaveCount(1);
   });
 
   test('the distance control is a single-select group of bands', async ({ page }) => {
@@ -242,26 +256,32 @@ test.describe('wireless viewer', () => {
     await expect(any).toHaveAttribute('aria-pressed', 'false');
   });
 
-  test('the global radar uses most of the available height', async ({ page }) => {
-    // Desktop only: below 1200px the table stacks underneath, so the radar is bounded by the
-    // column width instead of the viewport height.
+  test('the radar is large enough to read and leaves the list on screen', async ({ page }) => {
+    // The radar used to fill 82% of the viewport, which pushed the device list, filters and the
+    // hidden-count footer below the fold: the page became a radar with nothing else on it.
+    // The design now shares the screen, so this asserts both halves of that trade rather than
+    // only the size — a big radar that hides the list is not the goal.
     await page.setViewportSize({ width: 1440, height: 900 });
     await signIn(page, '/wireless');
-    await expect(page.locator('.observation-table')).toBeVisible();
+    await expect(page.locator('.observ-cards')).toBeVisible();
     const box = (await page.locator('.observation-radar__canvas').boundingBox())!;
     const viewport = page.viewportSize()!;
 
-    // Previously capped at 28rem (448px) in a narrow column, which made the global view small.
-    // The radar is now the primary pane: at least 60% of the viewport height.
-    expect(box.height).toBeGreaterThan(viewport.height * 0.6);
+    // Still substantial: at least a third of the viewport, and large in absolute terms.
+    expect(box.height).toBeGreaterThan(viewport.height * 0.33);
+    expect(box.height).toBeGreaterThan(200);
     // It stays square, so the rings remain circular.
     expect(Math.abs(box.width - box.height)).toBeLessThan(2);
+
+    // And the list must be visible without scrolling, which is the point of the cap.
+    const list = (await page.locator('.observ-cards').boundingBox())!;
+    expect(list.y).toBeLessThan(viewport.height);
   });
 
   test('the radar fills the column on a phone without overflow', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await signIn(page, '/wireless');
-    await expect(page.locator('.observation-table')).toBeVisible();
+    await expect(page.locator('.observ-cards')).toBeVisible();
     const box = (await page.locator('.observation-radar__canvas').boundingBox())!;
     // Full column minus page padding, and never wider than the viewport.
     expect(box.width).toBeGreaterThan(300);
@@ -276,7 +296,7 @@ test.describe('wireless viewer', () => {
     await signIn(page, '/wireless');
 
     // Blips are real controls, reachable by role rather than by pixel position.
-    const blip = page.getByRole('button', { name: /^Isolate Front door tag, \d+ metres$/ }).first();
+    const blip = page.getByRole('button', { name: /^Isolate Front door tag, \d+ m$/ }).first();
     await expect(blip).toBeVisible();
     await blip.click();
 
@@ -284,12 +304,12 @@ test.describe('wireless viewer', () => {
     await expect(focus).toBeVisible();
     await expect(focus.getByRole('heading', { name: 'Front door tag' })).toBeVisible();
     // Only the isolated identity remains anywhere in the view.
-    await expect(page.getByRole('button', { name: 'Isolate addr:aa:bb:cc:dd:ee:01', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /^Isolate addr:aa:bb:cc:dd:ee:01, /, exact: false })).toHaveCount(0);
   });
 
   test('blips are keyboard operable', async ({ page }) => {
     await signIn(page, '/wireless');
-    const blip = page.getByRole('button', { name: /^Isolate Front door tag, \d+ metres$/ }).first();
+    const blip = page.getByRole('button', { name: /^Isolate Front door tag, \d+ m$/ }).first();
     await blip.focus();
     // Visible focus is required: the SVG highlight is the only cue here.
     await expect(blip).toBeFocused();
@@ -299,9 +319,9 @@ test.describe('wireless viewer', () => {
 
   test('the radar derives its distance from smoothed signal', async ({ page }) => {
     await signIn(page, '/wireless');
-    const blip = page.getByRole('button', { name: /^Isolate Front door tag, \d+ metres$/ }).first();
+    const blip = page.getByRole('button', { name: /^Isolate Front door tag, \d+ m$/ }).first();
     const label = (await blip.getAttribute('aria-label')) ?? '';
-    const metres = Number(label.match(/(\d+) metres/)?.[1]);
+    const metres = Number(label.match(/(\d+) m$/)?.[1]);
 
     // The mock sends rssi -62 but rssiSmoothed -66, with txPower -59 and exponent 2.5:
     //   raw      -> 10^((3)/25)  = 1.3 m -> 1 m
@@ -312,7 +332,7 @@ test.describe('wireless viewer', () => {
 
   test('triage controls are keyboard reachable and report a decision', async ({ page }) => {
     await signIn(page, '/wireless');
-    const known = page.getByRole('button', { name: 'Mark known', exact: true }).first();
+    const known = page.getByRole('button', { name: 'Known', exact: true }).first();
     await known.focus();
     // Visible focus is an FE-04 requirement, not decoration.
     await expect(known).toBeFocused();
@@ -345,12 +365,12 @@ test.describe('classification', () => {
   test('demoted classes are hidden and their count is reported', async ({ page }) => {
     await signIn(page, '/wireless');
 
-    const table = page.locator('.observation-table');
+    const table = page.locator('.observ-cards');
     // The installed device is hidden by default; this is the row type that made the list useless.
-    await expect(table.getByRole('button', { name: 'Isolate addr:aa:bb:cc:dd:ee:02', exact: true })).toHaveCount(0);
+    await expect(table.getByRole('button', { name: /^Isolate addr:aa:bb:cc:dd:ee:02, /, exact: false })).toHaveCount(0);
 
     // Hiding is never silent: the footer states how many and offers a way back.
-    await expect(page.getByText(/1 device hidden/)).toBeVisible();
+    await expect(page.getByText(/1 of \d+ devices\s+hidden/)).toBeVisible();
     await expect(page.getByRole('button', { name: 'Show them', exact: true })).toBeVisible();
   });
 
@@ -359,9 +379,9 @@ test.describe('classification', () => {
 
     await page.getByRole('button', { name: 'Show them', exact: true }).click();
 
-    const table = page.locator('.observation-table');
-    await expect(table.getByRole('button', { name: 'Isolate addr:aa:bb:cc:dd:ee:02', exact: true })).toBeVisible();
-    await expect(page.getByText(/device hidden/)).toHaveCount(0);
+    const table = page.locator('.observ-cards');
+    await expect(table.getByRole('button', { name: /^Isolate addr:aa:bb:cc:dd:ee:02, /, exact: false })).toBeVisible();
+    await expect(page.getByText(/devices\s+hidden/)).toHaveCount(0);
   });
 
   test('the show-all toggle is an alternative route to the same state', async ({ page }) => {
@@ -369,13 +389,13 @@ test.describe('classification', () => {
 
     await page.getByRole('button', { name: 'Show all kinds', exact: true }).click();
 
-    const table = page.locator('.observation-table');
-    await expect(table.getByRole('button', { name: 'Isolate addr:aa:bb:cc:dd:ee:02', exact: true })).toBeVisible();
+    const table = page.locator('.observ-cards');
+    await expect(table.getByRole('button', { name: /^Isolate addr:aa:bb:cc:dd:ee:02, /, exact: false })).toBeVisible();
   });
 
   test('every visible row states its class in words', async ({ page }) => {
     await signIn(page, '/wireless');
-    const table = page.locator('.observation-table');
+    const table = page.locator('.observ-cards');
 
     // No raw identifiers: the operator must never see "infrastructure" as a badge.
     await expect(table.locator('.class-badge').first()).toBeVisible();
@@ -388,13 +408,13 @@ test.describe('classification', () => {
 
     // A slow classifier that shows nothing looks broken; naming the progress makes it read as work
     // in progress.
-    await expect(page.locator('.observation-table').getByText('Learning', { exact: true })).toBeVisible();
-    await expect(page.locator('.observation-table').getByText('6 of 24 hours', { exact: true })).toBeVisible();
+    await expect(page.locator('.observ-cards').getByText('Learning', { exact: true })).toBeVisible();
+    await expect(page.locator('.observ-cards').getByText('6 of 24 hours', { exact: true })).toBeVisible();
   });
 
   test('a provisional class is marked as a guess', async ({ page }) => {
     await signIn(page, '/wireless');
-    const table = page.locator('.observation-table');
+    const table = page.locator('.observ-cards');
 
     const badge = table.locator('.class-badge--provisional').first();
     await expect(badge).toBeVisible();
@@ -406,15 +426,16 @@ test.describe('classification', () => {
     await signIn(page, '/wireless');
 
     // The beacon carries a settled class with a reason, so it is the one whose explanation can be
-    // asserted; the other identities are still learning.
-    await page.getByRole('button', { name: 'Isolate Front door tag', exact: true }).click();
+    // asserted; the other identities are still learning. Scoped to the card list: the radar blip
+    // carries the same accessible name.
+    await page.locator('.observ-cards').getByRole('button', { name: /^Isolate Front door tag, /, exact: false }).click();
 
     const focus = page.locator('.observation-focus');
     await expect(focus).toBeVisible();
     // The reasoning must be present: a class the operator cannot check is a class they cannot trust.
     // Scoped to the reason element: the same sentence also appears in the badge tooltip, and a
     // strict-mode match on both would be ambiguous.
-    await expect(focus.locator('.observation-focus__class-reason')).toContainText(
+    await expect(focus.locator('.observation-focus__reason')).toContainText(
       'Present for part of the day with a changing signal',
     );
     await expect(focus.getByText(/Advisory only/)).toBeVisible();
@@ -431,7 +452,7 @@ test.describe('classification', () => {
 
   test('classification survives a phone viewport without overflow', async ({ page }) => {
     await signIn(page, '/wireless');
-    await page.getByRole('button', { name: 'Isolate addr:aa:bb:cc:dd:ee:01', exact: true }).click();
+    await page.locator('.observ-cards').getByRole('button', { name: /^Isolate addr:aa:bb:cc:dd:ee:01, /, exact: false }).click();
 
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
     expect(overflow).toBe(false);

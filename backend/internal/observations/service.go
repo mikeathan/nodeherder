@@ -505,6 +505,7 @@ func (s *Service) snapshotLocked(now time.Time) model.Snapshot {
 
 	// One scan for the reference reading, not one per identity.
 	strongestRSSI := s.strongestRSSILocked()
+	snapshot.Classification = s.classificationProgressLocked(now)
 
 	snapshot.Identities = make([]model.IdentityView, 0, len(visible))
 	for _, current := range visible {
@@ -699,6 +700,15 @@ func sourceReadings(source map[string]*int) []model.SourceReading {
 // identity, yet that is precisely the state the operator needs to see.
 func renderSignature(snapshot model.Snapshot) string {
 	signature := make([]byte, 0, 64+len(snapshot.Identities)*32)
+	// Progress must participate: it changes while no identity field does, and it is the one thing
+	// telling the operator whether the classifier is waiting or broken.
+	signature = appendUint64(signature, uint64(snapshot.Classification.DaysStored))
+	signature = appendUint64(signature, uint64(snapshot.Classification.HoursObserved))
+	if snapshot.Classification.Ready {
+		signature = append(signature, 1)
+	} else {
+		signature = append(signature, 0)
+	}
 	for _, source := range snapshot.Sources {
 		signature = append(signature, source.ID...)
 		signature = append(signature, 0)
@@ -736,6 +746,39 @@ func renderSignature(snapshot model.Snapshot) string {
 		signature = append(signature, 0)
 	}
 	return string(signature)
+}
+
+// classificationProgressLocked reports how far classification has got. Caller holds the mutex.
+//
+// The distinction that matters is "no evidence yet" versus "not working". Both render every row
+// as learning, so without this the operator has no way to tell them apart — which is exactly how
+// a feature can be complete and still look broken.
+func (s *Service) classificationProgressLocked(now time.Time) model.ClassificationProgress {
+	progress := model.ClassificationProgress{Identities: len(s.aggregates)}
+
+	for key := range s.aggregates {
+		if _, ok := s.classified[key]; ok {
+			progress.DaysStored++
+			continue
+		}
+	}
+
+	// The best single identity's evidence decides readiness, because classification is per
+	// identity: one device with a day of history is classifiable even if forty others are not.
+	for _, view := range s.classified {
+		if view.HoursObserved > progress.HoursObserved {
+			progress.HoursObserved = view.HoursObserved
+		}
+	}
+
+	progress.Ready = progress.DaysStored > 0
+	if !progress.Ready && progress.Identities > 0 {
+		// No summaries exist yet, so no identity has been classified. Say why, and say it in terms
+		// of the rule that caused it rather than in terms of a percentage.
+		progress.Note = "Classification begins after the first full day. Until then every device " +
+			"is shown as learning and installed equipment is not hidden."
+	}
+	return progress
 }
 
 // appendClassification adds a classification to a render signature.

@@ -150,6 +150,26 @@ export const ObservationViews = {
 
 export type ObservationViewMode = (typeof ObservationViews)[keyof typeof ObservationViews];
 
+/**
+ * How far the evidence needed for classification has got.
+ *
+ * A first day of observation and a broken classifier look identical: both show every row as
+ * "learning". This is the field that tells them apart, so the waiting state can say what it is
+ * waiting for instead of appearing dead.
+ */
+export type ObservationClassificationProgress = {
+  /** Identities currently tracked by this process. */
+  identities: number;
+  /** Identities with at least one stored day of evidence. */
+  daysStored: number;
+  /** Best single identity's evidence, in observed hours. */
+  hoursObserved: number;
+  /** True once at least one identity has enough evidence to be classified. */
+  ready: boolean;
+  /** Sentence explaining the waiting state, composed by the backend. */
+  note?: string;
+};
+
 /** One complete broadcast snapshot. Never a delta: a missed snapshot reconverges on the next. */
 export type ObservationSnapshot = {
   at: string;
@@ -157,6 +177,8 @@ export type ObservationSnapshot = {
   sources: ObservationSourceDescriptor[];
   identities: ObservationIdentityView[];
   arrivals: number;
+  /** Optional so a snapshot from an older backend still parses. */
+  classification?: ObservationClassificationProgress;
 };
 
 /** Facet identifiers the viewer understands. Unknown facets are ignored, not rejected. */

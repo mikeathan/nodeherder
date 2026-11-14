@@ -124,6 +124,7 @@ declare module 'vue' {
     NotConfiguredState: typeof import('./src/components/assistant/states/NotConfiguredState.vue')['default']
     Notifications: typeof import('./src/components/hub/alerts/Notifications.vue')['default']
     NumericHistory: typeof import('./src/components/chart/history/NumericHistory.vue')['default']
+    ObservationCards: typeof import('./src/components/wireless/ObservationCards.vue')['default']
     ObservationFilters: typeof import('./src/components/wireless/ObservationFilters.vue')['default']
     ObservationFocus: typeof import('./src/components/wireless/ObservationFocus.vue')['default']
     ObservationGroupList: typeof import('./src/components/wireless/ObservationGroupList.vue')['default']

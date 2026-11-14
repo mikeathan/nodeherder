@@ -137,6 +137,39 @@ export type RadarRing = {
  * The ring at fraction 0 is skipped because it would sit on the centre marker, where its label is
  * unreadable and its circle indistinguishable from the origin.
  */
+/**
+ * Rings whose labels can be drawn without colliding, innermost first.
+ *
+ * Greedy placement, working outward: keep a label only if it clears the last kept one by
+ * MIN_LABEL_GAP. Dropping the inner rings rather than the outer ones is deliberate — the centre
+ * is where labels crowd, and the outer distances are the ones an operator reads to judge range.
+ *
+ * A ring that loses its label still draws its circle. The circle is the information; the label is
+ * an aid, so a crowded scale degrades to fewer numbers rather than to overlapping text.
+ *
+ * This is exact rather than iterative: because the rings are evenly spaced by construction, one
+ * pass in order is sufficient and there is no arrangement to converge on.
+ */
+export function labelableRings(rings: readonly RadarRing[], minGap = MIN_LABEL_GAP): RadarRing[] {
+  // Sort inward-to-outward first rather than depending on the caller's order. The radar draws
+  // rings outermost-first so labels paint over circles, and assuming that order here silently
+  // reduced four labels to one — the walk started at the innermost ring and then rejected
+  // everything outside it. Ordering the input explicitly makes the function correct for either.
+  const ordered = [...rings].sort((a, b) => a.ratio - b.ratio);
+
+  // Walk outward from the edge so the outermost ring is always kept: it carries the span, which
+  // is the number the operator needs to read the scale.
+  const kept: RadarRing[] = [];
+  let lastRatio = Number.POSITIVE_INFINITY;
+  for (let index = ordered.length - 1; index >= 0; index--) {
+    const ring = ordered[index];
+    if (lastRatio - ring.ratio < minGap && kept.length > 0) continue;
+    kept.push(ring);
+    lastRatio = ring.ratio;
+  }
+  return kept.reverse();
+}
+
 export function ringsForSpan(span: number): RadarRing[] {
   if (!Number.isFinite(span) || span <= MIN_PROJECTED_METRES) {
     return [{ ratio: 1, metres: span, outer: true }];
@@ -152,6 +185,15 @@ export function ringsForSpan(span: number): RadarRing[] {
   rings.push({ ratio: 1, metres: span, outer: true });
   return rings;
 }
+
+/**
+ * Minimum gap between two ring labels, as a fraction of the canvas radius.
+ *
+ * Labels sit on the vertical axis above each circle. At a narrow zoom the circles crowd toward
+ * the centre, so labelling every one would overlap the text into an unreadable smear. Twelve
+ * percent of the radius is roughly two lines of the label's own height at any span.
+ */
+export const MIN_LABEL_GAP = 0.12;
 
 /**
  * Round a ring distance to two significant digits.
@@ -170,7 +212,11 @@ export function ringsForSpan(span: number): RadarRing[] {
 function roundRing(metres: number): number {
   if (!Number.isFinite(metres) || metres <= 0) return 0;
   const magnitude = Math.pow(10, Math.ceil(Math.log10(metres)) - 2);
-  return Math.round(metres / magnitude) * magnitude;
+  // Round the quotient first, then scale. Scaling an untidy quotient produces binary-float
+  // artefacts — 3.7614 became "3.8000000000000003 m" on the ring label — which read as a bug.
+  // Two decimal places below 10 m and none above matches the projection's real precision.
+  const scaled = Math.round(metres / magnitude) * magnitude;
+  return metres < 10 ? Math.round(scaled * 100) / 100 : Math.round(scaled);
 }
 
 /** Calibrated transmit power at one metre, in dBm, used for the range estimate. */
