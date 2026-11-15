@@ -89,8 +89,17 @@ func provisionalClass(identity model.Identity, rssi, strongestRSSI int, _ time.T
 
 	if float64(strongestRSSI-rssi) > neighbourWeakDB {
 		return Provisional{
-			Class:         ProvisionalNeighbour,
-			ShowByDefault: false,
+			Class: ProvisionalNeighbour,
+			// Shown, not hidden.
+			//
+			// Hiding a weak stable device was meant to reduce noise, but it inverted the intent:
+			// rotating addresses are always shown (they are the `mobile-unidentifiable` class), and
+			// a stable device is the only kind that can be identified and plotted. So the default
+			// filter removed exactly the devices the operator could see, while keeping the
+			// anonymous ones — a radar that showed one dot out of forty.
+			//
+			// The class still says "probably outside"; it just does not hide it.
+			ShowByDefault: true,
 			Provisional:   true,
 			Reason:        "Always much weaker than devices in the room, so probably outside it.",
 		}

@@ -299,16 +299,32 @@ export function estimateDistanceMetres(
 /**
  * Place an identity on a fixed spoke derived from its key.
  *
- * A single source measures range, not bearing, so the angle is a stable hash rather than a
- * claim about direction. Using the key means one identity always sits on the same spoke, so
- * movement reads as radial drift instead of teleporting.
+ * A single source measures range, not bearing, so the angle is a stable hash rather than a claim
+ * about direction. Using the key means one identity always sits on the same spoke, so movement
+ * reads as radial drift instead of teleporting.
+ *
+ * FNV-1a rather than the multiply-and-add hash it replaces. That one barely avalanched: sequential
+ * keys — and MAC addresses are sequential by nature — landed on adjacent angles, so eight devices
+ * from one manufacturer stacked on a seven-degree arc and their blips and labels piled on top of
+ * each other. FNV-1a spreads the same keys across roughly 190 degrees, which is what a spread of
+ * unrelated devices should look like.
  */
 export function bearingForIdentity(key: string): number {
-  let hash = 0;
+  let hash = 0x811c9dc5;
   for (let index = 0; index < key.length; index += 1) {
-    hash = (hash * 31 + key.charCodeAt(index)) | 0;
+    hash ^= key.charCodeAt(index);
+    // `Math.imul` keeps the multiply in 32-bit space; plain `*` would lose precision above 2^53.
+    hash = Math.imul(hash, 0x01000193) >>> 0;
   }
-  return Math.abs(hash) % 360;
+  // A finaliser, because FNV-1a alone still left near-identical keys in two clusters: it diffuses
+  // through the high bits, and the modulo reads the low ones. These three steps mix high into low,
+  // so sequential MAC addresses land all round the circle instead of on one arc.
+  hash ^= hash >>> 16;
+  hash = Math.imul(hash, 0x85ebca6b) >>> 0;
+  hash ^= hash >>> 13;
+  hash = Math.imul(hash, 0xc2b2ae35) >>> 0;
+  hash = (hash ^ (hash >>> 16)) >>> 0;
+  return hash % 360;
 }
 
 /** Whether an identity is a rotating-address fingerprint rather than a stable device. */

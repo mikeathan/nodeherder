@@ -420,12 +420,13 @@ function buildObservationSnapshot() {
           advisory: true,
         },
       },
-      // A busy household: 28 rotating addresses at mixed distances, which is what made the radar
-      // unreadable — thirty identical hollow circles and no way to tell them apart.
-      ...Array.from({ length: 28 }, (_, index) => {
+      // A busy household: 14 rotating addresses, alongside the identifiable devices below, which
+      // matches the proportions of the reported install (about half rotating) rather than an
+      // extreme case.
+      ...Array.from({ length: 14 }, (_, index) => {
         // Spread across the full range rather than a tight cluster: the report was one identifiable
         // device near the antenna and a dozen rotating ones far away, which collapsed the scale.
-        const rssi = -48 - index * 1.9;
+        const rssi = -62 - index * 1.6;
         return {
           key: `fp:crowd${String(index).padStart(2, '0')}`,
           kind: 'adv',
@@ -447,6 +448,35 @@ function buildObservationSnapshot() {
             confidence: 0,
             hoursObserved: 0,
             reason: 'Address rotates, so this is a person\'s device rather than household equipment.',
+            advisory: true,
+          },
+        };
+      }),
+      // Weak but stable devices: far from the antenna, so the pre-filter classes them as probably
+      // outside. These are the ones the default filter used to hide, leaving the radar almost empty.
+      ...Array.from({ length: 8 }, (_, index) => {
+        const rssi = -78 - index * 1.5;
+        return {
+          key: `addr:aa:bb:cc:dd:ef:${String(index).padStart(2, '0')}`,
+          kind: 'adv',
+          stable: true,
+          decision: 'unknown',
+          firstSeen: at(600 + index * 30),
+          lastSeen: at(6 + index),
+          packets: 40 + index * 5,
+          rssi,
+          rssiSmoothed: rssi,
+          trend: 'steady',
+          trendDeltaDb: 0.5,
+          signal: [rssi - 2, rssi, rssi],
+          sources: [{ id: 'mock-proxy-1', rssi }],
+          classification: {
+            class: 'likely-neighbour',
+            provisional: true,
+            showByDefault: true,
+            confidence: 0,
+            hoursObserved: 0,
+            reason: 'Always much weaker than devices in the room, so probably outside it.',
             advisory: true,
           },
         };

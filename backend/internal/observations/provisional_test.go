@@ -44,9 +44,13 @@ func TestProvisionalRotatingAddressIsMobile(t *testing.T) {
 }
 
 func TestProvisionalNeverStrongIsLikelyNeighbour(t *testing.T) {
-	// A stable address that has never been heard strongly is probably beyond the room. Hiding it by
-	// default is safe because the operator can reveal it, whereas hiding a device they care about
-	// would look like a bug.
+	// A stable address that has never been heard strongly is probably beyond the room, and the class
+	// says so.
+	//
+	// It is not hidden. Hiding it was meant to reduce noise and did the opposite: rotating addresses
+	// are never hidden, and a stable device is the only kind that can be identified and drawn, so
+	// hiding weak stable devices removed exactly what the operator could see. The class is
+	// information; it is not a reason to hide the device.
 	identity := model.Identity{Key: "addr:aa:bb:cc:dd:ee:02", Kind: model.KindAdvertisement, Stable: true}
 
 	got := provisionalClass(identity, -92, -55, time.Time{})
@@ -54,8 +58,11 @@ func TestProvisionalNeverStrongIsLikelyNeighbour(t *testing.T) {
 	if got.Class != ProvisionalNeighbour {
 		t.Errorf("class = %q, want %q for a device never heard strongly", got.Class, ProvisionalNeighbour)
 	}
-	if got.ShowByDefault {
-		t.Errorf("ShowByDefault = true, want false: an outside device should be hidden by default")
+	if !got.ShowByDefault {
+		t.Errorf("ShowByDefault = false: a neighbour must stay visible, or the radar loses its blips")
+	}
+	if got.Reason == "" {
+		t.Errorf("Reason is empty, want the explanation of why it looks outside")
 	}
 }
 

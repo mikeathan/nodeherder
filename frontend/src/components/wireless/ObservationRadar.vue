@@ -86,6 +86,17 @@
   /** Device-name font size in view units, and the longest name that can fit beside a blip. */
   const LABEL_FONT = 3.2;
   const LABEL_MAX_CHARS = 18;
+  /** Horizontal offset of a label from its blip centre, in view units. */
+  const LABEL_X_OFFSET = 3.4;
+  /** Right-hand limit of the drawable area, used to keep labels inside the viewBox. */
+  const VIEWBOX_EDGE = CENTRE + CENTRE - VIEWBOX_PADDING;
+  /**
+   * Vertical offset from the blip centre to the text baseline.
+   *
+   * Shared by the renderer and the collision box, so the two cannot disagree about where the glyphs
+   * are — which is what let overlapping labels pass the overlap check.
+   */
+  const LABEL_BASELINE_OFFSET = 1.4;
 
   /** Distance for every identity that has a usable reading. */
   const measured = computed(() =>
@@ -240,7 +251,12 @@
    */
   const namedBlips = computed(() => {
     if (!props.showNames) return [] as typeof placed.value;
-    const boxes: { x: number; y: number; width: number; height: number }[] = [];
+    // Ring labels are already on the canvas, so their boxes are seeded first and device names avoid
+    // them. Comparing device labels only to each other let "Front door tag" print straight over the
+    // "1.4 m" ring label.
+    const boxes: { x: number; y: number; width: number; height: number }[] = props.showLabels
+      ? ringLabelBoxes()
+      : [];
     const shown: typeof placed.value = [];
 
     const ordered = [...placed.value].sort((a, b) => {
@@ -259,13 +275,48 @@
     return shown;
   });
 
-  /** Where a blip's name sits, and the space it needs. */
+  /** Approximate boxes of the ring distance labels, so device names can avoid them. */
+  function ringLabelBoxes(): { x: number; y: number; width: number; height: number }[] {
+    return labelledRings.value.map((ring) => {
+      const text = formatMetres(ring.metres);
+      return {
+        x: CENTRE - ring.radius * 0.707 + 1.5,
+        y: CENTRE + ring.radius * 0.707 - 1.5 - 0.72 * 3.8,
+        width: text.length * 0.52 * 3.8 + 1,
+        height: 0.72 * 3.8 + 0.2 * 3.8,
+      };
+    });
+  }
+
+  /** Where a blip's name sits, and the space it actually occupies. */
   function labelBoxFor(blip: (typeof placed.value)[number]) {
     const text = shortLabel(blip);
     // Approximate advance width for the label font, plus padding.
     const width = text.length * 0.52 * LABEL_FONT + 1;
-    const height = LABEL_FONT + 1.2;
-    return { x: blip.x + 3.4, y: blip.y - 1, width, height };
+    // SVG text y is the BASELINE, not the top of the glyphs, so the box must be derived from the
+    // rendering position and the font metrics rather than guessed. The previous box sat 1.5 units
+    // taller than the glyphs and started slightly above them, which let two labels pass the overlap
+    // test while still touching on screen.
+    const baseline = LABEL_BASELINE_OFFSET;
+    const ascent = 0.72 * LABEL_FONT;
+    const descent = 0.2 * LABEL_FONT;
+    return {
+      x: labelAnchorX(blip, width),
+      y: blip.y + baseline - ascent,
+      width,
+      height: ascent + descent,
+    };
+  }
+
+  /**
+   * Where a label starts: to the right of the blip normally, to the left when it would run off.
+   *
+   * Labels on the right-hand arc were drawn past the viewBox and clipped mid-word. Placing them on
+   * the inside of the blip keeps the whole name readable without shrinking the text.
+   */
+  function labelAnchorX(blip: (typeof placed.value)[number], width: number): number {
+    const right = blip.x + LABEL_X_OFFSET;
+    return right + width > VIEWBOX_EDGE ? blip.x - LABEL_X_OFFSET - width : right;
   }
 
   /** Whether two label boxes overlap, with a margin so they never touch. */
@@ -540,8 +591,8 @@
           v-for="blip in namedBlips"
           :key="`name-${blip.identity.key}`"
           class="observation-radar__blip-label"
-          :x="blip.x + 3.4"
-          :y="blip.y + 1.4"
+          :x="labelBoxFor(blip).x"
+          :y="blip.y + LABEL_BASELINE_OFFSET"
         >
           {{ shortLabel(blip) }}
         </text>

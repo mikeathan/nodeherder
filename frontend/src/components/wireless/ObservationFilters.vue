@@ -128,9 +128,9 @@
     </button>
 
     <!--
-      The complement of the default filter. The default hides installed equipment and devices that
-      look like neighbours, which is most of the census; this reveals them again so nothing is ever
-      hidden without a way back.
+      The complement of the default filter. The default hides installed equipment — the devices
+      whose signal never moves — and this reveals them again so nothing is ever hidden without a
+      way back.
     -->
     <button
       type="button"

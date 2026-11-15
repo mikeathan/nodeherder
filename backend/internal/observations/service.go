@@ -661,21 +661,21 @@ func (s *Service) refreshClassifications(keys []string) {
 
 // showByDefaultFor decides the default visibility of a settled class.
 //
-// Infrastructure and neighbour are hidden because they are the noise the operator complained
-// about; everything else is shown. A provisional result keeps its own decision, because the
-// pre-filter is more conservative than this rule and its reasoning is about position rather
-// than about class.
+// Only installed equipment is hidden, and only when its address is stable.
+//
+// Hiding neighbours was a mistake. Rotating addresses are never hidden — they are the
+// `mobile-unidentifiable` class — while a stable address is the only kind that can be identified
+// and drawn as a blip. So hiding stable-but-weak devices removed precisely the ones the operator
+// could see, and left a radar showing one dot out of forty. The class still labels it as probably
+// outside; that is information, not a reason to hide it.
+//
+// Installed equipment stays hidden because a fridge genuinely is noise, and a rotating address
+// cannot be installed equipment whatever the evidence says, so stability is still required.
 func showByDefaultFor(class string, stable bool) bool {
 	switch class {
 	case ClassInfrastructure:
-		// A rotating address cannot be household equipment even if the evidence looks like it, so
-		// trust movement over presence when the two disagree and keep it visible for inspection.
 		return !stable
-	case ClassNeighbour:
-		return false
 	default:
-		// Personal, transient and learning are all shown: they are either the operator's own
-		// devices or things they may want to triage.
 		return true
 	}
 }

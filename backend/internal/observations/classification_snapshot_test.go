@@ -167,7 +167,7 @@ func TestSnapshotFallsBackToThePreFilterWithoutEvidence(t *testing.T) {
 	}
 }
 
-func TestSnapshotPreFilterHidesAWeakStableDevice(t *testing.T) {
+func TestSnapshotPreFilterKeepsAWeakStableDeviceVisible(t *testing.T) {
 	clock := mocks.NewMockClock(func() time.Time { return at(9, 0) })
 	history := &historyStub{byKey: map[string][]model.DailySummary{}}
 	service, capture := classifyService(t, clock, history, &recorderStub{})
@@ -191,8 +191,11 @@ func TestSnapshotPreFilterHidesAWeakStableDevice(t *testing.T) {
 		if identity.Key != "addr:aa:bb:cc:dd:ee:02" {
 			continue
 		}
-		if identity.Classification.ShowByDefault {
-			t.Errorf("ShowByDefault = true for a device never heard strongly, want false")
+		if !identity.Classification.ShowByDefault {
+			t.Errorf("ShowByDefault = false for a weak stable device, want true")
+		}
+		if identity.Classification.Class != ProvisionalNeighbour {
+			t.Errorf("class = %q, want %q", identity.Classification.Class, ProvisionalNeighbour)
 		}
 		return
 	}
@@ -337,7 +340,9 @@ func TestShowByDefaultForSettledClasses(t *testing.T) {
 		want   bool
 	}{
 		{name: "infrastructure is hidden", class: ClassInfrastructure, stable: true, want: false},
-		{name: "neighbour is hidden", class: ClassNeighbour, stable: true, want: false},
+		// A neighbour used to be hidden. That removed exactly the identifiable devices from the
+		// radar while keeping the anonymous ones, which is the bug behind "I only get one dot".
+		{name: "neighbour is shown", class: ClassNeighbour, stable: true, want: true},
 		{name: "personal is shown", class: ClassPersonal, stable: false, want: true},
 		{name: "transient is shown", class: ClassTransient, stable: false, want: true},
 		{name: "learning is shown", class: ClassLearning, stable: true, want: true},
@@ -477,8 +482,9 @@ func TestThePreFilterStrongestReadingIsComputedOnce(t *testing.T) {
 			continue
 		}
 		found = true
-		if identity.Classification.ShowByDefault {
-			t.Errorf("the weak device was not demoted, so the reference reading was not -50")
+		if identity.Classification.Class != ProvisionalNeighbour {
+			t.Errorf("class = %q, want %q: the reference reading should be -50",
+				identity.Classification.Class, ProvisionalNeighbour)
 		}
 	}
 	if !found {

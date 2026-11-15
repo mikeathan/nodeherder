@@ -253,7 +253,7 @@
       -->
       <p v-if="demotedCount > 0" class="wireless-viewer__demoted" role="status">
         {{ demotedCount }} of {{ identities.length }} {{ identities.length === 1 ? 'device' : 'devices' }}
-        hidden — installed equipment and devices that look like neighbours.
+        hidden — installed equipment that never moves.
         <button type="button" class="wireless-viewer__link" @click="showDemoted = true">
           Show them
         </button>

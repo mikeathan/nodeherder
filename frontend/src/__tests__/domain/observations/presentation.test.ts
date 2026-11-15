@@ -761,3 +761,38 @@ describe('autoRadarSpan uses every device, not only identifiable ones', () => {
     expect(inside.length).toBeGreaterThanOrEqual(7);
   });
 });
+
+describe('bearingForIdentity', () => {
+  test('sequential keys land on unrelated bearings', () => {
+    // The bug this guards: the previous hash barely avalanched, so sequential MAC addresses — which
+    // is what one manufacturer's devices produce — landed on adjacent angles. Eight devices stacked
+    // on a seven-degree arc, and their blips and labels piled on top of each other.
+    const bearings = Array.from({ length: 8 }, (_, index) => bearingForIdentity(`addr:aa:bb:cc:dd:ef:0${index}`));
+    const spread = Math.max(...bearings) - Math.min(...bearings);
+    expect(spread).toBeGreaterThan(90);
+  });
+
+  test('the same key always gives the same bearing', () => {
+    // Movement must read as radial drift, not teleporting between spokes.
+    const key = 'ibeacon:2f234454-cf6d-4a0f-adf2-f4911ba9ffa6:1:2';
+    expect(bearingForIdentity(key)).toBe(bearingForIdentity(key));
+  });
+
+  test('bearings stay inside the full circle', () => {
+    for (let index = 0; index < 50; index += 1) {
+      const bearing = bearingForIdentity(`fp:${index.toString(16)}`);
+      expect(bearing).toBeGreaterThanOrEqual(0);
+      expect(bearing).toBeLessThan(360);
+    }
+  });
+
+  test('a realistic set covers the circle rather than clustering', () => {
+    // Real keys, not toy ones: a 17-character MAC has a shape that matters. Sequential addresses
+    // are what one manufacturer's devices produce, and they must not share a sector.
+    const bearings = Array.from({ length: 10 }, (_, index) =>
+      bearingForIdentity(`addr:aa:bb:cc:dd:ef:0${index}`),
+    );
+    const sectors = new Set(bearings.map((bearing) => Math.floor(bearing / 45)));
+    expect(sectors.size).toBeGreaterThanOrEqual(6);
+  });
+});
