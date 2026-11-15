@@ -231,3 +231,39 @@ describe('demoted classes', () => {
     expect(viewer.demotedCount.value).toBe(1);
   });
 });
+
+describe('demoted toggle availability', () => {
+  test('hasDemoted is false when nothing is demoted', () => {
+    // Before classification has run every device is learning or provisional, so nothing is hidden
+    // and the reveal control would toggle between two identical states — which reads as broken.
+    const state = ref(snapshot([identity('addr:aa:bb:cc:dd:ee:01')]));
+    const viewer = useObservationViewer(() => state.value);
+
+    expect(viewer.hasDemoted.value).toBe(false);
+    expect(viewer.demotedCount.value).toBe(0);
+  });
+
+  test('hasDemoted stays true while revealed, so the toggle does not vanish mid-use', () => {
+    const state = ref(
+      snapshot([
+        identity('addr:aa:bb:cc:dd:ee:02', {
+          classification: {
+            class: 'infrastructure',
+            showByDefault: false,
+            confidence: 0.8,
+            hoursObserved: 30,
+            advisory: true,
+          },
+        }),
+      ]),
+    );
+    const viewer = useObservationViewer(() => state.value);
+
+    expect(viewer.hasDemoted.value).toBe(true);
+    viewer.showDemoted.value = true;
+    // The count drops to zero because nothing is hidden now, but the control must stay: otherwise
+    // the button disappears the moment it is pressed and there is no way back.
+    expect(viewer.demotedCount.value).toBe(0);
+    expect(viewer.hasDemoted.value).toBe(true);
+  });
+});

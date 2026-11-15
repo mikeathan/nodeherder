@@ -36,6 +36,7 @@
     onlyNew,
     showDemoted,
     demotedCount,
+    hasDemoted,
     distanceRange,
     radarSpan,
     showRingLabels,
@@ -236,6 +237,7 @@
         :only-new="onlyNew"
         :distance="distanceRange"
         :show-demoted="showDemoted"
+        :has-demoted="hasDemoted"
         @update:selected="facetSelection = $event"
         @update:only-new="onlyNew = $event"
         @update:distance="distanceRange = $event"

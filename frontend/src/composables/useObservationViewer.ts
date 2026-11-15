@@ -169,6 +169,18 @@ export function useObservationViewer(snapshot: () => ObservationSnapshot | null)
   });
 
   /**
+   * Whether any device is demoted at all, regardless of whether it is currently revealed.
+   *
+   * Separate from `demotedCount`, which is deliberately zero once revealed. The toggle needs to know
+   * whether it has anything to act on: before classification has run, nothing is classed as
+   * installed equipment, so pressing "Show all kinds" changes nothing and the control reads as
+   * broken. A control that cannot do anything should not be offered.
+   */
+  const hasDemoted = computed(() =>
+    identities.value.some((identity) => !shownByDefault(identity)),
+  );
+
+  /**
    * Isolated identity, resolved by key rather than held as an object.
    *
    * A snapshot update must not replace the selection with a stale copy, and an identity that
@@ -230,6 +242,7 @@ export function useObservationViewer(snapshot: () => ObservationSnapshot | null)
     onlyNew,
     showDemoted,
     demotedCount,
+    hasDemoted,
     distanceRange,
     radarSpan,
     showRingLabels,

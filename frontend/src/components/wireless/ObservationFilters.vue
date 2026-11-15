@@ -26,8 +26,16 @@
     onlyNew: boolean;
     /** Selected distance range id; "any" applies no filter. */
     distance: string;
-    /** Whether demoted classes (installed, outside) are revealed. */
+    /** Whether demoted classes are revealed. */
     showDemoted: boolean;
+    /**
+     * Whether anything is demoted at all.
+     *
+     * The toggle is hidden when false. Before classification has run nothing is classed as
+     * installed equipment, so the control changed nothing and read as broken — a filter that cannot
+     * do anything is worse than no filter.
+     */
+    hasDemoted: boolean;
   }>();
 
   const emit = defineEmits<{
@@ -128,11 +136,15 @@
     </button>
 
     <!--
-      The complement of the default filter. The default hides installed equipment — the devices
-      whose signal never moves — and this reveals them again so nothing is ever hidden without a
-      way back.
+      The complement of the default filter: the default hides installed equipment, and this reveals
+      it so nothing is ever hidden without a way back.
+
+      Only offered when something is actually demoted. Until classification has run — which needs a
+      full day of evidence — every device is learning or provisional and nothing is hidden, so the
+      button toggled between two identical states and looked broken.
     -->
     <button
+      v-if="hasDemoted"
       type="button"
       class="observation-filters__toggle"
       :class="{ 'is-active': showDemoted }"
