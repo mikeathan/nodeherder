@@ -166,6 +166,11 @@ func validateHomeSources(proposal, current settings.HomeLayout, devices HomeDevi
 			if card.Kind == "presence_overview" {
 				continue
 			}
+			if card.Kind == "observation" {
+				// Whole-hub, so there is no instance or resource to resolve. Without this the card
+				// fell through to the integration lookup and failed as an unknown reference.
+				continue
+			}
 			if card.Kind == "presence" {
 				// Presence placement only needs the source device to exist; its derived
 				// entities are created by the spatial engine at runtime.

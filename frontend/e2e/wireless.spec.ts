@@ -12,7 +12,10 @@ test.describe('wireless viewer', () => {
   test('renders observed identities with source diagnostics', async ({ page }) => {
     await signIn(page, '/wireless');
 
-    await expect(page.getByRole('heading', { name: 'Wireless', exact: true })).toBeVisible();
+    // The page is an integration detail now, so its heading names the integration rather than the
+    // medium, and the header carries a way back to Integrations.
+    await expect(page.getByRole('heading', { name: 'Wireless observation', exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Integrations', exact: true }).first()).toBeVisible();
 
     // Assertions are scoped to the table: the radar draws the same identity text in SVG
     // <title> tooltips, so an unscoped text match is ambiguous by design.

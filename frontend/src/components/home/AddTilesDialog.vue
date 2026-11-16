@@ -68,6 +68,22 @@
   );
   watch([source, filter], clearPickedValues);
   watch(source, () => (filter.value = HOME_FILTER_MAIN));
+
+  /**
+   * Pre-select a source whose only choice is one value.
+   *
+   * Whole-hub sources — the presence overview, wireless observation — offer exactly one placement,
+   * so the checkbox is not a decision. Leaving it unticked disabled the Add button and the dialog
+   * appeared to do nothing when the operator pressed it, which is how a correct control reads as a
+   * broken one.
+   */
+  watch(
+    choices,
+    (next) => {
+      if (next.length === 1 && !next[0].alreadyShown) picked.value = [next[0].key];
+    },
+    { immediate: true }
+  );
 </script>
 
 <template>

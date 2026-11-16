@@ -129,3 +129,30 @@ func TestHomePresenceOverviewCardHasNoSourceReference(t *testing.T) {
 		t.Fatal("presence overview accepted a device reference")
 	}
 }
+
+func TestHomeObservationCardHasNoSourceReference(t *testing.T) {
+	// The radar reads every enrolled sensor, so the shortcut names no source. This failed in
+	// practice: the kind fell through to the integration branch, which requires an instance and
+	// resource, so saving a layout with this card returned "invalid or exceeds its limits" and the
+	// operator saw the tile vanish.
+	layout := settings.HomeFromGroups(map[string]*settings.DashboardGroup{"Kitchen": homeGroup("Kitchen")})
+	layout.Blocks[0].Cards = append(layout.Blocks[0].Cards, settings.HomeCard{ID: "radar", Kind: "observation"})
+	if err := layout.Validate(); err != nil {
+		t.Fatalf("valid observation card rejected: %v", err)
+	}
+
+	// It is whole-hub, so any source reference on it is a malformed card rather than a narrower one.
+	for _, mutate := range []func(*settings.HomeCard){
+		func(card *settings.HomeCard) { card.DeviceID = "proxy" },
+		func(card *settings.HomeCard) { card.Expose = "rssi" },
+		func(card *settings.HomeCard) { card.InstanceID = "instance" },
+		func(card *settings.HomeCard) { card.ResourceID = "resource" },
+		func(card *settings.HomeCard) { card.ServiceID = "service" },
+	} {
+		invalid := layout.Clone()
+		mutate(&invalid.Blocks[0].Cards[len(invalid.Blocks[0].Cards)-1])
+		if invalid.Validate() == nil {
+			t.Fatal("observation card accepted a source reference")
+		}
+	}
+}

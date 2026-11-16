@@ -110,6 +110,14 @@ func (layout HomeLayout) Validate() error {
 				if card.DeviceID != "" || card.Expose != "" || card.InstanceID != "" || card.ResourceID != "" || card.ServiceID != "" {
 					return invalidHome()
 				}
+			case "observation":
+				// Whole-hub wireless shortcut: like the presence overview it names no source, because
+				// the radar reads every enrolled sensor and a card naming one would go stale the
+				// moment another was added. Falling through to the default below rejected it for
+				// lacking an integration reference, which is why saving failed with "invalid layout".
+				if card.DeviceID != "" || card.Expose != "" || card.InstanceID != "" || card.ResourceID != "" || card.ServiceID != "" {
+					return invalidHome()
+				}
 			default:
 				if !homeIdentifier(card.Kind) || !integration || card.DeviceID != "" || card.Expose != "" || (card.ServiceID != "" && !homeIdentifier(card.ServiceID)) {
 					return invalidHome()

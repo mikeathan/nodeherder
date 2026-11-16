@@ -17,6 +17,7 @@
   } from '@/composables/useObservationViewer';
   import ObservationRadar from './ObservationRadar.vue';
   import ObservationCards from './ObservationCards.vue';
+  import IntegrationPageHeader from '@/components/integrations/shared/IntegrationPageHeader.vue';
   import ObservationFilters from './ObservationFilters.vue';
   import ObservationGroupList from './ObservationGroupList.vue';
   import ObservationFocus from './ObservationFocus.vue';
@@ -137,17 +138,19 @@
 
 <template>
   <section class="wireless-viewer" aria-labelledby="wireless-title">
-    <header class="wireless-viewer__header">
-      <div>
-        <h1 id="wireless-title">Wireless</h1>
-        <p class="wireless-viewer__summary" aria-live="polite">
-          {{ summary }}
+    <!--
+      Integration-style header with a way back. This page is reached from an integration card or a
+      Home shortcut, so it needs the same return affordance every other integration page has —
+      arriving here with no way back left the operator stranded on a page that looks like a section
+      of the application rather than a detail of an integration.
+    -->
+    <IntegrationPageHeader :title="'Wireless observation'" :subtitle="summary">
+      <template #actions>
+        <p v-if="stale" class="wireless-viewer__stale" role="status">
+          Disconnected. Showing the last received data.
         </p>
-      </div>
-      <p v-if="stale" class="wireless-viewer__stale" role="status">
-        Disconnected. Showing the last received data.
-      </p>
-    </header>
+      </template>
+    </IntegrationPageHeader>
 
     <p v-if="!loaded" class="wireless-viewer__empty">
       Waiting for the first observation. Enrol a device with Bluetooth proxy enabled to begin.
