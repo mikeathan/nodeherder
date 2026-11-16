@@ -27,21 +27,27 @@ import { RouteName } from '@/types/router';
 /**
  * Type id for wireless observation.
  *
- * Exported as a constant because it is compared in more than one place — the catalog, the entry
- * card's action, and the home tile. A repeated string literal is how provider-name gating crept
- * into this codebase before.
+ * Not exported: it is compared only inside this module, and the entry card and home tile reach the
+ * feature through `OBSERVATION_ROUTE` instead. An exported id invites a second place to compare it,
+ * which is how provider-name gating crept into this codebase before.
  */
-export const OBSERVATION_INTEGRATION_TYPE = 'wireless_observation';
+const OBSERVATION_INTEGRATION_TYPE = 'wireless_observation';
 
 /** Where the radar lives, so every entry point agrees without repeating the route. */
 export const OBSERVATION_ROUTE = RouteName.Wireless;
 
-/** Devices that can act as an observation source, in a stable order. */
+/**
+ * Devices that can act as an observation source, in a stable order.
+ *
+ * Sorting by name rather than by device id, because the card names them and the operator reads
+ * those names. `localeCompare` is used through `undefined` locale so the order does not change with
+ * the browser's language — a list that reorders between machines is a bug, not a preference.
+ */
 export function observationDevices(devices: readonly Device[] | undefined): Device[] {
-  if (!devices) return [];
+  if (!devices || devices.length === 0) return [];
   return devices
     .filter((device) => supportsObservation(device))
-    .sort((left, right) => left.friendly_name.localeCompare(right.friendly_name));
+    .sort((left, right) => left.friendly_name.localeCompare(right.friendly_name, undefined));
 }
 
 /**
@@ -86,9 +92,4 @@ export function withDeviceBackedTypes(
   // catalog gains real support for it.
   if (catalog.types.some((entry) => entry.id === type.id)) return catalog;
   return { ...catalog, types: [...catalog.types, type] };
-}
-
-/** Whether a catalog type id is the device-backed observation type. */
-export function isObservationType(typeId: string | undefined): boolean {
-  return typeId === OBSERVATION_INTEGRATION_TYPE;
 }

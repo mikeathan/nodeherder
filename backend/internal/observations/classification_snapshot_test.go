@@ -621,3 +621,80 @@ func TestASourceChangeMovesTheReading(t *testing.T) {
 		t.Errorf("RSSI = %v, want -80 once only the far source reports", identity.RSSI)
 	}
 }
+
+func TestUnregisteringASourceDropsItsReadings(t *testing.T) {
+	// A proxy restarting repeatedly must not leave a residue behind. The descriptor map was cleared
+	// but each identity kept a reading window and a last value for that source, so a source that
+	// cycled often accumulated state for every identity it had ever heard.
+	clock := mocks.NewMockClock(func() time.Time { return at(9, 0) })
+	service, capture := classifyService(t, clock, &historyStub{}, &recorderStub{})
+
+	key := "addr:aa:bb:cc:dd:ee:01"
+	service.record(model.Observation{
+		Source: "departing", Identity: model.Identity{Key: key, Stable: true}, RSSI: -50, ObservedAt: clock.Now(),
+	})
+	service.flush()
+
+	service.UnregisterSource("departing")
+
+	service.mutex.Lock()
+	current := service.aggregates[key]
+	readings := len(current.readings)
+	sources := len(current.sources)
+	primary := current.primary
+	rssi := current.rssi
+	service.mutex.Unlock()
+
+	if readings != 0 || sources != 0 {
+		t.Errorf("kept %d reading windows and %d source values, want none", readings, sources)
+	}
+	if primary != "" {
+		t.Errorf("primary = %q, want empty once its only source left", primary)
+	}
+	if rssi != nil {
+		t.Errorf("rssi = %v, want nil: a departed source's last value is not a current distance", *rssi)
+	}
+
+	// The identity still exists so another source can pick it up within the stale window.
+	service.clock = clock
+	service.record(model.Observation{
+		Source: "arriving", Identity: model.Identity{Key: key, Stable: true}, RSSI: -70, ObservedAt: clock.Now(),
+	})
+	clock.Advance(2 * time.Second)
+	service.flush()
+
+	identity := capture.last().Identities[0]
+	if identity.RSSI == nil || *identity.RSSI != -70 {
+		t.Errorf("RSSI = %v, want -70 from the new source", identity.RSSI)
+	}
+}
+
+func TestAnEqualStrengthSourceDoesNotDisplaceTheIncumbent(t *testing.T) {
+	// Two proxies hearing a device equally well must not take turns. The first to report becomes
+	// primary, and a later equal reading cannot displace it — which is what keeps the displayed
+	// distance from flickering between two anchors that are genuinely the same distance away.
+	//
+	// Verified by construction rather than by repeated runs: map iteration order is randomised, so a
+	// test that merely ran this many times could pass by luck either way.
+	clock := mocks.NewMockClock(func() time.Time { return at(9, 0) })
+	service, _ := classifyService(t, clock, &historyStub{}, &recorderStub{})
+	key := "addr:aa:bb:cc:dd:ee:01"
+
+	service.record(model.Observation{
+		Source: "first", Identity: model.Identity{Key: key, Stable: true}, RSSI: -60, ObservedAt: clock.Now(),
+	})
+	for attempt := 0; attempt < 5; attempt++ {
+		clock.Advance(time.Second)
+		service.record(model.Observation{
+			Source: "second", Identity: model.Identity{Key: key, Stable: true}, RSSI: -60, ObservedAt: clock.Now(),
+		})
+	}
+
+	service.mutex.Lock()
+	primary := service.aggregates[key].primary
+	service.mutex.Unlock()
+
+	if primary != "first" {
+		t.Errorf("primary = %q, want the incumbent on an equal reading", primary)
+	}
+}

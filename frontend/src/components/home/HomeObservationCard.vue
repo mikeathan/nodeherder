@@ -13,6 +13,7 @@
   import { computed } from 'vue';
   import { useRouter } from 'vue-router';
   import { store } from '@/store';
+  import { useHub } from '@/composables/useHub';
   import { observationDevices, OBSERVATION_ROUTE } from '@/domain/integrations/device-backed';
   import { snapshotSummary } from '@/domain/observations/presentation';
   import UiButton from '@/components/ui/UiButton.vue';
@@ -26,7 +27,9 @@
   const emit = defineEmits<{ remove: [] }>();
   const router = useRouter();
 
-  const devices = computed(() => store.getters['hub/listAllDevices']?.() ?? []);
+  // `useHub` is the established way for a home tile to read devices; the store is still read
+  // directly for the observation snapshot because there is no composable for it yet.
+  const { devices } = useHub();
   const sensors = computed(() => observationDevices(devices.value));
   const snapshot = computed(() => store.getters['observations/snapshot']);
 

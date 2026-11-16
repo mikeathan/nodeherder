@@ -253,6 +253,26 @@ func (s *Service) UnregisterSource(id string) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	delete(s.sources, id)
+
+	// Drop this source's reading windows from every identity.
+	//
+	// The descriptors map was freed but the per-identity `readings[source]` and `sources[source]`
+	// entries were not, so a source that came and went repeatedly — a proxy restarting every few
+	// minutes — accumulated a window and a reading for every identity it had ever heard. At ten
+	// minutes of stale identities and a handful of proxies that is bounded in practice, but it is a
+	// leak with no upper bound in principle, and clearing it costs one pass.
+	for _, current := range s.aggregates {
+		delete(current.readings, id)
+		delete(current.sources, id)
+		// Re-decide who describes this identity now that one anchor is gone; otherwise a device that
+		// only a departed source ever heard keeps reporting that source's last distance.
+		current.primary = s.strongestSource(current.sources, current.readings, "", s.clock.Now())
+		if current.primary == "" {
+			// No readings left, so the last distance is no longer meaningful. The aggregate itself
+			// stays until it ages out, because another source may hear it within the window.
+			current.rssi = nil
+		}
+	}
 }
 
 // ObserveAdvertisements enqueues a batch of observations without blocking. When the queue is
@@ -426,8 +446,10 @@ func (s *Service) strongestSource(
 		if reading == nil || !sourceIsCurrent(readings[id], now) {
 			continue
 		}
-		// Ties keep the incumbent, so two proxies at equal strength do not make the distance flicker
-		// between them on every packet.
+		// Strictly greater. The incumbent is preferred below, so an equal-strength source cannot
+		// displace it — which is what keeps the display stable between two proxies that hear a device
+		// equally well. An id tiebreak here was tried and is unreachable: the incumbent compares
+		// first and wins on `>=`.
 		if best == "" || *reading > bestRSSI {
 			best, bestRSSI = id, *reading
 		}
