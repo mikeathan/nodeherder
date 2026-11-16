@@ -10,7 +10,10 @@ export type NavItem = {
   includes?: RouteName[];
   /**
    * When set, the item is only offered while the predicate holds. Used for capability-gated
-   * sections so a hub with no observing source shows no empty Wireless page.
+   * sections so a hub with no source shows an empty section rather than a broken one.
+   *
+   * Wireless observation used to be a nav item and no longer is: it is an integration, reached from
+   * its catalog card or a Home shortcut, so the route stays without a sidebar entry.
    */
   when?: () => boolean;
 };
@@ -19,7 +22,6 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { route: RouteName.Overview, label: 'Overview', icon: 'overview' },
   { route: RouteName.GroupDashboard, label: 'Home', icon: 'home' },
   { route: RouteName.Devices, label: 'Devices', icon: 'devices', includes: [RouteName.DeviceView, RouteName.DeviceList, RouteName.DevicePage] },
-  { route: RouteName.Wireless, label: 'Wireless', icon: 'signal' },
   { route: RouteName.Integrations, label: 'Integrations', icon: 'connections', includes: [RouteName.Integration, RouteName.IntegrationSetup, RouteName.IntegrationProvider, RouteName.IntegrationHelp,RouteName.IntegrationNotFound] },
   { route: RouteName.Viewer, label: 'Automations', icon: 'automation', includes: [RouteName.Editor, RouteName.Creator] },
   { route: RouteName.Assistant, label: 'Assistant', icon: 'assistant' },

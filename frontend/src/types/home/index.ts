@@ -14,7 +14,21 @@ export interface HomePresenceSource {
 export interface HomePresenceOverviewSource {
   kind: 'presence_overview';
 }
-export type HomeCardSource = HomeDeviceSource | HomePresenceSource | HomePresenceOverviewSource | IntegrationSourceReference;
+/**
+ * Whole-hub wireless observation placement.
+ *
+ * Carries no source id, like the presence overview: the radar already reads every enrolled sensor,
+ * so a card naming one would go stale the moment another was added.
+ */
+export interface HomeObservationSource {
+  kind: 'observation';
+}
+export type HomeCardSource =
+  | HomeDeviceSource
+  | HomePresenceSource
+  | HomePresenceOverviewSource
+  | HomeObservationSource
+  | IntegrationSourceReference;
 export type HomeBlockKind = 'group' | 'card';
 
 /** An accepted or proposed placement; source readings remain in their existing stores. */

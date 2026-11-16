@@ -148,9 +148,13 @@ type aggregate struct {
 	packets   uint64
 	rssi      *int
 	sources   map[string]*int
-	// readings is a bounded, oldest-first window of recent signal strengths used to describe
-	// direction of change. It is deliberately memory-only: trend is live state, not history.
-	readings []rssiReading
+	// readings is a bounded, oldest-first window per source. A single shared window would interleave
+	// two antennas' readings, so a device heard strongly by one proxy and weakly by another would
+	// average to a distance true of neither — and "strongest reading wins" could not be applied.
+	readings map[string][]rssiReading
+	// primary is the source whose readings describe this identity: the one heard most strongly and
+	// still reporting recently. With one source it is always that source.
+	primary string
 }
 
 // rssiReading is one signal strength sample in the trend window.
@@ -370,6 +374,7 @@ func (s *Service) record(observation model.Observation) {
 			identity:  observation.Identity,
 			firstSeen: seenAt,
 			sources:   map[string]*int{},
+			readings:  map[string][]rssiReading{},
 		}
 		s.aggregates[observation.Identity.Key] = current
 		if observation.Identity.Stable {
@@ -389,13 +394,62 @@ func (s *Service) record(observation model.Observation) {
 	// decoders that decode into a reused struct.
 	rssi := observation.RSSI
 	current.sources[observation.Source] = &rssi
-	// RSSI tracks the most recent reading, not a lifetime maximum: a device that moves away
-	// must appear further, and a high-water mark would freeze its distance at the closest
-	// point it ever reached.
-	current.rssi = &rssi
-	// The trend window is fed here, on the aggregation worker, so the browser never has to
-	// reconstruct history and a reload cannot change the answer.
-	current.readings = appendReading(current.readings, rssi, seenAt)
+
+	// Feed this source's own window, then re-decide which source describes the device.
+	//
+	// "Strongest wins" rather than averaging: with two proxies at different distances the nearer one
+	// hears the device better and gives the truer distance. Averaging would produce a number matching
+	// neither antenna, and a device moving towards one proxy would appear to move half as much.
+	current.readings[observation.Source] = appendReading(current.readings[observation.Source], rssi, seenAt)
+	current.primary = s.strongestSource(current.sources, current.readings, current.primary, s.clock.Now())
+	if current.primary == observation.Source {
+		// RSSI tracks the most recent reading, not a lifetime maximum: a device that moves away must
+		// appear further, and a high-water mark would freeze its distance at its closest point.
+		current.rssi = &rssi
+	}
+}
+
+// strongestSource returns the source whose reading currently describes the device.
+//
+// Strength alone is not enough: a source that stopped reporting keeps its last reading, so a proxy
+// that heard the device once at close range would pin the distance there indefinitely while a
+// further antenna kept reporting. A silent source is therefore not a candidate — that is what
+// `sourceIsCurrent` is for, and it is why the horizon is shared with the trend.
+func (s *Service) strongestSource(
+	sources map[string]*int,
+	readings map[string][]rssiReading,
+	incumbent string,
+	now time.Time,
+) string {
+	best, bestRSSI := "", 0
+	for id, reading := range sources {
+		if reading == nil || !sourceIsCurrent(readings[id], now) {
+			continue
+		}
+		// Ties keep the incumbent, so two proxies at equal strength do not make the distance flicker
+		// between them on every packet.
+		if best == "" || *reading > bestRSSI {
+			best, bestRSSI = id, *reading
+		}
+	}
+	if best == "" {
+		// Nothing current: keep whatever was chosen, so the last known distance persists rather than
+		// the row emptying itself the moment every source goes quiet.
+		return incumbent
+	}
+	if incumbentReading, ok := sources[incumbent]; ok && incumbentReading != nil &&
+		sourceIsCurrent(readings[incumbent], now) && *incumbentReading >= bestRSSI {
+		return incumbent
+	}
+	return best
+}
+
+// sourceIsCurrent reports whether a source produced a reading within the trend horizon.
+func sourceIsCurrent(readings []rssiReading, now time.Time) bool {
+	if len(readings) == 0 {
+		return false
+	}
+	return now.Sub(readings[len(readings)-1].At) <= rssiTrendHorizon
 }
 
 // flush builds a snapshot, drops stale identities, and publishes only when the rendered state
@@ -525,7 +579,9 @@ func (s *Service) snapshotLocked(now time.Time) model.Snapshot {
 			RSSI:      current.rssi,
 			Sources:   sourceReadings(current.sources),
 		}
-		trend := computeTrend(current.readings, now)
+		// The trend describes the primary source's window, so the arrow and the distance agree: both
+		// answer "how is this device moving relative to the antenna that hears it best".
+		trend := computeTrend(current.readings[current.primary], now)
 		view.Trend, view.TrendDeltaDB, view.Signal = trend.Trend, trend.DeltaDB, trend.Signal
 		view.RSSISmoothed = trend.Smoothed
 		if label := decisions[current.identity.Key].Label; label != "" {

@@ -45,5 +45,6 @@ export function homeCardTitle(
   if (card.kind === 'device') return exposeLabel(card.expose);
   if (card.kind === 'presence') return 'Presence';
   if (card.kind === 'presence_overview') return 'Presence overview';
+  if (card.kind === 'observation') return 'Wireless observation';
   return homeIntegrationCard(card, sources).title;
 }

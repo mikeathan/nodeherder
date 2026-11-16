@@ -1,12 +1,21 @@
 import { NAV_ITEMS, availableNavItems, isNavActive } from '@/components/shell/navigation';
 import { RouteName } from '@/types/router';
 
-test('Wireless follows Devices and Integrations follows Wireless (spec 064)', () => {
+test('Wireless is not a nav item', () => {
+  // It is an integration, not a section of the application. A top-level entry implied the hub has a
+  // wireless feature rather than one reader, putting it beside Device control and Automations as if
+  // it were the same kind of thing.
+  const routes = NAV_ITEMS.map((item) => item.route);
+  expect(routes).not.toContain(RouteName.Wireless);
+
+  // The route survives, so integration cards, Home shortcuts and deep links still reach the view.
+  expect(RouteName.Wireless).toBeTruthy();
+});
+
+test('Integrations follows Devices', () => {
   const devices = NAV_ITEMS.findIndex((item) => item.route === RouteName.Devices);
-  const wireless = NAV_ITEMS.findIndex((item) => item.route === RouteName.Wireless);
   const integrations = NAV_ITEMS.findIndex((item) => item.route === RouteName.Integrations);
-  expect(wireless).toBe(devices + 1);
-  expect(integrations).toBe(wireless + 1);
+  expect(integrations).toBe(devices + 1);
 });
 
 test('Integrations owns only its feature routes', () => {

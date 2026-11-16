@@ -6,6 +6,7 @@
   import ConnectionFeedback from '../shared/ConnectionFeedback.vue';
   import ConnectionBoard from './ConnectionBoard.vue';
   import ConnectionCatalogDialog from './ConnectionCatalogDialog.vue';
+  import ObservationCard from './ObservationCard.vue';
   import { useConnectionsBoard } from '@/composables/integrations/useConnectionsBoard';
   import {
     integrationTypeIcon,
@@ -19,7 +20,20 @@
   } from '@/domain/integrations/connection-board';
   import '../connections.css';
 
-  const { state, byId, busy, error, load, refresh, remember, catalog, layout, reloadLayout } = useConnectionsBoard();
+  const {
+    state,
+    byId,
+    busy,
+    error,
+    load,
+    refresh,
+    remember,
+    catalog,
+    catalogWithDevices,
+    devices,
+    layout,
+    reloadLayout,
+  } = useConnectionsBoard();
   const { editing, visible, hidden } = layout;
   const { open } = catalog;
   const root = ref<HTMLElement | null>(null);
@@ -38,7 +52,7 @@
     }
     return Array.from(counts, ([id, count]) => ({
       id,
-      title: integrationTypeTitle(id, state.value.catalog),
+      title: integrationTypeTitle(id, catalogWithDevices.value),
       icon: integrationTypeIcon(id),
       count,
     })).sort(
@@ -54,7 +68,7 @@
       return (
         (!typeFilter.value || typeId === typeFilter.value) &&
         (statusFilter.value === 'all' || connectionEntryStatus(item) === statusFilter.value) &&
-        connectionMatchesQuery(item, search.value, state.value.catalog)
+        connectionMatchesQuery(item, search.value, catalogWithDevices.value)
       );
     })
   );
@@ -176,7 +190,7 @@
       v-if="visible.length"
       :entries="filteredEntries"
       :instances="byId"
-      :catalog="state.catalog"
+      :catalog="catalogWithDevices"
       :editing="editing"
       :busy="busy"
       :filters-active="hasFilters"
@@ -196,7 +210,7 @@
     </div>
     <ConnectionCatalogDialog
       :open="open"
-      :catalog="state.catalog"
+      :catalog="catalogWithDevices"
       :hidden="hiddenInstances"
       :busy="busy"
       :provider-route="catalog.providerRoute"
@@ -204,6 +218,16 @@
       @add="catalog.add"
       @restore="restore"
       @reload="catalog.reloadProviders" />
+
+    <!--
+      Device-backed integrations sit after the configured ones, not before.
+      
+      Placement is not cosmetic here: this page restores its scroll position when the operator comes
+      back from an integration, and a card mounted above the board shifts that target by hundreds of
+      pixels — the browser then scrolls the focused entry into view at a different offset. Below the
+      board the layout the restore logic was written against is unchanged.
+    -->
+    <ObservationCard :devices="devices" />
   </div>
 </template>
 <style scoped>

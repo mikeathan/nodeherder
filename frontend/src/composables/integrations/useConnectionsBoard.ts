@@ -5,6 +5,7 @@ import { useConnections } from '@/composables/useConnections';
 import { useConnectionsCatalog } from './useConnectionsCatalog';
 import { useConnectionBoardLayout } from './useConnectionBoardLayout';
 import type { ConnectionInstance } from '@/types/integrations';
+import { withDeviceBackedTypes } from '@/domain/integrations/device-backed';
 
 /** One page owns all local reads/observations. Widgets have no timers or transport state. */
 export function useConnectionsBoard() {
@@ -13,6 +14,23 @@ export function useConnectionsBoard() {
   const catalog = useConnectionsCatalog(scope);
   const layout = useConnectionBoardLayout(scope);
   const byId = computed(() => new Map(state.value.instances.map((item) => [item.id, item])));
+
+  /**
+   * Enrolled devices, so device-backed integrations can present their sources.
+   *
+   * Read here rather than in the page so the page stays free of store access, matching how every
+   * other read on this page arrives through the composable.
+   */
+  const devices = computed(() => store.getters['hub/listAllDevices']?.() ?? []);
+
+  /**
+   * The catalog as this page presents it: the backend's types plus device-backed ones.
+   *
+   * Merged here rather than in the store because the store holds what the backend returned, and a
+   * device-backed type is derived from live device state — putting that in the store would make a
+   * persisted read model depend on whether a sensor happens to be enrolled.
+   */
+  const catalogWithDevices = computed(() => withDeviceBackedTypes(state.value.catalog, devices.value));
   /** Reload accepted catalog/layout/instance state using this page's cancellation signal. */
   const load = () => perform(() => store.dispatch('integrations/loadBoard', signal));
   async function readInstances(requestSignal = signal) {
@@ -79,5 +97,18 @@ export function useConnectionsBoard() {
   };
   signal.addEventListener('abort', stopProjection, { once: true });
   onBeforeUnmount(stopProjection);
-  return { state, byId, busy, error, load, refresh, remember, catalog, layout, reloadLayout };
+  return {
+    state,
+    byId,
+    busy,
+    error,
+    load,
+    refresh,
+    remember,
+    catalog,
+    catalogWithDevices,
+    devices,
+    layout,
+    reloadLayout,
+  };
 }

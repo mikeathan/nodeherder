@@ -12,7 +12,9 @@ export function homePanelItems(block: HomeBlock, room: PanelRoom): HomePanelItem
   const items: HomePanelItem[] = [];
   for (const card of block.cards) {
     if (!card.panel) continue;
-    if (card.kind === 'presence' || card.kind === 'presence_overview') continue; // Presence stays on Home.
+    // Whole-hub cards have no compact panel form: a presence overview or a radar shortcut is not a
+    // control, and the panel is a control surface.
+    if (card.kind === 'presence' || card.kind === 'presence_overview' || card.kind === 'observation') continue;
     if (card.kind !== 'device') {
       items.push({ kind: 'integration', id: card.id, card });
       continue;

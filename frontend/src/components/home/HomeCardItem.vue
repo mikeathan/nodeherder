@@ -6,6 +6,7 @@
   import IntegrationTile from './IntegrationTile.vue';
   import HomePresenceCard from './HomePresenceCard.vue';
   import HomePresenceOverviewCard from './HomePresenceOverviewCard.vue';
+  import HomeObservationCard from './HomeObservationCard.vue';
 
   defineProps<{
     card: HomeCard;
@@ -20,7 +21,16 @@
 <template>
   <div
     class="nh-home-card"
-    :class="{ 'is-integration': card.kind !== 'device' && card.kind !== 'presence' && card.kind !== 'presence_overview', 'is-presence': card.kind === 'presence', 'is-presence-overview': card.kind === 'presence_overview' }"
+    :class="{
+      'is-integration':
+        card.kind !== 'device' &&
+        card.kind !== 'presence' &&
+        card.kind !== 'presence_overview' &&
+        card.kind !== 'observation',
+      'is-presence': card.kind === 'presence',
+      'is-presence-overview': card.kind === 'presence_overview',
+      'is-observation': card.kind === 'observation',
+    }"
     :data-card-id="card.id">
     <EntityTile
       v-if="card.kind === 'device'"
@@ -31,6 +41,16 @@
       @remove="$emit('remove')" />
     <HomePresenceOverviewCard
       v-else-if="card.kind === 'presence_overview'"
+      :editing="editing"
+      :busy="busy"
+      @remove="$emit('remove')" />
+    <!--
+      Device-backed, like the presence overview: no instance to name, and the radar reads every
+      enrolled sensor. Handled before the integration tile so the v-else below stays a real
+      integration reference rather than needing a cast.
+    -->
+    <HomeObservationCard
+      v-else-if="card.kind === 'observation'"
       :editing="editing"
       :busy="busy"
       @remove="$emit('remove')" />

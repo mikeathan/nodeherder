@@ -567,3 +567,57 @@ func TestWaitContextGivesUpRatherThanHanging(t *testing.T) {
 		t.Error("WaitContext reported the worker stopped, but it is still running")
 	}
 }
+
+func TestTwoSourcesUseTheStrongerReading(t *testing.T) {
+	// With two proxies the nearer one hears a device better, so its reading describes the distance.
+	// Averaging would give a number true of neither antenna, and a device moving towards one proxy
+	// would appear to move by half as much.
+	clock := mocks.NewMockClock(func() time.Time { return at(9, 0) })
+	service, capture := classifyService(t, clock, &historyStub{}, &recorderStub{})
+
+	key := "addr:aa:bb:cc:dd:ee:01"
+	service.record(model.Observation{
+		Source: "near", Identity: model.Identity{Key: key, Stable: true}, RSSI: -50, ObservedAt: clock.Now(),
+	})
+	service.record(model.Observation{
+		Source: "far", Identity: model.Identity{Key: key, Stable: true}, RSSI: -80, ObservedAt: clock.Now(),
+	})
+	service.flush()
+
+	identity := capture.last().Identities[0]
+	if identity.RSSI == nil || *identity.RSSI != -50 {
+		t.Errorf("RSSI = %v, want -50 from the near source", identity.RSSI)
+	}
+	if identity.RSSISmoothed == nil || *identity.RSSISmoothed != -50 {
+		t.Errorf("RSSISmoothed = %v, want -50: the distance must come from the strong source", identity.RSSISmoothed)
+	}
+	if len(identity.Sources) != 2 {
+		t.Errorf("got %d source readings, want both anchors visible", len(identity.Sources))
+	}
+}
+
+func TestASourceChangeMovesTheReading(t *testing.T) {
+	// A proxy that went quiet keeps its last reading, so judging by strength alone would pin the
+	// distance at the closest point ever heard while a further antenna kept reporting.
+	clock := mocks.NewMockClock(func() time.Time { return at(9, 0) })
+	service, capture := classifyService(t, clock, &historyStub{}, &recorderStub{})
+
+	key := "addr:aa:bb:cc:dd:ee:01"
+	service.record(model.Observation{
+		Source: "near", Identity: model.Identity{Key: key, Stable: true}, RSSI: -50, ObservedAt: clock.Now(),
+	})
+	service.flush()
+
+	// Past the trend horizon, so the near source's reading is genuinely stale rather than merely
+	// older — otherwise both are current and strength legitimately wins.
+	clock.Advance(2 * time.Minute)
+	service.record(model.Observation{
+		Source: "far", Identity: model.Identity{Key: key, Stable: true}, RSSI: -80, ObservedAt: clock.Now(),
+	})
+	service.flush()
+
+	identity := capture.last().Identities[0]
+	if identity.RSSI == nil || *identity.RSSI != -80 {
+		t.Errorf("RSSI = %v, want -80 once only the far source reports", identity.RSSI)
+	}
+}

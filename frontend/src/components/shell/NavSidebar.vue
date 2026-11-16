@@ -8,24 +8,13 @@
   import UiIcon from '@/components/ui/UiIcon.vue';
   import AppLogo from '@/components/ui/AppLogo.vue';
   import { availableNavItems, isNavActive, NAV_ITEMS } from './navigation';
-  import { hasObservationSources } from '@/domain/observations/capability';
-  // The app installs the store under a Symbol injection key, so vuex's bare useStore() cannot
-  // find it. Components use the singleton, as the rest of the codebase does.
-  import { store } from '@/store';
 
   defineEmits<{ (e: 'navigate'): void }>();
 
   const route = useRoute();
-  // Capability-gated entries are evaluated per render so enrolling a source reveals them
-  // without a reload; nothing here compares provider names.
-  const navItems = () =>
-    availableNavItems(
-      NAV_ITEMS.map((item) =>
-        item.route === RouteName.Wireless
-          ? { ...item, when: () => hasObservationSources(store.getters['hub/listAllDevices']?.() ?? []) }
-          : item,
-      ),
-    );
+  // Wireless observation is no longer a nav item: it is an integration, reached from its catalog
+  // card or a Home shortcut. The route survives, so those entry points and deep links still work.
+  const navItems = () => availableNavItems(NAV_ITEMS);
   const { signOut } = useSession();
   const permit = usePermitJoin();
   const version = __APP_VERSION__;
