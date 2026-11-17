@@ -10,10 +10,18 @@
     open: boolean;
     catalog: ConnectionCatalog | null;
     hidden: ConnectionInstance[];
+    /** Whether the device-backed observation group is hidden by the operator. */
+    observationHiddenHere?: boolean;
     busy: boolean;
     providerRoute: (key: string) => RouteLocationRaw;
   }>();
-  defineEmits<{ close: []; add: [key: string]; restore: [id: string]; reload: [] }>();
+  defineEmits<{
+    close: [];
+    add: [key: string];
+    restore: [id: string];
+    restoreObservation: [];
+    reload: [];
+  }>();
 </script>
 
 <template>
@@ -21,10 +29,12 @@
     <IntegrationCatalog
       :catalog="catalog"
       :hidden="hidden"
+      :observation-hidden-here="observationHiddenHere"
       :busy="busy"
       :provider-route="providerRoute"
       @add="$emit('add', $event)"
-      @restore="$emit('restore', $event)" />
+      @restore="$emit('restore', $event)"
+      @restore-observation="$emit('restoreObservation')" />
     <template #footer>
       <UiButton :disabled="busy || !catalog?.available" icon="refresh" @click="$emit('reload')"
         >Reload providers</UiButton

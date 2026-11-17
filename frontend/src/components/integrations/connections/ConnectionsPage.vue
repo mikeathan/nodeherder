@@ -6,8 +6,9 @@
   import ConnectionFeedback from '../shared/ConnectionFeedback.vue';
   import ConnectionBoard from './ConnectionBoard.vue';
   import ConnectionCatalogDialog from './ConnectionCatalogDialog.vue';
-  import ObservationCard from './ObservationCard.vue';
   import { useConnectionsBoard } from '@/composables/integrations/useConnectionsBoard';
+  import { observationDevices } from '@/domain/integrations/device-backed';
+  import { observationHidden, setObservationHidden } from '@/domain/integrations/observation-visibility';
   import {
     integrationTypeIcon,
     integrationTypeRank,
@@ -36,6 +37,21 @@
   } = useConnectionsBoard();
   const { editing, visible, hidden } = layout;
   const { open } = catalog;
+
+  /**
+   * Whether the device-backed group is offered at all.
+   *
+   * Two independent conditions: a capable device must be enrolled, and the operator must not have
+   * hidden it. Hiding is a local presentation preference, because there is no instance to persist
+   * it against — see `observation-visibility`.
+   */
+  const observationHiddenState = observationHidden();
+  const observationPresent = computed(() => observationDevices(devices.value).length > 0);
+  const observationAvailable = computed(() => observationPresent.value && !observationHiddenState.value);
+
+  function hideObservation(): void {
+    setObservationHidden(true);
+  }
   const root = ref<HTMLElement | null>(null);
   const search = ref('');
   const typeFilter = ref('');
@@ -111,10 +127,15 @@
           >
         </template>
         <template v-else>
+          <!--
+            Offered when there is anything to arrange, not only when an instance exists: the
+            device-backed group can be hidden, and gating the editor on instances left it with no
+            way to do that on a hub whose only integration is the radar.
+          -->
           <UiButton
-            v-if="state.instances.length"
+            v-if="state.instances.length || observationAvailable"
             icon="edit"
-            :disabled="busy || !state.board"
+            :disabled="busy || (state.instances.length > 0 && !state.board)"
             data-board-edit
             @click="layout.begin"
             >Edit layout</UiButton
@@ -186,18 +207,26 @@
     <p v-if="editing" class="connection-muted">
       Use the arrows to change the order. Removing an entry keeps its integration configured.
     </p>
+    <!--
+      Rendered whenever there is anything to show, not only when a configured instance exists.
+      Wireless observation depends on an enrolled device, not on an instance — gating the board on
+      instances hid it entirely on a hub that had no other integrations, which is the common case
+      for a first install.
+    -->
     <ConnectionBoard
-      v-if="visible.length"
+      v-if="visible.length || observationAvailable"
       :entries="filteredEntries"
       :instances="byId"
       :catalog="catalogWithDevices"
       :editing="editing"
       :busy="busy"
       :filters-active="hasFilters"
+      :observation-available="observationAvailable"
       @open="remember"
       @refresh="refresh"
       @move="layout.move"
-      @hide="hide" />
+      @hide="hide"
+      @hide-observation="hideObservation" />
     <div v-else-if="state.catalog?.available && !busy" class="connection-board-empty">
       <h2>{{ hidden.length ? 'No integrations on this page' : 'No integrations yet' }}</h2>
       <p>
@@ -212,22 +241,15 @@
       :open="open"
       :catalog="catalogWithDevices"
       :hidden="hiddenInstances"
+      :observation-hidden-here="observationPresent && observationHiddenState"
       :busy="busy"
       :provider-route="catalog.providerRoute"
       @close="open = false"
       @add="catalog.add"
       @restore="restore"
+      @restore-observation="setObservationHidden(false)"
       @reload="catalog.reloadProviders" />
 
-    <!--
-      Device-backed integrations sit after the configured ones, not before.
-      
-      Placement is not cosmetic here: this page restores its scroll position when the operator comes
-      back from an integration, and a card mounted above the board shifts that target by hundreds of
-      pixels — the browser then scrolls the focused entry into view at a different offset. Below the
-      board the layout the restore logic was written against is unchanged.
-    -->
-    <ObservationCard :devices="devices" />
   </div>
 </template>
 <style scoped>

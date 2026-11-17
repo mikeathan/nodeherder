@@ -19,9 +19,13 @@ export function useConnectionBoardLayout(scope: ConnectionScope) {
   const hidden = computed(() => entries.value.filter((entry) => entry.hidden));
   /** Copy accepted placements and capture their revision; nothing is persisted yet. */
   function begin() {
-    if (!scope.state.value.board || scope.busy.value) return;
+    if (scope.busy.value) return;
+    // A board document is required to edit *instances*, but not to hide the device-backed group,
+    // which has no instance and stores its visibility locally. Returning early on a missing board
+    // meant a hub whose only integration was the radar could not enter edit mode at all.
+    const board = scope.state.value.board;
     draft.value = accepted.value.map((entry) => ({ ...entry }));
-    expected.value = scope.state.value.board.etag;
+    expected.value = board?.etag ?? '';
     editing.value = true;
   }
   /** Abandon only the local draft and return to accepted shared placements. */
@@ -41,6 +45,13 @@ export function useConnectionBoardLayout(scope: ConnectionScope) {
   }
   /** Atomically save the captured-revision draft; conflicts/failures keep it available for retry. */
   async function save() {
+    // With no board document there is nothing to persist: the only thing edit mode changed was the
+    // device-backed group's local visibility, which saves itself. Posting an empty draft with a
+    // blank etag would fail and leave the operator in edit mode for no reason.
+    if (!scope.state.value.board) {
+      cancel();
+      return true;
+    }
     const result = await scope.perform(() => scope.api.saveBoard(draft.value, expected.value));
     if (result) {
       scope.commit('board', result);

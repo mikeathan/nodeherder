@@ -3,6 +3,9 @@ import type { ConnectionCatalog, ConnectionCatalogProvider } from '@/types/integ
 import { formatScheduleInterval } from '@/domain/schedule';
 
 const TYPE_ICONS: Record<string, IconName> = {
+  // Device-backed, so its icon and title live here with the others rather than in the card that
+  // happens to render it first. The board's group header is built from this table.
+  wireless_observation: 'signal',
   waste_collection: 'schedule',
   weather: 'weatherSun',
   air_quality: 'weatherAir',
@@ -11,6 +14,7 @@ const TYPE_ICONS: Record<string, IconName> = {
 };
 
 const TYPE_TITLES: Record<string, string> = {
+  wireless_observation: 'Wireless observation',
   waste_collection: 'Bin collections',
   weather: 'Weather',
   air_quality: 'Air quality',
@@ -23,7 +27,9 @@ export function integrationTypeIcon(typeId: string): IconName {
   return TYPE_ICONS[typeId] ?? 'connections';
 }
 
-const TYPE_ORDER = ['weather', 'air_quality', 'alerts', 'fuel_prices', 'waste_collection'];
+// Wireless observation last: it is the newest capability and the least likely to be the reason
+// someone opened this page.
+const TYPE_ORDER = ['weather', 'air_quality', 'alerts', 'fuel_prices', 'waste_collection', 'wireless_observation'];
 
 /** Single catalog metadata registry for provider coverage; generic components stay branch-free. */
 const PROVIDER_REGIONS: Record<string, string> = {

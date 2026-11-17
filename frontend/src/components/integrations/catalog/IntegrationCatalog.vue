@@ -18,10 +18,12 @@
   const props = defineProps<{
     catalog: ConnectionCatalog | null;
     hidden: ConnectionInstance[];
+    /** Whether the device-backed observation group is currently hidden by the operator. */
+    observationHiddenHere?: boolean;
     busy: boolean;
     providerRoute: (key: string) => RouteLocationRaw;
   }>();
-  defineEmits<{ add: [key: string]; restore: [id: string] }>();
+  defineEmits<{ add: [key: string]; restore: [id: string]; restoreObservation: [] }>();
   const selectedType = ref('');
   const query = ref('');
   const types = computed(() => {
@@ -56,7 +58,7 @@
       <input v-model="query" type="search" placeholder="Type or provider" autocomplete="off" />
     </label>
 
-    <section v-if="hidden.length" aria-label="Hidden integrations">
+    <section v-if="hidden.length || observationHiddenHere" aria-label="Hidden integrations">
       <h2>Hidden integrations</h2>
       <div v-for="item in hidden" :key="item.id" class="catalog-hidden-row">
         <div>
@@ -64,6 +66,18 @@
           <p>Configured and hidden from this page</p>
         </div>
         <UiButton :disabled="busy" @click="$emit('restore', item.id)">Show on page</UiButton>
+      </div>
+      <!--
+        The device-backed group has no instance to restore, so it is listed here alongside the
+        hidden instances and revealed the same way. Hiding something with no way back is how a
+        preference becomes a support question.
+      -->
+      <div v-if="observationHiddenHere" class="catalog-hidden-row">
+        <div>
+          <h3>Wireless observation</h3>
+          <p>Hidden from this page</p>
+        </div>
+        <UiButton :disabled="busy" @click="$emit('restoreObservation')">Show on page</UiButton>
       </div>
     </section>
 
