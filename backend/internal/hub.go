@@ -16,18 +16,21 @@ import (
 
 	metrics "node-herder/internal/metrics/services"
 	"node-herder/internal/mqtt"
+	"node-herder/internal/observations"
+	"node-herder/internal/observations/summaries"
 	"node-herder/internal/ratelimiter"
 	"node-herder/internal/spatialhistory"
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
+	observationsmodel "node-herder/models/observations"
 	"node-herder/store"
 	"node-herder/utils"
 	"os"
 	"time"
 )
 
-func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store store.AppStore, mcpServer *mcpserver.Server, ctx context.Context, options ...Option) (*api.ApiServer, error) {
-	router, err := newRouter(port, ws, hub, store, mcpServer, ctx, options...)
+func registerApi(port int, eventHub ws.EventHub, hub *controllers.HubController, store store.AppStore, mcpServer *mcpserver.Server, ctx context.Context, options ...Option) (*api.ApiServer, error) {
+	router, err := newRouter(port, eventHub, hub, store, mcpServer, ctx, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -78,6 +81,11 @@ func newRouter(port int, ws ws.EventHub, hub *controllers.HubController, store s
 		}
 		return nil
 	}))
+	router.GET("/api/observations/history", api.NewObservationHistoryHandler(func() api.ObservationHistorySource {
+		// Captured from the already-resolved configuration rather than re-applying every option
+		// per request, which allocated a whole optionsConfig on each call for a static value.
+		return configuration.summaryHistory
+	}))
 	router.GET("/api/system/storage", api.NewSystemStorageHandler(int(store.AppConfig().HistoryRetention().Hours()/24)))
 	router.POST("/api/collect", api.NewDataCollectorHandler(hub))
 	router.POST("/api/logfile", api.NewLogFileHandler(fservice))
@@ -109,13 +117,20 @@ func newRouter(port int, ws ws.EventHub, hub *controllers.HubController, store s
 }
 
 func Register(port int, store store.AppStore, ctx context.Context, options ...Option) (*api.ApiServer, error) {
+	// Applied before anything is constructed rather than only inside the router, because the
+	// observation service needs to ask the integration runtime whether observation is wanted —
+	// and it starts before routing exists.
+	configuration := optionsConfig{}
+	for _, option := range options {
+		option(&configuration)
+	}
 	markProviderDevicesOffline(store)
 
-	ws := ws.NewWsHub()
-	ws.Start()
-	context.AfterFunc(ctx, func() { _ = ws.Close() })
+	eventHub := ws.NewWsHub()
+	eventHub.Start()
+	context.AfterFunc(ctx, func() { _ = eventHub.Close() })
 
-	utils.RegisterRemoteLoggerHook(ws)
+	utils.RegisterRemoteLoggerHook(eventHub)
 
 	mqtt := mqtt.NewMqttClient(mqtt.WithDefaultMqttConfig())
 
@@ -141,20 +156,94 @@ func Register(port int, store store.AppStore, ctx context.Context, options ...Op
 		recorder.Start()
 		controllerOpts = append(controllerOpts, controllers.WithSpatialRecorder(recorder))
 	}
-	hub := controllers.RegisterHubController(ws, store, mqtt, controllerOpts...)
+	hub := controllers.RegisterHubController(eventHub, store, mqtt, controllerOpts...)
 	if hub == nil {
 		return nil, fmt.Errorf("failed to register hub controller")
 	}
-	providerManager := startDeviceProviders(ctx, hub)
+	// Live observation state is memory-only; a restart loses the live view and nothing else.
+	// Daily evidence is the exception: it is stored so classification can reason across days,
+	// which is the whole point of spec 065.
+	observationDeps := observations.Deps{
+		Store: store.AppConfig(),
+		Clock: utils.NewRealClock(),
+		// A saturated queue must be observable rather than silent: the counter reaches the
+		// per-source diagnostics the viewer renders (NH-06).
+		Dropped: func() { utils.LogDebug("Observations queue full; a batch was dropped") },
+		Publish: func(snapshot observationsmodel.Snapshot) {
+			if err := eventHub.Broadcast(ws.Observations, snapshot); err != nil {
+				utils.LogErrorf("Failed to broadcast observations: %v", err)
+			}
+		},
+	}
+	// Evidence storage is optional by design. If it cannot be opened, the viewer still works: it
+	// falls back to the first-packet pre-filter, which is the same state as a first-day install.
+	// Refusing to start would turn a decomposition problem into an outage.
+	var summaryRecorder *observations.SummarisingRecorder
+	if summaryStore, err := summaries.Open(); err != nil {
+		utils.LogErrorf("observation summaries: open store, classification disabled: %v", err)
+	} else {
+		summaryRecorder = observations.NewSummarisingRecorder(summaryStore, utils.NewRealClock())
+		summaryRecorder.Start()
+		observationDeps.History = summaryStore
+		observationDeps.Recorder = summaryRecorder
+		options = append(options, WithObservationHistory(summaryStore))
+	}
+	// Observation runs only while an integration wants it. The gate is wired before construction
+	// because the service reads it from the first advertisement, and a hub with no integration
+	// configured observes nothing — which is the default, not a special case.
+	if configuration.connections != nil {
+		observationDeps.Active = integrations.ObservationEnabled(configuration.connections)
+	}
+	observationService := observations.NewService(observationDeps)
+	observationService.Start(ctx)
+	// The runtime publishes the hub's live view instead of re-deriving it: the aggregation already
+	// happened here, and reading it twice would give the integration a different answer.
+	if configuration.connections != nil {
+		if e := integrations.WithObservationSource(configuration.connections, func() (any, error) {
+			return observationService.Snapshot(), nil
+		}); e != nil {
+			utils.LogErrorf("observation integration source: %v", e)
+		}
+	}
+	registerObservationHandlers(eventHub, store.AppConfig())
+	providerManager := startDeviceProviders(ctx, hub, observationService)
 	if providerManager != nil {
 		hub.SetProviderCommands(providerManager)
 		options = append(options, WithDeviceProviders(providerManager))
 	}
-	server, err := registerApi(port, ws, hub, store, mcpServer, ctx, options...)
+	server, err := registerApi(port, eventHub, hub, store, mcpServer, ctx, options...)
 	if err != nil && providerManager != nil {
 		closeCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		_ = providerManager.Close(closeCtx)
+	}
+	// A failed registration returns a nil server, so shutdown hooks may only be attached once it
+	// succeeded. Close the recorder directly in the failure path instead, or the day in progress
+	// would be lost and the database left locked.
+	if summaryRecorder != nil {
+		if err == nil {
+			server.AddShutdownHook(func(hookCtx context.Context) error {
+				// The observation service reads the summary store on its classification pass, so it
+				// must stop before the store closes. Without this ordering a shutdown would close
+				// the database underneath an in-flight read and turn a clean exit into a burst of
+				// errors from a closed file.
+				//
+				// Bounded rather than unbounded: the worker stops on its own context, but a failed
+				// Listen never cancels that context, so waiting forever there would hang the
+				// shutdown instead of completing it. A timeout is logged because it means the
+				// ordering did not hold and the close below may race a read.
+				if !observationService.WaitContext(hookCtx) {
+					utils.LogErrorf("observation service did not stop before the summary store closed")
+				}
+				// The recorder owns the store's lifetime; closing it flushes the day in progress
+				// and releases the database, in that order.
+				summaryRecorder.Close()
+				return nil
+			})
+		} else {
+			observationService.Wait()
+			summaryRecorder.Close()
+		}
 	}
 	if err == nil && providerManager != nil {
 		server.AddShutdownHook(providerManager.Close)
@@ -163,8 +252,14 @@ func Register(port int, store store.AppStore, ctx context.Context, options ...Op
 }
 
 type optionsConfig struct {
-	connections *integrations.Service
-	providers   *deviceproviders.Manager
+	connections    *integrations.Service
+	providers      *deviceproviders.Manager
+	summaryHistory api.ObservationHistorySource
+}
+
+// WithObservationHistory adds the protected observation history route.
+func WithObservationHistory(source api.ObservationHistorySource) Option {
+	return func(c *optionsConfig) { c.summaryHistory = source }
 }
 
 // Option composes optional features without expanding AppStore or device test doubles.
@@ -180,7 +275,7 @@ func WithDeviceProviders(manager *deviceproviders.Manager) Option {
 	return func(c *optionsConfig) { c.providers = manager }
 }
 
-func startDeviceProviders(ctx context.Context, pipeline *controllers.HubController) *deviceproviders.Manager {
+func startDeviceProviders(ctx context.Context, pipeline *controllers.HubController, observations *observations.Service) *deviceproviders.Manager {
 	data := os.Getenv("DATA_DIR")
 	if data == "" {
 		data = "./data"
@@ -190,7 +285,12 @@ func startDeviceProviders(ctx context.Context, pipeline *controllers.HubControll
 		utils.LogError("Device provider storage unavailable; check key and data paths")
 		return nil
 	}
-	manager, err := deviceproviders.NewManager(ctx, repo, map[string]deviceproviders.Driver{esphome.ProviderName: esphome.NewDriver(pipeline)})
+	driver := esphome.NewDriver(pipeline)
+	// Observation is opt-in per hub: a nil service keeps every provider state-only.
+	if observations != nil {
+		driver = driver.WithObservationConsumer(observations)
+	}
+	manager, err := deviceproviders.NewManager(ctx, repo, map[string]deviceproviders.Driver{esphome.ProviderName: driver})
 	if err != nil {
 		_ = repo.Close()
 		utils.LogError("Device provider startup unavailable; check saved configuration and keys")

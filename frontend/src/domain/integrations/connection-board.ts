@@ -1,5 +1,10 @@
 import { moveItem } from '../dashboard';
-import type { ConnectionBoardEntry, ConnectionCatalog, ConnectionInstance } from '@/types/integrations';
+import type {
+  ConnectionBoardEntry,
+  ConnectionCatalog,
+  ConnectionInstance,
+  IntegrationResource,
+} from '@/types/integrations';
 import { connectionPresentation } from '@/integrations/registry';
 import { integrationTypeTitle, matchesCatalogQuery } from './catalog';
 export type {
@@ -68,10 +73,24 @@ export function connectionWidget(instance: ConnectionInstance) {
 
 export type ConnectionEntryStatus = 'ready' | 'attention' | 'disabled';
 
+/**
+ * Whether a resource reports its freshness.
+ *
+ * Only capabilities with an age budget do — a schedule or a forecast goes stale, while a census is a
+ * snapshot that is simply replaced. Reading `freshness` off the union without narrowing would either
+ * be a type error or, worse, silently rely on every future capability having that field.
+ */
+function hasFreshness(resource: IntegrationResource): resource is IntegrationResource & { freshness: string } {
+  return 'freshness' in resource;
+}
+
 /** Coarse status used only by board filters; detailed status remains in the capability widget. */
 export function connectionEntryStatus(instance: ConnectionInstance): ConnectionEntryStatus {
   if (!instance.enabled) return 'disabled';
-  if (instance.last_error || instance.resources.some((resource) => resource.freshness === 'stale'))
+  if (
+    instance.last_error ||
+    instance.resources.some((resource) => hasFreshness(resource) && resource.freshness === 'stale')
+  )
     return 'attention';
   return 'ready';
 }

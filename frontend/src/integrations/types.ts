@@ -80,6 +80,17 @@ export interface IntegrationWidget {
   status: string;
   checked: string | null;
   icon?: SourceIcon;
+  /**
+   * Where the board entry should lead, when it should not lead to the integration page.
+   *
+   * A provider that is read continuously has its own live surface, and the integration page is only
+   * a summary of it. Without this the operator had to open the summary, then click through to the
+   * thing they actually wanted — two navigations to reach the obvious destination.
+   *
+   * `label` names that surface in the accessible name ("Open Enrolled sensors radar"), so this file
+   * stays free of any one capability's vocabulary.
+   */
+  destination?: { name: string; label: string };
 }
 
 /** One external service used by Setup, shown as a named link rather than a raw URL. */

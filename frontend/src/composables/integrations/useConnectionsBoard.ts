@@ -10,11 +10,14 @@ import type { ConnectionInstance } from '@/types/integrations';
 export function useConnectionsBoard() {
   const scope = useConnections();
   const { state, store, api, signal, isActive, perform, commit, observe, busy, error } = scope;
-  const catalog = useConnectionsCatalog(scope);
   const layout = useConnectionBoardLayout(scope);
   const byId = computed(() => new Map(state.value.instances.map((item) => [item.id, item])));
+
   /** Reload accepted catalog/layout/instance state using this page's cancellation signal. */
   const load = () => perform(() => store.dispatch('integrations/loadBoard', signal));
+  // Constructed after `load` so the callback reads in order; adding a local provider stays on this
+  // page, so it has to reload rather than relying on the wizard's return navigation.
+  const catalog = useConnectionsCatalog(scope, () => load());
   async function readInstances(requestSignal = signal) {
     await store.dispatch('integrations/readInstances', requestSignal);
   }
@@ -79,5 +82,16 @@ export function useConnectionsBoard() {
   };
   signal.addEventListener('abort', stopProjection, { once: true });
   onBeforeUnmount(stopProjection);
-  return { state, byId, busy, error, load, refresh, remember, catalog, layout, reloadLayout };
+  return {
+    state,
+    byId,
+    busy,
+    error,
+    load,
+    refresh,
+    remember,
+    catalog,
+    layout,
+    reloadLayout,
+  };
 }

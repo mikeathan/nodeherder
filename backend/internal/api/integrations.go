@@ -100,7 +100,7 @@ func RegisterIntegrationRoutes(router *Router, service *integrations.Service) {
 	routes := []struct{ method, path, action string }{
 		{"GET", "/board", "board"}, {"PUT", "/board", "board_save"},
 		{"GET", "/catalog", "catalog"}, {"POST", "/definitions/reload", "reload_all"}, {"GET", "/instances", "instances"}, {"GET", "/instances/:id", "instance"}, {"GET", "/instances/:id/resources", "resources"}, {"PUT", "/instances/:id", "update"}, {"PUT", "/instances/:id/schedule", "schedule"}, {"DELETE", "/instances/:id", "delete"}, {"POST", "/instances/:id/refresh", "refresh"}, {"POST", "/instances/:id/check-status", "check_instance"},
-		{"POST", "/setup", "setup_create"}, {"GET", "/setup/:id", "setup"}, {"POST", "/setup/:id/step", "step"}, {"DELETE", "/setup/:id", "cancel"},
+		{"POST", "/instances", "instance_add"}, {"POST", "/setup", "setup_create"}, {"GET", "/setup/:id", "setup"}, {"POST", "/setup/:id/step", "step"}, {"DELETE", "/setup/:id", "cancel"},
 		{"GET", "/operations/:id", "operation"}, {"POST", "/operations/:id/check-status", "check"},
 		{"PUT", "/setup/:id/credentials/:slot", "setup_credential"}, {"PUT", "/instances/:id/credentials/:slot", "credential"}, {"DELETE", "/instances/:id/credentials/:slot", "credential_delete"},
 		{"GET", "/definitions/:type/:provider", "definition"}, {"PUT", "/definitions/:type/:provider", "definition_save"}, {"DELETE", "/definitions/:type/:provider", "definition_delete"}, {"POST", "/definitions/:type/:provider/validate", "validate"}, {"POST", "/definitions/:type/:provider/test", "test"}, {"POST", "/definitions/:type/:provider/reload", "reload"}, {"POST", "/definitions/:type/:provider/restore", "restore"}, {"POST", "/definitions/:type/:provider/shipped-reviewed", "shipped_reviewed"},
@@ -175,6 +175,10 @@ func NewIntegrationHandler(service *integrations.Service, action string) http.Ha
 			}
 		case "reload_all":
 			data, err = service.ReloadDefinitions()
+		case "instance_add":
+			// Adds a provider that needs no setup input. Authored providers still go through setup,
+			// which is why this is a separate action rather than a shorter path through it.
+			data, err = service.AddLocal(input.ProviderKey, input.Name)
 		case "catalog":
 			data, err = service.Catalog()
 		case "instances":

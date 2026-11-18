@@ -13,7 +13,12 @@
     busy: boolean;
     providerRoute: (key: string) => RouteLocationRaw;
   }>();
-  defineEmits<{ close: []; add: [key: string]; restore: [id: string]; reload: [] }>();
+  defineEmits<{
+    close: [];
+    add: [key: string];
+    restore: [id: string];
+    reload: [];
+  }>();
 </script>
 
 <template>

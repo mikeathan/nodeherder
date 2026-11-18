@@ -19,9 +19,21 @@
   } from '@/domain/integrations/connection-board';
   import '../connections.css';
 
-  const { state, byId, busy, error, load, refresh, remember, catalog, layout, reloadLayout } = useConnectionsBoard();
+  const {
+    state,
+    byId,
+    busy,
+    error,
+    load,
+    refresh,
+    remember,
+    catalog,
+    layout,
+    reloadLayout,
+  } = useConnectionsBoard();
   const { editing, visible, hidden } = layout;
   const { open } = catalog;
+
   const root = ref<HTMLElement | null>(null);
   const search = ref('');
   const typeFilter = ref('');
@@ -100,7 +112,7 @@
           <UiButton
             v-if="state.instances.length"
             icon="edit"
-            :disabled="busy || !state.board"
+            :disabled="busy || (state.instances.length > 0 && !state.board)"
             data-board-edit
             @click="layout.begin"
             >Edit layout</UiButton
@@ -204,6 +216,7 @@
       @add="catalog.add"
       @restore="restore"
       @reload="catalog.reloadProviders" />
+
   </div>
 </template>
 <style scoped>

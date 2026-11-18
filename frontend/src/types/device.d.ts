@@ -21,6 +21,12 @@ export type Device = {
   availability: DeviceAvailabilityTypes;
   exposes: KeyValuePair<Expose>;
   properties: KeyValuePair<any>;
+  /**
+   * Abstract capabilities this device declares, e.g. "wireless.observe". Consumers gate
+   * features on this field rather than on `provider`, so a new source kind needs no UI change.
+   * Absent means "capability not declared", never "definitely cannot".
+   */
+  capabilities?: string[];
 };
 
 export type ExposeType = keyof ExposeTypes;

@@ -7,11 +7,14 @@
   import { confirm } from '@/composables/useConfirm';
   import UiIcon from '@/components/ui/UiIcon.vue';
   import AppLogo from '@/components/ui/AppLogo.vue';
-  import { isNavActive, NAV_ITEMS } from './navigation';
+  import { availableNavItems, isNavActive, NAV_ITEMS } from './navigation';
 
   defineEmits<{ (e: 'navigate'): void }>();
 
   const route = useRoute();
+  // Wireless observation is no longer a nav item: it is an integration, reached from its catalog
+  // card or a Home shortcut. The route survives, so those entry points and deep links still work.
+  const navItems = () => availableNavItems(NAV_ITEMS);
   const { signOut } = useSession();
   const permit = usePermitJoin();
   const version = __APP_VERSION__;
@@ -36,7 +39,7 @@
       <AppLogo :size="42" :version="version" />
     </RouterLink>
     <ul class="nh-nav-list">
-      <li v-for="item in NAV_ITEMS" :key="item.route">
+      <li v-for="item in navItems()" :key="item.route">
         <RouterLink
           :to="{ name: item.route }"
           class="nh-nav-item"

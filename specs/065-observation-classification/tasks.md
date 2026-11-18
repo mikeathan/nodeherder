@@ -1,0 +1,41 @@
+# Tasks: Behavioural classification and a specialised viewer
+
+Spec: [spec.md](spec.md) | Plan: [plan.md](plan.md) | Status: draft
+
+Each task maps to requirement/acceptance IDs or a constitutional gate and names its evidence.
+Mark done only with evidence. No task is started.
+
+## Preparation
+
+- [x] T001 — **DONE**: ADR-001, ADR-002 and ADR-003 recorded. Q1 agreed (neighbour is
+- [x] T002 — **DONE**: schema confirmed and the ceiling measured rather than estimated. A
+
+## Backend
+
+- [x] T003 — **DONE**: `evidence_test.go`, 11 tests. Hour mask, Welford over 10k readings, mobility thresholds, write floor, day reset, unusable readings.
+- [x] T004 — **DONE**: `evidence.go`. RSSI 0 counts as activity but not as signal evidence, because 0 dBm means unmeasured, not zero distance.
+- [x] T005 — **DONE**: `classify_test.go`, 12 tests. Hysteresis is measured against real scores rather than asserted.
+- [x] T006 — **DONE**: `classify.go`. Per-day scoring then recency weighting. Mobility counted in dB, not distance bands.
+- [x] T006a — **DONE**: `provisional_test.go`, 5 tests.
+- [x] T006b — **DONE**: `provisional.go`. `Provisional.asClassified` is the single bridge to the classifier's type.
+- [x] T007 — **DONE**: `summaries/store_test.go`, 11 tests. Includes the prefix-collision guard, which caught a real key-layout bug.
+- [x] T008 — **DONE**: `summaries/store.go` + `observations/summarise.go`. The recorder lives in `observations` because it needs the accumulator; the dependency runs one way only.
+- [x] T009 — **DONE**: class reaches the snapshot; the store is read on a slow interval outside the aggregation lock, and a read failure keeps the last good class.
+- [x] T010 — **DONE**: `GET /api/observations/history?key=…`, protected, bounded to 30 rows, returns summaries and transitions together.
+- [x] T011 — **DONE**: `Advisory: true` in the payload, and a test proving an ignored identity never appears regardless of its class.
+
+## Frontend
+
+- [x] T012 — **DONE**: types, contract parser, 12 contract tests. An unknown class is rejected; an absent one is allowed.
+- [x] T013 — **DONE**: default filter hides demoted classes with an honest count and two ways to reveal them.
+- [x] T014 — **DONE**: `ClassBadge.vue` with plain-language labels, provisional marking, learning progress, and the reasoning in Focus.
+- [x] T015 — **DONE**: `EvidenceTimeline.vue` — one row per day with a 24-hour strip, transitions with their reasons, mobile grid reflow.
+- [x] T016 — **DONE**: radar blips carry a class tone, and the legend names each class in words so colour is never the only cue.
+
+## Handoff
+
+- [x] T017 — **DONE**: desktop 192 passed (9 skipped), mobile 201 passed. Wireless suite 30/30 on both viewports.
+- [x] T018 — **DONE**: backend 53 packages, -race clean, vet and gofmt clean. Frontend 951 tests / 150 suites, lint 0 errors (23 pre-existing warnings), vue-tsc and e2e type-check clean, build clean.
+- [x] T019 — **DONE**: two findings, both fixed. (1) the in-progress accumulator map was unbounded between midnights — capped at 1024 with a drop counter, since a busy area produces exactly the rotating addresses that would grow it. (2) NFR-01 claimed a ceiling test that did not exist — added, measuring 223 B per row and asserting the 1.8 MB worst case.
+
+Add discovered work here and update the spec/plan when scope changes.

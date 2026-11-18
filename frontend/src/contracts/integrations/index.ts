@@ -1,5 +1,6 @@
 import { parseAirQualityForecast } from './air-quality';
 import { parseFuelPrices } from './fuel';
+import { parseObservationCensus } from './observation';
 import { parseWeatherAlerts } from './weather-alerts';
 import { parseWeatherForecast } from './weather';
 import { WASTE_SCHEDULE_TIMEZONE } from '@/config/integrations';
@@ -215,6 +216,9 @@ export function parseInstance(value: unknown): ConnectionInstance {
   text(v.etag);
   text(v.status);
   flag(v.enabled);
+  // Optional so a backend that predates local providers still parses. Validated when present,
+  // because a non-boolean would silently become "scheduled" and re-offer controls that cannot act.
+  optionalFlag(v.continuous);
   flag(v.credential_configured);
   timestamp(v.updated_at);
   parseFailure(v.last_error);
@@ -478,5 +482,9 @@ export function parseResource(value: unknown): IntegrationResource {
   if (version === 'air_quality/v1') return parseAirQualityForecast(value);
   if (version === 'weather_alerts/v1') return parseWeatherAlerts(value);
   if (version === 'fuel_prices/v1') return parseFuelPrices(value);
+  if (version === 'observation_census/v1') return parseObservationCensus(value);
+  // Falling back to the waste parser means an unrecognised version is rejected by a validator that
+  // describes a different shape, which reads as a generic failure. Every shipped resource needs a
+  // branch above this line.
   return parseWasteSchedule(value);
 }

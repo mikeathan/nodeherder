@@ -10,6 +10,7 @@ import type {
 import { airQualityPresenter } from './air-quality/presentation';
 import { alertsPresenter } from './alerts/presentation';
 import { fuelPresenter } from './fuel/presentation';
+import { observationPresenter } from './observation/presentation';
 import { wastePresenter } from './waste/presentation';
 import { weatherPresenter } from './weather/presentation';
 
@@ -20,6 +21,7 @@ const presenters: readonly IntegrationPresenter[] = [
   airQualityPresenter,
   alertsPresenter,
   fuelPresenter,
+  observationPresenter,
 ];
 
 /** Resolve the presenter registered for a validated resource; absent capabilities fail visibly. */

@@ -19,6 +19,7 @@ import (
 	metricservices "node-herder/internal/metrics/services"
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
+	observationsmodel "node-herder/models/observations"
 	"node-herder/repository"
 	"node-herder/testing/hubharness"
 	"os"
@@ -134,6 +135,10 @@ func TestAutomationBrowserHub(t *testing.T) {
 		}
 	})
 	connectionService := browserConnectionService(t, ctx)
+	// The fixture serves the same local provider the hub does, and feeds it a fixed census so the
+	// browser tests can exercise add, disable and remove without a radio. Without this the provider
+	// is still listed, but adding it records a source failure instead of publishing anything.
+	browserObservationSource(t, connectionService)
 	router, err := newRouter(4120, bus, h.Hub, h.Store, nil, ctx, WithConnections(connectionService))
 	if err != nil {
 		t.Fatal(err)
@@ -336,6 +341,36 @@ func (browserProvider) Do(r *http.Request) (*http.Response, error) {
 	}
 	return &http.Response{StatusCode: 200, Header: http.Header{}, Body: io.NopCloser(strings.NewReader(body))}, nil
 }
+
+// browserObservationSource gives the fixture's local provider a stable value to publish.
+//
+// It is a snapshot rather than live observation because the browser tests are about the integration
+// lifecycle, not about a radio: the radar has its own viewer fixture.
+func browserObservationSource(t *testing.T, service *connections.Service) {
+	t.Helper()
+	snapshot := observationsmodel.Snapshot{
+		At: time.Date(2026, 11, 13, 12, 0, 0, 0, time.UTC),
+		// Delivery counters, because they are what distinguishes a working sensor from one that has
+		// never delivered. A source with identities but zero advertisements is not a realistic
+		// fixture: it describes devices heard by something that has not spoken, and the page is
+		// right to call that "heard earlier" instead of "in range".
+		Sources: []observationsmodel.SourceDescriptor{{
+			ID:          "browser-proxy",
+			Name:        "Browser proxy",
+			Diagnostics: observationsmodel.SourceDiagnostics{Advertisements: 120, Decoded: 118},
+		}},
+		Identities: []observationsmodel.IdentityView{
+			{Key: "aa:bb:cc:dd:ee:01", Stable: true, LastSeen: time.Date(2026, 11, 13, 12, 0, 0, 0, time.UTC)},
+		},
+		// Set the way the running service sets it, so the page under test sees a real payload
+		// rather than one that happens to omit the gate flag.
+		Observing: true,
+	}
+	if e := connections.WithObservationSource(service, func() (any, error) { return snapshot, nil }); e != nil {
+		t.Fatal(e)
+	}
+}
+
 func browserConnectionService(t *testing.T, ctx context.Context) *connections.Service {
 	t.Helper()
 	repo, e := repository.OpenIntegrationRepository(t.TempDir(), repository.IntegrationKeyring{ActiveKeyID: "fixture", Keys: map[string]string{"fixture": base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{9}, 32))}})

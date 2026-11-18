@@ -100,8 +100,8 @@
     display: grid;
     gap: 0.4rem;
     padding: 0.75rem;
-    border: 1px solid var(--nh-border);
-    border-radius: var(--nh-radius);
+    border: var(--nh-border-w) solid var(--nh-border);
+    border-radius: var(--nh-radius-l);
     background: var(--nh-surface);
     min-width: 0;
   }

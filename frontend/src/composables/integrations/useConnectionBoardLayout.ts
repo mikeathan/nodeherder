@@ -19,9 +19,10 @@ export function useConnectionBoardLayout(scope: ConnectionScope) {
   const hidden = computed(() => entries.value.filter((entry) => entry.hidden));
   /** Copy accepted placements and capture their revision; nothing is persisted yet. */
   function begin() {
-    if (!scope.state.value.board || scope.busy.value) return;
+    if (scope.busy.value) return;
+    const board = scope.state.value.board;
     draft.value = accepted.value.map((entry) => ({ ...entry }));
-    expected.value = scope.state.value.board.etag;
+    expected.value = board?.etag ?? '';
     editing.value = true;
   }
   /** Abandon only the local draft and return to accepted shared placements. */
@@ -41,6 +42,12 @@ export function useConnectionBoardLayout(scope: ConnectionScope) {
   }
   /** Atomically save the captured-revision draft; conflicts/failures keep it available for retry. */
   async function save() {
+    // With no board document there is nothing to persist, and posting an empty draft with a blank
+    // etag would fail and leave the operator in edit mode for no reason.
+    if (!scope.state.value.board) {
+      cancel();
+      return true;
+    }
     const result = await scope.perform(() => scope.api.saveBoard(draft.value, expected.value));
     if (result) {
       scope.commit('board', result);

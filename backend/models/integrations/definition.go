@@ -162,6 +162,19 @@ func (b *StrictBool) UnmarshalJSON(data []byte) error {
 
 // Definition is the complete finite v1 provider grammar; it contains no private instance settings.
 type Definition struct {
+	// Source distinguishes a provider that fetches over the network from one whose input the hub
+	// already produced.
+	//
+	// Every provider in this grammar was HTTP-shaped: a base URL, a set of requests, and a refresh
+	// that performs one of them. Wireless observation breaks that assumption honestly — there is no
+	// endpoint, because the data arrives from a radio through an enrolled device. Rather than invent
+	// a fake URL or relax the request validation for everyone, the distinction is explicit and
+	// off by default, so every existing provider is untouched.
+	//
+	// A local definition is constructed in Go and never parsed from YAML: `Local` is rejected at
+	// the YAML boundary so an operator cannot author a provider with no source, which would sit in
+	// the catalog and never produce anything.
+	Local           bool               `json:"local,omitempty" yaml:"-"`
 	SchemaVersion   string             `json:"schema_version" yaml:"schema_version"`
 	IntegrationType string             `json:"integration_type" yaml:"integration_type"`
 	ID              string             `json:"id" yaml:"id"`

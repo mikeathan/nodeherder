@@ -202,6 +202,10 @@ type AppConfig struct {
 	Bridge *BridgeConfig `json:"bridge"`
 	// HomeLayout is persisted privately; AppConfigCache strips it from ordinary snapshots.
 	HomeLayout *HomeLayout `json:"homeLayout,omitempty"`
+	// ObservationIdentities holds operator triage decisions keyed by opaque identity key.
+	// It is persisted privately and stripped from ordinary snapshots, because identity keys
+	// are household-adjacent identifiers that must not reach every settings response.
+	ObservationIdentities map[string]ObservationIdentity `json:"observationIdentities,omitempty"`
 }
 
 func (s *AppConfig) AddDeviceConfig(cfg *DeviceConfig) {

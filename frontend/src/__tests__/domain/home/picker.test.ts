@@ -4,12 +4,14 @@ import {
   HOME_FILTER_MAIN,
   homePickerChoices,
   homePickerFilters,
+  homePickerEmptyMessage,
   homePickerOptions,
   selectedHomeCards,
   stableHomePickerFilters,
   stableHomePickerOptions,
 } from '@/domain/home/picker';
 import { homeSourceKey } from '@/domain/home/layout';
+import { homePanelItems } from '@/domain/home/panel';
 import { device, expose } from '../../helpers/devices';
 import { ExposeCategories } from '@/types/device.type';
 import type { HomeCard } from '@/types/home';
@@ -145,4 +147,45 @@ test('a presence overview is offered globally when a spatial sensor exists', () 
   const [overview] = homePickerChoices('presence', [radar], new Map(), []);
   expect(overview.reference).toEqual({ kind: 'presence_overview' });
   expect(homePickerChoices('presence', [lamp], new Map(), [])).toEqual([]);
+});
+
+describe('wireless observation shortcut', () => {
+  const observer = device('observer', { friendly_name: 'Hall proxy', capabilities: ['wireless.observe'] });
+  const plain = device('plain', { friendly_name: 'Kitchen light' });
+
+  test('the source is offered only when a sensor can observe', () => {
+    // A shortcut that opens an empty radar is a dead card, so the source is gated on the capability.
+    const withObserver = homePickerOptions([observer, plain]).map((option) => option.value);
+    expect(withObserver).toContain('observation');
+
+    const withoutObserver = homePickerOptions([plain]).map((option) => option.value);
+    expect(withoutObserver).not.toContain('observation');
+  });
+
+  test('choosing it yields one whole-hub card', () => {
+    // Whole-hub like presence: the radar reads every sensor, so a card naming one would go stale
+    // the moment another was added.
+    const choices = homePickerChoices('observation', [observer, plain], new Map(), []);
+    expect(choices).toHaveLength(1);
+    expect(choices[0].reference).toEqual({ kind: 'observation' });
+  });
+
+  test('a second observation card is flagged as already shown', () => {
+    // Whole-hub cards are marked rather than hidden: the picker disables what is already placed, the
+    // same way it does for the presence overview, so the list does not shift under the operator.
+    const placed: HomeCard[] = [{ id: 'one', kind: 'observation', panel: false }];
+    const choices = homePickerChoices('observation', [observer], new Map(), placed);
+    expect(choices).toHaveLength(1);
+    expect(choices[0].alreadyShown).toBe(true);
+  });
+
+  test('the empty message explains what is missing', () => {
+    expect(homePickerEmptyMessage('observation')).toContain('Bluetooth proxy');
+  });
+
+  test('the card is excluded from the panel view', () => {
+    // The panel is a control surface; a radar shortcut is navigation, not a control.
+    const block = { id: 'b', kind: 'card' as const, name: '', cards: [{ id: 'c', kind: 'observation' as const, panel: true }] };
+    expect(homePanelItems(block, { buttons: [] } as never)).toEqual([]);
+  });
 });

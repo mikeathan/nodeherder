@@ -34,10 +34,53 @@ export function useConnectionDetail() {
   let scheduleBaseConfig = initialSchedule;
   const scheduleBaseETag = ref(item.value?.etag ?? '');
   const definition = ref<ProviderDefinition | null>(null);
+  /**
+   * Whether this instance's provider has an editable document.
+   *
+   * A local provider is compiled into the server, so it has no host file to read and the definition
+   * endpoint would 404. Asking anyway surfaced "Provider not found" on a page that was otherwise
+   * working — which is exactly the banner this check exists to remove.
+   *
+   * The instance's own `continuous` flag is the authority, because it comes from the definition the
+   * server compiled. The previous version asked the catalog instead, and `provider?.origin !== 'local'`
+   * is TRUE when the catalog has not loaded — so a local provider was asked for a document it cannot
+   * have. Reaching this page from a Home card never loads the catalog at all, which is why the banner
+   * appeared exactly then. Only an older backend, which has no local providers, falls back to it.
+   */
+  const hasDocument = (instance: ConnectionInstance): boolean => {
+    if (typeof instance.continuous === 'boolean') return !instance.continuous;
+    const provider = state.value.catalog?.providers.find((entry) => entry.key === instance.provider_key);
+    return provider?.origin !== 'local';
+  };
+  /**
+   * Whether this integration updates continuously, so there is nothing to refresh or schedule.
+   *
+   * Supplied by the server. It used to be derived here from the catalog's provider origin, which was
+   * a proxy for the same fact and could disagree with the definition the settings pane reads.
+   */
+  const continuous = computed(() => item.value?.continuous === true);
+  /**
+   * The provider's display name, fallback to its key.
+   *
+   * The settings pane used `definition?.name`, which is null for exactly the providers whose
+   * definition is not fetched — so a continuous integration showed the raw key
+   * `wireless_observation/hub`. The catalog lists every provider, including local ones, so it is the
+   * one source that is always right — but it is only fetched by the board, so a page reached
+   * directly (a bookmark, a Home card) still fell back to the key. `onMounted` therefore reads it.
+   */
+  const providerName = computed(() => {
+    const key = item.value?.provider_key;
+    if (!key) return '';
+    const provider = state.value.catalog?.providers.find((entry) => entry.key === key);
+    // `definition.name` is the last resort before the key: it is the same value, present whenever
+    // the document was fetched, which covers a provider missing from a stale catalog.
+    return provider?.name ?? definition.value?.name ?? key;
+  });
   const sectionContext = computed<IntegrationNavigationContext>(() => ({
     providerKey: item.value?.provider_key ?? '',
     instanceId: item.value?.id,
     query: route.query,
+    continuous: continuous.value,
   }));
   async function reload(requestSignal = signal): Promise<ConnectionInstance> {
     try {
@@ -112,6 +155,16 @@ export function useConnectionDetail() {
     await perform(async () => {
       const current = await reloadInstance();
       if (!isActive()) return;
+      // The catalog is fetched by the board, so a page reached directly has none, and the provider's
+      // display name then had nothing to resolve against — it rendered the raw key. This matters most
+      // for a local provider, whose name comes *only* from the catalog because its definition is
+      // deliberately never fetched. `load` would re-read the instance and race the read above, so it
+      // is the narrower board read.
+      if (!state.value.catalog) {
+        await store.dispatch('integrations/loadBoard', signal).catch(() => undefined);
+        if (!isActive()) return;
+      }
+      if (!hasDocument(current)) return;
       const provider = await api.definition(current.provider_key, signal);
       if (isActive()) {
         definition.value = provider.document;
@@ -240,6 +293,8 @@ export function useConnectionDetail() {
   return {
     item,
     tab,
+    continuous,
+    providerName,
     name,
     definition,
     scheduleEnabled,

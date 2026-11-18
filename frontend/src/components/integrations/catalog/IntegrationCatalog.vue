@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import { computed, ref, watch } from 'vue';
   import type { RouteLocationRaw } from 'vue-router';
-  import type { ConnectionCatalog, ConnectionInstance } from '@/types/integrations';
+  import type { ConnectionCatalog, ConnectionCatalogProvider, ConnectionInstance } from '@/types/integrations';
   import UiButton from '@/components/ui/UiButton.vue';
   import UiIcon from '@/components/ui/UiIcon.vue';
   import IntegrationTypeCard from './IntegrationTypeCard.vue';
@@ -13,6 +13,7 @@
     providerCredentialLabel,
     providerRegionLabel,
     providerRefreshLabel,
+    providerIsLocal,
   } from '@/domain/integrations/catalog';
 
   const props = defineProps<{
@@ -38,6 +39,10 @@
   const providers = computed(() =>
     selectedType.value ? integrationTypeProviders(props.catalog, selectedType.value) : []
   );
+  /** Copy for the primary action: "Add" creates an instance directly, "Set up" starts a wizard. */
+  function providerActionLabel(provider: ConnectionCatalogProvider): string {
+    return providerIsLocal(provider) ? 'Add' : 'Set up';
+  }
   const activeTypeName = computed(() =>
     selectedType.value ? integrationTypeTitle(selectedType.value, props.catalog) : ''
   );
@@ -107,7 +112,7 @@
           <p v-if="provider.disk_error" role="status">{{ provider.disk_error }}</p>
           <p>
             {{ providerCredentialLabel(provider) }} · {{ providerRefreshLabel(provider)
-            }}<span v-if="provider.origin"> · {{ provider.origin }}</span>
+            }}<span v-if="provider.origin && !providerIsLocal(provider)"> · {{ provider.origin }}</span>
           </p>
         </div>
         <div class="catalog-provider-actions">
@@ -115,9 +120,11 @@
             variant="primary"
             :disabled="busy || !provider.available"
             @click="$emit('add', provider.key)"
-            >Set up</UiButton
+            >{{ providerActionLabel(provider) }}</UiButton
           >
-          <UiButton :to="providerRoute(provider.key)" :disabled="busy">Configure operations</UiButton>
+          <UiButton v-if="!providerIsLocal(provider)" :to="providerRoute(provider.key)" :disabled="busy"
+            >Configure operations</UiButton
+          >
         </div>
       </div>
     </section>

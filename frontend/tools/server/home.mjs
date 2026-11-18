@@ -47,6 +47,11 @@ function validFixtureLayout(layout) {
       if (!card?.id || cardIds.has(card.id)) return false;
       if (card.kind === 'presence_overview') {
         if (card.device_id || card.expose || card.instance_id || card.resource_id || card.service_id) return false;
+      } else if (card.kind === 'observation') {
+        // Whole-hub like the presence overview: it names no source, because the radar reads every
+        // enrolled sensor. Without this branch the mock rejected the layout with a 400 that the
+        // real backend no longer returns, so the tile silently failed to save.
+        if (card.device_id || card.expose || card.instance_id || card.resource_id || card.service_id) return false;
       } else if (card.kind === 'presence') {
         if (!card.device_id) return false;
       } else if (card.kind !== 'device') return false;

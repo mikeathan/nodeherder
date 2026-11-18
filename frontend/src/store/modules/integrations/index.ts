@@ -37,6 +37,19 @@ export const IntegrationsModule: Module<ConnectionsState, RootState> = {
     definitions: {},
     generation: 0,
   }),
+  getters: {
+    /**
+     * The saved instances, by provider key.
+     *
+     * A page that is not the Connections board still needs to know which instance owns it — the radar
+     * links back to the settings that turn observation on and off. Exposing state directly would make
+     * that link depend on the state shape, so it is a named lookup instead.
+     */
+    instanceForProviderKey:
+      (state) =>
+      (providerKey: string): ConnectionInstance | undefined =>
+        state.instances.find((instance) => instance.provider_key === providerKey),
+  },
   mutations: {
     beginInstanceRead(state) {
       state.instanceReads++;

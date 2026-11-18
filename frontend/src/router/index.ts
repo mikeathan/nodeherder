@@ -97,7 +97,14 @@ const routes: RouteRecordRaw[] = [
     meta: { title: 'Panel', requiresAuth: true, layout: 'panel' },
   },
   // Named links use Integrations; aliases preserve existing authenticated bookmarks/deep links.
-  { path: '/integrations', alias: '/connections', name: RouteName.Integrations, component: () => import('@/components/integrations/connections/ConnectionsPage.vue'), meta: { title: 'Integrations', requiresAuth: true } },
+  {
+    path: '/wireless',
+    name: RouteName.Wireless,
+    component: () => import('@/components/wireless/WirelessViewer.vue'),
+    meta: { title: 'Wireless', requiresAuth: true },
+  },
+  {
+    path: '/integrations', alias: '/connections', name: RouteName.Integrations, component: () => import('@/components/integrations/connections/ConnectionsPage.vue'), meta: { title: 'Integrations', requiresAuth: true } },
   { path: '/integrations/setup/:id', alias: '/connections/setup/:id', name: RouteName.IntegrationSetup, component: () => import('@/components/integrations/connections/ConnectionSetup.vue'), meta: { title: 'Set up integration', requiresAuth: true } },
   { path: '/integrations/providers/:type/:provider', alias: '/connections/providers/:type/:provider', name: RouteName.IntegrationProvider, component: () => import('@/components/integrations/provider/ProviderEditor.vue'), meta: { title: 'Configure operations', requiresAuth: true } },
   { path: '/integrations/providers/:type/:provider/help', alias: '/connections/providers/:type/:provider/help', name: RouteName.IntegrationHelp, component: () => import('@/components/integrations/help/IntegrationsHelp.vue'), meta: { title: 'Integrations help', requiresAuth: true } },

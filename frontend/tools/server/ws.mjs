@@ -244,11 +244,33 @@ export function registerWebsocket(app, server) {
         }
         case 'pong':
           break;
+        case 'saveObservationIdentity':
+        case 'deleteObservationIdentity': {
+          // The real backend persists the decision *and rebroadcasts the snapshot*. The mock used
+          // to only acknowledge, so a triaged device never left a "needs triage" filter and the
+          // control looked inert in the browser — the test could not tell a real defect from a
+          // faithful-mock gap. Apply the decision to the fixture and resend.
+          applyObservationDecision(obj.payload);
+          sendOperationSuccess(ws);
+          if (connected) sendMessage(ws, 'observations', buildObservationSnapshot());
+          break;
+        }
         default:
           console.log('ws unhandled type:', msg);
           break;
       }
     });
+
+    // Wireless observation snapshot. The real hub broadcasts this whenever aggregated state
+    // changes; the mock sends one so the viewer can be rendered and asserted in a browser.
+    // Rebuilt per tick rather than captured once, so a spec that turns observation off actually
+    // receives the empty broadcast the real service publishes.
+    sendMessage(ws, 'observations', buildObservationSnapshot());
+    const observationIntervalId = setInterval(function () {
+      if (!connected) return;
+      sendMessage(ws, 'observations', buildObservationSnapshot());
+    }, 2000);
+    intervals.push(observationIntervalId);
 
     ws.on('error', function (error) {
       console.log('Cannot start server', error);
@@ -270,4 +292,253 @@ function safeParse(message) {
     console.log('Invalid JSON message', e);
     return null;
   }
+}
+
+/**
+ * One deterministic wireless observation snapshot for browser tests.
+ *
+ * Fixed data, not generated: assertions need stable keys. It covers the cases the viewer must
+ * handle — a stable beacon with an operator label, a rotating address, a known device, and a
+ * source that is connected but has delivered nothing.
+ */
+/**
+ * Decisions the browser has made during this session.
+ *
+ * Kept because the mock has no store: without it, a rebroadcast would undo the decision that
+ * triggered it, and the viewer would snap back to the pre-triage state.
+ */
+const observationDecisions = new Map();
+
+/**
+ * Whether the mock reports observation as running.
+ *
+ * The radar page has to distinguish "the integration is off" from "the radio hears nothing", and a
+ * browser test can only assert that if the fixture can produce both. Defaults to on, so nothing
+ * changes for specs that do not care.
+ */
+let observationEnabled = true;
+
+/** Turn the fixture's observation on or off, for specs that assert the disabled state. */
+export function setObservationEnabled(enabled) {
+  observationEnabled = enabled;
+}
+
+/** Current fixture state, so a reset can restore the default. */
+export function observationIsEnabled() {
+  return observationEnabled;
+}
+
+/**
+ * Clear every triage decision recorded in this process.
+ *
+ * The mock is one long-lived server shared by every browser spec, so a decision made in one test
+ * was still applied in the next: desktop triaged a device and mobile then started with it already
+ * triaged, which looked like a flaky failure rather than leaked state. Tests reset through the
+ * `__test/reset` route.
+ */
+export function resetObservationDecisions() {
+  observationDecisions.clear();
+  observationEnabled = true;
+}
+
+/** Apply a triage decision to the fixture, so a rebroadcast reflects it. */
+function applyObservationDecision(message) {
+  if (!message || typeof message.key !== 'string' || typeof message.decision !== 'string') return;
+  observationDecisions.set(message.key, message.decision);
+}
+
+function buildObservationSnapshot() {
+  const now = Date.now();
+  const at = (offsetSeconds) => new Date(now - offsetSeconds * 1000).toISOString();
+  // Observed-off is a genuinely empty broadcast, which is what the real service publishes when the
+  // gate closes. Returning the populated fixture with a false flag would let a page render a stale
+  // census beside a "not observing" notice and still pass.
+  if (!observationEnabled) {
+    return { at: at(0), truncated: false, observing: false, sources: [], identities: [], arrivals: 0 };
+  }
+  return {
+    at: at(0),
+    truncated: false,
+    observing: true,
+    sources: [
+      {
+        id: 'mock-proxy-1',
+        name: 'Mock hall proxy',
+        media: ['ble.adv'],
+        facets: ['kind', 'vendor'],
+        diagnostics: { advertisements: 128, decoded: 96, dropped: 0, lastAdvertisement: at(1) },
+      },
+      {
+        id: 'mock-proxy-2',
+        name: 'Mock landing proxy',
+        media: ['ble.adv'],
+        facets: ['kind'],
+        diagnostics: { advertisements: 0, decoded: 0, dropped: 0, lastAdvertisement: null },
+      },
+    ],
+    identities: [
+      {
+        key: 'ibeacon:2f234454-cf6d-4a0f-adf2-f4911ba9ffa6:1:2',
+        kind: 'ibeacon',
+        vendor: 76,
+        stable: true,
+        label: 'Front door tag',
+        decision: 'known',
+        firstSeen: at(30),
+        lastSeen: at(5),
+        packets: 1841,
+        rssi: -62,
+        rssiSmoothed: -66,
+        trend: 'approaching',
+        trendDeltaDb: 5.5,
+        signal: [-74, -72, -70, -68, -66, -64, -62],
+        sources: [{ id: 'mock-proxy-1', rssi: -62 }],
+        // A settled, visible class with its reasoning, so the badge and evidence text can be
+        // asserted. Personal rather than infrastructure because this is a tag the operator placed,
+        // and it matters that a settled class is visible by default.
+        classification: {
+          class: 'personal',
+          showByDefault: true,
+          confidence: 0.78,
+          hoursObserved: 96,
+          daysConsidered: 4,
+          reason: 'Present for part of the day with a changing signal, which suggests a device someone carries.',
+          advisory: true,
+        },
+      },
+      {
+        key: 'addr:aa:bb:cc:dd:ee:01',
+        kind: 'adv',
+        stable: true,
+        decision: 'unknown',
+        firstSeen: at(720),
+        lastSeen: at(8),
+        packets: 12,
+        rssi: -78,
+        sources: [{ id: 'mock-proxy-1', rssi: -78 }],
+        // Still learning: shows the progress line rather than a bare class, so the "learning is
+        // work in progress, not a failure" treatment is exercised.
+        classification: {
+          class: 'learning',
+          showByDefault: true,
+          confidence: 0,
+          hoursObserved: 6,
+          reason: '18 more observed hours needed before a class is asserted.',
+          advisory: true,
+        },
+      },
+      {
+        key: 'fp:9c02ab41',
+        kind: 'adv',
+        stable: false,
+        decision: 'unknown',
+        firstSeen: at(900),
+        lastSeen: at(20),
+        packets: 3,
+        rssi: null,
+        sources: [{ id: 'mock-proxy-1', rssi: null }],
+        // A provisional pre-filter result: shown, but marked as a guess rather than a verdict.
+        classification: {
+          class: 'mobile-unidentifiable',
+          provisional: true,
+          showByDefault: true,
+          confidence: 0,
+          hoursObserved: 0,
+          reason: 'Address rotates, so this is a person\'s device rather than household equipment.',
+          advisory: true,
+        },
+      },
+      // A busy household: 14 rotating addresses, alongside the identifiable devices below, which
+      // matches the proportions of the reported install (about half rotating) rather than an
+      // extreme case.
+      ...Array.from({ length: 14 }, (_, index) => {
+        // Spread across the full range rather than a tight cluster: the report was one identifiable
+        // device near the antenna and a dozen rotating ones far away, which collapsed the scale.
+        const rssi = -62 - index * 1.6;
+        return {
+          key: `fp:crowd${String(index).padStart(2, '0')}`,
+          kind: 'adv',
+          stable: false,
+          decision: 'unknown',
+          firstSeen: at(120 + index * 7),
+          lastSeen: at(2 + index),
+          packets: 3 + index,
+          rssi,
+          rssiSmoothed: rssi,
+          trend: index % 3 === 0 ? 'approaching' : 'steady',
+          trendDeltaDb: index % 3 === 0 ? 3.5 : 0,
+          signal: [rssi - 4, rssi - 2, rssi],
+          sources: [{ id: 'mock-proxy-1', rssi }],
+          classification: {
+            class: 'mobile-unidentifiable',
+            provisional: true,
+            showByDefault: true,
+            confidence: 0,
+            hoursObserved: 0,
+            reason: 'Address rotates, so this is a person\'s device rather than household equipment.',
+            advisory: true,
+          },
+        };
+      }),
+      // Weak but stable devices: far from the antenna, so the pre-filter classes them as probably
+      // outside. These are the ones the default filter used to hide, leaving the radar almost empty.
+      ...Array.from({ length: 8 }, (_, index) => {
+        const rssi = -78 - index * 1.5;
+        return {
+          key: `addr:aa:bb:cc:dd:ef:${String(index).padStart(2, '0')}`,
+          kind: 'adv',
+          stable: true,
+          decision: 'unknown',
+          firstSeen: at(600 + index * 30),
+          lastSeen: at(6 + index),
+          packets: 40 + index * 5,
+          rssi,
+          rssiSmoothed: rssi,
+          trend: 'steady',
+          trendDeltaDb: 0.5,
+          signal: [rssi - 2, rssi, rssi],
+          sources: [{ id: 'mock-proxy-1', rssi }],
+          classification: {
+            class: 'likely-neighbour',
+            provisional: true,
+            showByDefault: true,
+            confidence: 0,
+            hoursObserved: 0,
+            reason: 'Always much weaker than devices in the room, so probably outside it.',
+            advisory: true,
+          },
+        };
+      }),
+      {
+        key: 'addr:aa:bb:cc:dd:ee:02',
+        kind: 'adv',
+        stable: true,
+        decision: 'unknown',
+        firstSeen: at(3600),
+        lastSeen: at(60),
+        packets: 4210,
+        rssi: -58,
+        rssiSmoothed: -59,
+        trend: 'steady',
+        trendDeltaDb: 0.4,
+        signal: [-59, -60, -59, -58, -59, -59, -58],
+        sources: [{ id: 'mock-proxy-1', rssi: -58 }],
+        // Demoted by default: this is the row class the operator complained about, and the footer
+        // must be able to say it is there without showing it.
+        classification: {
+          class: 'infrastructure',
+          showByDefault: false,
+          confidence: 0.83,
+          hoursObserved: 168,
+          daysConsidered: 7,
+          reason: 'Present almost all day, including overnight, and barely moved.',
+          advisory: true,
+        },
+      },
+    ].map((identity) => {
+      const decided = observationDecisions.get(identity.key);
+      return decided ? { ...identity, decision: decided } : identity;
+    }),
+    arrivals: 1,
+  };
 }

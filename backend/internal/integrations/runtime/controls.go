@@ -60,6 +60,28 @@ func (s *Service) Refresh(id, expected string) (OperationDTO, error) {
 		if i.Origin != c.Origin {
 			return destinationReviewFailure("Review the changed provider destination in Configure operations.")
 		}
+		// A local provider has no request to admit, no destination to review and no rate limit to
+		// respect. Republishing is skipped, because there is nothing stored to refresh: the value is
+		// resolved on read. What this does is re-check the source, so an operator who pressed Refresh
+		// learns now whether the sensor is reachable. The guards above still apply, so a disabled
+		// instance cannot be refreshed either way.
+		if isLocal(c) {
+			refreshed, e := s.publishLocal(tx, &i, c)
+			if e != nil {
+				return e
+			}
+			// Reported as an already-finished operation rather than as an instance, because that is
+			// what the caller asked for and what the client polls. A local refresh completes inside
+			// this call, so the honest encoding is a done operation with no id: there is nothing to
+			// follow up on.
+			out = OperationDTO{
+				Status:     "done",
+				Kind:       model.OperationKindRefresh,
+				InstanceID: refreshed.ID,
+				Error:      refreshed.LastError,
+			}
+			return nil
+		}
 		if until := s.providerDeadlines[c.Origin]; s.clock.Now().Before(until) {
 			return &model.Failure{Code: "rate_limited", Message: "The provider asked us to wait before another request.", RetryAt: &until}
 		}
@@ -257,6 +279,31 @@ func (s *Service) UpdateInstance(id, name string, enabled bool, expected string)
 				}
 			}
 		}
+		// A local provider has no operation to pause or resume. Enabling re-checks its source inside
+		// publishLocal, which commits the instance itself, so a source that is unreachable says so
+		// here rather than after a separate refresh. There is no stored value to publish or discard:
+		// the read path resolves one while the instance is enabled, and none while it is not. Both
+		// paths apply the pending rename, so one action is one write.
+		if compiled, local := s.localDefinition(i.DefinitionKey); local {
+			i.Name = name
+			i.Enabled = enabled
+			i.UpdatedAt = s.clock.Now()
+			if enabled {
+				published, e := s.publishLocal(tx, &i, compiled)
+				if e != nil {
+					return e
+				}
+				out = s.instanceDTO(published)
+				return nil
+			}
+			i.Snapshot = nil
+			i.Revision++
+			if e := tx.Put("instances", id, i); e != nil {
+				return e
+			}
+			out = s.instanceDTO(i)
+			return nil
+		}
 		i.Name = name
 		i.Enabled = enabled
 		i.Revision++
@@ -290,6 +337,12 @@ func (s *Service) UpdateSchedule(id string, enabled bool, intervalSeconds int64,
 		}
 		if e = checkRevision(expected, revisionETag("instance", id, i.Revision)); e != nil {
 			return e
+		}
+		// A local provider has no cadence to set: its value is the hub's current state, so a timer
+		// would republish the same thing. Rejected here rather than silently accepted, because a
+		// schedule that never fires is a control that appears to work and does nothing.
+		if _, local := s.localDefinition(i.DefinitionKey); local {
+			return model.Fail("unsupported_schedule", "This integration updates continuously and has no refresh schedule.")
 		}
 		minimum, e := s.scheduleMinimum(tx, i, enabled)
 		if e != nil {

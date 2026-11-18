@@ -856,6 +856,11 @@ function loadLightMetrics() {
 export function initState() {
   hubStatePayload = loadHubState();
   if (!hubStatePayload) throw new Error('Failed to load hub state');
+  // Declare the observation capability on an existing fixture device. It is deliberately not an
+  // ESPHome device: the capability is abstract, never provider-derived, and this keeps the
+  // device count and the ESPHome empty-state fixtures unchanged for other suites.
+  const observingDevice = hubStatePayload.devices.find((device) => device.connection_type === 'mqtt');
+  if (observingDevice) observingDevice.capabilities = ['wireless.observe'];
   hubStatePayload.devices.sort((a, b) => a.friendly_name.localeCompare(b.friendly_name));
   appConfig = hubStatePayload.config;
   const reportingDefaults = JSON.parse(readFileSync(new URL('../../src/domain/reporting-defaults.json', import.meta.url), 'utf8'));

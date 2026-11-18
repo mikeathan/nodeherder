@@ -38,6 +38,8 @@ type DeviceSink struct {
 	identity      func(context.Context, string) error
 	inventory     func(context.Context, map[string]string) error
 	metadata      map[string]interface{}
+	// capabilities are declared on the registered device, e.g. for observation.
+	capabilities []string
 }
 
 // Identify binds the enrollment to the device before publishing its inventory.
@@ -103,6 +105,10 @@ func (s *DeviceSink) Inventory(ctx context.Context, descriptors []Descriptor) er
 	}
 	d := devices.NewDevice(s.id)
 	d.Provider, d.ConnectionType, d.FriendlyName = ProviderName, ProviderName, s.name
+	// Declared capabilities let consumers gate features without comparing provider names.
+	if len(s.capabilities) > 0 {
+		d.Capabilities = append([]string(nil), s.capabilities...)
+	}
 	for key, value := range s.metadata {
 		d.Properties[key] = value
 	}

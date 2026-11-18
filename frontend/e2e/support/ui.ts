@@ -86,9 +86,11 @@ export const ui = {
     setup: async (page: Page, type: string, provider?: string) => {
       await page.getByRole('button', { name: 'Add integration', exact: true }).click();
       await catalogType(page, type).click();
-      await (provider ? page.locator('.catalog-provider-row').filter({ hasText: provider }).first() : page.locator('.catalog-provider-row').first())
-        .getByRole('button', { name: 'Set up', exact: true })
-        .click();
+      const row = provider
+        ? page.locator('.catalog-provider-row').filter({ hasText: provider }).first()
+        : page.locator('.catalog-provider-row').first();
+      // A local provider has no wizard, so its primary action reads "Add" rather than "Set up".
+      await row.getByRole('button', { name: /^(Set up|Add)$/ }).click();
     },
     configure: async (page: Page, type: string, provider?: string) => {
       await page.getByRole('button', { name: 'Add integration', exact: true }).click();

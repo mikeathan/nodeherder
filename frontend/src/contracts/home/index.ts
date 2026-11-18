@@ -51,6 +51,10 @@ function readHomeCard(value: unknown): HomeCard {
     case 'presence_overview':
       rejectMixedReferences(raw, ['device_id', 'expose', 'instance_id', 'resource_id', 'service_id']);
       return { id, panel, kind: 'presence_overview' };
+    case 'observation':
+      // Whole-hub, so any source reference on it is a malformed card rather than a narrower one.
+      rejectMixedReferences(raw, ['device_id', 'expose', 'instance_id', 'resource_id', 'service_id']);
+      return { id, panel, kind: 'observation' };
     default: {
       rejectMixedReferences(raw, ['device_id', 'expose']);
       readReference(raw.instance_id);

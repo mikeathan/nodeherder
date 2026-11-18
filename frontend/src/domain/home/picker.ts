@@ -3,6 +3,7 @@ import type { HomeCard, HomeCardSource } from '@/types/home';
 import type { HomeSourcePresentation } from './cards';
 import type { Expose } from '@/types/device';
 import { exposeDisplayLabel } from '../exposes';
+import { observationDevices } from '@/domain/integrations/observation';
 import {
   EXPOSE_GROUPS,
   MINOR_GROUPS,
@@ -32,6 +33,10 @@ export function homePickerOptions(devices: readonly Device[]): HomePickerOption[
   const options = [{ value: 'integrations', label: 'Integration results' }];
   if (devices.some((device) => supportsSpatialMapping(device))) {
     options.push({ value: 'presence', label: 'Presence overview' });
+  }
+  // Offered only when a sensor can actually observe, so the shortcut is never a dead card.
+  if (observationDevices(devices).length > 0) {
+    options.push({ value: 'observation', label: 'Wireless observation' });
   }
   for (const device of devices) options.push({ value: `device:${device.id}`, label: device.friendly_name });
   return options;
@@ -117,6 +122,13 @@ export function homePickerChoices(
     const reference: HomeCardSource = { kind: 'presence_overview' };
     return [choice(reference, 'Presence overview', 'All spatial sensors', existing)];
   }
+  if (source === 'observation') {
+    // Whole-hub, like presence: the radar reads every enrolled sensor, so one card covers them all
+    // and a second would be a duplicate.
+    if (observationDevices(devices).length === 0) return [];
+    const reference: HomeCardSource = { kind: 'observation' };
+    return [choice(reference, 'Wireless observation', 'All observing sensors', existing)];
+  }
   if (source === 'integrations') return integrationChoices(sources, existing);
   if (!source?.startsWith('device:')) return [];
   const deviceId = source.slice('device:'.length);
@@ -170,6 +182,8 @@ export function selectedHomeCards(choices: readonly HomePickerChoice[], selected
 /** Explain an empty source selection without conflating absent results and device configuration. */
 export function homePickerEmptyMessage(source: string | null): string {
   if (source === 'presence') return 'No spatial sensors are available yet. Save a spatial mapping on a device first.';
+  if (source === 'observation')
+    return 'No observing sensors are enrolled yet. Add a device with Bluetooth proxy enabled, then add the wireless observation integration.';
   if (source === 'integrations')
     return 'No saved integration results are available. Configure an integration on the Integrations page first.';
   if (source) return 'This device has no readings to show yet. Values appear here once the device has reported them.';

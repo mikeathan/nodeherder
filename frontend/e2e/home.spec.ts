@@ -186,6 +186,57 @@ async function checkHomeGeometry(page: Page, panel = false) {
   await settleHomeView(page);
 }
 
+/**
+ * The Home observation tile must look like the other tiles, and open the radar from anywhere on it.
+ *
+ * Both halves are regressions. The tile styled itself with four custom properties the theme layer
+ * does not define, so the hardcoded fallback won on every theme and the border rendered as a
+ * near-white outline on a dark dashboard. And it carried a primary-coloured button inside a card,
+ * which no neighbouring tile has and which left the rest of the tile inert. Measuring the computed
+ * border colour is the only way to catch the first: an undefined token with a fallback is invisible
+ * to types, to unit tests and to review.
+ */
+test('the wireless observation tile shares the tile styling and links from the whole card', async ({ page }) => {
+  await mixedHomeFixture(page);
+  // The fixture leaves the page on Home, where there is no catalog.
+  await page.goto('/integrations');
+  await ui.integrations.setup(page, 'Wireless observation', 'Enrolled sensors');
+  const current = (await (await page.request.get(`${AUTOMATION_HUB_API}/home/layout`)).json()).data;
+  const saved = await page.request.put(`${AUTOMATION_HUB_API}/home/layout`, {
+    headers: { Origin: 'http://localhost:4100', 'X-NodeHerder-Request': '1', 'If-Match': current.etag },
+    data: {
+      ...current,
+      blocks: [...current.blocks, { id: 'observation-block', kind: 'card', name: '', cards: [{ id: 'observation-card', kind: 'observation', panel: true }] }],
+    },
+  });
+  expect(saved.status()).toBe(200);
+  await page.goto(ui.home.path);
+  await settleHomeView(page);
+
+  const tile = page.locator('[data-card-id="observation-card"] .nh-observation-tile');
+  await expect(tile).toBeVisible();
+
+  const border = await tile.evaluate((element) => {
+    const style = getComputedStyle(element);
+    const probe = document.createElement('span');
+    probe.style.color = style.getPropertyValue('--nh-border');
+    document.body.append(probe);
+    const expected = getComputedStyle(probe).color;
+    probe.remove();
+    return { actual: style.borderTopColor, expected, width: style.borderTopWidth };
+  });
+  // The tile must paint the theme's border colour, not a fallback hex.
+  expect(border.width).toBe('1px');
+  expect(border.actual).toBe(border.expected);
+
+  // The link covers the tile, so the middle of the card is clickable rather than only the title.
+  const link = tile.locator('.nh-observation-link');
+  await expect(link).toHaveAttribute('href', /wireless/);
+  const box = (await tile.boundingBox())!;
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height - 8);
+  await expect(page.getByRole('heading', { name: 'Wireless observation', exact: true })).toBeVisible();
+});
+
 test('standalone cards align with the neighboring area tile rows', async ({ page }, info) => {
   await mixedHomeFixture(page);
   const instances = (await (await page.request.get(`${AUTOMATION_HUB_API}/integrations/instances`)).json()).data;

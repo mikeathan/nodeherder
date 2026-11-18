@@ -85,7 +85,14 @@ type InstanceDTO struct {
 	Revision        uint64                  `json:"revision"`
 	ETag            string                  `json:"etag"`
 	Enabled         bool                    `json:"enabled"`
-	Status          string                  `json:"status"`
+	// Continuous reports that this provider reads state the hub already holds, so it has no address
+	// to change, nothing to fetch and no refresh cadence.
+	//
+	// It is sent rather than derived by the browser because only the server knows: the definition
+	// that would say so is unavailable to the client for exactly this kind of provider, so every
+	// client-side derivation was a guess that disagreed with the others.
+	Continuous bool `json:"continuous"`
+	Status     string `json:"status"`
 	// Postcode retains the v1 wire name for the saved search value; interpretation belongs to the flow.
 	Postcode             string           `json:"postcode"`
 	OperationID          string           `json:"operation_id,omitempty"`

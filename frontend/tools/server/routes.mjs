@@ -4,6 +4,7 @@ import { createMockToken } from './utils.mjs';
 import { registerHistoryRoute } from './history.mjs';
 import { getMetricsForDevice } from './metrics-mock.mjs';
 import { registerHomeRoutes } from './home.mjs';
+import { resetObservationDecisions, setObservationEnabled } from './ws.mjs';
 import { CORS_ORIGIN } from './config.mjs';
 
 export function registerRoutes(app) {
@@ -11,6 +12,17 @@ export function registerRoutes(app) {
   app.get('/api/__test/health', (_req, res) =>
     res.json({ fixture: 'nodeherder-node-browser', run_id: process.env.NODEHERDER_E2E_RUN_ID ?? 'manual-mock' })
   );
+  // The mock server outlives a single spec, so state written by one test would be visible to the
+  // next. Tests that mutate state reset here to start from the fixture.
+  app.post('/api/__test/reset', (_req, res) => {
+    resetObservationDecisions();
+    res.json({ reset: true });
+  });
+  // Let a spec put the fixture into the state the radar has to explain: observation turned off.
+  app.post('/api/__test/observation', (req, res) => {
+    setObservationEnabled(req.body?.enabled !== false);
+    res.json({ observing: req.body?.enabled !== false });
+  });
   // The ordinary Node mock exposes the same optional-feature degraded contract. Full Connections
   // browser flows use the production Go API with synthetic provider/temp repositories instead.
   const connectionUnavailable = {

@@ -33,7 +33,29 @@
     const interval = `Auto ${formatScheduleInterval(value.interval_seconds)}`;
     return value.next_due_at ? `${interval} · next ${formatLocalDateTime(value.next_due_at)}` : interval;
   });
+  /**
+   * Whether this integration updates continuously, so there is nothing to refresh on demand.
+   *
+   * Read from the instance because the server owns the answer. This was previously derived from the
+   * integration type name, with a comment admitting that a second continuous type would break it;
+   * the field removes the limitation rather than documenting it.
+   */
+  const continuous = computed(() => props.item.continuous === true);
   const firstRow = computed(() => summary.value.rows[0]);
+  /**
+   * Where the entry leads.
+   *
+   * A capability may name its own live surface, which is the page a person wants when they click a
+   * continuously-read integration. Everything else falls back to the integration page, so no type
+   * is special-cased here.
+   */
+  const target = computed(() => {
+    const own = summary.value.destination as { name: string; label: string } | undefined;
+    if (!own) return { route: { name: RouteName.Integration, params: { id: props.item.id } }, label: 'integration' };
+    return { route: { name: own.name }, label: own.label };
+  });
+  /** Accessible name that matches what the click actually opens. */
+  const openLabel = computed(() => `Open ${props.item.name} ${target.value.label}`);
 </script>
 
 <template>
@@ -46,17 +68,27 @@
       <div class="integration-entry-heading">
         <h3>
           <span v-if="editing">{{ item.name }}</span>
+          <!--
+            The link carries an overlay (see .integration-entry-link::after), so the whole row is
+            the target rather than the name alone. Only the name is focusable, which keeps one
+            tab stop per integration instead of a full-width link plus its own actions.
+          -->
           <RouterLink
             v-else
-            :to="{ name: RouteName.Integration, params: { id: item.id } }"
+            :to="target.route"
             class="integration-entry-link"
             :data-instance-id="item.id"
-            :aria-label="`Open ${item.name} integration`"
+            :aria-label="openLabel"
             @click="$emit('open', $event)"
             >{{ item.name }}</RouterLink
           >
         </h3>
-        <span class="integration-entry-type">{{ providerName || typeTitle }}</span>
+        <!--
+          Hidden when it would repeat the name, which happens whenever an instance keeps its
+          provider's default name. "Enrolled sensors  Enrolled sensors" is not a distinction, it is
+          a rendering accident.
+        -->
+        <span v-if="providerName !== item.name" class="integration-entry-type">{{ providerName || typeTitle }}</span>
       </div>
       <p v-if="firstRow" class="integration-entry-summary">
         <span>{{ firstRow.name }}</span>
@@ -65,7 +97,7 @@
           >+{{ summary.remaining }} {{ summary.remainingLabel }}</span
         >
       </p>
-      <p class="integration-entry-schedule">{{ schedule }}</p>
+      <p class="integration-entry-schedule">{{ continuous ? 'Continuous' : schedule }}</p>
       <IntegrationStatus
         class="integration-entry-status"
         :status="summary.status"
@@ -74,8 +106,19 @@
         :warning="!item.enabled" />
     </div>
     <div class="integration-entry-actions">
+      <!--
+        A capability that owns the click (see `destination`) would otherwise make the integration
+        page unreachable from the board, so its settings stay one explicit action away rather than
+        disappearing.
+      -->
       <UiButton
-        v-if="!editing"
+        v-if="!editing && summary.destination"
+        variant="ghost"
+        icon="settings"
+        :to="{ name: RouteName.Integration, params: { id: item.id } }"
+        :label="`Open ${item.name} settings`" />
+      <UiButton
+        v-if="!editing && !continuous"
         variant="ghost"
         :icon="item.operation_id ? 'interview' : 'refresh'"
         :label="`${item.operation_id ? 'Check status for' : 'Refresh'} ${item.name}`"
@@ -109,6 +152,8 @@
 
 <style scoped>
   .integration-entry {
+    /* Anchor for the stretched name link, which covers the whole row. */
+    position: relative;
     display: flex;
     align-items: flex-start;
     gap: 0.8rem;
@@ -154,8 +199,31 @@
   .integration-entry-link {
     text-decoration: none;
   }
+  /*
+   * Stretch the name link over the whole row, so clicking the summary or the blank space beside it
+   * opens the same page the name does. The operator's complaint was exactly this: the card looked
+   * clickable and only one word of it was.
+   */
+  .integration-entry-link::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: var(--nh-radius-l);
+  }
   .integration-entry-link:hover {
     text-decoration: underline;
+  }
+  .integration-entry-link:focus-visible {
+    outline: none;
+  }
+  .integration-entry-link:focus-visible::after {
+    outline: 3px solid var(--nh-focus);
+    outline-offset: -3px;
+  }
+  /* The row's own actions must stay above the stretched link, or Refresh would be unreachable. */
+  .integration-entry-actions {
+    position: relative;
+    z-index: 1;
   }
   .integration-entry-type {
     color: var(--nh-text-muted);

@@ -78,6 +78,12 @@ func (s *Service) runDue() error {
 			if !i.Enabled || i.Schedule == nil || !i.Schedule.Enabled || i.Schedule.IntervalSeconds <= 0 {
 				return nil
 			}
+			// A local provider has no cadence to keep: its value is the hub's current state, so
+			// refreshing it on a timer would republish the same thing. It is published when enabled
+			// and when asked for, which is when the value can have changed in a way anyone sees.
+			if _, c, err := s.definition(tx, i.DefinitionKey); err == nil && isLocal(c) {
+				return nil
+			}
 			if i.OperationID == "" && i.Schedule.NextDueAt.After(now) {
 				return nil
 			}
@@ -160,6 +166,15 @@ func (s *Service) admitDue(id string, now time.Time) error {
 		}
 		if i.Origin != c.Origin {
 			return s.persistAdmissionFailure(tx, &i, destinationReviewFailure("Review the changed provider destination in Configure operations."))
+		}
+		// Belt to the collection loop's braces: if a local instance ever reaches this point — a
+		// hand-edited record, a restored backup — it publishes rather than building an operation for
+		// a request that does not exist.
+		if isLocal(c) {
+			if _, e := s.publishLocal(tx, &i, c); e != nil {
+				return s.persistAdmissionFailure(tx, &i, e)
+			}
+			return nil
 		}
 		if until := s.providerDeadlines[c.Origin]; now.Before(until) {
 			return nil
