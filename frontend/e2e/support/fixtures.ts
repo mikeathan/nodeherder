@@ -13,6 +13,18 @@ export async function resetMockState(page: Page): Promise<void> {
   await page.request.post(`${HUB_API}/__test/reset`).catch(() => undefined);
 }
 
+/**
+ * Put the Node mock's Home layout back to the fixture.
+ *
+ * The mock keeps an accepted layout in memory for the whole run, so any test that saves one changes
+ * what every later test sees. Tests previously restored by hand in a `finally`; two did not, and one
+ * of those shipped and failed on CI. Resetting here makes the suite order-independent instead of
+ * relying on each test to remember.
+ */
+export async function resetHomeLayout(page: Page): Promise<void> {
+  await page.request.post(`${HUB_API}/__test/home/reset`).catch(() => undefined);
+}
+
 export type Frame = { type: string; payload: any };
 
 /** Records every WebSocket frame the page sends and receives (wire-contract assertions). */
@@ -95,7 +107,7 @@ export async function signInAutomationHub(page: Page, path: string): Promise<voi
   await page.goto(path);
 }
 
-type Fixtures = { ws: WsRecorder };
+type Fixtures = { ws: WsRecorder; routeTeardown: void; homeReset: void };
 
 /**
  * Routes exercised by the suites. Vite optimizes dependencies per module graph, so a route
@@ -128,6 +140,39 @@ export const test = base.extend<Fixtures, { warmRoutes: void }>({
   ws: async ({ page }, use) => {
     await use(new WsRecorder(page));
   },
+  /**
+   * Abandon any route handler still in flight before the context closes.
+   *
+   * Automatic and unconditional. A handler that is mid-`route.fetch` when the page closes rejects
+   * with "Target page, context or browser has been closed", and Playwright surfaces that as a test
+   * failure. It is a race between the proxy and teardown, not a product defect: it depends on
+   * whether anything happens to be loading at the end of the test, which is why the suite could
+   * pass for months and then fail once on CI. Playwright's own message for it recommends exactly
+   * this call. A no-op for tests that install no routes.
+   */
+  routeTeardown: [
+    async ({ page }, use) => {
+      await use();
+      await page.unrouteAll({ behavior: 'ignoreErrors' }).catch(() => undefined);
+    },
+    { auto: true },
+  ],
+  /**
+   * Return the mock's Home layout to the fixture after every test.
+   *
+   * Cheap (one local request) and it removes a whole class of cross-test coupling: the mock keeps
+   * an accepted layout for the entire run, so a test that saved one used to decide what the next
+   * test saw. Hand-written `finally` restores could not cover that, because forgetting one is
+   * invisible until it fails somewhere unrelated. Suites that use the Go hub are unaffected —
+   * this route only exists on the mock.
+   */
+  homeReset: [
+    async ({ page }, use) => {
+      await use();
+      await resetHomeLayout(page);
+    },
+    { auto: true },
+  ],
 });
 
 export { expect };

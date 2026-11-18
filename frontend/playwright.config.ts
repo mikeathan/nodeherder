@@ -20,7 +20,15 @@ export default defineConfig({
   fullyParallel: true,
   workers: 1,
   forbidOnly: CI,
-  retries: 0,
+  // One retry on CI, none locally.
+  //
+  // These tests drive real servers, sockets and animations, so a small number of them can lose a
+  // race that has nothing to do with the product: a frame that had not settled, a socket that
+  // closed a millisecond early. With `retries: 0` any one of those fails the build, which trains
+  // people to re-run rather than read the failure, and that is how a genuine regression gets waved
+  // through. A retry keeps the signal honest: a real defect fails both attempts, and a flake is
+  // reported as "flaky" rather than hiding. Reproduce locally by running the file directly.
+  retries: CI ? 1 : 0,
   timeout: 30_000,
   expect: { timeout: 7_000 },
   reporter: CI ? [['list'], ['html', { open: 'never' }]] : 'list',

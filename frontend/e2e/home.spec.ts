@@ -201,40 +201,52 @@ test('the wireless observation tile shares the tile styling and links from the w
   // The fixture leaves the page on Home, where there is no catalog.
   await page.goto('/integrations');
   await ui.integrations.setup(page, 'Wireless observation', 'Enrolled sensors');
-  const current = (await (await page.request.get(`${AUTOMATION_HUB_API}/home/layout`)).json()).data;
-  const saved = await page.request.put(`${AUTOMATION_HUB_API}/home/layout`, {
-    headers: { Origin: 'http://localhost:4100', 'X-NodeHerder-Request': '1', 'If-Match': current.etag },
-    data: {
-      ...current,
-      blocks: [...current.blocks, { id: 'observation-block', kind: 'card', name: '', cards: [{ id: 'observation-card', kind: 'observation', panel: true }] }],
-    },
-  });
-  expect(saved.status()).toBe(200);
-  await page.goto(ui.home.path);
-  await settleHomeView(page);
+  const original = (await (await page.request.get(`${AUTOMATION_HUB_API}/home/layout`)).json()).data;
+  const headers = { Origin: 'http://localhost:4100', 'X-NodeHerder-Request': '1', 'If-Match': original.etag };
+  const added = {
+    ...original,
+    blocks: [
+      ...original.blocks,
+      { id: 'observation-block', kind: 'card', name: '', cards: [{ id: 'observation-card', kind: 'observation', panel: true }] },
+    ],
+  };
+  // Restored in `finally`, like every other test in this file: the hubs are shared by the whole
+  // run, so a test that leaves its layout behind changes what the next one sees. This one did not,
+  // and its block survived into whichever spec ran afterwards.
+  try {
+    expect((await page.request.put(`${AUTOMATION_HUB_API}/home/layout`, { headers, data: added })).status()).toBe(200);
+    await page.goto(ui.home.path);
+    await settleHomeView(page);
 
-  const tile = page.locator('[data-card-id="observation-card"] .nh-observation-tile');
-  await expect(tile).toBeVisible();
+    const tile = page.locator('[data-card-id="observation-card"] .nh-observation-tile');
+    await expect(tile).toBeVisible();
 
-  const border = await tile.evaluate((element) => {
-    const style = getComputedStyle(element);
-    const probe = document.createElement('span');
-    probe.style.color = style.getPropertyValue('--nh-border');
-    document.body.append(probe);
-    const expected = getComputedStyle(probe).color;
-    probe.remove();
-    return { actual: style.borderTopColor, expected, width: style.borderTopWidth };
-  });
-  // The tile must paint the theme's border colour, not a fallback hex.
-  expect(border.width).toBe('1px');
-  expect(border.actual).toBe(border.expected);
+    const border = await tile.evaluate((element) => {
+      const style = getComputedStyle(element);
+      const probe = document.createElement('span');
+      probe.style.color = style.getPropertyValue('--nh-border');
+      document.body.append(probe);
+      const expected = getComputedStyle(probe).color;
+      probe.remove();
+      return { actual: style.borderTopColor, expected, width: style.borderTopWidth };
+    });
+    // The tile must paint the theme's border colour, not a fallback hex.
+    expect(border.width).toBe('1px');
+    expect(border.actual).toBe(border.expected);
 
-  // The link covers the tile, so the middle of the card is clickable rather than only the title.
-  const link = tile.locator('.nh-observation-link');
-  await expect(link).toHaveAttribute('href', /wireless/);
-  const box = (await tile.boundingBox())!;
-  await page.mouse.click(box.x + box.width / 2, box.y + box.height - 8);
-  await expect(page.getByRole('heading', { name: 'Wireless observation', exact: true })).toBeVisible();
+    // The link covers the tile, so the middle of the card is clickable rather than only the title.
+    const link = tile.locator('.nh-observation-link');
+    await expect(link).toHaveAttribute('href', /wireless/);
+    const box = (await tile.boundingBox())!;
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height - 8);
+    await expect(page.getByRole('heading', { name: 'Wireless observation', exact: true })).toBeVisible();
+  } finally {
+    const latest = (await (await page.request.get(`${AUTOMATION_HUB_API}/home/layout`)).json()).data;
+    await page.request.put(`${AUTOMATION_HUB_API}/home/layout`, {
+      headers: { ...headers, 'If-Match': latest.etag },
+      data: { ...original, revision: latest.revision, etag: latest.etag },
+    });
+  }
 });
 
 test('standalone cards align with the neighboring area tile rows', async ({ page }, info) => {

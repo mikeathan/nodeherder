@@ -90,6 +90,23 @@ export function registerHomeRoutes(app, state) {
     return accepted ? clone(accepted) : migrateFixtureGroups(state().config.hub.dashboardGroups);
   }
 
+  /**
+   * Forget any saved layout and fall back to the fixture.
+   *
+   * The mock is shared by every browser test in a run, so a test that saves a layout changes what
+   * the next one sees. Tests used to restore by hand in a `finally`, which is easy to forget and,
+   * being per test, silently wrong whenever one did. Exposed so the shared reset can put the whole
+   * fixture back, which is what makes tests order-independent.
+   *
+   * Deliberately unauthenticated: it is a `__test` fixture route, and requiring a session would make
+   * it unusable from a teardown that runs after the cookies are gone.
+   */
+  app.post('/api/__test/home/reset', (_request, response) => {
+    accepted = null;
+    const data = current();
+    return response.set('ETag', data.etag).json({ data, error: null });
+  });
+
   app.get('/api/home/layout', (request, response) => {
     response.set('Cache-Control', 'private, no-store');
     if (!request.cookies?.session) return fail(response, 401, 'unauthorized', 'Sign in to use Home.');
