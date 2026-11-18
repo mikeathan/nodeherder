@@ -259,8 +259,12 @@ test('integration settings preserve saved results when renamed or disabled', asy
   await page.getByRole('textbox', { name: 'Integration name', exact: true }).fill('My collection dates');
   await page.getByRole('button', { name: 'Save name', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'My collection dates', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Disable integration', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Enable integration', exact: true })).toBeVisible();
+  // Enabling and disabling is a labelled switch, not one of several peer buttons: it is the only
+  // control that changes what the integration does, and it used to be the hardest to find.
+  const observing = page.getByRole('switch', { name: 'Observing', exact: true });
+  await expect(observing).toBeChecked();
+  await observing.click();
+  await expect(observing).not.toBeChecked();
   await expect(page.getByRole('button', { name: 'Refresh', exact: true })).toBeDisabled();
   await page.getByRole('link', { name: 'Results', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Blue bin', exact: true })).toBeVisible();
@@ -797,3 +801,110 @@ for (const provider of ['met_office', 'weatherapi'])
         : 'https://www.weatherapi.com/signup.aspx'
     );
   });
+
+/**
+ * Wireless observation is an integration like any other: added on demand, enablable, removable.
+ *
+ * This is the behaviour the feature did not have when it was device-backed — it appeared by itself
+ * and could only be hidden. The assertions are deliberately about the operator's actions rather than
+ * about internal state, because "always added and always on" is exactly what went wrong.
+ */
+test('wireless observation is added, disabled and removed like any other integration', async ({
+  page,
+}) => {
+  await signInConnections(page);
+
+  // Absent until added: nothing here is on the page by default. `setup` opens the dialog itself.
+  await ui.integrations.setup(page, 'Wireless observation', 'Enrolled sensors');
+  // The entry is labelled by the instance name, which defaults to the provider name, and it leads
+  // straight to the radar rather than to a summary of it.
+  const entry = page.getByRole('link', { name: 'Open Enrolled sensors radar', exact: true });
+  await expect(entry).toBeVisible();
+
+  // One click, not two: the board entry IS the way into the radar.
+  await entry.click();
+  await expect(page).toHaveURL(/\/wireless$/);
+  await expect(page.getByRole('heading', { name: 'Wireless observation', exact: true })).toBeVisible();
+
+  // With a real instance behind it, the radar's link names that instance rather than falling back
+  // to the catalog.
+  await expect(
+    page.getByRole('link', { name: 'Integration settings', exact: true })
+  ).toHaveAttribute('href', /\/integrations\/.+#setup$/);
+
+  // The radar links back to the integration, so its controls are always one step away. It lands on
+  // Setup, because turning observation on and off is what that link is for.
+  await page.getByRole('link', { name: 'Integration settings', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Enrolled sensors', exact: true })).toBeVisible();
+  await expect(page.getByRole('switch', { name: 'Observing', exact: true })).toBeChecked();
+  await expect(page.getByRole('button', { name: 'Refresh', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Configure operations' })).toHaveCount(0);
+
+  // Results is the live census and still points at the radar.
+  await page.getByRole('link', { name: 'Results', exact: true }).click();
+  await expect(page.getByRole('link', { name: 'Open the radar' })).toBeVisible();
+  // The count and its unit are one string; Vue condensed the whitespace and rendered "1device".
+  await expect(page.getByText(/1 device in range/)).toBeVisible();
+
+  // Disabling is real state, not a hidden view. The control lives in the settings section, and the
+  // address and schedule controls must be absent rather than present-and-failing.
+  await page.getByRole('link', { name: 'Setup', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Change address', exact: true })).toHaveCount(0);
+  await expect(page.getByText('Automatic refresh', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('switch', { name: 'Observing', exact: true })).toBeChecked();
+  await page.getByRole('switch', { name: 'Observing', exact: true }).click();
+  await expect(page.getByRole('switch', { name: 'Observing', exact: true })).not.toBeChecked();
+
+  // Removing is a delete, and the integration is gone from the board.
+  await page.getByRole('button', { name: 'Remove integration', exact: true }).click();
+  await page.goto('/integrations');
+  await expect(entry).toHaveCount(0);
+});
+
+test('the board keeps the integration page reachable when the entry leads elsewhere', async ({ page }) => {
+  await signInConnections(page);
+  await ui.integrations.setup(page, 'Wireless observation', 'Enrolled sensors');
+
+  // The entry itself opens the radar, so the settings action is what keeps the integration page
+  // from becoming unreachable from the board.
+  const settings = page.getByRole('link', { name: 'Open Enrolled sensors settings', exact: true });
+  await expect(settings).toBeVisible();
+  await settings.click();
+  await expect(page.getByRole('heading', { name: 'Enrolled sensors', exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Results', exact: true })).toBeVisible();
+});
+
+/**
+ * A local provider has no definition document, and asking for one used to say it did not exist.
+ *
+ * The page decided this from the catalog, and `provider?.origin !== 'local'` is true when the
+ * catalog has not loaded — so opening the integration any way that skipped the catalog (a Home card,
+ * a bookmark, or after disabling) requested a definition that cannot exist. The operator saw
+ * "Provider not found" on a working integration until an unrelated reload happened to fetch the
+ * catalog. The instance's own `continuous` flag now answers it without the catalog at all.
+ */
+test('a local provider never reports its missing definition as an error', async ({ page }) => {
+  await signInConnections(page);
+  await ui.integrations.setup(page, 'Wireless observation', 'Enrolled sensors');
+
+  // Take the board entry's settings link, which is a direct deep link to this instance.
+  const settings = page.getByRole('link', { name: 'Open Enrolled sensors settings', exact: true });
+  const href = await settings.getAttribute('href');
+  expect(href).toMatch(/^\/integrations\/[^/]+$/);
+
+  // A full load of that URL, so the catalog is not warm in the store. This is the condition the bug
+  // needed: the page decided "has a document" from a catalog it had never fetched.
+  await page.goto(href!);
+  await expect(page.getByRole('heading', { name: 'Enrolled sensors', exact: true })).toBeVisible();
+  await expect(page.getByText('Provider not found')).toHaveCount(0);
+  await expect(page.getByRole('alert')).toHaveCount(0);
+
+  // Disabling is the path that surfaced it: it reloads the instance without reloading the catalog.
+  await page.getByRole('link', { name: 'Setup', exact: true }).click();
+  await page.getByRole('switch', { name: 'Observing', exact: true }).click();
+  await expect(page.getByRole('switch', { name: 'Observing', exact: true })).not.toBeChecked();
+  await expect(page.getByText('Provider not found')).toHaveCount(0);
+  await expect(page.getByRole('alert')).toHaveCount(0);
+  // The pane still renders its own copy, so "no error" is not "a blank page".
+  await expect(page.getByText(/Reads every enrolled sensor directly/)).toBeVisible();
+});

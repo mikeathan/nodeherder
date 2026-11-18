@@ -11,10 +11,12 @@ import (
 	"node-herder/internal/integrations/capabilities/airquality"
 	"node-herder/internal/integrations/capabilities/alerts"
 	"node-herder/internal/integrations/capabilities/fuel"
+	"node-herder/internal/integrations/capabilities/observation"
 	"node-herder/internal/integrations/capabilities/waste"
 	"node-herder/internal/integrations/capabilities/weather"
 	"node-herder/internal/integrations/definitions"
 	"node-herder/internal/integrations/runtime"
+	model "node-herder/models/integrations"
 )
 
 // Service is the application-facing integration runtime. Composition here installs supported
@@ -36,6 +38,13 @@ func NewService(ctx context.Context, options Options) (*Service, error) {
 			return nil, err
 		}
 		options.Capabilities = registry
+	}
+	// The local provider ships with the binary rather than as a document, so it is registered here
+	// — the composition root — which is the only place that knows the shipped capability set. An
+	// installation that has not added it still sees it in the catalog, which is what makes it
+	// addable at all.
+	if len(options.LocalDefinitions) == 0 {
+		options.LocalDefinitions = []model.Definition{observation.Definition()}
 	}
 	return runtime.NewService(ctx, options)
 }
@@ -63,5 +72,5 @@ func CompileDocument(raw json.RawMessage) (*definitions.Compiled, error) {
 
 // shippedCapabilities is the single registration point used by runtime and standalone editors.
 func shippedCapabilities() (*capabilities.Registry, error) {
-	return capabilities.NewRegistry(waste.Adapter{}, weather.Adapter{}, airquality.Adapter{}, alerts.Adapter{}, fuel.Adapter{})
+	return capabilities.NewRegistry(waste.Adapter{}, weather.Adapter{}, airquality.Adapter{}, alerts.Adapter{}, fuel.Adapter{}, observation.Adapter{})
 }

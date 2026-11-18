@@ -3,7 +3,7 @@ import type { HomeCard, HomeCardSource } from '@/types/home';
 import type { HomeSourcePresentation } from './cards';
 import type { Expose } from '@/types/device';
 import { exposeDisplayLabel } from '../exposes';
-import { observationDevices } from '@/domain/integrations/device-backed';
+import { observationDevices } from '@/domain/integrations/observation';
 import {
   EXPOSE_GROUPS,
   MINOR_GROUPS,
@@ -182,7 +182,8 @@ export function selectedHomeCards(choices: readonly HomePickerChoice[], selected
 /** Explain an empty source selection without conflating absent results and device configuration. */
 export function homePickerEmptyMessage(source: string | null): string {
   if (source === 'presence') return 'No spatial sensors are available yet. Save a spatial mapping on a device first.';
-  if (source === 'observation') return 'No observing sensors are enrolled yet. A device with Bluetooth proxy enabled is needed.';
+  if (source === 'observation')
+    return 'No observing sensors are enrolled yet. Add a device with Bluetooth proxy enabled, then add the wireless observation integration.';
   if (source === 'integrations')
     return 'No saved integration results are available. Configure an integration on the Integrations page first.';
   if (source) return 'This device has no readings to show yet. Values appear here once the device has reported them.';

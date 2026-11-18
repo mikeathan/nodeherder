@@ -40,13 +40,11 @@ type Identity struct {
 	Label  string `json:"label,omitempty"`
 }
 
-// Observation is one sensed transmission, normalised away from its transport. Payload holds
-// transport-specific details that are never persisted, such as an advertised name.
+// Observation is one sensed transmission, normalised away from its transport.
 type Observation struct {
-	Source     string         `json:"source"`
-	Medium     Medium         `json:"medium"`
-	Identity   Identity       `json:"identity"`
-	RSSI       int            `json:"rssi"`
-	Payload    map[string]any `json:"payload,omitempty"`
-	ObservedAt time.Time      `json:"observedAt"`
+	Source     string    `json:"source"`
+	Medium     Medium    `json:"medium"`
+	Identity   Identity  `json:"identity"`
+	RSSI       int       `json:"rssi"`
+	ObservedAt time.Time `json:"observedAt"`
 }

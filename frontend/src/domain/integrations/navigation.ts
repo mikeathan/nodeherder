@@ -15,6 +15,13 @@ export interface IntegrationNavigationContext {
   providerKey: string;
   instanceId?: string;
   query?: LocationQuery;
+  /**
+   * True when the provider has no operations to configure.
+   *
+   * Supplied by the caller rather than derived here, because only the catalog knows which providers
+   * are local, and this module only ever sees a provider key.
+   */
+  continuous?: boolean;
 }
 
 export interface IntegrationSectionLink {
@@ -67,7 +74,14 @@ export function integrationSectionLinks(context: IntegrationNavigationContext): 
         label: 'Results',
         to: { name: RouteName.Integration, params, hash: '#results', ...returning },
       },
-      { section: 'setup', label: 'Setup', to: { name: RouteName.Integration, params, hash: '#setup', ...returning } }
+      // Always present, including for a continuous provider: this section is the settings pane, and
+      // it holds enabling and removal. Hiding it because there is no address to change would remove
+      // the only way to turn the integration off.
+      {
+        section: 'setup',
+        label: 'Setup',
+        to: { name: RouteName.Integration, params, hash: '#setup', ...returning },
+      }
     );
   }
   const parts = context.providerKey.split('/');
@@ -78,13 +92,13 @@ export function integrationSectionLinks(context: IntegrationNavigationContext): 
   // Never mutate the router's query object or propagate an ambiguous instance reference.
   delete query.instance;
   if (context.instanceId) query.instance = context.instanceId;
-  links.push(
-    {
+  if (!context.continuous) {
+    links.push({
       section: 'operations',
       label: 'Configure operations',
       to: { name: RouteName.IntegrationProvider, params, query },
-    },
-    { section: 'help', label: 'Help', to: { name: RouteName.IntegrationHelp, params, query } }
-  );
+    });
+  }
+  links.push({ section: 'help', label: 'Help', to: { name: RouteName.IntegrationHelp, params, query } });
   return links;
 }

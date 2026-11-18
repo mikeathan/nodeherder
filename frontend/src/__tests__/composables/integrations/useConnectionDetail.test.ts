@@ -78,7 +78,14 @@ function configure(cached: ConnectionInstance, queue: ConnectionInstance[]) {
     signal: new AbortController().signal,
     commit: jest.fn(),
   };
-  mockDispatch.mockImplementation(async () => {
+  // Two stores are dispatched to: `loadInstance` (queued instances) and `loadBoard` (the catalog a
+  // directly-reached page has to fetch itself). Answering both from one queue made the catalog read
+  // consume an instance; the type is the discriminator here as it is in the store.
+  mockDispatch.mockImplementation(async (type: string) => {
+    if (type === 'integrations/loadBoard') {
+      mockScope.state.value = { ...mockScope.state.value, catalog: { available: true, types: [], providers: [] } };
+      return undefined;
+    }
     const value = mockQueue.shift();
     if (!value) throw new Error('no queued instance');
     mockScope.state.value = { current: value, instances: [value], generation: 1 };

@@ -21,9 +21,3 @@ export function supportsObservation(device: Device | undefined | null): boolean 
   if (!device) return false;
   return (device.capabilities ?? []).includes(OBSERVATION_CAPABILITY);
 }
-
-/** Whether any enrolled device offers an observation source, which gates the nav item. */
-export function hasObservationSources(devices: readonly Device[] | undefined): boolean {
-  if (!devices || devices.length === 0) return false;
-  return devices.some((device) => supportsObservation(device));
-}

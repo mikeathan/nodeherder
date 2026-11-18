@@ -38,7 +38,43 @@ export type ProviderRequestMethod = 'GET' | 'POST';
 export type ProviderSetupType = 'search_select' | 'location_select';
 export type ProviderEditorMode = 'form' | 'yaml';
 export type ProviderTestMode = 'offline' | 'live';
-export type IntegrationResource = WasteSchedule | WeatherForecast | AirQualityForecast | WeatherAlerts | FuelPrices;
+export type IntegrationResource =
+  | WasteSchedule
+  | WeatherForecast
+  | AirQualityForecast
+  | WeatherAlerts
+  | FuelPrices
+  | ObservationCensus;
+
+/**
+ * One observing source, as the census reports it.
+ *
+ * Counters are per-process and reset on restart, which is why they are only ever used to tell
+ * "connected but silent" from "not configured" — never as history.
+ */
+export interface ObservationSourceSummary {
+  id: string;
+  name: string;
+  advertisements: number;
+  decoded: number;
+  dropped: number;
+}
+
+/**
+ * The published observation census.
+ *
+ * A snapshot, not a live value: the radar is the live view. It exists so the integration has
+ * something to publish and so a consumer can see what is reporting without opening the radar.
+ */
+export interface ObservationCensus {
+  contract_version: 'observation_census/v1';
+  resource_id: string;
+  revision: number;
+  identities: number;
+  hidden: number;
+  sources: ObservationSourceSummary[];
+  observed_at: string;
+}
 
 export interface ProviderCapture {
   pointer: string;
@@ -173,6 +209,11 @@ export interface ProviderDefinition {
   id: string;
   name: string;
   capability: IntegrationCapability;
+  /**
+   * True for a provider whose input the hub produces itself, so it has no endpoint and no refresh
+   * schedule. The settings screen uses this to omit controls that could not act.
+   */
+  local?: boolean;
   base_url: string;
   auth: ProviderAuth;
   policy: ProviderPolicy;
@@ -310,6 +351,14 @@ export interface ConnectionInstance {
   revision: number;
   etag: string;
   enabled: boolean;
+  /**
+   * Whether this provider reads state the hub already holds, so there is no address to change,
+   * nothing to fetch and no refresh cadence.
+   *
+   * Server-supplied, and optional so an older backend still parses. Absent is treated as a
+   * scheduled provider, which is what every provider was before this field existed.
+   */
+  continuous?: boolean;
   status: string;
   postcode: string;
   operation_id?: string;

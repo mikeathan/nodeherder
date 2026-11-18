@@ -7,8 +7,6 @@
   import ConnectionBoard from './ConnectionBoard.vue';
   import ConnectionCatalogDialog from './ConnectionCatalogDialog.vue';
   import { useConnectionsBoard } from '@/composables/integrations/useConnectionsBoard';
-  import { observationDevices } from '@/domain/integrations/device-backed';
-  import { observationHidden, setObservationHidden } from '@/domain/integrations/observation-visibility';
   import {
     integrationTypeIcon,
     integrationTypeRank,
@@ -30,28 +28,12 @@
     refresh,
     remember,
     catalog,
-    catalogWithDevices,
-    devices,
     layout,
     reloadLayout,
   } = useConnectionsBoard();
   const { editing, visible, hidden } = layout;
   const { open } = catalog;
 
-  /**
-   * Whether the device-backed group is offered at all.
-   *
-   * Two independent conditions: a capable device must be enrolled, and the operator must not have
-   * hidden it. Hiding is a local presentation preference, because there is no instance to persist
-   * it against — see `observation-visibility`.
-   */
-  const observationHiddenState = observationHidden();
-  const observationPresent = computed(() => observationDevices(devices.value).length > 0);
-  const observationAvailable = computed(() => observationPresent.value && !observationHiddenState.value);
-
-  function hideObservation(): void {
-    setObservationHidden(true);
-  }
   const root = ref<HTMLElement | null>(null);
   const search = ref('');
   const typeFilter = ref('');
@@ -68,7 +50,7 @@
     }
     return Array.from(counts, ([id, count]) => ({
       id,
-      title: integrationTypeTitle(id, catalogWithDevices.value),
+      title: integrationTypeTitle(id, state.value.catalog),
       icon: integrationTypeIcon(id),
       count,
     })).sort(
@@ -84,7 +66,7 @@
       return (
         (!typeFilter.value || typeId === typeFilter.value) &&
         (statusFilter.value === 'all' || connectionEntryStatus(item) === statusFilter.value) &&
-        connectionMatchesQuery(item, search.value, catalogWithDevices.value)
+        connectionMatchesQuery(item, search.value, state.value.catalog)
       );
     })
   );
@@ -127,13 +109,8 @@
           >
         </template>
         <template v-else>
-          <!--
-            Offered when there is anything to arrange, not only when an instance exists: the
-            device-backed group can be hidden, and gating the editor on instances left it with no
-            way to do that on a hub whose only integration is the radar.
-          -->
           <UiButton
-            v-if="state.instances.length || observationAvailable"
+            v-if="state.instances.length"
             icon="edit"
             :disabled="busy || (state.instances.length > 0 && !state.board)"
             data-board-edit
@@ -207,26 +184,18 @@
     <p v-if="editing" class="connection-muted">
       Use the arrows to change the order. Removing an entry keeps its integration configured.
     </p>
-    <!--
-      Rendered whenever there is anything to show, not only when a configured instance exists.
-      Wireless observation depends on an enrolled device, not on an instance — gating the board on
-      instances hid it entirely on a hub that had no other integrations, which is the common case
-      for a first install.
-    -->
     <ConnectionBoard
-      v-if="visible.length || observationAvailable"
+      v-if="visible.length"
       :entries="filteredEntries"
       :instances="byId"
-      :catalog="catalogWithDevices"
+      :catalog="state.catalog"
       :editing="editing"
       :busy="busy"
       :filters-active="hasFilters"
-      :observation-available="observationAvailable"
       @open="remember"
       @refresh="refresh"
       @move="layout.move"
-      @hide="hide"
-      @hide-observation="hideObservation" />
+      @hide="hide" />
     <div v-else-if="state.catalog?.available && !busy" class="connection-board-empty">
       <h2>{{ hidden.length ? 'No integrations on this page' : 'No integrations yet' }}</h2>
       <p>
@@ -239,15 +208,13 @@
     </div>
     <ConnectionCatalogDialog
       :open="open"
-      :catalog="catalogWithDevices"
+      :catalog="state.catalog"
       :hidden="hiddenInstances"
-      :observation-hidden-here="observationPresent && observationHiddenState"
       :busy="busy"
       :provider-route="catalog.providerRoute"
       @close="open = false"
       @add="catalog.add"
       @restore="restore"
-      @restore-observation="setObservationHidden(false)"
       @reload="catalog.reloadProviders" />
 
   </div>

@@ -3,8 +3,6 @@ import type { ConnectionCatalog, ConnectionCatalogProvider } from '@/types/integ
 import { formatScheduleInterval } from '@/domain/schedule';
 
 const TYPE_ICONS: Record<string, IconName> = {
-  // Device-backed, so its icon and title live here with the others rather than in the card that
-  // happens to render it first. The board's group header is built from this table.
   wireless_observation: 'signal',
   waste_collection: 'schedule',
   weather: 'weatherSun',
@@ -92,13 +90,28 @@ export function catalogStatusTone(status: string | undefined): 'ready' | 'pendin
   }
 }
 
+/**
+ * Whether a provider's input comes from the hub rather than a remote service.
+ *
+ * `origin` is how the backend identifies such a provider: it has no endpoint, so it reports itself
+ * as local. Deriving it here means every label below stops describing an HTTP provider's properties
+ * to something that has none — "No credential · Manual refresh" would both be true and misleading.
+ */
+export function providerIsLocal(provider: ConnectionCatalogProvider): boolean {
+  return provider.origin === 'local';
+}
+
 /** Public credential requirement, never the credential value. */
 export function providerCredentialLabel(provider: ConnectionCatalogProvider): string {
+  if (providerIsLocal(provider)) return 'Uses an enrolled device';
   return provider.requires_credential ? 'Credential required' : 'No credential';
 }
 
 /** Public refresh policy summary. */
 export function providerRefreshLabel(provider: ConnectionCatalogProvider): string {
+  // Continuous, not manual: the value is read as it changes. "Manual refresh" would imply a button
+  // that fetches, and there is nothing to fetch.
+  if (providerIsLocal(provider)) return 'Continuous';
   const seconds = provider.refresh_default_seconds ?? 0;
   if (seconds <= 0) return 'Manual refresh';
   const minimum = provider.refresh_min_seconds ?? 0;

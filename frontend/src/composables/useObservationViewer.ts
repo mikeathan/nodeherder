@@ -107,12 +107,18 @@ export function useObservationViewer(snapshot: () => ObservationSnapshot | null)
    */
   const now = ref(Date.now());
   const clock = setInterval(() => (now.value = Date.now()), 1000);
-  // Guarded because this composable is also called from tests, where there is no component
-  // instance to unmount. `onUnmounted` outside one only warns, leaving a real 1 s interval running
-  // for the life of the process — harmless in a browser, a leak in a test run or a worker.
-  if (getCurrentInstance()) {
-    onUnmounted(() => clearInterval(clock));
+  /**
+   * Stop the coarse clock.
+   *
+   * A component clears it on unmount. Tests call it directly, because outside a component instance
+   * there is no unmount to hook: `onUnmounted` only warns, the interval survives, and Jest hangs at
+   * the end of the run on the open handle. Exposing it is what makes the lifetime explicit instead
+   * of relying on the caller happening to be a component.
+   */
+  function stop(): void {
+    clearInterval(clock);
   }
+  if (getCurrentInstance()) onUnmounted(stop);
 
   /**
    * Apply the operator's filters.
@@ -264,5 +270,6 @@ export function useObservationViewer(snapshot: () => ObservationSnapshot | null)
     applyDecisionToFrozen,
     scoped,
     availableViews,
+    stop,
   };
 }

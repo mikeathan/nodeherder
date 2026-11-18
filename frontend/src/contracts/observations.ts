@@ -291,12 +291,17 @@ export function parseObservationSnapshot(payload: unknown): ObservationSnapshot 
     if (!identity) return null;
     identities.push(identity);
   }
+  // Observing is optional so a snapshot from an older backend still parses. Absent is treated as
+  // observing rather than as absent, because that backend had no gate flag and the gate then always
+  // meant "on" for any installation that received this event at all.
+  if (payload.observing !== undefined && typeof payload.observing !== 'boolean') return null;
   return {
     at,
     truncated: payload.truncated,
     sources,
     identities,
     arrivals,
+    observing: payload.observing !== false,
     ...(progress ? { classification: progress } : {}),
   };
 }

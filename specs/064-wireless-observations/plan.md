@@ -517,3 +517,215 @@ Handoff
 
 Acceptance evidence per §7, `contracts/observations.md` published, navigation and
 capability tests green, reviewer approval recorded. Draft until reviewed.
+
+## 11. Review round 2026-11-18 — the integration page, judged by using it
+
+Four reports, all from one sitting with a live EPL and 571 advertisements. They are not
+four cosmetic complaints; they have two root causes and one missing design idea.
+
+### 11.1 What was reported, and what actually produces it
+
+| Report | Actual cause |
+| --- | --- |
+| "0 devices heard" beside "571 heard · 571 decoded" | The census is captured once at `AddLocal` and never republished (ADR-005). It was captured while the `Active` gate was still closed, so it recorded zero identities. The counters are written by a different code path (`RecordSourceActivity`) that the gate does not touch, so they kept climbing. |
+| "Automatic refresh? for a wireless sensor? how do I disable/enable it?" | `ConnectionSettings` decides `local` from `definition?.local`, but `useConnectionDetail` never fetches a definition for a local provider — `hasDocument` returns false precisely so it does not 404. `definition` is always `null`, so `local` is always `false`: the schedule fieldset renders, "Change address" renders, the address copy renders, and **Save schedule can only ever fail** with `unsupported_schedule`. |
+| "What's the point of the results page?" | There isn't one, as built. It shows a frozen snapshot of a live source, so it is stale by construction and redundant with the radar by design. Its only raison d'être was that the page template has tabs. |
+| "Home card has a white border" | `HomeObservationCard` styles with `--border-subtle`, `--surface-raised`, `--accent-strong` and `--text-muted`. **None of the four exists in this project.** The hardcoded fallbacks win on every theme, and `#dee2e6` reads as a white outline on a dark surface. |
+
+### 11.2 Defects
+
+| ID | Severity | Defect |
+| --- | --- | --- |
+| D-12 | blocking | A local provider's resource is stored, so it is captured once and freezes. Nothing republishes it: `Refresh` is hidden in the UI and the scheduler skips local instances. The Results page permanently disagrees with the Home tile, which reads the live socket. |
+| D-13 | blocking | The `Active` gate is honoured by `ObserveAdvertisements` but not by `RecordSourceActivity`, so counters advance while identities are discarded. "571 heard, 0 devices" is a state the UI can present and a person cannot act on. |
+| D-14 | high | `local` is unreachable on the client (`ConnectionSettings.vue:32`), so a continuous integration is offered controls that cannot act: Automatic refresh, Save schedule (always fails), Change address, and copy about an address and about "saved dates". |
+| D-15 | medium | Enabling and disabling is one of four peer buttons labelled generically. The operator asked how to do it, which is the evidence that it is not findable. `UiSettingRow` + `UiToggle` already exist for exactly this. |
+| D-16 | medium | The provider is displayed as the raw key `wireless_observation/hub`, because the definition is absent by design, not by accident. |
+| D-17 | medium | Lifetime packet counters are presented in the same visual register as the device count. They answer "is the radio working", not "what is here", and pairing them with a device count invites reading them as results. |
+| D-18 | high | The Home tile paints four undefined custom properties, giving an untokened near-white border on every theme. It also has no `.is-observation` layout rule, unlike `.is-presence*`, and carries a primary "View radar" button that no neighbouring tile has. |
+| D-19 | medium | The Help tab has only the generic topics: `observationPresenter` declares no `help`, so nothing explains the `bluetooth_proxy` requirement, what a device count means, or why counters reset on restart. |
+| D-20 | medium | Removing or disabling the integration stops the gate but the websocket snapshot in the store is never cleared, so the Home tile keeps showing the last census indefinitely. The "Not observing — add it as an integration to start" branch can only be reached before the first publish. |
+
+### 11.3 Design decisions
+
+**The census is read, not stored (ADR-005).** `instanceDTO` resolves a local provider's
+resource through `Normalize` on every read; nothing writes `Instance.Snapshot` for a local
+provider. Rejected: a refresh schedule (reintroduces the arbitrary cadence ADR-004
+rejected); republishing on each observation snapshot (writes to disk at up to 4 Hz and
+bumps `Revision`, which is the ETag behind every settings write, so renames and enable
+toggles would race).
+
+Two facts make this safe, and both are constraints on the implementation rather than
+observations about it:
+
+- `instanceDTO` is called inside `repo.View` (`service.go:485,509`), so normalization runs
+  in a **read** transaction. That is only acceptable because the observation adapter never
+  allocates an identity — it uses `context.ResourceID` and returns one reservation, which
+  only the publish path commits (`publication_result.go:48`). T036 must not call
+  `reserveResourceIdentities` from the DTO path.
+- The lock order integrations→observations already holds: `publishLocal` calls
+  `s.localSource()` under `s.mu` today. The reverse must stay impossible — `LocalEnabled`
+  takes `s.mu`, and it is reached from `ObserveAdvertisements` at a point where no
+  observation lock is held.
+
+**`continuous` becomes data, not a client guess.** The backend puts one bool on
+`InstanceDTO` derived from `Definition.Local`. This replaces three client-side rules that
+currently disagree: `useConnectionDetail.continuous` (catalog origin),
+`IntegrationEntry.continuous` (hardcoded `typeId === 'wireless_observation'`, with a
+comment admitting it must move), and `navigation`'s consuming a passed-in flag. The
+`hasDocument` guard stays, because it answers a different question (is there a definition
+endpoint to read), but it stops being the definition of "continuous".
+
+**`ConnectionSettings` takes `continuous`, not `definition`.** One prop decides the
+address control, the schedule fieldset and both explanatory paragraphs, so they cannot
+drift apart. For a continuous provider the settings pane states what it *is* rather than
+silently omitting: "Reads every enrolled sensor continuously. Nothing to fetch, nothing to
+schedule." A hidden control with no explanation is the same failure as a control that
+does nothing.
+
+**Enable/disable becomes the primary control.** A `UiSettingRow` with a `UiToggle`
+labelled "Observing", help text saying what turning it off does (the sensor stops being
+read; saved settings are unaffected). Save name stays; Remove stays at the bottom. No new
+component and no new primitive.
+
+**The Results tab becomes the live "now" view, and loses the counters.** Same component,
+same contract, different content because the payload is now live: the device count as the
+headline, how many are shown versus filtered, then source health moved into a `<details>`
+named "Packets" — visible when it explains something (a silent source, or drops) and
+collapsed otherwise. One primary action to the radar. Renaming the tab to "Now" was
+considered and rejected: it would churn the navigation contract and the e2e labels for a
+word, and "Results" is still the accurate name for the section once it shows the truth.
+
+**The Home tile joins the tile family.** `--nh-border`, `--nh-surface`, `--nh-accent`,
+`--nh-text-muted`, `--nh-radius-l` and `--nh-shadow-1`, matching `IntegrationTile`; the
+whole tile becomes the link through an overlay `::after` like `IntegrationTile`'s, so the
+shadowed button disappears. This is not a restyle for taste: the four undefined names are
+a bug that shipped a white border.
+
+**The gate closes visibly.** The observation service publishes one clearing snapshot when
+the gate goes from open to closed, and `Snapshot()` returns the empty view while closed.
+The Home tile then says "Not observing" because that is true, instead of showing the last
+census forever. `RecordSourceActivity` also stops counting while the gate is closed, so
+"heard" means "heard while observing" — which is what a person reading the number assumes.
+
+### 11.4 Requirements added to spec
+
+Recorded as AC-23…AC-27 in [spec.md](spec.md).
+
+### 11.5 Tasks
+
+Sequenced in [tasks.md](tasks.md) as T035…T045. Backend first (the payload everyone
+reads), then the settings pane, then the surfaces, then the token guard.
+
+### 11.6 Rule checks
+
+- BE-01: `internal/observations` still imports only `models/*` + `utils`; the new gate
+  handling adds no reverse dependency. PASS (design).
+- BE-03: read-time resolution runs under the existing service lock; the lock order
+  integrations→observations is one-way and must be asserted in a comment and a test.
+  PASS (design).
+- BE-04: no schema change. A record written earlier by this branch keeps a snapshot that
+  is now ignored for local providers. PASS (design).
+- FE-01: presentational components keep taking props; the new `continuous` field is
+  validated at ingress with the rest of the DTO. PASS (design).
+- FE-02 / FE-04: existing e2e for this page is updated, not bypassed; the changed surfaces
+  are re-checked at 390px and 1280px. PENDING (unrun).
+- NH-05: every task below records its actual command and result when it is done. PENDING.
+- NH-06: the clearing snapshot is bounded like every other publish. PASS (design).
+
+### 11.7 Deliberately out of scope
+
+- The tab set itself (Results / Setup / Help) for a continuous provider. Discussed in
+  §11.3; left alone.
+- Any change to classifier behaviour, radar geometry or triage. Spec 065 owns those.
+- The per-device observation row (T019), still open and still not blocking.
+- Migrating the remaining undefined-token sites elsewhere in the tree; T045 proposes a
+  guard that will report them without fixing them.
+
+## 12. Review round 2026-11-18 (second) — navigation and a rendering bug
+
+Reported after using the first round's result:
+
+- "we should be able to open the radar by clicking the integration card as well — else I
+  need to click the card, go to the integration page, then click open radar."
+- "when disabled if you are in radar page we should have some link to the integration page
+  to setup, eg enable/disable. like shortcuts."
+
+Reviewing those screenshots turned up two further defects, both rendering bugs the report
+did not name:
+
+| ID | Severity | Defect |
+| --- | --- | --- |
+| D-21 | high | The board entry showed `Devices heard  18/11/2026, 10:48:34` — a timestamp where the device count belongs. `IntegrationEntry` renders `row.date`; this presenter wrote the count into `row.value`, so the count was never displayed and the same timestamp appeared twice (once here, once in "Checked"). Every other presenter puts the value in `date`, which is why no other card has this. |
+| D-22 | medium | Results rendered "23devices in range". The `<strong>` and its following text node were separated in the template, and Vue condenses that whitespace, so the unit ran into the number. |
+
+Design decisions:
+
+**The capability names its own destination.** `IntegrationWidget` gains an optional
+`destination`, so a presenter can point its board entry at its live surface. The radar is
+the thing a person wants; the integration page is a summary of it, and requiring two
+navigations to reach the obvious destination was the complaint. `IntegrationEntry` gained
+no type branch — it renders whatever the capability declared, and falls back to the
+integration page.
+
+**The card keeps the settings reachable.** If the entry leads elsewhere, the integration
+page would become unreachable from the board. A settings action appears on the entry
+exactly when the capability has redirected it, so the exchange is one click for the radar
+and one click for settings, rather than two for the radar and one for settings.
+
+**The whole row is the target.** The name link gets an overlay (`::after`, as the Home
+tiles do) so the summary, the icon and the empty space all open the same destination. The
+action buttons sit above it, or Refresh would be unreachable.
+
+**The radar explains "off" and links to the fix.** `observing === false` renders a notice
+with a link to the instance's Setup section, and the header always carries an
+"Integration settings" action. Naming it that rather than "Settings" is deliberate: the
+sidebar already has a Settings destination, and two identically-named links is an
+accessibility problem as well as a confusing one.
+
+Ownership: `spec.md` US-05 AC-28…AC-30, `tasks.md` T046…T049.
+
+### 12.1 Verification (actual results)
+
+- `backend/`: unchanged this round; `go build ./...` and `go test ./...` still pass.
+- `frontend/`: `npm test -- --runInBand` PASS 153 suites / 1001 tests; `npm run lint`
+  PASS 0 errors (23 pre-existing warnings); `npm run build` PASS;
+  `npm run type-check:e2e` PASS.
+- Playwright desktop: `ConnectionsPage` + `wireless` + `home` PASS 74/74. Mobile:
+  `ConnectionsPage` + `wireless` PASS 60/60.
+- The new disabled-state browser test initially leaked state: the mock is one long-lived
+  process, so turning observation off left every later spec looking at an empty radar. It
+  now restores the flag in `afterEach`, and the fixture rebuilds each broadcast so the
+  toggle takes effect rather than replaying a snapshot captured at connect time.
+
+## 13. Review round 2026-11-18 (third) — tense and a phantom definition
+
+| ID | Severity | Defect |
+| --- | --- | --- |
+| D-23 | high | Results read "23 devices in range" directly above "No sensor is reporting". Both lines were true of a different moment: identities outlive their source by up to ten minutes by design (`UnregisterSource` deliberately keeps aggregates so a proxy restart does not blank the view), so the count was describing the recent past in the present tense. |
+| D-24 | high | "Provider not found" appeared on a local provider. `hasDocument` consulted the catalog, and `provider?.origin !== 'local'` is TRUE when the catalog has not loaded, so any route that skipped the catalog — a Home card, a deep link, or the post-disable reload — requested a definition that cannot exist. |
+
+Design decisions:
+
+**Tense follows the data, and both sentences are computed together.** The headline and the
+status note moved into `censusSummary` in `domain/integrations/observation.ts`. Building
+them in one place is the fix, not a tidiness preference: the contradiction came from two
+independent expressions, each of which had a locally reasonable wording. One function that
+sees both facts cannot emit "in range" and "nothing is reporting" together. The count is
+still shown — it is true, just not current — and says "heard earlier", with one note
+explaining the ten-minute drop-off.
+
+**One status note, not a stack of conditionals.** The old markup had a silent-source
+paragraph, a no-source paragraph and a `v-else`, and a silent source alongside identities
+from a departed one fell between them. A single computed note with explicit cases cannot
+leave a combination undescribed.
+
+**A provider's own flag answers "does it have a document", not the catalog.** `continuous`
+comes from the compiled definition, so it is present in every instance payload and needs no
+second request. The catalog is kept only as a fallback for a backend that predates the
+field, which by definition has no local providers.
+
+Verification: `spec.md` AC-31…AC-32, `tasks.md` T050…T051, with the actual results recorded
+there. The fixture was also corrected: it described one identity on a source with no
+delivery counters, which is exactly the contradictory shape the page now refuses to
+describe, so it could no longer assert "in range" for a sensor that had never delivered.

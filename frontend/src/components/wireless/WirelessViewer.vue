@@ -22,6 +22,8 @@
   import ObservationGroupList from './ObservationGroupList.vue';
   import ObservationFocus from './ObservationFocus.vue';
   import UiButton from '@/components/ui/UiButton.vue';
+  import { OBSERVATION_PROVIDER_KEY } from '@/domain/integrations/observation';
+  import { RouteName } from '@/types/router';
 
   const snapshot = computed(() => store.getters['observations/snapshot']);
   const loaded = computed(() => store.getters['observations/hasData']);
@@ -103,6 +105,24 @@
   const waitingForEvidence = computed(() => progress.value !== undefined && !progress.value.ready);
 
   const summary = computed(() => snapshotSummary(snapshot.value));
+  /**
+   * Whether the integration is currently reading the radio.
+   *
+   * Undefined means an older backend that does not report it, which is treated as observing: those
+   * builds had no gate flag and anything on this page was being read. A viewer that silently shows
+   * nothing because the integration was disabled looks identical to one with a broken sensor, and
+   * the two have completely different fixes.
+   */
+  const observing = computed(() => snapshot.value?.observing !== false);
+  /** The integration's own page, where observing is turned on and off. */
+  const settingsRoute = computed(() => {
+    const instance = store.getters['integrations/instanceForProviderKey'](OBSERVATION_PROVIDER_KEY);
+    // No instance at all means it was never added or has been removed; the catalog is where that is
+    // fixed, so the link goes there rather than to a page that cannot exist yet.
+    return instance
+      ? { name: RouteName.Integration, params: { id: instance.id }, hash: '#setup' }
+      : { name: RouteName.Integrations };
+  });
   const truncated = computed(() => snapshot.value?.truncated === true);
   /** Sources that are connected but have delivered nothing, which usually means a config fault. */
   const sources = computed(() => snapshot.value?.sources ?? []);
@@ -132,7 +152,16 @@
   function onKeydown(event: KeyboardEvent): void {
     if (event.key === 'Escape' && selectedKey.value !== null) clearSelection();
   }
-  onMounted(() => window.addEventListener('keydown', onKeydown));
+  onMounted(() => {
+    window.addEventListener('keydown', onKeydown);
+    // This page can be opened directly, so the instance list may never have been read. Without it
+    // the settings link has nothing to point at and would fall back to the catalog even though the
+    // integration exists. A failure is deliberately ignored: the radar still works without the link,
+    // and the link's fallback is still a valid destination.
+    if (!store.getters['integrations/instanceForProviderKey'](OBSERVATION_PROVIDER_KEY)) {
+      void store.dispatch('integrations/readInstances').catch(() => {});
+    }
+  });
   onUnmounted(() => window.removeEventListener('keydown', onKeydown));
 </script>
 
@@ -149,8 +178,27 @@
         <p v-if="stale" class="wireless-viewer__stale" role="status">
           Disconnected. Showing the last received data.
         </p>
+        <!--
+          The way in and out of this page. Without it, an operator who lands here from the board or a
+          Home shortcut has no route to the controls that turn observation on and off, and would
+          have to go back and hunt through Integrations.
+
+          Labelled "Integration settings" rather than "Settings": the sidebar already has a Settings
+          destination, so a bare "Settings" here reads as a second one and is ambiguous to a screen
+          reader as well as to a person scanning for the app's settings.
+        -->
+        <UiButton size="sm" icon="settings" :to="settingsRoute">Integration settings</UiButton>
       </template>
     </IntegrationPageHeader>
+
+    <!--
+      Not observing is a state, not an absence. The radar renders exactly what a broken sensor
+      renders — nothing — so it has to say which one this is and offer the fix inline.
+    -->
+    <p v-if="loaded && !observing" class="wireless-viewer__notice" role="status">
+      Observation is turned off, so nothing is being recorded.
+      <RouterLink :to="settingsRoute">Turn it on in the integration settings</RouterLink>.
+    </p>
 
     <p v-if="!loaded" class="wireless-viewer__empty">
       Waiting for the first observation. Enrol a device with Bluetooth proxy enabled to begin.

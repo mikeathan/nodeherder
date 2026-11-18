@@ -90,7 +90,8 @@
     grid-column: 1 / -1;
   }
   .nh-home-card.is-presence,
-  .nh-home-card.is-presence-overview {
+  .nh-home-card.is-presence-overview,
+  .nh-home-card.is-observation {
     grid-column: 1 / -1;
   }
   .nh-home-card.is-presence-overview {

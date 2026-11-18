@@ -32,8 +32,8 @@ type DailySummary struct {
 	// RSSIMean is the mean signal strength in dBm over the day.
 	RSSIMean float64 `json:"rssiMean"`
 	// RSSIM2 is Welford's accumulated sum of squared deviations, not a variance. It is stored
-	// raw because it can be merged exactly across sources and partitions; derive the variance
-	// with Var() rather than dividing by Packets at each call site.
+	// raw because it can be merged exactly across sources and partitions; the variance is
+	// RSSIM2 / Packets, computed where it is needed rather than persisted.
 	RSSIM2 float64 `json:"rssiM2"`
 	// Strongest and Weakest bound the day's readings, so "never heard strongly" survives
 	// storage as a fact rather than an inference from the mean.
@@ -49,20 +49,6 @@ type DailySummary struct {
 	// Family groups rotating addresses that share a vendor and payload signature, so a phone
 	// advertising forty rotating addresses is classified once rather than forty times.
 	Family string `json:"family,omitempty"`
-}
-
-// Var returns the population variance of the day's signal strength, or zero when fewer than two
-// readings contributed. It is clamped at zero because floating-point cancellation can leave a
-// tiny negative value for identical readings, which is not a meaningful variance.
-func (s DailySummary) Var() float64 {
-	if s.Packets < 2 {
-		return 0
-	}
-	variance := s.RSSIM2 / float64(s.Packets)
-	if variance < 0 {
-		return 0
-	}
-	return variance
 }
 
 // Transition records that an identity's class changed.

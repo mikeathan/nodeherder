@@ -177,6 +177,12 @@ func decodeAdvertisements(source string, response *api.BluetoothLERawAdvertiseme
 			Medium:   model.MediumBLEAdvertisement,
 			Identity: identity,
 			RSSI:     adv.RSSI,
+			// Stamped here, because this is the only place that knows when the batch arrived. Leaving
+			// it zero was silently fatal rather than merely lossy: the aggregator substitutes its own
+			// clock when it records, but the recorder files evidence by this value, so every reading
+			// landed on day 0001-01-01 and hour 0. The accumulator then never promoted, the write floor
+			// rejected the row, no summary was ever stored, and every device stayed "learning" forever.
+			ObservedAt: time.Now().UTC(),
 		})
 	}
 	return batch

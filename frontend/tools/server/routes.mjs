@@ -4,7 +4,7 @@ import { createMockToken } from './utils.mjs';
 import { registerHistoryRoute } from './history.mjs';
 import { getMetricsForDevice } from './metrics-mock.mjs';
 import { registerHomeRoutes } from './home.mjs';
-import { resetObservationDecisions } from './ws.mjs';
+import { resetObservationDecisions, setObservationEnabled } from './ws.mjs';
 import { CORS_ORIGIN } from './config.mjs';
 
 export function registerRoutes(app) {
@@ -17,6 +17,11 @@ export function registerRoutes(app) {
   app.post('/api/__test/reset', (_req, res) => {
     resetObservationDecisions();
     res.json({ reset: true });
+  });
+  // Let a spec put the fixture into the state the radar has to explain: observation turned off.
+  app.post('/api/__test/observation', (req, res) => {
+    setObservationEnabled(req.body?.enabled !== false);
+    res.json({ observing: req.body?.enabled !== false });
   });
   // The ordinary Node mock exposes the same optional-feature degraded contract. Full Connections
   // browser flows use the production Go API with synthetic provider/temp repositories instead.

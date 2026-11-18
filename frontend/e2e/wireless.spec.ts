@@ -1,4 +1,4 @@
-import { test, expect, signIn, resetMockState } from './support/fixtures';
+import { test, expect, signIn, resetMockState, HUB_API } from './support/fixtures';
 
 /*
  * Wireless observation viewer (spec 064).
@@ -9,6 +9,39 @@ import { test, expect, signIn, resetMockState } from './support/fixtures';
  */
 
 test.describe('wireless viewer', () => {
+  /**
+   * The mock outlives a single spec, so turning observation off here would leave every later test
+   * looking at an empty radar. Restored unconditionally, including when this test itself failed.
+   */
+  test.afterEach(async ({ page }) => {
+    await page.request.post(`${HUB_API}/__test/observation`, { data: { enabled: true } }).catch(() => undefined);
+  });
+
+  test('turned off observation is explained and links to the fix', async ({ page }) => {
+    await signIn(page, '/wireless');
+    // Nothing to assert until the socket has delivered the populated fixture.
+    await expect(page.locator('.observ-cards').getByText('Front door tag')).toBeVisible();
+
+    await page.request.post(`${HUB_API}/__test/observation`, { data: { enabled: false } });
+
+    // An empty radar is what a broken sensor looks like too, so the page has to name which one this
+    // is rather than leaving the operator to guess.
+    const notice = page.getByRole('status').filter({ hasText: 'Observation is turned off' });
+    await expect(notice).toBeVisible();
+    const fix = page.getByRole('link', { name: 'Turn it on in the integration settings', exact: true });
+    await expect(fix).toBeVisible();
+
+    // The header link is always there, not only in this state.
+    await expect(page.getByRole('link', { name: 'Integration settings', exact: true })).toBeVisible();
+
+    // This fixture has no integrations service at all, so the link falls back to Integrations rather
+    // than naming an instance that cannot exist. The direct, instance-specific target is asserted
+    // against the Go-backed fixture in ConnectionsPage.spec.ts, where instances are real.
+    await expect(fix).toHaveAttribute('href', /^\/integrations/);
+    await fix.click();
+    await expect(page).toHaveURL(/\/integrations$/);
+  });
+
   test('renders observed identities with source diagnostics', async ({ page }) => {
     await signIn(page, '/wireless');
 

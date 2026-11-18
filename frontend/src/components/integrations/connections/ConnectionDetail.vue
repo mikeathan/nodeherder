@@ -30,6 +30,8 @@
     saveCredentials,
     remove,
     reloadPage,
+    continuous,
+    providerName,
   } = useConnectionDetail();
   const settings = ref<{ clearSavedCredentials(slots: string[]): void } | null>(null);
   async function saveInstanceCredentials(items: { slot: string; value: string }[]) {
@@ -41,7 +43,10 @@
   <div class="connections connection-stack connection-detail" :aria-busy="busy">
     <IntegrationPageHeader :title="item?.name ?? 'Integration'" :subtitle="item?.postcode">
       <template #actions>
-        <UiButton :disabled="busy || !item?.enabled" icon="refresh" @click="refresh">Refresh</UiButton>
+        <!-- Continuous integrations have nothing to fetch, so a Refresh button would do nothing. -->
+        <UiButton v-if="!continuous" :disabled="busy || !item?.enabled" icon="refresh" @click="refresh"
+          >Refresh</UiButton
+        >
       </template>
     </IntegrationPageHeader>
     <IntegrationSections v-if="item" :active="tab" :context="sectionContext" />
@@ -93,6 +98,8 @@
         v-model:schedule-unit="scheduleUnit"
         :item="item"
         :definition="definition"
+        :continuous="continuous"
+        :provider-name="providerName"
         :busy="busy"
         @rename="rename"
         @toggle-enabled="toggleEnabled"

@@ -97,6 +97,13 @@ type Deps struct {
 	// ClassifyInterval bounds how often stored evidence is re-read; 0 uses
 	// defaultClassifyInterval.
 	ClassifyInterval time.Duration
+	// Active reports whether any integration wants this data. Nil means always active, which is the
+	// behaviour for a hub with no observation integration to ask.
+	//
+	// Gating here rather than at the device is deliberate: the device keeps its session and its
+	// entity state, and only the advertisement stream stops. That keeps disabling an integration a
+	// data decision instead of a device-lifecycle one.
+	Active func() bool
 }
 
 // ObservationRecorder accepts observations for evidence accumulation.
@@ -116,6 +123,7 @@ type Service struct {
 	history       HistoryReader
 	recorder      ObservationRecorder
 	classifyEvery time.Duration
+	active        func() bool
 
 	wg sync.WaitGroup
 
@@ -125,6 +133,13 @@ type Service struct {
 	arrivals    int
 	lastState   string
 	lastPublish time.Time
+	// observing caches the gate's answer so the snapshot can carry it without asking again.
+	//
+	// The authoritative answer lives behind the integration runtime's lock, and Snapshot is called
+	// from inside that lock when the runtime resolves a local provider's census. Calling the gate
+	// from there would take the same lock twice and deadlock. Refreshed on the flush tick, which
+	// runs with no lock held, so it is at most one publish gap behind.
+	observing bool
 	// classified caches each identity's class so the store is read on a slow interval rather than
 	// once per snapshot. Classification depends on stored evidence, which changes at most once a
 	// day, so re-reading it every 250 ms would be pure waste.
@@ -192,9 +207,14 @@ func NewService(deps Deps) *Service {
 		history:       deps.History,
 		recorder:      deps.Recorder,
 		classifyEvery: classifyEvery,
-		sources:       map[string]*sourceState{},
-		aggregates:    map[string]*aggregate{},
-		classified:    map[string]model.ClassificationView{},
+		active:        deps.Active,
+		// Seeded from the gate so the first snapshot is honest before a flush has run. A nil gate
+		// means "always observing", matching isActive.
+		observing: deps.Active == nil || deps.Active(),
+
+		sources:    map[string]*sourceState{},
+		aggregates: map[string]*aggregate{},
+		classified: map[string]model.ClassificationView{},
 	}
 }
 
@@ -229,8 +249,16 @@ func (s *Service) RegisterSource(id, name string, media []model.Medium, facets [
 // distinguish "connected but silent" from "not configured". The transport reports raw counts
 // because only it can measure them. An unknown source is ignored: registration happens before
 // subscription, so this ordering means a stray report cannot create a phantom descriptor.
+//
+// It honours the same gate as ObserveAdvertisements. Without that, a sensor streaming before the
+// integration was added — or while it is disabled — advanced these counters while every batch was
+// discarded, so the page could report "571 heard" beside "0 devices heard". The counters exist to
+// answer "is the radio working for us", and "us" is exactly what the gate decides.
 func (s *Service) RecordSourceActivity(id string, advertisements, decoded uint64, at time.Time) {
 	if id == "" {
+		return
+	}
+	if !s.isActive() {
 		return
 	}
 	s.mutex.Lock()
@@ -283,6 +311,11 @@ func (s *Service) UnregisterSource(id string) {
 // a saturated queue visible, and taking the service mutex per packet on a hot path would make
 // saturation worse. The loop stops at the first rejection, so a burst cannot thrash it.
 func (s *Service) ObserveAdvertisements(_ context.Context, batch []model.Observation) error {
+	// Read once per batch rather than per observation: a batch is one device's delivery, so the
+	// answer cannot change meaningfully within it, and the check stays cheap on the hot path.
+	if !s.isActive() {
+		return nil
+	}
 	for _, observation := range batch {
 		select {
 		case s.queue <- observation:
@@ -295,6 +328,28 @@ func (s *Service) ObserveAdvertisements(_ context.Context, batch []model.Observa
 		}
 	}
 	return nil
+}
+
+// Snapshot returns the current live view.
+//
+// Exposed so an integration can publish what the hub is already aggregating instead of
+// re-deriving it. The snapshot is a copy, so a caller cannot mutate aggregation state.
+func (s *Service) Snapshot() model.Snapshot {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	return s.snapshotLocked(s.clock.Now())
+}
+
+// isActive reports whether observation is wanted. A nil gate means always, so an installation with
+// no integration configured behaves exactly as it did before this gate existed.
+//
+// The gate consults the integration runtime, which reads a BoltDB transaction. That sounds expensive
+// for a path called once per advertisement batch, but a read transaction on an indexed key is
+// microseconds while a batch arrives a few times a second — three orders of magnitude of headroom.
+// A cache here would trade that for lag on an operator's toggle, so it is deliberately not cached:
+// disabling observation must take effect on the next batch, not on the next publish tick.
+func (s *Service) isActive() bool {
+	return s.active == nil || s.active()
 }
 
 // noteDroppedBatch increments the drop counter for one source once. Attribution keeps a
@@ -413,6 +468,17 @@ func (s *Service) record(observation model.Observation) {
 	// observation, which the caller may reuse for its next entry — a genuine hazard with batch
 	// decoders that decode into a reused struct.
 	rssi := observation.RSSI
+
+	// RSSI 0 means the source could not measure the signal, not "zero dBm". Every other consumer of
+	// this value already treats it that way: evidence.observe skips it, the provisional classifier
+	// rejects it, and the neighbour score ignores it. Accepting it here put a 0 dBm spike into the
+	// 20-reading window, which can make the median 0 — rendered as "0 dBm" and mapped to the minimum
+	// distance, so the device is drawn on top of the radar. The packet still counts; only the signal
+	// reading is discarded.
+	if observation.RSSI == 0 {
+		current.primary = s.strongestSource(current.sources, current.readings, current.primary, s.clock.Now())
+		return
+	}
 	current.sources[observation.Source] = &rssi
 
 	// Feed this source's own window, then re-decide which source describes the device.
@@ -477,8 +543,32 @@ func sourceIsCurrent(readings []rssiReading, now time.Time) bool {
 // flush builds a snapshot, drops stale identities, and publishes only when the rendered state
 // changed. Comparing a serialised form keeps the check honest without a deep-equal walk.
 func (s *Service) flush() {
+	// Read the gate before taking the mutex: it reaches into the integration runtime, which takes
+	// its own lock, and the runtime calls back into Snapshot while holding that lock. Asking here
+	// keeps the order one-way.
+	observing := s.isActive()
+
 	s.mutex.Lock()
 	now := s.clock.Now()
+	closed := s.observing && !observing
+	s.observing = observing
+	if closed {
+		// Nobody wants this data any more. Keeping the observation itself would let the last census
+		// be republished — or re-read by a stale consumer — as if a radio that is no longer being
+		// read were still describing the room. Clearing is the difference between "not observing"
+		// and "still observing, and here is what it saw".
+		//
+		// Sources are deliberately kept. A descriptor names a device and the facets it can populate,
+		// which is a fact about the device rather than about what was observed, and only the live
+		// session can announce it — once, guarded by its own `announced` flag. Clearing it here
+		// stranded the viewer: disabling and re-enabling a proxy left `sources` empty until the
+		// ESPHome session happened to reconnect, so the filter facets disappeared, the counters
+		// never resumed, and a silent source became indistinguishable from an absent one. Their
+		// counters freeze on their own, because RecordSourceActivity honours the same gate.
+		s.aggregates = map[string]*aggregate{}
+		s.classified = map[string]model.ClassificationView{}
+		s.arrivals = 0
+	}
 	for key, current := range s.aggregates {
 		if now.Sub(current.lastSeen) > s.staleAfter {
 			delete(s.aggregates, key)
@@ -534,9 +624,10 @@ func (s *Service) rebuild(now time.Time) (model.Snapshot, string) {
 // snapshotLocked builds the renderable snapshot. The caller holds the mutex.
 func (s *Service) snapshotLocked(now time.Time) model.Snapshot {
 	snapshot := model.Snapshot{
-		At:       now,
-		Arrivals: s.arrivals,
-		Sources:  make([]model.SourceDescriptor, 0, len(s.sources)),
+		At:        now,
+		Arrivals:  s.arrivals,
+		Observing: s.observing,
+		Sources:   make([]model.SourceDescriptor, 0, len(s.sources)),
 	}
 	sourceIDs := make([]string, 0, len(s.sources))
 	for id := range s.sources {
@@ -778,6 +869,14 @@ func sourceReadings(source map[string]*int) []model.SourceReading {
 // identity, yet that is precisely the state the operator needs to see.
 func renderSignature(snapshot model.Snapshot) string {
 	signature := make([]byte, 0, 64+len(snapshot.Identities)*32)
+	// The gate itself must participate. Closing it publishes one clearing snapshot, and without this
+	// the clearing snapshot would render identically to the last populated one — so the broadcast
+	// that tells every consumer to stop showing a census would be suppressed as a duplicate.
+	if snapshot.Observing {
+		signature = append(signature, 1)
+	} else {
+		signature = append(signature, 0)
+	}
 	// Progress must participate: it changes while no identity field does, and it is the one thing
 	// telling the operator whether the classifier is waiting or broken.
 	signature = appendUint64(signature, uint64(snapshot.Classification.DaysStored))

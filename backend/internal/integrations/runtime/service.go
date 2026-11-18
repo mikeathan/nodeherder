@@ -41,6 +41,18 @@ type Options struct {
 	Clock        utils.Clock
 	Capabilities *capabilities.Registry
 	Shipped      fs.FS
+	// LocalDefinitions are providers built in code rather than read from a document.
+	//
+	// They are supplied by the composition root so this package never imports a specific
+	// capability. Each is keyed by DefinitionKey() and resolves instead of a stored record.
+	LocalDefinitions []model.Definition
+	// LocalSource supplies input for a provider that performs no request.
+	//
+	// It is a function rather than a concrete type so this package stays transport-agnostic: the
+	// runtime does not learn what an observation is, only that some providers publish a value
+	// instead of fetching one. Nil disables local providers, which is the correct behaviour for the
+	// editor and test paths that have no hub behind them.
+	LocalSource func() (any, error)
 }
 
 // Service owns admission, four workers and a local-only janitor. All provider work is explicitly
@@ -66,6 +78,9 @@ type Service struct {
 	providerDeadlines   map[string]time.Time
 	janitor             utils.Timer
 	refreshTimer        utils.Timer
+	localSource         func() (any, error)
+	localDefinitions    []model.Definition
+	localCompiled       map[string]*definitions.Compiled
 }
 
 // NewService loads local state and starts owned workers; it performs no provider request.
@@ -95,6 +110,14 @@ func NewService(parent context.Context, o Options) (*Service, error) {
 		queue:             make(chan string, 64),
 		running:           map[string]context.CancelFunc{},
 		providerDeadlines: map[string]time.Time{},
+		localSource:       o.LocalSource,
+		localDefinitions:  append([]model.Definition(nil), o.LocalDefinitions...),
+		localCompiled:     map[string]*definitions.Compiled{},
+	}
+	// Local providers are installed before any definition is read, so an instance referring to one
+	// resolves on the first pass rather than reporting a missing provider.
+	if e := s.installLocalDefinitions(); e != nil {
+		return nil, e
 	}
 	if e := s.loadDefinitions(); e != nil {
 		cancel()
@@ -218,6 +241,23 @@ func (s *Service) Catalog() (CatalogDTO, error) {
 				result.Types[index].WorstStatus = worst[result.Types[index].ID]
 			}
 		}
+		// Local providers are listed alongside authored ones so "Add integration" offers them the
+		// same way. They carry no credential requirement, which is what makes their setup a single
+		// action rather than a form.
+		for _, compiled := range s.localProviders() {
+			d := compiled.Definition
+			result.Providers = append(result.Providers, ProviderDTO{
+				Key:             definitions.DefinitionKey(d),
+				ID:              d.ID,
+				Name:            d.Name,
+				IntegrationType: d.IntegrationType,
+				Origin:          "local",
+				// Available means "can be added", not "has a live source this instant". Reporting it
+				// from the source would make the provider disappear from the catalog whenever the
+				// source was momentarily unwired, which is exactly when an operator is looking for it.
+				Available: true,
+			})
+		}
 		return tx.Each("definitions", func(_ string, b []byte) error {
 			var r model.DefinitionRecord
 			if e := repository.DecodeIntegrationRecord(b, &r); e != nil {
@@ -257,6 +297,16 @@ func (s *Service) Catalog() (CatalogDTO, error) {
 
 // definition reads and compiles the active stored provider definition for the transaction.
 func (s *Service) definition(tx *repository.IntegrationTx, key string) (model.DefinitionRecord, *definitions.Compiled, error) {
+	// A local provider has no stored record: it is compiled in, so it is resolved first and reported
+	// with a synthesised record that carries no disk error.
+	if compiled, ok := s.localDefinition(key); ok {
+		return model.DefinitionRecord{
+			Key:      key,
+			YAML:     compiled.YAML,
+			Hash:     compiled.Hash,
+			Revision: compiled.Revision,
+		}, compiled, nil
+	}
 	var r model.DefinitionRecord
 	ok, e := tx.Get("definitions", key, &r)
 	if e != nil {
@@ -290,9 +340,19 @@ func checkRevision(expected, actual string) error {
 
 // instanceDTO builds a sanitized instance view without exposing private credential values.
 func (s *Service) instanceDTO(i model.Instance) InstanceDTO {
+	// A local provider's resource is resolved here rather than read from the record (ADR-005). Its
+	// value is the hub's current state, so a stored copy is stale by construction and nothing would
+	// refresh it. Resolving on read is what makes the integration page, the board row and a Home
+	// tile agree: they all derive from the same snapshot instead of from three different moments.
+	compiled, local := s.localDefinition(i.DefinitionKey)
 	status := "ready"
-	if i.Snapshot == nil {
+	if i.Snapshot == nil && !local {
 		status = "pending"
+	}
+	// A local provider with no compiled definition is a missing wiring, not a pending refresh, and
+	// saying "pending" would describe it as something that resolves on its own.
+	if local && compiled == nil {
+		status = "unavailable"
 	}
 	if i.LastError != nil {
 		status = i.LastError.Code
@@ -306,7 +366,41 @@ func (s *Service) instanceDTO(i model.Instance) InstanceDTO {
 	}
 	resources := []model.Resource{}
 	sources := []model.SourceReference{}
-	if i.Snapshot != nil {
+	switch {
+	case local && compiled != nil && i.Enabled:
+		// Disabled means nobody is reading the radio, so there is no current value to show. Resolving
+		// anyway would present a census of a source that is not being observed.
+		result, err := s.resolveLocalForRead(i, compiled)
+		if err != nil {
+			// Not persisted: "the sensor is unreachable" is a live condition, and a restart does not
+			// fix or create one. It is reported so the operator can act on it now.
+			i.LastError = failureOf(err)
+			status = i.LastError.Code
+			break
+		}
+		var references []model.SourceReference
+		references, err = s.capabilities.Sources(result.Resource)
+		if err != nil {
+			i.LastError = failure(err)
+			status = i.LastError.Code
+			break
+		}
+		// The read succeeded, so any failure recorded by the last probe is no longer true. It is kept
+		// on the record (it is the only evidence that the source was ever down) but must not be
+		// reported: `publishLocal` writes it, so without this a source that failed once while being
+		// added stayed "attention" forever — and the controls that would clear it are hidden for a
+		// continuous provider.
+		i.LastError = nil
+		status = "ready"
+		resources = append(resources, result.Resource)
+		sources = append(sources, references...)
+	case local:
+		// A local provider never exposes a stored census, enabled or not. ADR-005 says the value is
+		// resolved on read precisely because a stored copy is stale by construction; projecting one
+		// here for a disabled (or unwired) instance reintroduced the frozen census the design exists
+		// to remove, and it appeared as a populated card for a radio nobody is reading. Status was
+		// already decided above from `compiled` and `Enabled`.
+	case i.Snapshot != nil:
 		projected, err := s.projectResource(*i.Snapshot, s.clock.Now())
 		if err == nil {
 			var references []model.SourceReference
@@ -352,6 +446,7 @@ func (s *Service) instanceDTO(i model.Instance) InstanceDTO {
 		Revision:             i.Revision,
 		ETag:                 revisionETag("instance", i.ID, i.Revision),
 		Enabled:              i.Enabled,
+		Continuous:           local,
 		Status:               status,
 		Postcode:             i.Inputs[i.SearchInput],
 		OperationID:          i.OperationID,

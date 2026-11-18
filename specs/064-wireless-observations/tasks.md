@@ -129,3 +129,210 @@ tool: it was a census of MAC addresses.
 - [ ] T016 — Distinct from T021: the final full-diff rule audit before merge. Open.
 
 Add discovered work here and update the spec/plan when scope changes.
+
+## Review round (2026-11-18) — the integration page, judged by using it
+
+Spec [US-05](spec.md), plan §11, [ADR-005](adr-005-census-is-read-not-stored.md).
+Ordered so the payload is honest before any surface renders it.
+
+### Backend: one truth, and it is current
+
+- [x] T035 — **DONE**: `RecordSourceActivity` now honours the same `Active` gate as
+  `ObserveAdvertisements`. IDs: AC-24, D-13. Evidence: `TestDisabledGateStopsCounters`.
+- [x] T036 — **DONE**: `publishLocal` records only the transient source error and clears any
+  stored snapshot; `instanceDTO` resolves the resource on read through `resolveLocal`, with
+  no identity allocator (`nil`), so nothing is reserved from a read transaction. IDs: AC-23,
+  D-12, ADR-005. Evidence: `TestLocalProviderCensusIsReadOnEveryRead` (two reads after a
+  hub-side change, and asserts no snapshot is persisted), `TestDisabledLocalProviderPublishesNoCensus`.
+- [x] T037 — **DONE**: `Snapshot` gains `Observing`; `flush` refreshes the gate cache and
+  clears sources, aggregates, classes and arrivals when it closes; the flag participates in
+  `renderSignature` so the clearing broadcast is not suppressed as a duplicate. IDs: AC-24,
+  D-20. Evidence: `TestClosingTheGateClearsTheCensus`, `TestSilentRoomIsNotAnAbsentObserver`.
+- [x] T038 — **DONE**: `InstanceDTO.Continuous` from `Definition.Local`; both client
+  derivations deleted. IDs: AC-25, D-14. Evidence:
+  `TestLocalProviderReportsWhetherItIsContinuous` (single and listed), contract test for
+  ingress validation.
+
+### Frontend: the page stops offering controls that cannot act
+
+- [x] T039 — **DONE**: `ConnectionSettings` takes `continuous` instead of deriving `local`
+  from a definition that never arrives. Address row and schedule fieldset are absent for a
+  continuous provider, with a sentence saying what it is. IDs: AC-25, D-14. Evidence:
+  `ConnectionsPage.spec.ts` asserts `Change address` and `Automatic refresh` have count 0.
+- [x] T040 — **DONE**: enable/disable is a `UiSettingRow` + `UiToggle` labelled "Observing",
+  with help text naming what turning it off does. IDs: AC-25, D-15. Evidence: both settings
+  specs drive the switch by role and check its state.
+- [x] T041 — **DONE**: `providerName` resolves from the catalog, so the pane no longer shows
+  the raw key `wireless_observation/hub`. IDs: D-16.
+- [x] T042 — **DONE**: `Results.vue` shows the live count as the headline, explained hidden
+  devices, source names, a link to the radar, and packet totals inside a `<details>`
+  labelled "Packets" with the lifetime caveat. IDs: AC-26, D-17.
+- [x] T043 — **DONE**: `HomeObservationCard` uses only defined theme tokens, is a
+  whole-tile link with an overlay, has no inner primary button, and reaches "Not observing".
+  `.is-observation` joins the full-width layout rule. IDs: AC-27, D-18, D-20. Evidence:
+  the new Home spec measures the computed border colour.
+- [x] T044 — **DONE**: `integrations/observation/help.ts` declares three topics: which
+  sensors qualify, what the numbers mean, and what turning it off does. IDs: D-19.
+
+### Guard
+
+- [x] T045 — **DONE**: `src/__tests__/theme/tokens.test.ts`. Two assertions: the style layer
+  defines every property it reads, and every Home component reads only defined properties.
+  It found a fourth unreported instance — `HomePresenceCard` used `--nh-radius` (undefined)
+  instead of `--nh-radius-l` — which is fixed here. Pre-existing offenders outside Home are
+  reported, not fixed: the `components/wireless` tree has the same class of bug across
+  `--accent-primary`, `--border-subtle`, `--text-muted` and friends, and the history charts
+  rely on JS-set properties.
+
+### Verification for this round (actual results, 2026-11-18)
+
+- `backend/`: `go build ./...` PASS; `go test ./...` PASS (all packages);
+  `go test -race ./internal/observations/... ./internal/integrations/...` PASS, no races.
+- `frontend/`: `npm test -- --runInBand` PASS 152 suites / 996 tests; `npm run lint` PASS,
+  0 errors (23 pre-existing warnings in untouched files); `npm run build` PASS;
+  `npm run type-check:e2e` PASS.
+- `frontend/` Playwright: `--project=desktop e2e/{home,ConnectionsPage,wireless}.spec.ts`
+  PASS 72/72; `--project=mobile e2e/{home,ConnectionsPage}.spec.ts` PASS 40/40.
+- Negative control: reinstating `border: 1px solid var(--border-subtle, #dee2e6)` made the
+  new Home spec fail with `rgb(222,226,230)` against the theme's `rgb(207,228,238)`, so the
+  regression is genuinely detected rather than merely present.
+- **UNRUN**: a live EPL check of the three surfaces agreeing within one publish window.
+
+## Review round 2026-11-18 (second) — navigation and one rendering bug
+
+Spec [US-05](spec.md) AC-28…AC-30, plan §12.
+
+- [x] T046 — **DONE**: `IntegrationWidget.destination` lets a capability point its board
+  entry at its own live surface; `IntegrationEntry` falls back to the integration page and
+  carries a settings action whenever it has been redirected. Whole-row target via a link
+  overlay, with the actions above it. IDs: AC-28. Evidence: the board spec now clicks the
+  entry and lands on `/wireless`, and a second spec proves the settings action still
+  reaches the integration page.
+- [x] T047 — **DONE**: the radar always offers "Integration settings", and renders an
+  explicit notice with a link to Setup when `observing` is false. The link resolves the
+  instance by provider key (`integrations/instanceForProviderKey`) and falls back to the
+  catalog when none exists; the page reads the instance list on mount because it can be
+  opened directly. IDs: AC-29. Evidence: `wireless.spec.ts` toggles the fixture off and
+  asserts both the notice and the link.
+- [x] T048 — **DONE**: the board row's device count was written to `value` while the entry
+  renders `date`, so the count never appeared and the timestamp printed twice. IDs: AC-30.
+  Evidence: the Go-fixture board spec asserts `1 device in range` on Results.
+- [x] T049 — **DONE**: "23devices in range" was Vue condensing the whitespace between the
+  count and its unit; the headline is now one string. IDs: AC-30.
+
+### Verification for this round (actual results, 2026-11-18)
+
+- `frontend/`: `npm test -- --runInBand` PASS 153 suites / 1001 tests; `npm run lint`
+  PASS 0 errors; `npm run build` PASS; `npm run type-check:e2e` PASS.
+- Playwright desktop PASS 74/74 (`ConnectionsPage`, `wireless`, `home`); mobile PASS 60/60
+  (`ConnectionsPage`, `wireless`).
+- `backend/` unchanged this round; `go build ./...` and `go test ./...` pass.
+
+## Review round 2026-11-18 (third) — tense, and a request for a document that cannot exist
+
+Spec [US-05](spec.md) AC-31…AC-32, plan §13.
+
+- [x] T050 — **DONE**: "23 devices in range" directly above "No sensor is reporting" was a
+  self-contradiction. Identities outlive their source by up to ten minutes by design
+  (`UnregisterSource` keeps aggregates so a proxy restart does not blank the view), so the count
+  describes the recent past while the source line describes now. Headline and status note are now
+  computed together in `censusSummary`, which uses "heard earlier" when nothing is reporting and
+  explains the drop-off. IDs: AC-31. Evidence: seven `censusSummary`/`censusReporting` tests,
+  including the exact reported shape.
+- [x] T051 — **DONE**: "Provider not found" on a local provider. `hasDocument` asked the catalog,
+  and `provider?.origin !== 'local'` is true when the catalog has not loaded — so any route that
+  skipped the catalog (a Home card, a deep link, or disabling) requested a definition that cannot
+  exist. The instance's own `continuous` flag is now the authority, and the catalog is only a
+  fallback for a backend that predates it. IDs: AC-32. Evidence: a browser test that deep-links the
+  instance and then disables it, asserting no error and a rendered pane.
+
+Also corrected: the Go e2e fixture described one identity on a source with **no delivery counters**,
+which is the same contradictory shape the page is now right to call "heard earlier". It now carries
+realistic counters, so the fixture cannot assert a state the product correctly refuses to describe.
+
+### Verification for this round (actual results, 2026-11-18)
+
+- `frontend/`: `npm test -- --runInBand` PASS 153 suites / 1007 tests; `npm run lint` PASS 0 errors;
+  `npm run build` PASS; `npm run type-check:e2e` PASS.
+- Playwright desktop PASS 75/75; mobile PASS 61/61.
+- `backend/`: `go test ./internal/` PASS.
+
+## Full-branch review 2026-11-18 — defects found by reading the whole diff
+
+Asked for a full review of the branch for bugs, performance, dead code and rule violations.
+Seven real defects, two of them severe and none of them visible in the UI until the right state
+was reached.
+
+| ID | Severity | Defect | Fix |
+| --- | --- | --- | --- |
+| D-25 | **critical** | `decodeAdvertisements` never set `Observation.ObservedAt`. The aggregator substitutes its own clock, so nothing looked wrong — but the recorder files evidence by that field, so every reading landed on day `0001-01-01` and hour 0. The accumulator never promoted, the write floor rejected the row, no summary was ever stored, and **classification could never work**: every device stayed "learning" forever with no error anywhere. | Stamped at decode, plus `TestDecodeAdvertisementsStampsObservedAt`. |
+| D-26 | high | Closing the gate cleared `s.sources`, but only the live session can announce a descriptor and it does so once per connection (guarded by `announced`). Disabling then re-enabling left `sources` empty until the device reconnected — potentially hours — taking the filter facets, the diagnostic counters and the silent-source warning with it. | Kept sources on close; only observations are cleared. `TestReEnablingTheGateRestoresObservation`. |
+| D-27 | medium | A local provider that failed once kept reporting the failure forever. `publishLocal` persists `LastError` and the DTO seeded its status from it; the successful read path never cleared it. The card stayed "attention", and the controls that would clear it are hidden for a continuous provider. | Cleared on a successful read. `TestRecoveredLocalProviderStopsReportingFailure`. |
+| D-28 | medium | A **disabled** local provider fell through to projecting a stored census. ADR-005 claimed the read path "ignores it for local providers"; it did not. A record left by an earlier build showed "39 devices" for a radio nobody was reading. | A `local` case that never projects. `TestDisabledLocalProviderNeverProjectsAStoredCensus`. |
+| D-29 | medium | `record()` accepted RSSI 0 as a real reading while every other consumer rejects it as unmeasurable. A single zero could make the median 0, render "0 dBm" and plot the device on top of the radar. | Skipped; the packet still counts. `TestZeroRSSIIsNotAZeroReading`. |
+| D-30 | medium | `providerName` fell back to the raw key on any page reached directly, because only the board ever loads the catalog. Setup showed `wireless_observation/hub`. | The page fetches the catalog itself when absent. |
+| D-31 | low | `censusSummary` hardcoded the plural in the hidden branch ("0 of 1 devices shown" beside "1 device is hidden"), and left "advertisements arriving but none decoding" with no note at all. | Noun follows the count; a note for the undecoded state. |
+
+Dead code removed: `ObservationTable.vue` (orphaned when the cards view replaced it, zero
+imports), `observation.Encode()` and `DailySummary.Var()` (never called),
+`hasObservationSources` (gated a nav item that no longer exists), `Observation.Payload` (never
+written), and twelve `export` keywords in `presentation.ts` that nothing imports. The stale
+`ObservationTable` entry disappears from `components.d.ts` on the next build.
+
+Considered and deliberately **not** changed:
+
+- **Caching the gate.** `RecordSourceActivity` and `ObserveAdvertisements` consult a gate that
+  opens a BoltDB read transaction, once per batch. I started adding a cache, and three existing
+  tests correctly failed: they flip the gate and expect the next batch to respect it, and a cache
+  makes an operator's "disable" take effect a tick late. A read transaction on an indexed key is
+  microseconds against a batch arriving a few times a second, so the cache bought nothing and
+  cost correctness. Reverted, with the reasoning recorded at `isActive`.
+- `MediumWiFiProbe` stayed. It is a documented reservation for a future source, referenced by
+  spec 064's extension rule, and removing it would make that path non-additive.
+- Three unused icon keys (`copy`, `delay`, `google`) predate this branch and are unrelated.
+- `SummaryRepository.SaveTransition` has no production caller, but the store method it wraps is
+  tested and the classification spec requires transitions. Removing it would delete a capability
+  rather than dead code.
+
+### Verification for this round (actual results, 2026-11-18)
+
+- `backend/`: `go build ./...` PASS; `go vet` on affected packages PASS; `go test ./...` PASS;
+  `go test -race ./internal/observations/... ./internal/integrations/... ./internal/deviceproviders/...`
+  PASS, no races.
+- `frontend/`: `npm test -- --runInBand` PASS 153 suites / 1006 tests; `npm run lint` PASS
+  0 errors; `npm run build` PASS.
+- Playwright desktop PASS 75/75 (`ConnectionsPage`, `wireless`, `home`); mobile PASS 61/61.
+
+### CI rehearsal (actual results, 2026-11-18)
+
+Every job in `.github/workflows/ci.yml` was run locally before opening the PR.
+
+| Job | Result |
+| --- | --- |
+| Workflow and Shell Checks | `actionlint` (v1.7.12, installed for this check) PASS; `bash -n` over every tracked `.sh` PASS; `shellcheck scripts/manage-stack.sh` PASS |
+| Deployment Tooling | `sync-reporting-defaults --check` PASS; its own tests 4/4; `manage-stack` + `dev` tests 70/70; Compose configuration 15/15 |
+| Backend Tests and Build | `go mod verify` PASS; `CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build` PASS; `go test -count=1 ./...` PASS (all packages); patched ESPHome module `-race` PASS; `go vet ./...` PASS |
+| Backend Race Detection | `go test -race -count=1 ./...` PASS, whole tree |
+| Frontend Tests, Lint and Build | `npm run lint` 0 errors; `jest --ci --runInBand` PASS 153 suites / 1006 tests; `type-check:e2e` PASS; production build PASS |
+| Frontend E2E | desktop shards 1-4 PASS (63, 42 + 9 skipped, 44, 50); mobile shards 1-4 PASS (63, 50 + 1 flaky, 44, 50) |
+| Containers | backend and frontend images build; `-h` smoke check PASS; `nginx -t` PASS; built `index.html` present |
+
+Two findings from the rehearsal, and one of them was a real defect:
+
+- **Found and fixed a handle leak in this feature.** `useObservationViewer` started a one-second
+  interval and only cleared it on component unmount. Unit tests call it outside any component, so
+  each of the 16 call sites leaked an interval and **Jest could not exit** — `--detectOpenHandles`
+  named it directly. The composable now exposes `stop()`, and the suite tears down every instance
+  it creates. The full run now exits by itself in ~3s instead of hanging. The previous rounds hid
+  this behind `--forceExit`, which is exactly the flag that stops you noticing it; CI would have
+  hung on the 15-minute job timeout.
+- **Three apparent failures were local environment, not code**, and were confirmed against `main`
+  in a detached worktree: the proxy-peer tests read a `TRUSTED_PROXY_CIDRS` value from this
+  machine's `backend/.env` (they pass 70/70 with it unset), and the Compose tests need
+  `NODEHERDER_COMPOSE_BINARY` on macOS because the fake `DOCKER_CONFIG` defeats plugin discovery
+  (they pass 15/15 with it set). Neither touches this branch — it changes zero files under
+  `scripts/`.
+
+One E2E failure was a flake: `devices.spec.ts › spatial mappings save and show only current
+provider reports` failed once on a mobile shard and passed twice in isolation. This branch changes
+no file in that spec or in the spatial code.

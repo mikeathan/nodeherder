@@ -181,6 +181,33 @@ func TestDecodeAdvertisementsSkipsUnusableEntries(t *testing.T) {
 	}
 }
 
+// TestDecodeAdvertisementsStampsObservedAt pins the timestamp, which used to be zero.
+//
+// The aggregator substitutes its own clock when it records, so a zero value looked harmless. The
+// recorder does not: it files evidence by this field, so every reading landed on day 0001-01-01 and
+// hour 0. The accumulator then never promoted, the write floor rejected the row, no summary was
+// ever stored, and every device stayed "learning" indefinitely with no error anywhere. Nothing
+// caught it because every recorder test sets the field itself.
+func TestDecodeAdvertisementsStampsObservedAt(t *testing.T) {
+	before := time.Now().UTC()
+	batch := decodeAdvertisements("source-1", &api.BluetoothLERawAdvertisementsResponse{
+		Advertisements: []*api.BluetoothLERawAdvertisement{
+			{Address: 0x0000AABBCCDDEEFF, Rssi: -62, AddressType: uint32(observations.AddressTypePublic)},
+		},
+	})
+	after := time.Now().UTC()
+	if len(batch) != 1 {
+		t.Fatalf("batch length = %d", len(batch))
+	}
+	stamped := batch[0].ObservedAt
+	if stamped.IsZero() {
+		t.Fatal("ObservedAt is zero, so evidence would be filed under year 1")
+	}
+	if stamped.Before(before) || stamped.After(after) {
+		t.Fatalf("ObservedAt = %v, want a value between %v and %v", stamped, before, after)
+	}
+}
+
 func TestDecodeAdvertisementsKeepsAdvertisedName(t *testing.T) {
 	// An advertised local name must become the identity label, otherwise the viewer can only
 	// show an opaque key even when the device names itself.
@@ -197,11 +224,6 @@ func TestDecodeAdvertisementsKeepsAdvertisedName(t *testing.T) {
 	}
 	if batch[0].Identity.Label != "Kitchen tag" {
 		t.Fatalf("label = %q, want the advertised name", batch[0].Identity.Label)
-	}
-	// The label is the single source of truth for the display name; Payload must not duplicate
-	// it, or the two could disagree after a rename.
-	if name, ok := batch[0].Payload["name"]; ok {
-		t.Fatalf("payload duplicated the name: %v", name)
 	}
 }
 

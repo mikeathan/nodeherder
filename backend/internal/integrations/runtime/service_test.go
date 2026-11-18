@@ -18,6 +18,7 @@ import (
 
 	defaults "node-herder/configs/integrations"
 	"node-herder/internal/integrations/capabilities"
+	"node-herder/internal/integrations/capabilities/observation"
 	"node-herder/internal/integrations/capabilities/waste"
 	"node-herder/internal/integrations/capabilities/weather"
 	"node-herder/internal/integrations/definitions"
@@ -662,7 +663,7 @@ func TestScheduleConsumersReceiveChronologicalServices(t *testing.T) {
 
 func fixtureRegistry(t *testing.T) *capabilities.Registry {
 	t.Helper()
-	registry, err := capabilities.NewRegistry(waste.Adapter{})
+	registry, err := capabilities.NewRegistry(waste.Adapter{}, observation.Adapter{})
 	if err != nil {
 		t.Fatal(err)
 	}

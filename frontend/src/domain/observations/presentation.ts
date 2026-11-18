@@ -37,7 +37,7 @@ export const RING_COUNT = 4;
  * onto the exact centre, so a device half a metre away drew the same dot as one at the antenna.
  * Flooring slightly below the smallest ring keeps sub-metre readings distinguishable.
  */
-export const MIN_PROJECTED_METRES = 0.2;
+const MIN_PROJECTED_METRES = 0.2;
 
 /**
  * Fraction of the canvas radius used by the outermost ring, leaving room for labels.
@@ -104,7 +104,7 @@ export function stepRadarSpan(current: number, direction: -1 | 1): RadarSpan {
  * multiple was tuned against realistic sets rather than picked: at 1.2x the median device sat too
  * near the edge, at 2.5x a tight 1-5 m household was pushed to a 10 m scale it did not need.
  */
-export const AUTO_SPAN_MEDIAN_MULTIPLE = 1.5;
+const AUTO_SPAN_MEDIAN_MULTIPLE = 1.5;
 
 /**
  * How far beyond the median a reading can be before it counts as a tail rather than the data.
@@ -113,7 +113,7 @@ export const AUTO_SPAN_MEDIAN_MULTIPLE = 1.5;
  * Past this ratio the far devices are drawn at the edge and counted, which is the documented
  * behaviour for anything beyond the span.
  */
-export const AUTO_SPAN_TAIL_RATIO = 2;
+const AUTO_SPAN_TAIL_RATIO = 2;
 
 /**
  * Choose a span from the data, framed on the typical device rather than the extremes.
@@ -164,7 +164,7 @@ function medianOf(sorted: readonly number[]): number {
  * expressed as a distance and is what the label shows. Rounding the metres for a tidy label must
  * never move the circle, which is why the ratio is stored rather than recomputed from the label.
  */
-export type RadarRing = {
+type RadarRing = {
   /** Position as a fraction of the canvas radius, in (0, 1]. */
   ratio: number;
   /** Distance this ring represents, rounded for display. */
@@ -244,7 +244,7 @@ export function ringsForSpan(span: number): RadarRing[] {
  * the centre, so labelling every one would overlap the text into an unreadable smear. Twelve
  * percent of the radius is roughly two lines of the label's own height at any span.
  */
-export const MIN_LABEL_GAP = 0.12;
+const MIN_LABEL_GAP = 0.12;
 
 /**
  * Round a ring distance to two significant digits.
@@ -417,7 +417,7 @@ export function sourceIsSilent(source: ObservationSourceDescriptor): boolean {
  * identity is untriaged, so filtering on `decision === 'unknown'` matches everything and the
  * control appears broken.
  */
-export const RECENT_ARRIVAL_MS = 5 * 60 * 1000;
+const RECENT_ARRIVAL_MS = 5 * 60 * 1000;
 
 /**
  * Tolerated clock skew between the hub and the browser, in milliseconds.
@@ -425,7 +425,7 @@ export const RECENT_ARRIVAL_MS = 5 * 60 * 1000;
  * A reading slightly ahead of local time is normal; one far ahead is bad data and must not be
  * presented as a fresh arrival.
  */
-export const ARRIVAL_SKEW_TOLERANCE_MS = 60 * 1000;
+const ARRIVAL_SKEW_TOLERANCE_MS = 60 * 1000;
 
 /** Whether an identity first appeared within the recent window, relative to now. */
 export function isRecentArrival(
@@ -578,19 +578,19 @@ export function withinDistanceRange(
  * A single anchor measures RSSI only, so the estimate carries 1-3 m of indoor error. Offering a
  * band alongside the figure keeps the UI from implying precision it cannot have.
  */
-export const DistanceBands = {
+const DistanceBands = {
   Near: 'near',
   Mid: 'mid',
   Far: 'far',
   Unknown: 'unknown',
 } as const;
 
-export type DistanceBand = (typeof DistanceBands)[keyof typeof DistanceBands];
+type DistanceBand = (typeof DistanceBands)[keyof typeof DistanceBands];
 
 /** Metres at which a reading stops counting as `near`. */
-export const NEAR_BAND_METRES = 2;
+const NEAR_BAND_METRES = 2;
 /** Metres at which a reading starts counting as `far`. */
-export const FAR_BAND_METRES = 6;
+const FAR_BAND_METRES = 6;
 
 /** Classify a distance estimate into a band. An absent reading is unknown, never near. */
 export function distanceBand(metres: number | null | undefined): DistanceBand {
@@ -614,7 +614,7 @@ export const DISTANCE_BAND_LABELS: Readonly<Record<DistanceBand, string>> = {
  * The arrow is paired with a word everywhere it renders: an arrow alone would be ambiguous, and
  * pointing up for "approaching" reads as "signal up" only to someone who already knows.
  */
-export const TREND_PRESENTATION: Readonly<
+const TREND_PRESENTATION: Readonly<
   Record<ObservationTrend, { arrow: string; label: string }>
 > = {
   approaching: { arrow: '↓', label: 'Approaching' },

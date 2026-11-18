@@ -51,6 +51,24 @@ describe('parseObservationSnapshot', () => {
     expect(parsed?.identities).toEqual([]);
   });
 
+  /**
+   * The gate flag, added because the two empty states have opposite fixes.
+   *
+   * "Nobody is reading the radio" and "the radio hears nothing" both arrive as an empty identity
+   * list. Without the flag a consumer has to guess, and the Home tile guessed wrong: it kept
+   * showing a census for an integration that had been removed.
+   */
+  test('reports observing, and treats an absent flag as observing', () => {
+    expect(parseObservationSnapshot({ ...validSnapshot(), observing: true })?.observing).toBe(true);
+    expect(parseObservationSnapshot({ ...validSnapshot(), observing: false })?.observing).toBe(false);
+    // An older backend had no gate flag, and anything that reached the browser then was observed.
+    expect(parseObservationSnapshot(validSnapshot())?.observing).toBe(true);
+  });
+
+  test('rejects a non-boolean observing flag', () => {
+    expect(parseObservationSnapshot({ ...validSnapshot(), observing: 'yes' })).toBeNull();
+  });
+
   test('rejects non-object payloads', () => {
     for (const payload of [null, undefined, 'text', 42, []]) {
       expect(parseObservationSnapshot(payload)).toBeNull();

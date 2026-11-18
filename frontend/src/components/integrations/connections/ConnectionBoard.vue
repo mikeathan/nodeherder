@@ -8,12 +8,7 @@
   } from '@/types/integrations';
   import { integrationTypeIcon, integrationTypeRank, integrationTypeTitle } from '@/domain/integrations/catalog';
   import IntegrationEntry from '../entries/IntegrationEntry.vue';
-  import ObservationCard from './ObservationCard.vue';
   import UiIcon from '@/components/ui/UiIcon.vue';
-
-  /** Group id for the device-backed section; not an instance id, so it cannot collide. */
-  const OBSERVATION_GROUP = 'wireless_observation';
-  const OBSERVATION_TYPE = OBSERVATION_GROUP;
 
   const props = defineProps<{
     entries: ConnectionBoardEntry[];
@@ -22,21 +17,12 @@
     editing: boolean;
     busy: boolean;
     filtersActive: boolean;
-    /**
-     * Whether the device-backed observation group is offered.
-     *
-     * Passed rather than read here so the board stays a presentation component with no store
-     * access, matching how it receives everything else.
-     */
-    observationAvailable?: boolean;
   }>();
   const emit = defineEmits<{
     move: [id: string, offset: number];
     hide: [id: string];
     refresh: [item: ConnectionInstance];
     open: [id: string, event: MouseEvent];
-    /** Hide the device-backed group. It has no instance to hide, so it is a separate action. */
-    hideObservation: [];
   }>();
 
   interface EntryGroup {
@@ -116,41 +102,7 @@
           @move="emit('move', item.id, $event)" />
       </div>
     </section>
-    <!--
-      The device-backed group, rendered with the same header, count and collapse as the configured
-      ones. It is not an instance — there is nothing to configure — but it belongs in the same list
-      with the same rhythm, which is what it lacked when it was appended below the board as a bare
-      card: no group header, no collapse, and no way to hide it.
-    -->
-    <section
-      v-if="observationAvailable"
-      class="connection-entry-group"
-      aria-label="Wireless observation">
-      <header>
-        <h2>
-          <button
-            type="button"
-            class="connection-entry-group-toggle"
-            :aria-expanded="!collapsed.has(OBSERVATION_GROUP)"
-            @click="toggleGroup(OBSERVATION_GROUP)">
-            <span class="connection-entry-group-icon"><UiIcon :name="integrationTypeIcon(OBSERVATION_TYPE)" /></span>
-            <span class="connection-entry-group-title">{{ integrationTypeTitle(OBSERVATION_TYPE, catalog) }}</span>
-            <span class="connection-entry-group-count">1</span>
-            <UiIcon
-              class="connection-entry-group-chevron"
-              :class="{ 'is-collapsed': collapsed.has(OBSERVATION_GROUP) }"
-              name="chevronDown" />
-          </button>
-        </h2>
-      </header>
-      <div v-show="!collapsed.has(OBSERVATION_GROUP)" class="connection-entry-group-list">
-        <ObservationCard
-          :editing="editing"
-          :busy="busy"
-          @hide="emit('hideObservation')" />
-      </div>
-    </section>
-    <p v-if="filtersActive && !groups.length && !observationAvailable" class="connection-entry-empty">
+    <p v-if="filtersActive && !groups.length" class="connection-entry-empty">
       No integrations match these filters.
     </p>
   </div>

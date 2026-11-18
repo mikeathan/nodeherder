@@ -138,6 +138,14 @@ type Snapshot struct {
 	// operator means by "new".
 	Arrivals int `json:"arrivals"`
 
+	// Observing reports whether any integration currently wants this data.
+	//
+	// Without it, a consumer cannot tell "nobody is reading the radio" from "the radio hears
+	// nothing", which are opposite problems with opposite fixes. It travels in the payload rather
+	// than being inferred from an empty list, because an empty list is the normal state of a
+	// working installation in a quiet room.
+	Observing bool `json:"observing"`
+
 	// Classification says how far the evidence needed to classify has got.
 	//
 	// It exists because a first day of observation looks identical to a broken classifier: both

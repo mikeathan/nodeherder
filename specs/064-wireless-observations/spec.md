@@ -118,6 +118,44 @@ Independent verification: store round-trip tests; UI triage manual check.
 - AC-07: Given a hub with at least one observing source, when a snapshot is produced,
   then one `observations` WebSocket event carries source descriptors and identities.
 
+### US-05 — The integration page tells the truth about a live source (priority P1)
+
+Added 2026-11-18 after using the page against a live EPL with 571 advertisements. Amends
+the presentation decided in [ADR-004](adr-004-local-provider.md); see
+[ADR-005](adr-005-census-is-read-not-stored.md).
+
+- AC-23: Given a local integration and a running sensor, when any surface reads it, then
+  the device count matches the hub's current observation snapshot. No surface may show a
+  count captured earlier, and the integration page, the board row and a Home tile must not
+  disagree about the same moment.
+- AC-24: Given no enabled local integration, when advertisements arrive, then neither the
+  identity list nor the per-source counters advance, and the source is reported as not
+  being observed rather than as silent.
+- AC-25: Given a continuous provider, then the settings pane offers no address control and
+  no refresh schedule, and states why where those controls would be. It offers one
+  prominently labelled control for enabling and disabling.
+- AC-26: Given a device count and a packet count, then they are not presented as a pair;
+  packet counts appear under a labelled disclosure that states they are lifetime totals
+  for the current run.
+- AC-27: Given a Home observation tile, then it uses only custom properties the theme
+  layer defines, presents as a link rather than as a card containing a button, and has the
+  same container styling as the integration tiles beside it.
+- AC-28: Given a wireless observation entry on the Integrations board, then opening it goes
+  directly to the radar, and the whole entry is the target rather than its name alone.
+  The integration page remains reachable from that entry in one action.
+- AC-29: Given the radar page, then a way to the integration's settings is always present,
+  and when observation is turned off the page says so explicitly and links to the control
+  that turns it back on.
+- AC-30: Given a board entry, then a value shown beside its label is that value, not a
+  timestamp: counts, dates and totals must not be substituted for one another, and a
+  timestamp appears once per entry.
+- AC-31: Given a census holding devices whose sources have stopped reporting, then no surface
+  states both that devices are present and that nothing is reporting, about the same moment.
+  The count is presented as what was heard earlier, and the reason it is no longer growing is
+  stated once.
+- AC-32: Given a provider with no definition document, then no surface reports a missing
+  definition as an error, whether the catalog has been read or not.
+
 ## Requirements and success
 
 - FR-01: MUST allow a provider device to contribute observations without changing its

@@ -115,6 +115,15 @@ export function createConnectionsApi(defaultSignal?: AbortSignal) {
     /** Read shared setup progress; only explicit step/check mutations admit provider work. */
     setup: (id: string, signal?: AbortSignal) =>
       request(`/setup/${segment(id)}`, parseSetup, 'GET', undefined, undefined, signal),
+    /**
+     * Add a provider that needs no setup input.
+     *
+     * Separate from `createSetup` because a local provider has no inputs, no search and no
+     * selection: routing it through the wizard would show the operator empty steps and then land
+     * them back where they started.
+     */
+    addInstance: (provider: string, name?: string) =>
+      request('/instances', parseInstance, 'POST', { provider_key: provider, name }),
     /** Create a new wizard or revision-fenced replacement for an existing instance. */
     createSetup: (provider: string, target?: { id: string; etag: string }) =>
       request('/setup', parseSetup, 'POST', {

@@ -263,11 +263,12 @@ export function registerWebsocket(app, server) {
 
     // Wireless observation snapshot. The real hub broadcasts this whenever aggregated state
     // changes; the mock sends one so the viewer can be rendered and asserted in a browser.
-    const observationSnapshot = buildObservationSnapshot();
-    sendMessage(ws, 'observations', observationSnapshot);
+    // Rebuilt per tick rather than captured once, so a spec that turns observation off actually
+    // receives the empty broadcast the real service publishes.
+    sendMessage(ws, 'observations', buildObservationSnapshot());
     const observationIntervalId = setInterval(function () {
       if (!connected) return;
-      sendMessage(ws, 'observations', observationSnapshot);
+      sendMessage(ws, 'observations', buildObservationSnapshot());
     }, 2000);
     intervals.push(observationIntervalId);
 
@@ -309,6 +310,25 @@ function safeParse(message) {
 const observationDecisions = new Map();
 
 /**
+ * Whether the mock reports observation as running.
+ *
+ * The radar page has to distinguish "the integration is off" from "the radio hears nothing", and a
+ * browser test can only assert that if the fixture can produce both. Defaults to on, so nothing
+ * changes for specs that do not care.
+ */
+let observationEnabled = true;
+
+/** Turn the fixture's observation on or off, for specs that assert the disabled state. */
+export function setObservationEnabled(enabled) {
+  observationEnabled = enabled;
+}
+
+/** Current fixture state, so a reset can restore the default. */
+export function observationIsEnabled() {
+  return observationEnabled;
+}
+
+/**
  * Clear every triage decision recorded in this process.
  *
  * The mock is one long-lived server shared by every browser spec, so a decision made in one test
@@ -318,6 +338,7 @@ const observationDecisions = new Map();
  */
 export function resetObservationDecisions() {
   observationDecisions.clear();
+  observationEnabled = true;
 }
 
 /** Apply a triage decision to the fixture, so a rebroadcast reflects it. */
@@ -329,9 +350,16 @@ function applyObservationDecision(message) {
 function buildObservationSnapshot() {
   const now = Date.now();
   const at = (offsetSeconds) => new Date(now - offsetSeconds * 1000).toISOString();
+  // Observed-off is a genuinely empty broadcast, which is what the real service publishes when the
+  // gate closes. Returning the populated fixture with a false flag would let a page render a stale
+  // census beside a "not observing" notice and still pass.
+  if (!observationEnabled) {
+    return { at: at(0), truncated: false, observing: false, sources: [], identities: [], arrivals: 0 };
+  }
   return {
     at: at(0),
     truncated: false,
+    observing: true,
     sources: [
       {
         id: 'mock-proxy-1',

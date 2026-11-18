@@ -464,3 +464,223 @@ func TestStartStopsOnContextCancel(t *testing.T) {
 		t.Fatalf("observe after cancel: %v", err)
 	}
 }
+
+// TestDisabledGateDiscardsAdvertisements checks that disabling observation actually stops it.
+//
+// The failure this guards against is a toggle that only hides the view: the queue would fill,
+// the recorder would keep accumulating evidence and the device would keep spending radio time on
+// data nobody wants. Asserting on the queue proves the work stopped rather than being filtered later.
+func TestDisabledGateDiscardsAdvertisements(t *testing.T) {
+	clock := newFakeClock()
+	enabled := false
+	service := NewService(Deps{
+		Store:  &recordingStore{},
+		Clock:  clock,
+		Queue:  4,
+		Active: func() bool { return enabled },
+	})
+	observation := []model.Observation{stableObservation("a", "addr:01", -60, clock.Now())}
+
+	if err := service.ObserveAdvertisements(context.Background(), observation); err != nil {
+		t.Fatalf("observe while disabled: %v", err)
+	}
+	if len(service.queue) != 0 {
+		t.Fatalf("queue length = %d, want 0 while observation is disabled", len(service.queue))
+	}
+
+	enabled = true
+	if err := service.ObserveAdvertisements(context.Background(), observation); err != nil {
+		t.Fatalf("observe while enabled: %v", err)
+	}
+	if len(service.queue) != 1 {
+		t.Fatalf("queue length = %d, want 1 once observation is enabled", len(service.queue))
+	}
+}
+
+// TestNilGateObservesAlways pins the default: an installation with no observation integration
+// behaves exactly as it did before the gate existed, so upgrading cannot silently stop observation.
+func TestNilGateObservesAlways(t *testing.T) {
+	clock := newFakeClock()
+	service := NewService(Deps{Store: &recordingStore{}, Clock: clock, Queue: 4})
+	if err := service.ObserveAdvertisements(context.Background(), []model.Observation{stableObservation("a", "addr:01", -60, clock.Now())}); err != nil {
+		t.Fatalf("observe: %v", err)
+	}
+	if len(service.queue) != 1 {
+		t.Fatalf("queue length = %d, want 1 with no gate", len(service.queue))
+	}
+	if !service.Snapshot().Observing {
+		t.Fatal("a nil gate must report observing")
+	}
+}
+
+// TestDisabledGateStopsCounters is the regression for the page that read "0 devices heard" beside
+// "571 heard · 571 decoded".
+//
+// The two numbers came from different paths, and only one honoured the gate. A sensor streaming
+// before the integration was added advanced the counters while every identity was discarded, so the
+// page argued with itself and neither number could be acted on. A counter that measures what the
+// radio delivered but nobody kept is not a diagnostic — it is noise with a timestamp.
+func TestDisabledGateStopsCounters(t *testing.T) {
+	clock := newFakeClock()
+	enabled := false
+	service := NewService(Deps{
+		Store:  &recordingStore{},
+		Clock:  clock,
+		Queue:  4,
+		Active: func() bool { return enabled },
+	})
+	service.RegisterSource("ble-1", "Hallway", nil, nil)
+
+	service.RecordSourceActivity("ble-1", 571, 571, clock.Now())
+	if got := service.Snapshot().Sources[0].Diagnostics.Advertisements; got != 0 {
+		t.Fatalf("advertisements = %d while disabled, want 0", got)
+	}
+
+	enabled = true
+	service.RecordSourceActivity("ble-1", 2, 2, clock.Now())
+	if got := service.Snapshot().Sources[0].Diagnostics.Advertisements; got != 2 {
+		t.Fatalf("advertisements = %d after enabling, want 2", got)
+	}
+}
+
+// TestClosingTheGateClearsTheCensus is why the Home tile can stop showing a census.
+//
+// Removing or disabling the only integration used to stop the gate and nothing else: the browser
+// kept its last snapshot and rendered a room that was no longer being listened to. The service now
+// publishes one clearing snapshot, and the gate flag is in the signature so that publish is not
+// suppressed as an unchanged duplicate.
+func TestClosingTheGateClearsTheCensus(t *testing.T) {
+	clock := newFakeClock()
+	enabled := true
+	published := []model.Snapshot{}
+	service := NewService(Deps{
+		Store:   &recordingStore{},
+		Clock:   clock,
+		Queue:   8,
+		Publish: func(snapshot model.Snapshot) { published = append(published, snapshot) },
+		Active:  func() bool { return enabled },
+	})
+
+	service.RegisterSource("ble-1", "Hallway", nil, nil)
+	service.record(stableObservation("ble-1", "addr:01", -60, clock.Now()))
+	clock.Advance(300 * time.Millisecond)
+	service.flush()
+	if len(service.Snapshot().Identities) != 1 {
+		t.Fatal("the fixture did not observe anything")
+	}
+
+	enabled = false
+	clock.Advance(300 * time.Millisecond)
+	service.flush()
+
+	empty := service.Snapshot()
+	if empty.Observing {
+		t.Fatal("the snapshot still reports observing after the gate closed")
+	}
+	if len(empty.Identities) != 0 {
+		t.Fatalf("the observed identities survived the gate closing: %d", len(empty.Identities))
+	}
+	// Sources survive on purpose: a descriptor names a device and the facets it can populate, which
+	// is a fact about the device rather than about what was observed, and only the live session can
+	// announce it — once. Clearing it here left a disabled-then-re-enabled integration with no
+	// sources until the ESPHome session reconnected, so the filters vanished and a silent source
+	// became indistinguishable from an absent one. The counters do not lie, because
+	// RecordSourceActivity honours the same gate.
+	if len(empty.Sources) != 1 {
+		t.Fatalf("sources = %d after the gate closed, want the 1 descriptor kept", len(empty.Sources))
+	}
+	if got := empty.Sources[0].Diagnostics.Advertisements; got != 0 {
+		t.Fatalf("advertisements = %d, want 0: counters must not advance while not observing", got)
+	}
+	// The clearing snapshot must have been broadcast, not folded away as a duplicate.
+	if len(published) == 0 || published[len(published)-1].Observing {
+		t.Fatalf("published snapshots = %d, last observing = %v", len(published), published[len(published)-1].Observing)
+	}
+}
+
+// TestReEnablingTheGateRestoresObservation is the regression for a disable/enable cycle stranding
+// the viewer with no sources.
+//
+// The session announces its descriptor once per connection, guarded by its own flag, and disabling
+// the integration deliberately does not close the session. So anything the gate's close discards
+// cannot come back until the device reconnects — which may be hours.
+func TestReEnablingTheGateRestoresObservation(t *testing.T) {
+	clock := newFakeClock()
+	enabled := true
+	service := NewService(Deps{
+		Store:  &recordingStore{},
+		Clock:  clock,
+		Queue:  8,
+		Active: func() bool { return enabled },
+	})
+	service.RegisterSource("ble-1", "Hallway", nil, nil)
+
+	enabled = false
+	clock.Advance(300 * time.Millisecond)
+	service.flush()
+
+	enabled = true
+	clock.Advance(300 * time.Millisecond)
+	service.flush()
+
+	snapshot := service.Snapshot()
+	if !snapshot.Observing {
+		t.Fatal("the gate did not reopen")
+	}
+	if len(snapshot.Sources) != 1 {
+		t.Fatalf("sources = %d after re-enabling, want 1: the descriptor was lost and cannot be re-announced", len(snapshot.Sources))
+	}
+	// Recording resumes against the surviving descriptor.
+	service.RecordSourceActivity("ble-1", 5, 5, clock.Now())
+	if got := service.Snapshot().Sources[0].Diagnostics.Advertisements; got != 5 {
+		t.Fatalf("advertisements = %d after re-enabling, want 5", got)
+	}
+}
+
+// TestZeroRSSIIsNotAZeroReading pins that an unmeasurable signal is not plotted as zero dBm.
+//
+// ESPHome reports RSSI 0 when it could not measure. Every other consumer of this value already
+// rejects it; accepting it here made the median 0 and drew the device on top of the radar.
+func TestZeroRSSIIsNotAZeroReading(t *testing.T) {
+	clock := newFakeClock()
+	service := NewService(Deps{Store: &recordingStore{}, Clock: clock, Queue: 8})
+	service.RegisterSource("ble-1", "Hallway", nil, nil)
+
+	service.record(stableObservation("ble-1", "addr:01", -60, clock.Now()))
+	service.record(stableObservation("ble-1", "addr:01", 0, clock.Now()))
+
+	snapshot := service.Snapshot()
+	if len(snapshot.Identities) != 1 {
+		t.Fatal("the fixture did not observe anything")
+	}
+	if rssi := snapshot.Identities[0].RSSI; rssi != nil && *rssi == 0 {
+		t.Fatal("a zero RSSI was stored as a real reading")
+	}
+	if rssi := snapshot.Identities[0].RSSI; rssi == nil || *rssi != -60 {
+		t.Fatalf("RSSI = %v, want the last measurable reading -60", rssi)
+	}
+	// The packet still counts: the device was heard, the signal just could not be measured.
+	if snapshot.Identities[0].Packets != 2 {
+		t.Fatalf("packets = %d, want 2", snapshot.Identities[0].Packets)
+	}
+}
+
+// TestSilentRoomIsNotAnAbsentObserver keeps the two empty states distinguishable.
+//
+// An empty identity list is the normal state of a working installation. Without the gate flag, a
+// consumer would have to guess why the list is empty, and the two answers have opposite fixes.
+func TestSilentRoomIsNotAnAbsentObserver(t *testing.T) {
+	clock := newFakeClock()
+	service := NewService(Deps{Store: &recordingStore{}, Clock: clock, Queue: 4})
+	service.RegisterSource("ble-1", "Hallway", nil, nil)
+	clock.Advance(300 * time.Millisecond)
+	service.flush()
+
+	snapshot := service.Snapshot()
+	if len(snapshot.Identities) != 0 {
+		t.Fatal("the fixture heard a device")
+	}
+	if !snapshot.Observing {
+		t.Fatal("a silent room was reported as not being observed")
+	}
+}

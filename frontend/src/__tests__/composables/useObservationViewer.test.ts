@@ -45,10 +45,25 @@ function snapshot(identities: unknown[], facets = ['kind', 'vendor']): Observati
   } as never;
 }
 
+/**
+ * Every viewer created here starts a one-second interval that only a component unmount clears.
+ * Nothing in this file is a component, so each instance leaked a handle and Jest could not exit —
+ * which is how the leak surfaced. The suite now closes them itself.
+ */
+const stopClocks: { stop(): void }[] = [];
+function createViewer(next: () => ObservationSnapshot | null) {
+  const instance = useObservationViewer(next);
+  stopClocks.push(instance);
+  return instance;
+}
+afterEach(() => {
+  for (const instance of stopClocks.splice(0)) instance.stop();
+});
+
 describe('useObservationViewer', () => {
   test('renders the live snapshot when not paused', () => {
     const state = ref(snapshot([identity('addr:aa:bb:cc:dd:ee:01')]));
-    const viewer = useObservationViewer(() => state.value);
+    const viewer = createViewer(() => state.value);
 
     expect(viewer.visible.value).toHaveLength(1);
     expect(viewer.paused.value).toBe(false);
@@ -56,14 +71,14 @@ describe('useObservationViewer', () => {
 
   test('groups facets declared by sources, not from a hardcoded list', () => {
     const state = ref(snapshot([], ['kind', 'addressType']));
-    const viewer = useObservationViewer(() => state.value);
+    const viewer = createViewer(() => state.value);
 
     expect(viewer.facets.value.sort()).toEqual(['addressType', 'kind']);
   });
 
   test('pausing freezes the rendered identities', () => {
     const state = ref(snapshot([identity('addr:aa:bb:cc:dd:ee:01')]));
-    const viewer = useObservationViewer(() => state.value);
+    const viewer = createViewer(() => state.value);
 
     viewer.togglePause();
     state.value = snapshot([
@@ -77,7 +92,7 @@ describe('useObservationViewer', () => {
 
   test('resuming follows the live snapshot again', () => {
     const state = ref(snapshot([identity('addr:aa:bb:cc:dd:ee:01')]));
-    const viewer = useObservationViewer(() => state.value);
+    const viewer = createViewer(() => state.value);
 
     viewer.togglePause();
     state.value = snapshot([
@@ -91,7 +106,7 @@ describe('useObservationViewer', () => {
 
   test('a decision applied while paused is visible without resuming', () => {
     const state = ref(snapshot([identity('addr:aa:bb:cc:dd:ee:01')]));
-    const viewer = useObservationViewer(() => state.value);
+    const viewer = createViewer(() => state.value);
 
     viewer.togglePause();
     viewer.applyDecisionToFrozen('addr:aa:bb:cc:dd:ee:01', ObservationDecisions.Known);
@@ -101,7 +116,7 @@ describe('useObservationViewer', () => {
 
   test('a decision outside the frozen view changes nothing', () => {
     const state = ref(snapshot([identity('addr:aa:bb:cc:dd:ee:01')]));
-    const viewer = useObservationViewer(() => state.value);
+    const viewer = createViewer(() => state.value);
 
     // Not paused: the frozen list does not exist, so this must be a no-op rather than a crash.
     expect(() => viewer.applyDecisionToFrozen('missing', ObservationDecisions.Known)).not.toThrow();
@@ -111,7 +126,7 @@ describe('useObservationViewer', () => {
     const state = ref(
       snapshot([identity('addr:aa:bb:cc:dd:ee:01'), identity('addr:aa:bb:cc:dd:ee:02')]),
     );
-    const viewer = useObservationViewer(() => state.value);
+    const viewer = createViewer(() => state.value);
 
     viewer.selectIdentity('addr:aa:bb:cc:dd:ee:02');
 
@@ -122,7 +137,7 @@ describe('useObservationViewer', () => {
 
   test('clearing a selection leaves focus', () => {
     const state = ref(snapshot([identity('addr:aa:bb:cc:dd:ee:01')]));
-    const viewer = useObservationViewer(() => state.value);
+    const viewer = createViewer(() => state.value);
     viewer.selectIdentity('addr:aa:bb:cc:dd:ee:01');
 
     viewer.clearSelection();
@@ -133,7 +148,7 @@ describe('useObservationViewer', () => {
 
   test('an identity that leaves the snapshot is reported as a lost selection', () => {
     const state = ref(snapshot([identity('addr:aa:bb:cc:dd:ee:01')]));
-    const viewer = useObservationViewer(() => state.value);
+    const viewer = createViewer(() => state.value);
     viewer.selectIdentity('addr:aa:bb:cc:dd:ee:01');
 
     state.value = snapshot([]);
@@ -144,7 +159,7 @@ describe('useObservationViewer', () => {
 
   test('focus is not offered without a selection', () => {
     const state = ref(snapshot([identity('addr:aa:bb:cc:dd:ee:01')]));
-    const viewer = useObservationViewer(() => state.value);
+    const viewer = createViewer(() => state.value);
 
     expect(viewer.availableViews.value).not.toContain(ObservationViews.Focus);
   });
@@ -184,7 +199,7 @@ describe('demoted classes', () => {
         classified('addr:aa:bb:cc:dd:ee:03', false),
       ]),
     );
-    const viewer = useObservationViewer(() => state.value);
+    const viewer = createViewer(() => state.value);
 
     expect(viewer.visible.value).toHaveLength(1);
     expect(viewer.demotedCount.value).toBe(2);
@@ -197,7 +212,7 @@ describe('demoted classes', () => {
         classified('addr:aa:bb:cc:dd:ee:02', false),
       ]),
     );
-    const viewer = useObservationViewer(() => state.value);
+    const viewer = createViewer(() => state.value);
 
     viewer.showDemoted.value = true;
 
@@ -209,7 +224,7 @@ describe('demoted classes', () => {
     // An older backend sends no classification. Hiding those would blank the page on a mixed
     // deployment, and showing too much is the safe failure.
     const state = ref(snapshot([identity('addr:aa:bb:cc:dd:ee:09')]));
-    const viewer = useObservationViewer(() => state.value);
+    const viewer = createViewer(() => state.value);
 
     expect(viewer.visible.value).toHaveLength(1);
     expect(viewer.demotedCount.value).toBe(0);
@@ -224,7 +239,7 @@ describe('demoted classes', () => {
         classified('addr:aa:bb:cc:dd:ee:02', false),
       ]),
     );
-    const viewer = useObservationViewer(() => state.value);
+    const viewer = createViewer(() => state.value);
 
     viewer.onlyNew.value = true;
 
@@ -237,7 +252,7 @@ describe('demoted toggle availability', () => {
     // Before classification has run every device is learning or provisional, so nothing is hidden
     // and the reveal control would toggle between two identical states — which reads as broken.
     const state = ref(snapshot([identity('addr:aa:bb:cc:dd:ee:01')]));
-    const viewer = useObservationViewer(() => state.value);
+    const viewer = createViewer(() => state.value);
 
     expect(viewer.hasDemoted.value).toBe(false);
     expect(viewer.demotedCount.value).toBe(0);
@@ -257,7 +272,7 @@ describe('demoted toggle availability', () => {
         }),
       ]),
     );
-    const viewer = useObservationViewer(() => state.value);
+    const viewer = createViewer(() => state.value);
 
     expect(viewer.hasDemoted.value).toBe(true);
     viewer.showDemoted.value = true;

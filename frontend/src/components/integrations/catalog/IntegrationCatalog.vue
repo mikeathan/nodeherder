@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import { computed, ref, watch } from 'vue';
   import type { RouteLocationRaw } from 'vue-router';
-  import type { ConnectionCatalog, ConnectionInstance } from '@/types/integrations';
+  import type { ConnectionCatalog, ConnectionCatalogProvider, ConnectionInstance } from '@/types/integrations';
   import UiButton from '@/components/ui/UiButton.vue';
   import UiIcon from '@/components/ui/UiIcon.vue';
   import IntegrationTypeCard from './IntegrationTypeCard.vue';
@@ -13,17 +13,16 @@
     providerCredentialLabel,
     providerRegionLabel,
     providerRefreshLabel,
+    providerIsLocal,
   } from '@/domain/integrations/catalog';
 
   const props = defineProps<{
     catalog: ConnectionCatalog | null;
     hidden: ConnectionInstance[];
-    /** Whether the device-backed observation group is currently hidden by the operator. */
-    observationHiddenHere?: boolean;
     busy: boolean;
     providerRoute: (key: string) => RouteLocationRaw;
   }>();
-  defineEmits<{ add: [key: string]; restore: [id: string]; restoreObservation: [] }>();
+  defineEmits<{ add: [key: string]; restore: [id: string] }>();
   const selectedType = ref('');
   const query = ref('');
   const types = computed(() => {
@@ -40,6 +39,10 @@
   const providers = computed(() =>
     selectedType.value ? integrationTypeProviders(props.catalog, selectedType.value) : []
   );
+  /** Copy for the primary action: "Add" creates an instance directly, "Set up" starts a wizard. */
+  function providerActionLabel(provider: ConnectionCatalogProvider): string {
+    return providerIsLocal(provider) ? 'Add' : 'Set up';
+  }
   const activeTypeName = computed(() =>
     selectedType.value ? integrationTypeTitle(selectedType.value, props.catalog) : ''
   );
@@ -58,7 +61,7 @@
       <input v-model="query" type="search" placeholder="Type or provider" autocomplete="off" />
     </label>
 
-    <section v-if="hidden.length || observationHiddenHere" aria-label="Hidden integrations">
+    <section v-if="hidden.length" aria-label="Hidden integrations">
       <h2>Hidden integrations</h2>
       <div v-for="item in hidden" :key="item.id" class="catalog-hidden-row">
         <div>
@@ -66,18 +69,6 @@
           <p>Configured and hidden from this page</p>
         </div>
         <UiButton :disabled="busy" @click="$emit('restore', item.id)">Show on page</UiButton>
-      </div>
-      <!--
-        The device-backed group has no instance to restore, so it is listed here alongside the
-        hidden instances and revealed the same way. Hiding something with no way back is how a
-        preference becomes a support question.
-      -->
-      <div v-if="observationHiddenHere" class="catalog-hidden-row">
-        <div>
-          <h3>Wireless observation</h3>
-          <p>Hidden from this page</p>
-        </div>
-        <UiButton :disabled="busy" @click="$emit('restoreObservation')">Show on page</UiButton>
       </div>
     </section>
 
@@ -121,7 +112,7 @@
           <p v-if="provider.disk_error" role="status">{{ provider.disk_error }}</p>
           <p>
             {{ providerCredentialLabel(provider) }} · {{ providerRefreshLabel(provider)
-            }}<span v-if="provider.origin"> · {{ provider.origin }}</span>
+            }}<span v-if="provider.origin && !providerIsLocal(provider)"> · {{ provider.origin }}</span>
           </p>
         </div>
         <div class="catalog-provider-actions">
@@ -129,9 +120,11 @@
             variant="primary"
             :disabled="busy || !provider.available"
             @click="$emit('add', provider.key)"
-            >Set up</UiButton
+            >{{ providerActionLabel(provider) }}</UiButton
           >
-          <UiButton :to="providerRoute(provider.key)" :disabled="busy">Configure operations</UiButton>
+          <UiButton v-if="!providerIsLocal(provider)" :to="providerRoute(provider.key)" :disabled="busy"
+            >Configure operations</UiButton
+          >
         </div>
       </div>
     </section>

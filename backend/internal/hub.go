@@ -117,6 +117,13 @@ func newRouter(port int, ws ws.EventHub, hub *controllers.HubController, store s
 }
 
 func Register(port int, store store.AppStore, ctx context.Context, options ...Option) (*api.ApiServer, error) {
+	// Applied before anything is constructed rather than only inside the router, because the
+	// observation service needs to ask the integration runtime whether observation is wanted —
+	// and it starts before routing exists.
+	configuration := optionsConfig{}
+	for _, option := range options {
+		option(&configuration)
+	}
 	markProviderDevicesOffline(store)
 
 	eventHub := ws.NewWsHub()
@@ -181,8 +188,23 @@ func Register(port int, store store.AppStore, ctx context.Context, options ...Op
 		observationDeps.Recorder = summaryRecorder
 		options = append(options, WithObservationHistory(summaryStore))
 	}
+	// Observation runs only while an integration wants it. The gate is wired before construction
+	// because the service reads it from the first advertisement, and a hub with no integration
+	// configured observes nothing — which is the default, not a special case.
+	if configuration.connections != nil {
+		observationDeps.Active = integrations.ObservationEnabled(configuration.connections)
+	}
 	observationService := observations.NewService(observationDeps)
 	observationService.Start(ctx)
+	// The runtime publishes the hub's live view instead of re-deriving it: the aggregation already
+	// happened here, and reading it twice would give the integration a different answer.
+	if configuration.connections != nil {
+		if e := integrations.WithObservationSource(configuration.connections, func() (any, error) {
+			return observationService.Snapshot(), nil
+		}); e != nil {
+			utils.LogErrorf("observation integration source: %v", e)
+		}
+	}
 	registerObservationHandlers(eventHub, store.AppConfig())
 	providerManager := startDeviceProviders(ctx, hub, observationService)
 	if providerManager != nil {

@@ -2,11 +2,28 @@
   import { computed, reactive } from 'vue';
   import UiCard from '@/components/ui/UiCard.vue';
   import UiButton from '@/components/ui/UiButton.vue';
+  import UiSettingRow from '@/components/ui/UiSettingRow.vue';
+  import UiToggle from '@/components/ui/UiToggle.vue';
   import { SCHEDULE_UNITS, formatScheduleInterval, toIntervalSeconds, type ScheduleUnit } from '@/domain/schedule';
   import { credentialLabel, credentialSlots } from '@/domain/integrations/credentials';
   import { formatLocalDateTime } from '@/utils/date.utils';
   import type { ConnectionInstance, ProviderDefinition } from '@/types/integrations';
-  const props = defineProps<{ item: ConnectionInstance; definition: ProviderDefinition | null; busy: boolean }>();
+  const props = defineProps<{
+    item: ConnectionInstance;
+    definition: ProviderDefinition | null;
+    busy: boolean;
+    /**
+     * Whether this provider reads state the hub already holds.
+     *
+     * Passed in rather than read from `definition`: for exactly these providers the definition is
+     * deliberately not fetched, because there is no document to fetch. Deciding from it meant the
+     * answer was always "not continuous", so this pane offered an address change and a refresh
+     * schedule to a provider that has neither — and the schedule could only fail when saved.
+     */
+    continuous: boolean;
+    /** Provider display name, resolved from the catalog because the definition may be absent. */
+    providerName: string;
+  }>();
   const name = defineModel<string>('name', { required: true });
   const scheduleEnabled = defineModel<boolean>('scheduleEnabled', { required: true });
   const scheduleValue = defineModel<number>('scheduleValue', { required: true });
@@ -28,6 +45,29 @@
       ? slots.value.every((slot) => props.item.credential_slots.includes(slot))
       : props.item.credential_configured
   );
+  /** Two-way bridge for the toggle, which emits rather than writing a prop. */
+  const observing = computed({
+    get: () => props.item.enabled,
+    set: (value: boolean) => {
+      if (value !== props.item.enabled) emit('toggleEnabled');
+    },
+  });
+  /**
+   * What turning this off actually does.
+   *
+   * A continuous integration's switch stops the sensor being read, which is a data decision with a
+   * cost on a shared device. Saying "disabled" alone would describe the flag rather than the effect.
+   */
+  const observingHelp = computed(() =>
+    props.item.enabled
+      ? 'On. Your sensor is being read and wireless devices are recorded.'
+      : 'Off. Your sensor is not being read, so nothing is recorded.'
+  );
+  const observingHelpScheduled = computed(() =>
+    props.item.enabled
+      ? 'On. The provider is read on the schedule below, or when you refresh.'
+      : 'Off. Nothing is fetched until you enable it again.'
+  );
   function saveCredentials() {
     const items = slots.value.flatMap((slot) => {
       const value = tokens[slot];
@@ -47,71 +87,85 @@
     ><div class="connection-form">
       <div class="settings-provider">
         <span>Provider</span>
-        <strong>{{ definition?.name ?? item.provider_key }}</strong>
-        <a v-if="definition" :href="definition.base_url" target="_blank" rel="noopener noreferrer"
+        <strong>{{ providerName }}</strong>
+        <a
+          v-if="definition && !continuous"
+          :href="definition.base_url"
+          target="_blank"
+          rel="noopener noreferrer"
           >Open provider site ↗</a
         >
       </div>
-      <label class="connection-field"><span>Integration name</span><input v-model="name" maxlength="120" /></label>
-      <div class="connection-actions">
-        <UiButton :disabled="busy || !name.trim()" @click="emit('rename')">Save name</UiButton
-        ><UiButton :disabled="busy" @click="emit('toggleEnabled')">{{
-          item.enabled ? 'Disable integration' : 'Enable integration'
-        }}</UiButton
-        ><UiButton :disabled="busy" @click="emit('editAddress')">Change address</UiButton>
-      </div>
-      <p class="connection-muted">
-        Changing the address uses a separate setup. Your saved dates remain available until the new address is verified.
+      <!--
+        Enable/disable is the primary control and its own row, not one of four peer buttons. An
+        operator had to ask where it was, which is the whole argument: the only action that changes
+        what the integration does was the least findable thing on the page.
+      -->
+      <UiSettingRow label="Observing" :help="continuous ? observingHelp : observingHelpScheduled">
+        <UiToggle v-model="observing" label="Observing" :disabled="busy" :pending="busy" />
+      </UiSettingRow>
+      <UiSettingRow label="Integration name" for-id="settings-integration-name">
+        <input id="settings-integration-name" v-model="name" maxlength="120" />
+        <UiButton :disabled="busy || !name.trim()" @click="emit('rename')">Save name</UiButton>
+      </UiSettingRow>
+      <p v-if="continuous" class="connection-muted settings-inline-note">
+        Reads every enrolled sensor directly, so it updates continuously. There is no address to enter
+        and nothing to schedule.
       </p>
-      <fieldset>
-        <legend>Automatic refresh</legend>
-        <label><input v-model="scheduleEnabled" type="checkbox" /> Refresh this integration automatically</label>
-        <div class="connection-row">
-          <label class="connection-field"
-            ><span>Every</span
-            ><input
-              v-model.number="scheduleValue"
-              type="number"
-              :min="scheduleUnit === 'seconds' ? 60 : 1"
-              step="1"
-              :disabled="!scheduleEnabled"
-          /></label>
-          <label class="connection-field"
-            ><span>Unit</span
-            ><select v-model="scheduleUnit" :disabled="!scheduleEnabled">
-              <option v-for="unit in SCHEDULE_UNITS" :key="unit.value" :value="unit.value">{{ unit.label }}</option>
-            </select></label
-          >
-        </div>
-        <p class="connection-muted">
-          {{
-            scheduleEnabled
-              ? `Refreshes ${formatScheduleInterval(toIntervalSeconds(scheduleValue, scheduleUnit))}.`
-              : 'Manual refresh only.'
-          }}
-          Saving this setting does not contact the provider.
-        </p>
-        <p v-if="item.schedule?.next_due_at" class="connection-muted">
-          Next automatic refresh: {{ formatLocalDateTime(item.schedule.next_due_at) }}.
-        </p>
-        <p v-if="item.schedule?.last_attempt_at" class="connection-muted">
-          Last attempt: {{ formatLocalDateTime(item.schedule.last_attempt_at) }}.
-        </p>
-        <p v-if="item.schedule?.last_success_at" class="connection-muted">
-          Last successful refresh: {{ formatLocalDateTime(item.schedule.last_success_at) }}.
-        </p>
-        <p v-if="item.schedule?.last_failure_at" class="connection-muted">
-          Last refresh failure: {{ formatLocalDateTime(item.schedule.last_failure_at) }} ({{
-            item.schedule.consecutive_failures
-          }}
-          consecutive).
-        </p>
-        <div class="connection-actions">
-          <UiButton :disabled="busy || (scheduleEnabled && !scheduleValue)" @click="emit('saveSchedule')"
-            >Save schedule</UiButton
-          >
-        </div>
-      </fieldset>
+      <template v-else>
+        <UiSettingRow label="Address" help="Changing the address uses a separate setup. Saved results remain available until the new address is verified.">
+          <UiButton :disabled="busy" @click="emit('editAddress')">Change address</UiButton>
+        </UiSettingRow>
+        <fieldset>
+          <legend>Automatic refresh</legend>
+          <label><input v-model="scheduleEnabled" type="checkbox" /> Refresh this integration automatically</label>
+          <div class="connection-row">
+            <label class="connection-field"
+              ><span>Every</span
+              ><input
+                v-model.number="scheduleValue"
+                type="number"
+                :min="scheduleUnit === 'seconds' ? 60 : 1"
+                step="1"
+                :disabled="!scheduleEnabled"
+            /></label>
+            <label class="connection-field"
+              ><span>Unit</span
+              ><select v-model="scheduleUnit" :disabled="!scheduleEnabled">
+                <option v-for="unit in SCHEDULE_UNITS" :key="unit.value" :value="unit.value">{{ unit.label }}</option>
+              </select></label
+            >
+          </div>
+          <p class="connection-muted">
+            {{
+              scheduleEnabled
+                ? `Refreshes ${formatScheduleInterval(toIntervalSeconds(scheduleValue, scheduleUnit))}.`
+                : 'Manual refresh only.'
+            }}
+            Saving this setting does not contact the provider.
+          </p>
+          <p v-if="item.schedule?.next_due_at" class="connection-muted">
+            Next automatic refresh: {{ formatLocalDateTime(item.schedule.next_due_at) }}.
+          </p>
+          <p v-if="item.schedule?.last_attempt_at" class="connection-muted">
+            Last attempt: {{ formatLocalDateTime(item.schedule.last_attempt_at) }}.
+          </p>
+          <p v-if="item.schedule?.last_success_at" class="connection-muted">
+            Last successful refresh: {{ formatLocalDateTime(item.schedule.last_success_at) }}.
+          </p>
+          <p v-if="item.schedule?.last_failure_at" class="connection-muted">
+            Last refresh failure: {{ formatLocalDateTime(item.schedule.last_failure_at) }} ({{
+              item.schedule.consecutive_failures
+            }}
+            consecutive).
+          </p>
+          <div class="connection-actions">
+            <UiButton :disabled="busy || (scheduleEnabled && !scheduleValue)" @click="emit('saveSchedule')"
+              >Save schedule</UiButton
+            >
+          </div>
+        </fieldset>
+      </template>
       <fieldset v-if="slots.length || item.credential_slots.length">
         <legend>Provider credentials</legend>
         <p class="connection-muted">
@@ -178,5 +232,10 @@
     font-size: 0.7rem;
     font-style: normal;
     font-weight: 600;
+  }
+  /* A sentence where a control would be, so omitting it reads as a fact rather than a gap. */
+  .settings-inline-note {
+    margin: 0;
+    max-width: 46ch;
   }
 </style>

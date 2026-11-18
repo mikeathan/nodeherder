@@ -151,6 +151,45 @@ func (c *Compiler) CompileDocument(raw json.RawMessage) (*Compiled, error) {
 	return c.CompileYAML(string(b))
 }
 
+// CompileLocal validates a provider that is built in code and performs no request.
+//
+// The provider grammar exists to describe providers that fetch: a destination, request
+// declarations, a setup recipe and a refresh recipe. A local provider has none of those, so the
+// only rule that still means anything is the capability contract — the handler must exist and
+// accept the mapping, which is what actually guarantees a resource can be produced.
+//
+// This is a separate entry point rather than a flag on the existing one because the two validate
+// genuinely different shapes. Sharing the path would mean every request rule above gaining a
+// "unless local" branch, and a validator with exceptions stops being a description of the format.
+func (c *Compiler) CompileLocal(d model.Definition) (*Compiled, error) {
+	if !d.Local {
+		return nil, configError("local", "CompileLocal requires a local provider.")
+	}
+	if d.SchemaVersion != model.FormatVersion {
+		return nil, configError("schema_version", "Unsupported definition version.")
+	}
+	if !identifier.MatchString(d.IntegrationType) || !identifier.MatchString(d.ID) {
+		return nil, configError("id", "Use a lowercase identifier.")
+	}
+	if c.capabilities == nil {
+		return nil, configError("capability", "No capability registry is available.")
+	}
+	if err := c.capabilities.ValidateDefinition(d); err != nil {
+		return nil, err
+	}
+	source, err := json.Marshal(d)
+	if err != nil {
+		return nil, configError("", err.Error())
+	}
+	return &Compiled{
+		Definition: d,
+		YAML:       string(source),
+		Hash:       ContentHash(source),
+		Origin:     "local",
+		Revision:   1,
+	}, nil
+}
+
 func validPointer(p string) bool { return operations.ValidPointer(p) }
 func requirePointer(path, p string) error {
 	if p == "" || !validPointer(p) {
@@ -196,6 +235,12 @@ func validateProviderMetadata(d *model.Definition) error {
 	}
 	if !identifier.MatchString(d.ID) || strings.TrimSpace(d.Name) == "" || len(d.Name) > 120 {
 		return configError("id", "Use a lowercase identifier and a provider name.")
+	}
+	if d.Local {
+		// Set only by a compiled-in provider. An operator-authored document claiming to be local
+		// would bypass every request and input rule, so the boundary refuses it rather than
+		// pretending the field does not exist.
+		return configError("local", "A local provider cannot be defined in a document.")
 	}
 	if _, err := destination.Parse(d.BaseURL); err != nil {
 		return configError("base_url", "Use an HTTPS address on port 443 without credentials, query or fragment.")

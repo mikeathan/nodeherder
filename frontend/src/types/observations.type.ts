@@ -177,6 +177,11 @@ export type ObservationSnapshot = {
   sources: ObservationSourceDescriptor[];
   identities: ObservationIdentityView[];
   arrivals: number;
+  /**
+   * Whether any integration currently wants this data. Optional so a snapshot from an older
+   * backend still parses; absent is treated as observing, which is what that backend meant.
+   */
+  observing?: boolean;
   /** Optional so a snapshot from an older backend still parses. */
   classification?: ObservationClassificationProgress;
 };

@@ -4,7 +4,7 @@
  * The point of these tests is that a new source kind needs no UI change: capability is read
  * from a declared field, never from a provider name.
  */
-import { OBSERVATION_CAPABILITY, hasObservationSources, supportsObservation } from '@/domain/observations/capability';
+import { OBSERVATION_CAPABILITY, supportsObservation } from '@/domain/observations/capability';
 import type { Device } from '@/types/device';
 
 function device(overrides: Partial<Device> = {}): Device {
@@ -44,20 +44,5 @@ describe('supportsObservation', () => {
     // A WiFi-probe or USB source needs no code change here, which is the whole point.
     expect(supportsObservation(device({ provider: 'wifi-probe', capabilities: [OBSERVATION_CAPABILITY] }))).toBe(true);
     expect(supportsObservation(device({ provider: 'esphome' }))).toBe(false);
-  });
-});
-
-describe('hasObservationSources', () => {
-  test('is false for no devices', () => {
-    expect(hasObservationSources([])).toBe(false);
-    expect(hasObservationSources(undefined)).toBe(false);
-  });
-
-  test('is false when no device declares the capability', () => {
-    expect(hasObservationSources([device(), device({ id: 'device-2' })])).toBe(false);
-  });
-
-  test('is true when any device declares the capability', () => {
-    expect(hasObservationSources([device(), device({ id: 'device-2', capabilities: [OBSERVATION_CAPABILITY] })])).toBe(true);
   });
 });
