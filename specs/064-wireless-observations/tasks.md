@@ -336,3 +336,46 @@ Two findings from the rehearsal, and one of them was a real defect:
 One E2E failure was a flake: `devices.spec.ts › spatial mappings save and show only current
 provider reports` failed once on a mobile shard and passed twice in isolation. This branch changes
 no file in that spec or in the spatial code.
+
+## Post-merge follow-up 2026-11-18 — the E2E failure on `main`
+
+The merge (PR #110) turned `main` red on the very test this branch added:
+`home.spec.ts › the wireless observation tile shares the tile styling and links from the whole card`,
+with `route.fetch: Target page, context or browser has been closed`.
+
+It was not the tile. Two separate faults, both in the test harness:
+
+| # | Fault | Evidence |
+| --- | --- | --- |
+| 1 | **That test never restored the Home layout it saved.** Every other test in `home.spec.ts` wraps its write in `try/finally`; this one did not, so its extra block stayed live for whatever ran afterwards on the shared mock. | Comparing the test against its siblings. |
+| 2 | **A proxied route handler was still in flight at teardown.** `signInAutomationHub` installs a `route.fetch` proxy that nothing ever removed, so a test that ended while the page was loading failed at context close. Playwright's own message for this error names the remedy (`unrouteAll({ behavior: 'ignoreErrors' })`). | The stack trace points at `support/fixtures.ts:75`, not at product code. |
+
+Fixes, and why they are structural rather than local:
+
+- The tile test now restores its layout in `finally`, matching its siblings.
+- **A `homeReset` auto-fixture resets the mock's accepted layout after every test**, so no test can
+  depend on what ran before it. Proven with a negative control: a leaking test followed by an
+  asserting test fails without the fixture and passes with it.
+- **A `routeTeardown` auto-fixture abandons in-flight handlers before the context closes.** This is
+  the documented remedy for that exact Playwright error and covers every current and future caller,
+  rather than requiring each to remember.
+- **`retries: 1` on CI, 0 locally.** These tests drive real servers, sockets and animations; with
+  zero retries a single unavoidable race fails the build, which trains people to re-run instead of
+  reading the failure. Verified that a genuine failure still fails (both attempts) and that a real
+  flake is reported as `1 flaky` — visible, not hidden.
+
+New mock route: `POST /api/__test/home/reset` (`tools/server/home.mjs`), unauthenticated so a
+teardown can still call it.
+
+Measured, so the optimisation is grounded in numbers rather than impressions:
+
+- Per-test overhead is ~380ms (app mount after sign-in); sign-in itself is ~6ms warm.
+- Test time totals 260s for 208 desktop tests. Current round-robin sharding gives 62/70/64/64s;
+  optimal per-test packing would give 65s each, so **shard balance is already within ~10% — the
+  wall clock is per-test overhead, not imbalance.**
+- No optimisation was applied for speed beyond the fixture resets: the suite's cost is genuine app
+  mounting, and cutting it would mean changing what the tests exercise, which is the coverage we
+  are not willing to lose.
+
+Verification: all 8 shards pass (desktop and mobile, 52/52 each); `type-check:e2e`, `lint` (0
+errors) and the 153 unit suites / 1006 tests are unchanged.
