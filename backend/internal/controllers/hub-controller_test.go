@@ -1689,29 +1689,33 @@ func TestProcessorHandlesDeviceNoLastSeen(t *testing.T) {
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
 	controllers.RegisterHubController(ws, store, mqtt)
+
+	// The payload omits last_seen, so the device must fall back to the moment the report was
+	// accepted. Ingress is asynchronous and the stamp is truncated to whole seconds, so compare
+	// within a window instead of against a captured string: a second boundary falling between
+	// publish and assertion used to fail this test while the product behaved correctly.
+	earlyBound := time.Now().Truncate(time.Second)
 	mqtt.Publish(name, []byte(device3NoLastSeen))
 
-	want := time.Now().Format(time.RFC3339)
-	time.Sleep(100 * time.Millisecond)
 	id := utils.HashName(name)
 
-	device, err := store.FindDeviceById(id)
-	if err != nil {
-		t.Fatalf("FindDeviceById failed. err %v ", err)
-	}
+	var device *devices.Device
+	require.Eventually(t, func() bool {
+		found, err := store.FindDeviceById(id)
+		if err != nil || found == nil || found.FriendlyName != name {
+			return false
+		}
+		if found.LastSeen == "" {
+			return false
+		}
+		device = found
+		return true
+	}, hubharness.Timeout, 10*time.Millisecond, "device never recorded a last_seen")
 
-	if device.FriendlyName != name {
-		t.Fatalf("want %s got %s", name, device.Id)
-	}
-
-	if device.LastSeen == "" {
-		t.Fatalf("want %s got %s", "last_seen", "nil")
-	}
-
-	if device.LastSeen != want {
-		t.Fatalf("want %s got %s", want, device.LastSeen)
-	}
-
+	lastSeen, err := device.LastSeenTime()
+	require.NoError(t, err, "last_seen %q is not RFC3339", device.LastSeen)
+	require.False(t, lastSeen.Before(earlyBound), "last_seen %s predates the report", device.LastSeen)
+	require.False(t, lastSeen.After(time.Now()), "last_seen %s is in the future", device.LastSeen)
 }
 
 func TestProcessorHandlesBridgePermitJoinwithActiveStateTimer(t *testing.T) {

@@ -379,3 +379,47 @@ Measured, so the optimisation is grounded in numbers rather than impressions:
 
 Verification: all 8 shards pass (desktop and mobile, 52/52 each); `type-check:e2e`, `lint` (0
 errors) and the 153 unit suites / 1006 tests are unchanged.
+
+## Post-merge follow-up 2026-11-18 — the `main` race job
+
+The merge run on `main` (44386075011) failed in **Backend Race Detection**, which reads like a
+concurrency defect. It was not: the job re-runs the whole suite under `-race`, and the only failure
+was
+
+```
+--- FAIL: TestProcessorHandlesDeviceNoLastSeen
+    hub-controller_test.go:1712: want 2026-11-18T19:59:10Z got 2026-11-18T19:59:11Z
+```
+
+There is no `DATA RACE` in the log and no race report, only a timestamp mismatch. The test covers
+the fallback path where a payload omits `last_seen`, so the device stamps the moment the report was
+accepted. It captured `want := time.Now().Format(time.RFC3339)` **after** publishing, then compared
+that string for exact equality. Two things make that racy by construction:
+
+- Ingress is asynchronous (`Ingest` submits to a lane), and the stamp is truncated to whole seconds
+  by `time.RFC3339`.
+- A second boundary landing between the publish and the capture makes `want` and the stored value
+  differ by exactly one second — which is precisely what the failure shows.
+
+This is a harness bug that happens to fail in the race job; `-race` only slows the suite enough to
+make the boundary likely. It is unrelated to this branch's frontend work and predates it (the test
+was introduced with the fallback in a80d7412).
+
+Fix: assert the fallback landed within a window instead of matching a captured string. The publish
+is followed by `require.Eventually` on the device appearing with a `last_seen`, and the stamp must
+not predate the truncated publish moment and not be in the future. Truncating the lower bound is
+required because the stored value is second-precision, and the upper bound is the untruncated
+`time.Now()`.
+
+Evidence:
+
+- `go test -race -count=30 -run '^TestProcessorHandlesDeviceNoLastSeen$' ./internal/controllers/`
+  passes.
+- Negative control: replacing the services fallback `getCurrentTime()` with a fixed past value makes
+  the test fail with `last_seen 2020-01-01T00:00:00Z predates the report`; restoring it passes.
+- `go test -count=1 ./...` and `go test -race -count=1 ./internal/controllers/` pass; `go vet` and
+  `gofmt` are clean.
+
+Only `internal/controllers/hub-controller_test.go` changed. The sibling exact-equality assertions in
+`internal/api/routes_test.go` and `internal/services/*_test.go` compare against timestamps supplied
+in the payload, so they are deterministic and were left alone.
