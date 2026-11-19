@@ -11,8 +11,6 @@ import (
 	"time"
 )
 
-const lastSeenKey = "last_seen"
-
 // DeviceLifetimeService owns one device's state. Seed and Update for a device
 // must not run concurrently: the hub runs them on that device's lane, one
 // message at a time in arrival order, so the automations they trigger read the
@@ -109,7 +107,7 @@ func (d *DeviceLifetimeService) Seed(payload map[string]interface{}) {
 		hasChanges = true
 	}
 
-	d.device.SetLastSeen(getLastSeen(payload))
+	d.device.SetLastSeen(devices.LastSeenFrom(payload))
 
 	d.device.SetAvailability(devices.OnlineAvailability)
 	utils.LogInfof("device [%s] %s is online", d.device.Id, d.device.FriendlyName)
@@ -169,7 +167,7 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 
 	live, delta, sampled := d.collectUpdate(payload)
 	d.restoreAvailability(live)
-	live.LastSeen = getLastSeen(payload)
+	live.LastSeen = devices.LastSeenFrom(payload)
 	d.device.SetLastSeen(live.LastSeen)
 
 	// Accepted state is visible to automation before any output callback.
@@ -474,18 +472,4 @@ func (s *DeviceLifetimeService) Retire(removeFromStore func() error) error {
 	}
 	s.Close()
 	return nil
-}
-
-func getLastSeen(data map[string]interface{}) string {
-	if val, ok := data[lastSeenKey]; ok {
-		if strVal, ok := val.(string); ok {
-			return strVal
-		}
-	}
-	utils.LogTrace("lastSeen not in payload, using current time.")
-	return getCurrentTime()
-}
-
-func getCurrentTime() string {
-	return time.Now().Format(time.RFC3339)
 }

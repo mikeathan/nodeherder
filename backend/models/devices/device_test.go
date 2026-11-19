@@ -271,6 +271,53 @@ func TestExpectedReportDoesNotConfirmState(t *testing.T) {
 	}
 }
 
+func TestLastSeenFrom(t *testing.T) {
+	before := time.Now().Truncate(time.Second)
+
+	for _, tc := range []struct {
+		name    string
+		payload map[string]interface{}
+		want    string
+	}{
+		{
+			name:    "payload stamp is preserved verbatim",
+			payload: map[string]interface{}{"last_seen": "2023-07-20T19:48:35+01:00"},
+			want:    "2023-07-20T19:48:35+01:00",
+		},
+		{
+			name:    "non-string stamp falls back",
+			payload: map[string]interface{}{"last_seen": 42},
+		},
+		{
+			name:    "missing stamp falls back",
+			payload: map[string]interface{}{"temperature": 19.0},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got := devices.LastSeenFrom(tc.payload)
+			if tc.want != "" {
+				if got != tc.want {
+					t.Fatalf("want %s got %s", tc.want, got)
+				}
+				return
+			}
+
+			// The fallback is second-precision RFC3339, so it must parse and land
+			// between the moment before the call and now.
+			parsed, err := time.Parse(time.RFC3339, got)
+			if err != nil {
+				t.Fatalf("fallback %q is not RFC3339: %v", got, err)
+			}
+			if parsed.Before(before) {
+				t.Fatalf("fallback %s predates the call", got)
+			}
+			if parsed.After(time.Now()) {
+				t.Fatalf("fallback %s is in the future", got)
+			}
+		})
+	}
+}
+
 func TestTargetDistanceClassification(t *testing.T) {
 	entity, err := devices.CreateEntityFromExpose(devices.BridgeExpose{
 		Property: "target_distance", Type: bridge.NumericDataType,

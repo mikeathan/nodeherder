@@ -550,18 +550,26 @@ func CreateNewDevice(id string, friendlyName string, connType string, bridgeInfo
 		return nil, errors.New("invalid payload - no exposed entries found")
 	}
 
-	newDevice.LastSeen = getLastSeen(data)
+	newDevice.LastSeen = LastSeenFrom(data)
 	newDevice.Availability = OnlineAvailability
 	return newDevice, nil
 }
 
-func getLastSeen(data map[string]interface{}) string {
+// LastSeenFrom reads the report's timestamp, falling back to the moment of
+// acceptance when the payload omits it or supplies a non-string value.
+//
+// The returned value is the payload string verbatim when present, so it keeps
+// the payload's own precision and timezone; otherwise it is RFC3339 in local
+// time with second precision. Callers that need to compare stamps should parse
+// with LastSeenTime rather than matching the string, because the fallback is
+// truncated to whole seconds.
+func LastSeenFrom(data map[string]interface{}) string {
 	if val, ok := data[lastSeenKey]; ok {
 		if strVal, ok := val.(string); ok {
 			return strVal
 		}
 	}
-	utils.LogDebug("lastSeen not in payload, using current time.")
+	utils.LogTrace("lastSeen not in payload, using current time.")
 	return getCurrentTime()
 }
 
