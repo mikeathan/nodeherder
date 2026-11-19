@@ -423,3 +423,34 @@ Evidence:
 Only `internal/controllers/hub-controller_test.go` changed. The sibling exact-equality assertions in
 `internal/api/routes_test.go` and `internal/services/*_test.go` compare against timestamps supplied
 in the payload, so they are deterministic and were left alone.
+
+## Same-day follow-up — one owner for the last_seen fallback
+
+The negative control above exposed a smaller defect worth fixing while it was visible:
+`getLastSeen`/`getCurrentTime` existed as byte-identical private copies in both `models/devices` and
+`internal/services`, differing only in log level (Debug vs Trace). That duplication is why the first
+control run silently proved nothing — it patched `models/devices/device.go`, while the controller
+path calls the `internal/services` copy, so the test kept passing. A future change to one copy would
+quietly diverge from the other.
+
+Consolidated onto `devices.LastSeenFrom`, and deleted the services copy plus its now-dead
+`getCurrentTime` and `lastSeenKey`. `models/devices` owns the device model and already computed this
+when creating a device from a payload, so the fallback belongs there rather than in the service that
+consumes the model (BE-01: handlers and services delegate to established model/services boundaries).
+
+One deliberate behavior change: the shared helper logs at **Trace**, the less noisy of the two levels.
+It is a per-message fallback path, so Debug would add a line for every payload that omits
+`last_seen`.
+
+Added `TestLastSeenFrom` covering payload-preserved stamps, a non-string stamp, and the missing-stamp
+fallback window.
+
+Evidence:
+
+- `go test -count=1 ./...` — 53 packages, 0 failures; `go vet ./...` and `gofmt` clean on touched
+  files.
+- `go test -race -count=1` on `internal/services`, `models/devices`, `internal/controllers` passes;
+  the two last_seen tests pass 20× under `-race`.
+- Negative control re-run against the single owner: one edit to `devices.getCurrentTime()` now fails
+  **both** `TestLastSeenFrom` and `TestProcessorHandlesDeviceNoLastSeen`, which is the property the
+  duplication had been hiding.
