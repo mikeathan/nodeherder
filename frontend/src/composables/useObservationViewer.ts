@@ -20,12 +20,24 @@ import {
   ANY_DISTANCE_RANGE,
   shownByDefault,
   distanceRangeById,
-  groupIdentities,
   isRecentArrival,
+  matchesIdentityQuery,
   withinDistanceRange,
   vendorHex,
+  type DistanceRange,
   type RadarSpan,
 } from '@/domain/observations/presentation';
+import {
+  ANY_CLASS_GROUP,
+  CLASS_GROUPS,
+  classGroupOf,
+  groupIdentitiesByClass,
+  matchesClassGroup,
+  orderIdentities,
+  type ClassGroup,
+  type ObservationClassFilter,
+  type ObservationClassGroup,
+} from '@/domain/observations/classes';
 
 /** Labels for the view tabs, kept beside the union so a new view cannot be added silently. */
 export const OBSERVATION_VIEW_LABELS: Readonly<Record<ObservationViewMode, string>> = {
@@ -56,6 +68,10 @@ export function useObservationViewer(snapshot: () => ObservationSnapshot | null)
   const showDemoted = ref(false);
   /** Selected distance band id; the "any" range applies no filter. */
   const distanceRange = ref<string>(ANY_DISTANCE_RANGE.id);
+  /** Selected class preset; "any" applies no class restriction. */
+  const classFilter = ref<ObservationClassFilter>(ANY_CLASS_GROUP);
+  /** Free-text query over title, key and vendor. */
+  const search = ref('');
   /** Radar span in metres, or null to scale automatically to the data. */
   const radarSpan = ref<RadarSpan | null>(null);
   /** Whether ring distance labels are drawn. On by default; the circles carry the scale. */
@@ -68,7 +84,14 @@ export function useObservationViewer(snapshot: () => ObservationSnapshot | null)
    * crowd, while a ring label never does.
    */
   const showDeviceNames = ref(true);
-  const viewMode = ref<ObservationViewMode>(ObservationViews.Radar);
+  /**
+   * The view the operator is reading. List is the primary surface: the names and metadata need
+   * the page's width, and a 24rem rail truncated every title. Radar is a deliberate alternative
+   * view rather than the default half of a split.
+   */
+  const viewMode = ref<ObservationViewMode>(ObservationViews.List);
+  /** Last view that was not Focus, so leaving a detail returns where the operator came from. */
+  const lastNonFocusView = ref<ObservationViewMode>(ObservationViews.List);
 
   /** Live identities exactly as the hub last reported them. */
   const liveIdentities = computed<ObservationIdentityView[]>(() => snapshot()?.identities ?? []);
@@ -121,6 +144,48 @@ export function useObservationViewer(snapshot: () => ObservationSnapshot | null)
   if (getCurrentInstance()) onUnmounted(stop);
 
   /**
+   * Identities in display order.
+   *
+   * Ordering happens here, once, rather than in a component: every surface (cards, list, radar
+   * scoping) then agrees, and ordering uses only stable fields so a snapshot update cannot move
+   * a row.
+   */
+  const orderedIdentities = computed(() => orderIdentities(identities.value));
+
+  /**
+   * Whether the default hiding still applies.
+   *
+   * An explicit class selection overrides it for as long as it is active: selecting "Installed"
+   * must show installed equipment, otherwise the preset would look broken. Returning to "Any"
+   * restores the default.
+   */
+  const defaultHidingActive = computed(
+    () => !showDemoted.value && classFilter.value === ANY_CLASS_GROUP,
+  );
+
+  /**
+   * The filters shared by the visible set and the class-preset counts, so a chip's number is the
+   * number of rows the operator would get. Class and default hiding are applied by the caller.
+   */
+  function matchesOtherFilters(
+    identity: ObservationIdentityView,
+    range: DistanceRange,
+    selection: Readonly<Record<string, readonly string[]>>,
+    query: string,
+  ): boolean {
+    if (onlyNew.value && identity.decision !== ObservationDecisions.Unknown) return false;
+    if (!withinDistanceRange(identity, range)) return false;
+    if (!matchesIdentityQuery(identity, query)) return false;
+    return Object.entries(selection).every(([facet, values]) => {
+      if (values.length === 0) return true;
+      if (facet === ObservationFacets.Kind) return values.includes(identity.kind);
+      if (facet === ObservationFacets.Vendor) return values.includes(vendorHex(identity.vendor));
+      // An unknown facet cannot be filtered here; ignoring it keeps a newer backend usable.
+      return true;
+    });
+  }
+
+  /**
    * Apply the operator's filters.
    *
    * "Needs triage" means the decision is still unknown, so triaging a device removes it from the
@@ -131,26 +196,42 @@ export function useObservationViewer(snapshot: () => ObservationSnapshot | null)
    */
   const visible = computed(() => {
     const selection = facetSelection.value;
-    const cutoff = now.value;
     // Resolved once per evaluation, not once per device. Calling distanceRangeById inside the
     // predicate ran an array search for every identity on every filter pass.
     const range = distanceRangeById(distanceRange.value);
-    return identities.value.filter((identity) => {
-      if (!showDemoted.value && !shownByDefault(identity)) return false;
-      if (onlyNew.value && identity.decision !== ObservationDecisions.Unknown) return false;
-      if (!withinDistanceRange(identity, range)) return false;
-      return Object.entries(selection).every(([facet, values]) => {
-        if (values.length === 0) return true;
-        if (facet === ObservationFacets.Kind) return values.includes(identity.kind);
-        if (facet === ObservationFacets.Vendor) return values.includes(vendorHex(identity.vendor));
-        // An unknown facet cannot be filtered here; ignoring it keeps a newer backend usable.
-        return true;
-      });
+    const query = search.value;
+    const activeClass = classFilter.value;
+    const hideByDefault = defaultHidingActive.value;
+    return orderedIdentities.value.filter((identity) => {
+      if (hideByDefault && !shownByDefault(identity)) return false;
+      if (!matchesClassGroup(identity, activeClass)) return false;
+      return matchesOtherFilters(identity, range, selection, query);
     });
   });
 
-  /** Grouped sections for the list view. */
-  const grouped = computed(() => groupIdentities(visible.value));
+  /**
+   * Class presets to offer, with the count each would yield.
+   *
+   * Counts apply every filter except the class one, so a number is what the operator gets on
+   * click. Every group is returned in fixed order, including zero counts: omitting a group or
+   * letting its count widen the chip made the row shuffle while the operator was reading it. The
+   * component renders a zero-count group as disabled.
+   */
+  const classOptions = computed<(ClassGroup & { count: number })[]>(() => {
+    const range = distanceRangeById(distanceRange.value);
+    const selection = facetSelection.value;
+    const query = search.value;
+    const counts = new Map<ObservationClassGroup, number>();
+    for (const identity of orderedIdentities.value) {
+      if (!matchesOtherFilters(identity, range, selection, query)) continue;
+      const group = classGroupOf(identity).id;
+      counts.set(group, (counts.get(group) ?? 0) + 1);
+    }
+    return CLASS_GROUPS.map((group) => ({ ...group, count: counts.get(group.id) ?? 0 }));
+  });
+
+  /** Grouped sections for the list view, in fixed class order. */
+  const grouped = computed(() => groupIdentitiesByClass(visible.value));
 
   /**
    * How many visible identities arrived recently.
@@ -167,23 +248,26 @@ export function useObservationViewer(snapshot: () => ObservationSnapshot | null)
    * How many identities the default filter is hiding.
    *
    * Reported rather than silently dropped: a device that vanishes without explanation looks like a
-   * fault, and the operator needs to know the count to decide whether to reveal them.
+   * fault, and the operator needs to know the count to decide whether to reveal them. When a class
+   * preset is active the default hiding is overridden, so nothing is hidden by that rule and the
+   * footer must not claim otherwise.
    */
   const demotedCount = computed(() => {
-    if (showDemoted.value) return 0;
+    if (!defaultHidingActive.value) return 0;
     return identities.value.filter((identity) => !shownByDefault(identity)).length;
   });
 
   /**
-   * Whether any device is demoted at all, regardless of whether it is currently revealed.
+   * Whether the "show all kinds" control is meaningful.
    *
-   * Separate from `demotedCount`, which is deliberately zero once revealed. The toggle needs to know
-   * whether it has anything to act on: before classification has run, nothing is classed as
-   * installed equipment, so pressing "Show all kinds" changes nothing and the control reads as
-   * broken. A control that cannot do anything should not be offered.
+   * Separate from `demotedCount`, which is deliberately zero once revealed. While a class preset
+   * is active the control would do nothing — the preset already overrides default hiding — so it
+   * is not offered.
    */
-  const hasDemoted = computed(() =>
-    identities.value.some((identity) => !shownByDefault(identity)),
+  const hasDemoted = computed(
+    () =>
+      classFilter.value === ANY_CLASS_GROUP &&
+      identities.value.some((identity) => !shownByDefault(identity)),
   );
 
   /**
@@ -199,13 +283,14 @@ export function useObservationViewer(snapshot: () => ObservationSnapshot | null)
   const selectionLost = computed(() => selectedKey.value !== null && selected.value === null);
 
   function selectIdentity(key: string): void {
+    if (viewMode.value !== ObservationViews.Focus) lastNonFocusView.value = viewMode.value;
     selectedKey.value = key;
     viewMode.value = ObservationViews.Focus;
   }
 
   function clearSelection(): void {
     selectedKey.value = null;
-    if (viewMode.value === ObservationViews.Focus) viewMode.value = ObservationViews.Radar;
+    if (viewMode.value === ObservationViews.Focus) viewMode.value = lastNonFocusView.value;
   }
 
   /**
@@ -231,8 +316,8 @@ export function useObservationViewer(snapshot: () => ObservationSnapshot | null)
    */
   const availableViews = computed<ObservationViewMode[]>(() =>
     selected.value
-      ? [ObservationViews.Focus, ObservationViews.Radar, ObservationViews.List]
-      : [ObservationViews.Radar, ObservationViews.List],
+      ? [ObservationViews.Focus, ObservationViews.List, ObservationViews.Radar]
+      : [ObservationViews.List, ObservationViews.Radar],
   );
 
   // While frozen, drop rows the live snapshot no longer contains. Otherwise resuming would show
@@ -250,12 +335,16 @@ export function useObservationViewer(snapshot: () => ObservationSnapshot | null)
     demotedCount,
     hasDemoted,
     distanceRange,
+    classFilter,
+    classOptions,
+    search,
     radarSpan,
     showRingLabels,
     showDeviceNames,
     viewMode,
     liveIdentities,
     identities,
+    now,
     paused,
     togglePause,
     facets,

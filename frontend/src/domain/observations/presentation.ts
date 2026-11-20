@@ -327,6 +327,67 @@ export function bearingForIdentity(key: string): number {
   return hash % 360;
 }
 
+/**
+ * Whether an identity matches a free-text query.
+ *
+ * Matches the words the operator sees (title), the raw key, and the vendor hex. A blank query
+ * matches everything, so clearing the field restores the view without a second filter step.
+ */
+export function matchesIdentityQuery(identity: ObservationIdentityView, query: string): boolean {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return true;
+  return [identityTitle(identity), identity.key, vendorHex(identity.vendor)].some((value) =>
+    value.toLowerCase().includes(needle),
+  );
+}
+
+/**
+ * Relative "seen" time in coarse buckets.
+ *
+ * Buckets rather than seconds: a live list that rewrites "0s ago" on every snapshot churns the
+ * row for no information. The buckets are wide enough that a row changes at most once a minute.
+ */
+export function seenLabel(value: string, now: number = Date.now()): string {
+  const parsed = Date.parse(value);
+  if (Number.isNaN(parsed)) return '—';
+  const seconds = Math.max(0, Math.round((now - parsed) / 1000));
+  if (seconds < 60) return 'just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} h ago`;
+  return `${Math.floor(hours / 24)} d ago`;
+}
+
+/**
+ * Points for a compact signal sparkline, in a `width` by `height` box.
+ *
+ * Returns an empty string when there are fewer than two finite readings: a single point is not a
+ * trend, and drawing it as a line would invent one. The weakest reading sits at the bottom, which
+ * matches how a signal graph reads.
+ */
+export function sparklinePoints(
+  signal: readonly number[] | undefined,
+  width: number,
+  height: number,
+): string {
+  const values = (signal ?? []).filter(
+    (value) => typeof value === 'number' && Number.isFinite(value),
+  );
+  if (values.length < 2 || width <= 0 || height <= 0) return '';
+
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = max - min || 1;
+  return values
+    .map((value, index) => {
+      const x = (index / (values.length - 1)) * width;
+      const y = height - ((value - min) / span) * height;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(' ');
+}
+
 /** Whether an identity is a rotating-address fingerprint rather than a stable device. */
 export function isEphemeralIdentity(identity: ObservationIdentityView): boolean {
   return !identity.stable;
@@ -439,37 +500,6 @@ export function isRecentArrival(
   // Reject data from beyond the skew tolerance rather than showing an impossible arrival.
   if (elapsed < -ARRIVAL_SKEW_TOLERANCE_MS) return false;
   return elapsed <= windowMs;
-}
-
-/** Human group label for an identity, used to section the list view. */
-export function identityGroup(identity: ObservationIdentityView): string {
-  if (identity.kind === 'ibeacon') return 'iBeacon';
-  if (identity.kind === 'eddystone') return 'Eddystone';
-  const vendor = vendorHex(identity.vendor);
-  if (vendor) return `Vendor ${vendor}`;
-  return identity.stable ? 'Stable address' : 'Rotating address';
-}
-
-/**
- * Group identities into ordered sections for the list view.
- *
- * Sections are ordered by size so the noisiest category is first, and identities inside a
- * section keep the incoming order (most recently seen first). Groups with equal size fall back
- * to label order, so the output is deterministic.
- */
-export function groupIdentities(
-  identities: readonly ObservationIdentityView[],
-): { group: string; identities: ObservationIdentityView[] }[] {
-  const sections = new Map<string, ObservationIdentityView[]>();
-  for (const identity of identities) {
-    const group = identityGroup(identity);
-    const bucket = sections.get(group);
-    if (bucket) bucket.push(identity);
-    else sections.set(group, [identity]);
-  }
-  return [...sections.entries()]
-    .map(([group, members]) => ({ group, identities: members }))
-    .sort((a, b) => b.identities.length - a.identities.length || a.group.localeCompare(b.group));
 }
 
 /**
@@ -688,6 +718,14 @@ export const CLASS_PRESENTATION: Readonly<
     tone: 'outside',
   },
 };
+
+/** Operator-facing label for a class value, falling back to learning. */
+export function classLabel(classValue: string | undefined): string {
+  return (
+    CLASS_PRESENTATION[classValue ?? '']?.label ??
+    CLASS_PRESENTATION[ObservationClasses.Learning].label
+  );
+}
 
 /** Presentation for a class, falling back to learning rather than showing nothing. */
 export function classPresentation(classification: ObservationClassification | undefined) {

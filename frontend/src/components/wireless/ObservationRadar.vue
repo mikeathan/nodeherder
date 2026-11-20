@@ -671,12 +671,12 @@
      */
     max-height: 22rem;
     margin-inline: auto;
-    background: var(--surface-sunken, #0f1419);
+    background: var(--nh-bg);
     border-radius: 50%;
   }
 
   .observation-radar__ring {
-    stroke: var(--border-subtle, #2a3441);
+    stroke: var(--nh-border);
     stroke-width: 0.4;
   }
 
@@ -699,11 +699,11 @@
   }
 
   .observation-radar__tail--approaching {
-    stroke: var(--accent-strong, #4a9eff);
+    stroke: var(--nh-accent);
   }
 
   .observation-radar__tail--receding {
-    stroke: var(--text-subtle, #868e96);
+    stroke: var(--nh-text-muted);
     stroke-dasharray: 1.5 1;
   }
 
@@ -719,7 +719,7 @@
     gap: 0.25rem 0.75rem;
     margin-bottom: 0.3rem;
     font-size: 0.75rem;
-    color: var(--text-subtle, #7c8b9c);
+    color: var(--nh-text-muted);
   }
 
   .observation-radar__buckets-title {
@@ -735,11 +735,11 @@
    * another blip — but a brighter fill, because a name is the thing being looked for.
    */
   .observation-radar__blip-label {
-    fill: var(--text-body, #e6edf5);
+    fill: var(--nh-text);
     font-size: 3.2px;
     font-weight: 600;
     paint-order: stroke;
-    stroke: var(--surface-sunken, #0f1419);
+    stroke: var(--nh-bg);
     stroke-width: 1.1px;
     stroke-linejoin: round;
     pointer-events: none;
@@ -747,11 +747,11 @@
   }
 
   .observation-radar__ring-label {
-    fill: var(--text-body, #c9d6e2);
+    fill: var(--nh-text);
     font-size: 3.8px;
     font-weight: 600;
     paint-order: stroke;
-    stroke: var(--surface-sunken, #0f1419);
+    stroke: var(--nh-bg);
     stroke-width: 1.1px;
     stroke-linejoin: round;
     /* Labels are decoration over a control-dense canvas; they must never eat a blip's click. */
@@ -760,7 +760,7 @@
   }
 
   .observation-radar__axis {
-    stroke: var(--border-subtle, #2a3441);
+    stroke: var(--nh-border);
     stroke-width: 0.3;
     stroke-dasharray: 1 1.5;
   }
@@ -777,132 +777,132 @@
   }
 
   .observation-radar__blip-group:focus-visible .observation-radar__blip--installed {
-  fill: var(--text-muted, #495057);
+  fill: var(--nh-text-muted);
   opacity: 0.55;
 }
 
 .observation-radar__blip--yours {
-  fill: var(--accent-strong, #1864ab);
+  fill: var(--nh-accent);
 }
 
 .observation-radar__blip--outside {
-  fill: var(--text-subtle, #868e96);
+  fill: var(--nh-text-muted);
   opacity: 0.6;
 }
 
 .observation-radar__blip--passing {
-  fill: var(--text-subtle, #868e96);
+  fill: var(--nh-text-muted);
   opacity: 0.4;
 }
 
 .observation-radar__blip--learning {
-  fill: var(--text-muted, #495057);
+  fill: var(--nh-text-muted);
   opacity: 0.8;
 }
 
 .observation-radar__blip {
-    stroke: var(--accent-primary, #4a9eff);
+    stroke: var(--nh-accent);
     stroke-width: 1.4;
   }
 
   .observation-radar__blip-group:hover .observation-radar__blip--installed {
-  fill: var(--text-muted, #495057);
+  fill: var(--nh-text-muted);
   opacity: 0.55;
 }
 
 .observation-radar__blip--yours {
-  fill: var(--accent-strong, #1864ab);
+  fill: var(--nh-accent);
 }
 
 .observation-radar__blip--outside {
-  fill: var(--text-subtle, #868e96);
+  fill: var(--nh-text-muted);
   opacity: 0.6;
 }
 
 .observation-radar__blip--passing {
-  fill: var(--text-subtle, #868e96);
+  fill: var(--nh-text-muted);
   opacity: 0.4;
 }
 
 .observation-radar__blip--learning {
-  fill: var(--text-muted, #495057);
+  fill: var(--nh-text-muted);
   opacity: 0.8;
 }
 
 .observation-radar__blip {
-    stroke: var(--text-primary, #e6edf3);
+    stroke: var(--nh-text);
     stroke-width: 1;
   }
 
   /* The isolated identity is highlighted so the radar and the Focus panel agree. */
   .observation-radar__blip-group.is-selected .observation-radar__blip--installed {
-  fill: var(--text-muted, #495057);
+  fill: var(--nh-text-muted);
   opacity: 0.55;
 }
 
 .observation-radar__blip--yours {
-  fill: var(--accent-strong, #1864ab);
+  fill: var(--nh-accent);
 }
 
 .observation-radar__blip--outside {
-  fill: var(--text-subtle, #868e96);
+  fill: var(--nh-text-muted);
   opacity: 0.6;
 }
 
 .observation-radar__blip--passing {
-  fill: var(--text-subtle, #868e96);
+  fill: var(--nh-text-muted);
   opacity: 0.4;
 }
 
 .observation-radar__blip--learning {
-  fill: var(--text-muted, #495057);
+  fill: var(--nh-text-muted);
   opacity: 0.8;
 }
 
 .observation-radar__blip {
-    fill: var(--accent-primary, #4a9eff);
-    stroke: var(--text-primary, #e6edf3);
+    fill: var(--nh-accent);
+    stroke: var(--nh-text);
     stroke-width: 1.2;
   }
 
   .observation-radar__blip--installed {
-  fill: var(--text-muted, #495057);
+  fill: var(--nh-text-muted);
   opacity: 0.55;
 }
 
 .observation-radar__blip--yours {
-  fill: var(--accent-strong, #1864ab);
+  fill: var(--nh-accent);
 }
 
 .observation-radar__blip--outside {
-  fill: var(--text-subtle, #868e96);
+  fill: var(--nh-text-muted);
   opacity: 0.6;
 }
 
 .observation-radar__blip--passing {
-  fill: var(--text-subtle, #868e96);
+  fill: var(--nh-text-muted);
   opacity: 0.4;
 }
 
 .observation-radar__blip--learning {
-  fill: var(--text-muted, #495057);
+  fill: var(--nh-text-muted);
   opacity: 0.8;
 }
 
 .observation-radar__blip {
-    fill: var(--accent-primary, #4a9eff);
-    stroke: var(--surface-sunken, #0f1419);
+    fill: var(--nh-accent);
+    stroke: var(--nh-bg);
     stroke-width: 0.3;
   }
 
   /* Known devices are de-emphasised so new arrivals stand out. */
   .observation-radar__blip--known {
-    fill: var(--accent-muted, #4b6b8a);
+    fill: var(--nh-text-muted);
   }
 
   /* A rotating address is explicitly hollow: it is not a stable device. */
   .observation-radar__caption {
-    color: var(--text-muted, #8b9bab);
+    color: var(--nh-text-muted);
     font-size: 0.8125rem;
   }
 
@@ -931,26 +931,26 @@
 
   @media (prefers-reduced-motion: reduce) {
     .observation-radar__blip--installed {
-  fill: var(--text-muted, #495057);
+  fill: var(--nh-text-muted);
   opacity: 0.55;
 }
 
 .observation-radar__blip--yours {
-  fill: var(--accent-strong, #1864ab);
+  fill: var(--nh-accent);
 }
 
 .observation-radar__blip--outside {
-  fill: var(--text-subtle, #868e96);
+  fill: var(--nh-text-muted);
   opacity: 0.6;
 }
 
 .observation-radar__blip--passing {
-  fill: var(--text-subtle, #868e96);
+  fill: var(--nh-text-muted);
   opacity: 0.4;
 }
 
 .observation-radar__blip--learning {
-  fill: var(--text-muted, #495057);
+  fill: var(--nh-text-muted);
   opacity: 0.8;
 }
 

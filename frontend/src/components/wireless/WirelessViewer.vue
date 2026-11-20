@@ -1,22 +1,27 @@
 <script setup lang="ts">
   import { computed, onMounted, onUnmounted, ref } from 'vue';
   import { store } from '@/store';
-  import type { ObservationDecision, ObservationViewMode } from '@/types/observations.type';
+  import type {
+    ObservationDecision,
+    ObservationSourceDescriptor,
+    ObservationViewMode,
+  } from '@/types/observations.type';
   import { ObservationViews } from '@/types/observations.type';
   import {
     RADAR_SPANS_M,
     DEFAULT_RADAR_SPAN,
+    ANY_DISTANCE_RANGE,
     stepRadarSpan,
     snapshotSummary,
     sourceIsSilent,
     sourceStatus,
   } from '@/domain/observations/presentation';
+  import { ANY_CLASS_GROUP } from '@/domain/observations/classes';
   import {
     OBSERVATION_VIEW_LABELS,
     useObservationViewer,
   } from '@/composables/useObservationViewer';
   import ObservationRadar from './ObservationRadar.vue';
-  import ObservationCards from './ObservationCards.vue';
   import IntegrationPageHeader from '@/components/integrations/shared/IntegrationPageHeader.vue';
   import ObservationFilters from './ObservationFilters.vue';
   import ObservationGroupList from './ObservationGroupList.vue';
@@ -41,11 +46,15 @@
     demotedCount,
     hasDemoted,
     distanceRange,
+    classFilter,
+    classOptions,
+    search,
     radarSpan,
     showRingLabels,
     showDeviceNames,
     viewMode,
     identities,
+    now,
     paused,
     togglePause,
     facets,
@@ -105,6 +114,25 @@
   const waitingForEvidence = computed(() => progress.value !== undefined && !progress.value.ready);
 
   const summary = computed(() => snapshotSummary(snapshot.value));
+
+  /**
+   * What an empty list means this time.
+   *
+   * "Nothing to show" is wrong when a filter or query removed everything, and the operator needs
+   * to tell an empty household from a filter they forgot about.
+   */
+  const emptyMessage = computed(() => {
+    const query = search.value.trim();
+    if (query) return `No devices match “${query}”.`;
+    const narrowed =
+      classFilter.value !== ANY_CLASS_GROUP ||
+      distanceRange.value !== ANY_DISTANCE_RANGE.id ||
+      onlyNew.value ||
+      Object.values(facetSelection.value).some((values) => values.length > 0);
+    return narrowed
+      ? 'No devices match the current filters.'
+      : 'Nothing to show. Advertisements appear here as sources report them.';
+  });
   /**
    * Whether the integration is currently reading the radio.
    *
@@ -125,8 +153,12 @@
   });
   const truncated = computed(() => snapshot.value?.truncated === true);
   /** Sources that are connected but have delivered nothing, which usually means a config fault. */
-  const sources = computed(() => snapshot.value?.sources ?? []);
+  const sources = computed<ObservationSourceDescriptor[]>(() => snapshot.value?.sources ?? []);
   const silentSources = computed(() => sources.value.filter(sourceIsSilent));
+  /** Source id to display name, so a row can say which receiver heard it. */
+  const sourceNames = computed<ReadonlyMap<string, string>>(
+    () => new Map(sources.value.map((source): [string, string] => [source.id, source.name])),
+  );
 
   /**
    * Persist a triage decision. The row is marked pending until the request settles, and the
@@ -287,11 +319,16 @@
         :selected="facetSelection"
         :only-new="onlyNew"
         :distance="distanceRange"
+        :class-filter="classFilter"
+        :class-options="classOptions"
+        :search="search"
         :show-demoted="showDemoted"
         :has-demoted="hasDemoted"
         @update:selected="facetSelection = $event"
         @update:only-new="onlyNew = $event"
         @update:distance="distanceRange = $event"
+        @update:class-filter="classFilter = $event"
+        @update:search="search = $event"
         @update:show-demoted="showDemoted = $event"
       />
 
@@ -315,6 +352,7 @@
       <div
         v-if="viewMode !== ObservationViews.List"
         class="wireless-viewer__layout"
+        :class="{ 'is-split': selected }"
       >
         <div class="wireless-viewer__radar-pane">
           <!--
@@ -391,38 +429,28 @@
             @span-changed="reportedSpan = $event"
           />
         </div>
-        <div class="wireless-viewer__detail">
-          <!--
-            Isolating a device replaces the card list with its detail panel and keeps the radar.
-            Replacing the radar as well meant selecting something threw away the view you selected
-            it from, and the old Focus screen had its own mini radar with its own geometry, so the
-            two could disagree about where a device was.
-          -->
+        <!--
+          Selecting a device adds its detail beside the radar. The radar no longer shares its
+          column with a row list: that rail was capped at 24rem, which truncated every name.
+        -->
+        <div v-if="selected" class="wireless-viewer__detail">
           <ObservationFocus
-            v-if="selected"
             :identity="selected"
             :pending="pending.has(selected.key)"
             @decide="decide"
             @clear="clearSelection"
           />
-          <!-- Cards rather than a table: almost every row shares the same kind, address type and
-               vendor, so columns made the sameness louder instead of revealing what differs. -->
-          <ObservationCards
-            v-else
-            :identities="scoped"
-            :pending="pending"
-            :selected-key="selectedKey"
-            @decide="decide"
-            @select="selectIdentity"
-          />
         </div>
       </div>
 
       <ObservationGroupList
-        v-else-if="viewMode === ObservationViews.List"
+        v-else
         :groups="grouped"
         :pending="pending"
         :selected-key="selectedKey"
+        :now="now"
+        :source-names="sourceNames"
+        :empty-message="emptyMessage"
         @decide="decide"
         @select="selectIdentity"
       />
@@ -456,13 +484,13 @@
   .wireless-viewer__summary,
   .wireless-viewer__empty,
   .wireless-viewer__notice {
-    color: var(--text-muted, #8b9bab);
+    color: var(--nh-text-muted);
     margin: 0.25rem 0 0;
     font-size: 0.875rem;
   }
 
   .wireless-viewer__stale {
-    color: var(--warning-text, #e0a33e);
+    color: var(--nh-warn);
     margin: 0;
     font-size: 0.875rem;
   }
@@ -481,7 +509,7 @@
     flex-direction: column;
     gap: 0.125rem;
     padding: 0.375rem 0.625rem;
-    border: 1px solid var(--border-subtle, #2a3441);
+    border: 1px solid var(--nh-border);
     border-radius: 0.375rem;
     font-size: 0.8125rem;
   }
@@ -490,41 +518,41 @@
      colour alone. */
   .wireless-viewer__sources li.is-silent {
     border-style: dashed;
-    border-color: var(--warning-text, #e0a33e);
+    border-color: var(--nh-warn);
   }
 
   .wireless-viewer__sources li span {
-    color: var(--text-muted, #8b9bab);
+    color: var(--nh-text-muted);
   }
 
   .wireless-viewer__waiting {
     margin: 0;
     padding: 0.6rem 0.75rem;
-    border-left: 3px solid var(--accent-border, #a5d8ff);
-    background: var(--surface-raised, #f1f3f5);
+    border-left: 3px solid var(--nh-accent);
+    background: var(--nh-surface-2);
     border-radius: 0 0.25rem 0.25rem 0;
     font-size: 0.8rem;
     line-height: 1.45;
-    color: var(--text-muted, #495057);
+    color: var(--nh-text-muted);
   }
 
   .wireless-viewer__waiting-count {
     display: block;
     margin-top: 0.15rem;
     font-variant-numeric: tabular-nums;
-    color: var(--text-subtle, #868e96);
+    color: var(--nh-text-muted);
   }
 
   .wireless-viewer__demoted {
   margin: 0 0 0.75rem;
   font-size: 0.8rem;
-  color: var(--text-muted, #495057);
+  color: var(--nh-text-muted);
 }
 
 .wireless-viewer__link {
     background: none;
     border: 0;
-    color: var(--accent-primary, #4a9eff);
+    color: var(--nh-accent);
     font: inherit;
     padding: 0;
     margin-left: 0.375rem;
@@ -533,7 +561,7 @@
   }
 
   .wireless-viewer__link:focus-visible {
-    outline: 2px solid var(--accent-primary, #4a9eff);
+    outline: 2px solid var(--nh-accent);
     outline-offset: 2px;
   }
 
@@ -546,12 +574,12 @@
 
   .wireless-viewer__paused {
     font-size: 0.8125rem;
-    color: var(--warning-text, #e0a33e);
+    color: var(--nh-warn);
   }
 
   .wireless-viewer__views {
     display: inline-flex;
-    border: 1px solid var(--border-subtle, #2a3441);
+    border: 1px solid var(--nh-border);
     border-radius: 999px;
     overflow: hidden;
     margin-left: auto;
@@ -567,25 +595,28 @@
   }
 
   .wireless-viewer__view.is-active {
-    background: var(--accent-primary, #4a9eff);
+    background: var(--nh-accent);
     color: #04121f;
   }
 
   .wireless-viewer__view:focus-visible {
-    outline: 2px solid var(--accent-primary, #4a9eff);
+    outline: 2px solid var(--nh-accent);
     outline-offset: -2px;
   }
 
   /*
-   * The radar is the primary surface: it takes the remaining width and the table gets a bounded
-   * column. The previous split capped the radar at 24rem, which made the global view small even
-   * on a wide screen.
+   * One column by default: the list view owns its own full-width layout, and the radar stands
+   * alone here. Only an isolated device adds a second column for its detail.
    */
   .wireless-viewer__layout {
     display: grid;
     gap: 1.5rem;
-    grid-template-columns: minmax(0, 1fr) minmax(17rem, 24rem);
+    grid-template-columns: minmax(0, 1fr);
     align-items: start;
+  }
+
+  .wireless-viewer__layout.is-split {
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 24rem);
   }
 
   .wireless-viewer__radar-pane {
@@ -593,8 +624,8 @@
     flex-direction: column;
     gap: 0.5rem;
     min-width: 0;
-    /* Bound the radar by the column, so it can never push the side list out of view. */
-    max-width: min(100%, 52vh);
+    /* Bound the radar by the column, so it can never push the detail panel out of view. */
+    max-width: min(100%, 68vh);
   }
 
   .wireless-viewer__scale {
@@ -611,10 +642,10 @@
     justify-content: center;
     width: 2rem;
     height: 2rem;
-    border: 1px solid var(--border-subtle, #dee2e6);
+    border: 1px solid var(--nh-border);
     border-radius: 50%;
-    background: var(--surface, #fff);
-    color: var(--text-muted, #495057);
+    background: var(--nh-surface);
+    color: var(--nh-text-muted);
     font-size: 1rem;
     font-weight: 600;
     line-height: 1;
@@ -622,8 +653,8 @@
   }
 
   .wireless-viewer__zoom:hover:not(:disabled) {
-    border-color: var(--accent-border, #a5d8ff);
-    color: var(--accent-strong, #1864ab);
+    border-color: var(--nh-accent);
+    color: var(--nh-accent);
   }
 
   .wireless-viewer__zoom:disabled {
@@ -637,12 +668,12 @@
     text-align: center;
     font-size: 0.8rem;
     font-variant-numeric: tabular-nums;
-    color: var(--text-muted, #495057);
+    color: var(--nh-text-muted);
   }
 
   .wireless-viewer__scale-option {
     background: transparent;
-    border: 1px solid var(--border-subtle, #2a3441);
+    border: 1px solid var(--nh-border);
     color: inherit;
     font: inherit;
     font-size: 0.8125rem;
@@ -652,13 +683,13 @@
   }
 
   .wireless-viewer__scale-option.is-active {
-    background: var(--accent-primary, #4a9eff);
-    border-color: var(--accent-primary, #4a9eff);
+    background: var(--nh-accent);
+    border-color: var(--nh-accent);
     color: #04121f;
   }
 
   .wireless-viewer__scale-option:focus-visible {
-    outline: 2px solid var(--accent-primary, #4a9eff);
+    outline: 2px solid var(--nh-accent);
     outline-offset: 2px;
   }
 
@@ -672,7 +703,8 @@
   /* Stack the radar above the table on narrow screens rather than shrinking both. */
   /* Below 1200px the table would squeeze the radar, so stack with the radar first. */
   @media (max-width: 1199px) {
-    .wireless-viewer__layout {
+    .wireless-viewer__layout,
+    .wireless-viewer__layout.is-split {
       grid-template-columns: 1fr;
     }
   }
@@ -683,13 +715,21 @@
       gap: 1rem;
     }
 
-    .wireless-viewer__layout {
+    .wireless-viewer__layout,
+    .wireless-viewer__layout.is-split {
       grid-template-columns: 1fr;
       gap: 1rem;
     }
 
+    /* The view switch owns its row on a phone instead of sitting stranded beside the count. */
     .wireless-viewer__views {
+      width: 100%;
       margin-left: 0;
+    }
+
+    .wireless-viewer__view {
+      flex: 1;
+      text-align: center;
     }
 
     /* On a phone the radar is the whole point of the view, so it gets the full column. */
