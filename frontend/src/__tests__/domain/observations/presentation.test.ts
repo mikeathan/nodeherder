@@ -12,7 +12,9 @@ import {
   distanceRSSI,
   estimateDistanceMetres,
   roundedDistanceMetres,
-  groupIdentities,
+  matchesIdentityQuery,
+  seenLabel,
+  sparklinePoints,
   identityTitle,
   isEphemeralIdentity,
   isRecentArrival,
@@ -34,6 +36,7 @@ import {
   RADAR_SPANS_M,
   CLASS_PRESENTATION,
   classPresentation,
+  classLabel,
   classificationEvidence,
   isProvisional,
   learningProgress,
@@ -198,52 +201,79 @@ describe('isRecentArrival', () => {
   });
 });
 
-describe('groupIdentities', () => {
-  test('groups by beacon kind first, then vendor, then address stability', () => {
-    const groups = groupIdentities([
-      identity({ key: 'a', kind: 'ibeacon' }),
-      identity({ key: 'b', kind: 'eddystone' }),
-      identity({ key: 'c', kind: 'adv', vendor: 76 }),
-      identity({ key: 'd', kind: 'adv', stable: true }),
-      identity({ key: 'e', kind: 'adv', stable: false }),
-    ]);
-    const names = groups.map((entry) => entry.group);
-    expect(names).toContain('iBeacon');
-    expect(names).toContain('Eddystone');
-    expect(names).toContain('Vendor 0x004C');
-    expect(names).toContain('Stable address');
-    expect(names).toContain('Rotating address');
+describe('sparklinePoints', () => {
+  test('draws the first reading at the left and the last at the right', () => {
+    const points = sparklinePoints([-70, -60, -65], 40, 10).split(' ');
+    expect(points).toHaveLength(3);
+    expect(points[0]).toMatch(/^0\.0,/);
+    expect(points[2]).toMatch(/^40\.0,/);
   });
 
-  test('orders sections by size so the noisiest category is first', () => {
-    const groups = groupIdentities([
-      identity({ key: '1', kind: 'adv', vendor: 76 }),
-      identity({ key: '2', kind: 'adv', vendor: 76 }),
-      identity({ key: '3', kind: 'ibeacon' }),
-    ]);
-    expect(groups[0].group).toBe('Vendor 0x004C');
-    expect(groups[0].identities).toHaveLength(2);
+  test('puts the strongest reading at the top of the box', () => {
+    const points = sparklinePoints([-80, -60], 10, 10).split(' ');
+    // -80 is the weakest, so it sits on the bottom edge; -60 at the top.
+    expect(points[0]).toBe('0.0,10.0');
+    expect(points[1]).toBe('10.0,0.0');
   });
 
-  test('is deterministic for equal-sized sections', () => {
-    const build = () =>
-      groupIdentities([
-        identity({ key: '1', kind: 'adv', stable: true }),
-        identity({ key: '2', kind: 'adv', stable: false }),
-      ]).map((entry) => entry.group);
-    expect(build()).toEqual(build());
+  test('a flat reading draws a flat line rather than dividing by zero', () => {
+    const points = sparklinePoints([-60, -60, -60], 20, 10).split(' ');
+    expect(new Set(points.map((point) => point.split(',')[1]))).toEqual(new Set(['10.0']));
   });
 
-  test('preserves the incoming order inside a section', () => {
-    const groups = groupIdentities([
-      identity({ key: 'first', kind: 'adv', vendor: 76 }),
-      identity({ key: 'second', kind: 'adv', vendor: 76 }),
-    ]);
-    expect(groups[0].identities.map((entry) => entry.key)).toEqual(['first', 'second']);
+  test('one reading or none draws nothing, because it is not a trend', () => {
+    expect(sparklinePoints([-60], 20, 10)).toBe('');
+    expect(sparklinePoints([], 20, 10)).toBe('');
+    expect(sparklinePoints(undefined, 20, 10)).toBe('');
   });
 
-  test('returns no sections for no identities', () => {
-    expect(groupIdentities([])).toEqual([]);
+  test('ignores non-finite readings', () => {
+    expect(sparklinePoints([-60, Number.NaN, -70], 20, 10).split(' ')).toHaveLength(2);
+  });
+});
+
+describe('matchesIdentityQuery', () => {
+  test('matches the display title, raw key and vendor', () => {
+    const tagged = identity({ key: 'ibeacon:2f234454:1:2', label: 'Front door tag' });
+    expect(matchesIdentityQuery(tagged, 'front door')).toBe(true);
+    expect(matchesIdentityQuery(tagged, '2F234454')).toBe(true);
+
+    const vendor = identity({ key: 'fp:abc', vendor: 76 });
+    expect(matchesIdentityQuery(vendor, '0x004c')).toBe(true);
+  });
+
+  test('is case-insensitive and ignores surrounding space', () => {
+    expect(matchesIdentityQuery(identity({ key: 'fp:ABC' }), '  fp:abc  ')).toBe(true);
+  });
+
+  test('a blank query matches everything, so clearing restores the view', () => {
+    expect(matchesIdentityQuery(identity(), '')).toBe(true);
+    expect(matchesIdentityQuery(identity(), '   ')).toBe(true);
+  });
+
+  test('does not match an unrelated term', () => {
+    expect(matchesIdentityQuery(identity({ key: 'fp:abc', label: 'Lamp' }), 'phone')).toBe(false);
+  });
+});
+
+describe('seenLabel', () => {
+  const now = Date.parse('2026-11-11T10:00:00Z');
+
+  test('uses coarse buckets instead of rewriting every second', () => {
+    expect(seenLabel('2026-11-11T09:59:30Z', now)).toBe('just now');
+    expect(seenLabel('2026-11-11T09:55:00Z', now)).toBe('5 min ago');
+    expect(seenLabel('2026-11-11T07:00:00Z', now)).toBe('3 h ago');
+    expect(seenLabel('2026-11-09T10:00:00Z', now)).toBe('2 d ago');
+  });
+
+  test('the label only changes at a bucket boundary', () => {
+    const base = Date.parse('2026-11-11T10:00:00Z');
+    expect(seenLabel('2026-11-11T09:59:01Z', base)).toBe('just now');
+    expect(seenLabel('2026-11-11T09:59:01Z', base + 1000)).toBe('1 min ago');
+  });
+
+  test('an invalid timestamp stays absent rather than claiming a time', () => {
+    expect(seenLabel('not-a-date', now)).toBe('—');
   });
 });
 

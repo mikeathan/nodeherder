@@ -54,6 +54,26 @@ skill discovery and verification.
   `npm run dev` for local UI.
 - Toolchains: `backend/go.mod`, `.nvmrc`. Additional checks: component constitutions.
 
+## Versioning
+
+Releases follow [Semantic Versioning](https://semver.org/). The single version source is
+`frontend/package.json`; the build reads it (Git tag first, then package.json), and the
+post-merge workflow auto-increments the patch and tags `vX.Y.Z` on `main`. Do not create
+or move tags from a PR, and do not hand-edit the patch for a routine merge.
+
+Bump once per PR at the highest precedence it contains:
+
+- **MAJOR** — incompatible change: removed or renamed HTTP/WS/MQTT/MCP contract, a storage
+  format that cannot be read without migration, or a required configuration change.
+- **MINOR** — new user-visible capability, new integration/surface, or additive contract.
+  Set `X.Y.0` in `frontend/package.json` and report the bump in the PR.
+- **PATCH** — fixes, refactors, docs and internal changes. Leave the version alone; CI
+  increments it on merge.
+
+A fix bundled with a feature takes the feature's MINOR bump. Record the chosen bump and its
+reason in the PR description; if a change could plausibly be breaking, treat it as MAJOR
+until reviewed.
+
 ## Pull request verification
 
 CI runs the full matrix; a PR must not be a check's first run. Before opening one, run

@@ -1,22 +1,33 @@
 <script setup lang="ts">
   /*
-   * Grouped list view for wireless observations (spec 064).
+   * Grouped list view for wireless observations (spec 066).
    *
-   * A dense, scannable alternative to the radar. Real households show dozens of identities, so
-   * rows are sectioned by kind or vendor: ungrouped, the list is a wall of opaque keys. Each
-   * section is collapsible so a noisy vendor can be folded away without ignoring its devices.
+   * Sections are behaviour classes in a fixed order, not vendors sorted by size. Class is the
+   * question the operator is asking ("what is mine, what is outside"), and a fixed order means a
+   * changing count cannot reshuffle the headings. Rows use the same component as the radar side
+   * panel so a device looks identical in both surfaces.
    */
   import { ref } from 'vue';
   import type { ObservationDecision, ObservationIdentityView } from '@/types/observations.type';
-  import { identityTitle, isEphemeralIdentity } from '@/domain/observations/presentation';
-  import UiButton from '@/components/ui/UiButton.vue';
+  import type { ObservationClassGroup } from '@/domain/observations/classes';
+  import ObservationRow from './ObservationRow.vue';
 
   const props = defineProps<{
-    groups: readonly { group: string; identities: ObservationIdentityView[] }[];
+    groups: readonly {
+      group: string;
+      groupId: ObservationClassGroup;
+      identities: ObservationIdentityView[];
+    }[];
     /** Identity keys with a save in flight, so their controls report progress. */
     pending: ReadonlySet<string>;
     /** Currently isolated identity, so the row can be marked. */
     selectedKey?: string | null;
+    /** Current time in milliseconds, shared by every row's relative label. */
+    now: number;
+    /** Source id to display name, so rows can say which receiver heard them. */
+    sourceNames: ReadonlyMap<string, string>;
+    /** Explanation shown when filters leave nothing to render. */
+    emptyMessage: string;
   }>();
 
   const emit = defineEmits<{
@@ -24,7 +35,7 @@
     (event: 'select', key: string): void;
   }>();
 
-  /** Section names the operator has folded. Collapsed state is display-only. */
+  /** Sections the operator has folded. Collapsed state is display-only. */
   const collapsed = ref<Set<string>>(new Set());
 
   function isCollapsed(group: string): boolean {
@@ -37,89 +48,41 @@
     else next.add(group);
     collapsed.value = next;
   }
-
-  function time(value: string): string {
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) return '—';
-    return parsed.toLocaleTimeString();
-  }
-
-  /** Absent readings must not render as 0 dBm, which would read as a strong signal. */
-  function signal(rssi: number | null | undefined): string {
-    if (typeof rssi !== 'number' || !Number.isFinite(rssi)) return '—';
-    return `${rssi} dBm`;
-  }
 </script>
 
 <template>
   <div class="observation-groups">
-    <section v-for="group in props.groups" :key="group.group" class="observation-groups__section">
+    <section v-for="group in props.groups" :key="group.groupId" class="observation-groups__section">
       <h2 class="observation-groups__heading">
         <button
           type="button"
           class="observation-groups__toggle"
-          :aria-expanded="!isCollapsed(group.group)"
-          @click="toggleGroup(group.group)"
+          :aria-expanded="!isCollapsed(group.groupId)"
+          @click="toggleGroup(group.groupId)"
         >
-          <span class="observation-groups__chevron" aria-hidden="true">{{ isCollapsed(group.group) ? '▸' : '▾' }}</span>
+          <span class="observation-groups__chevron" aria-hidden="true">{{ isCollapsed(group.groupId) ? '▸' : '▾' }}</span>
           {{ group.group }}
           <span class="observation-groups__count">{{ group.identities.length }}</span>
         </button>
       </h2>
 
-      <ul v-show="!isCollapsed(group.group)" class="observation-groups__list">
-        <li
+      <ul v-show="!isCollapsed(group.groupId)" class="observation-groups__list">
+        <ObservationRow
           v-for="identity in group.identities"
           :key="identity.key"
-          class="observation-groups__row"
-          :class="{ 'is-selected': props.selectedKey === identity.key }"
-        >
-          <span class="observation-groups__title">
-            <button
-              type="button"
-              class="observation-groups__select"
-              :aria-pressed="props.selectedKey === identity.key"
-              :aria-label="`Isolate ${identityTitle(identity)}`"
-              title="Isolate this identity"
-              @click="emit('select', identity.key)"
-            >
-              <span class="observation-groups__target-icon" aria-hidden="true">◎</span>
-              {{ identityTitle(identity) }}
-            </button>
-            <span v-if="identity.decision === 'unknown'" class="observation-groups__new">New</span>
-          </span>
-          <span class="observation-groups__meta">
-            <span v-if="isEphemeralIdentity(identity)" title="Rotating address">rotating</span>
-            <span>{{ signal(identity.rssi) }}</span>
-            <span>{{ identity.packets }} pkts</span>
-            <span>{{ time(identity.lastSeen) }}</span>
-          </span>
-          <span class="observation-groups__actions">
-            <UiButton
-              v-if="identity.decision !== 'known'"
-              size="sm"
-              variant="default"
-              :disabled="props.pending.has(identity.key)"
-              @click="emit('decide', identity.key, 'known')"
-            >
-              Known
-            </UiButton>
-            <UiButton
-              v-if="identity.decision !== 'ignored'"
-              size="sm"
-              variant="ghost"
-              :disabled="props.pending.has(identity.key)"
-              @click="emit('decide', identity.key, 'ignored')"
-            >
-              Ignore
-            </UiButton>
-          </span>
-        </li>
+          :identity="identity"
+          :pending="props.pending.has(identity.key)"
+          :selected="props.selectedKey === identity.key"
+          :now="props.now"
+          :source-names="props.sourceNames"
+          @decide="(key, decision) => emit('decide', key, decision)"
+          @select="(key) => emit('select', key)"
+        />
       </ul>
     </section>
 
     <p v-if="props.groups.length === 0" class="observation-groups__empty">
-      No identities match the current filters.
+      {{ props.emptyMessage }}
     </p>
   </div>
 </template>
@@ -144,7 +107,7 @@
     width: 100%;
     background: transparent;
     border: 0;
-    border-bottom: 1px solid var(--border-subtle, #2a3441);
+    border-bottom: 1px solid var(--nh-border);
     color: inherit;
     font: inherit;
     padding: 0.375rem 0;
@@ -153,19 +116,20 @@
   }
 
   .observation-groups__toggle:focus-visible {
-    outline: 2px solid var(--accent-primary, #4a9eff);
+    outline: 2px solid var(--nh-accent);
     outline-offset: 2px;
   }
 
   .observation-groups__chevron {
-    color: var(--text-muted, #8b9bab);
+    color: var(--nh-text-muted);
     width: 1ch;
   }
 
   .observation-groups__count {
     margin-left: auto;
-    color: var(--text-muted, #8b9bab);
+    color: var(--nh-text-muted);
     font-weight: 400;
+    font-variant-numeric: tabular-nums;
   }
 
   .observation-groups__list {
@@ -174,97 +138,8 @@
     padding: 0;
   }
 
-  .observation-groups__row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
-    gap: 0.75rem;
-    align-items: center;
-    padding: 0.375rem 0;
-    border-bottom: 1px solid color-mix(in srgb, var(--border-subtle, #2a3441) 50%, transparent);
-    font-size: 0.875rem;
-  }
-
-  .observation-groups__title {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  /* Visibly a control: isolation was undiscoverable without a resting underline and glyph. */
-  .observation-groups__select {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    background: none;
-    border: 0;
-    color: inherit;
-    font: inherit;
-    padding: 0;
-    text-align: left;
-    cursor: pointer;
-    text-decoration: underline;
-    text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
-    text-underline-offset: 0.15em;
-  }
-
-  .observation-groups__select:hover,
-  .observation-groups__select:focus-visible {
-    text-decoration-color: currentColor;
-    color: var(--accent-primary, #4a9eff);
-  }
-
-  .observation-groups__target-icon {
-    color: var(--accent-primary, #4a9eff);
-  }
-
-  .observation-groups__select:focus-visible {
-    outline: 2px solid var(--accent-primary, #4a9eff);
-    outline-offset: 2px;
-  }
-
-  .observation-groups__row.is-selected {
-    background: color-mix(in srgb, var(--accent-primary, #4a9eff) 12%, transparent);
-  }
-
-  .observation-groups__new {
-    margin-left: 0.375rem;
-    padding: 0 0.3rem;
-    border-radius: 999px;
-    background: var(--accent-primary, #4a9eff);
-    color: #04121f;
-    font-size: 0.6875rem;
-    font-weight: 700;
-    text-transform: uppercase;
-  }
-
-  .observation-groups__meta {
-    display: flex;
-    gap: 0.75rem;
-    color: var(--text-muted, #8b9bab);
-    font-size: 0.8125rem;
-    white-space: nowrap;
-  }
-
-  .observation-groups__actions {
-    display: flex;
-    gap: 0.375rem;
-  }
-
   .observation-groups__empty {
-    color: var(--text-muted, #8b9bab);
+    color: var(--nh-text-muted);
     font-size: 0.875rem;
-  }
-
-  /* Stack the row on narrow screens; the three columns cannot share 390px. */
-  @media (max-width: 599px) {
-    .observation-groups__row {
-      grid-template-columns: 1fr;
-      gap: 0.25rem;
-    }
-
-    .observation-groups__actions {
-      justify-content: flex-start;
-    }
   }
 </style>

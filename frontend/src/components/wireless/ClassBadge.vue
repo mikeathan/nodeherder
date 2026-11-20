@@ -82,35 +82,35 @@
    * marker. A colour-blind operator still sees "Installed" and "?".
    */
   .class-badge--installed {
-    background: var(--surface-raised, #f1f3f5);
-    color: var(--text-muted, #495057);
-    border-color: var(--border-subtle, #dee2e6);
+    background: var(--nh-surface-2);
+    color: var(--nh-text-muted);
+    border-color: var(--nh-border);
   }
 
   .class-badge--yours {
-    background: var(--accent-soft, #e7f5ff);
-    color: var(--accent-strong, #1864ab);
-    border-color: var(--accent-border, #a5d8ff);
+    background: var(--nh-accent-soft);
+    color: var(--nh-accent);
+    border-color: var(--nh-accent);
   }
 
   .class-badge--outside {
     background: transparent;
-    color: var(--text-subtle, #868e96);
-    border-color: var(--border-subtle, #dee2e6);
+    color: var(--nh-text-muted);
+    border-color: var(--nh-border);
     border-style: dashed;
   }
 
   .class-badge--passing {
     background: transparent;
-    color: var(--text-subtle, #868e96);
+    color: var(--nh-text-muted);
     border-color: transparent;
     font-style: italic;
   }
 
   .class-badge--learning {
     background: transparent;
-    color: var(--text-subtle, #868e96);
-    border-color: var(--border-subtle, #dee2e6);
+    color: var(--nh-text-muted);
+    border-color: var(--nh-border);
     font-weight: 500;
   }
 
@@ -139,7 +139,7 @@
     margin: 0.15rem 0 0;
     font-size: 0.7rem;
     line-height: 1.3;
-    color: var(--text-subtle, #868e96);
+    color: var(--nh-text-muted);
     white-space: normal;
   }
 

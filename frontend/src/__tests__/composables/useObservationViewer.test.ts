@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { useObservationViewer, OBSERVATION_VIEW_LABELS } from '@/composables/useObservationViewer';
 import type { ObservationSnapshot } from '@/types/observations.type';
 import {
+  ObservationClasses,
   ObservationDecisions,
   ObservationTrends,
   ObservationViews,
@@ -143,6 +144,18 @@ describe('useObservationViewer', () => {
     viewer.clearSelection();
 
     expect(viewer.selected.value).toBeNull();
+    // List is the default surface, so that is where leaving a detail returns to.
+    expect(viewer.viewMode.value).toBe(ObservationViews.List);
+  });
+
+  test('clearing returns to the view the operator selected from', () => {
+    const state = ref(snapshot([identity('addr:aa:bb:cc:dd:ee:01')]));
+    const viewer = createViewer(() => state.value);
+    viewer.viewMode.value = ObservationViews.Radar;
+
+    viewer.selectIdentity('addr:aa:bb:cc:dd:ee:01');
+    viewer.clearSelection();
+
     expect(viewer.viewMode.value).toBe(ObservationViews.Radar);
   });
 
@@ -280,5 +293,199 @@ describe('demoted toggle availability', () => {
     // the button disappears the moment it is pressed and there is no way back.
     expect(viewer.demotedCount.value).toBe(0);
     expect(viewer.hasDemoted.value).toBe(true);
+  });
+});
+
+describe('class presets', () => {
+  function classified(key: string, classValue: string, showByDefault = true) {
+    return identity(key, {
+      classification: {
+        class: classValue,
+        showByDefault,
+        confidence: 0.7,
+        hoursObserved: 30,
+        advisory: true,
+      },
+    });
+  }
+
+  test('offers a preset per class, with the count it would show', () => {
+    const state = ref(
+      snapshot([
+        classified('addr:01', ObservationClasses.Personal),
+        classified('addr:02', ObservationClasses.Personal),
+        classified('addr:03', ObservationClasses.Learning),
+      ]),
+    );
+    const viewer = createViewer(() => state.value);
+
+    const nonEmpty = viewer.classOptions.value
+      .filter((option) => option.count > 0)
+      .map((option) => [option.id, option.count]);
+    expect(nonEmpty).toEqual([
+      ['yours', 2],
+      ['learning', 1],
+    ]);
+  });
+
+  test('keeps every class preset present in fixed order, including zero counts', () => {
+    // A chip that disappears at zero, or grows a digit, moves the row while it is being read.
+    const state = ref(snapshot([classified('addr:01', ObservationClasses.Personal)]));
+    const viewer = createViewer(() => state.value);
+
+    expect(viewer.classOptions.value.map((option) => option.id)).toEqual([
+      'yours',
+      'someone',
+      'installed',
+      'learning',
+      'outside',
+      'passing',
+    ]);
+    expect(viewer.classOptions.value.filter((option) => option.count === 0)).toHaveLength(5);
+  });
+
+  test('selecting a preset narrows the visible set to that group', () => {
+    const state = ref(
+      snapshot([
+        classified('addr:01', ObservationClasses.Personal),
+        classified('addr:02', ObservationClasses.Learning),
+      ]),
+    );
+    const viewer = createViewer(() => state.value);
+
+    viewer.classFilter.value = 'yours';
+
+    expect(viewer.visible.value.map((entry) => entry.key)).toEqual(['addr:01']);
+  });
+
+  test('"any" restores every identity the other filters allow', () => {
+    const state = ref(
+      snapshot([
+        classified('addr:01', ObservationClasses.Personal),
+        classified('addr:02', ObservationClasses.Learning),
+      ]),
+    );
+    const viewer = createViewer(() => state.value);
+    viewer.classFilter.value = 'yours';
+
+    viewer.classFilter.value = 'any';
+
+    expect(viewer.visible.value).toHaveLength(2);
+  });
+
+  test('an explicit demoted preset reveals its identities without the reveal toggle', () => {
+    // Selecting "Installed" is an explicit request. Filtering it to an empty list because a
+    // different control is off would look like a broken preset.
+    const state = ref(
+      snapshot([
+        classified('addr:01', ObservationClasses.Infrastructure, false),
+        classified('addr:02', ObservationClasses.Personal, true),
+      ]),
+    );
+    const viewer = createViewer(() => state.value);
+
+    expect(viewer.visible.value.map((entry) => entry.key)).toEqual(['addr:02']);
+
+    viewer.classFilter.value = 'installed';
+
+    expect(viewer.visible.value.map((entry) => entry.key)).toEqual(['addr:01']);
+    // Nothing is hidden by the default rule while the preset is active, so the footer stays quiet.
+    expect(viewer.demotedCount.value).toBe(0);
+    // And the now-redundant reveal control is not offered.
+    expect(viewer.hasDemoted.value).toBe(false);
+  });
+
+  test('counts respect the other filters, so a number is what a click yields', () => {
+    const state = ref(
+      snapshot([
+        classified('addr:01', ObservationClasses.Personal),
+        classified('addr:02', ObservationClasses.Personal),
+        classified('addr:03', ObservationClasses.Learning),
+      ]),
+    );
+    const viewer = createViewer(() => state.value);
+
+    viewer.search.value = 'addr:02';
+
+    const yours = viewer.classOptions.value.find((option) => option.id === 'yours');
+    const learning = viewer.classOptions.value.find((option) => option.id === 'learning');
+    expect(yours?.count).toBe(1);
+    // The learning group has nothing to show under the query; it stays present so the row does
+    // not reflow, but its count is zero and the component disables it.
+    expect(learning?.count).toBe(0);
+  });
+});
+
+describe('search', () => {
+  test('filters by key and title, and clearing restores the view', () => {
+    const state = ref(
+      snapshot([
+        identity('addr:aa:bb:cc:dd:ee:01', { label: 'Kitchen lamp' }),
+        identity('addr:aa:bb:cc:dd:ee:02', { label: 'Hallway plug' }),
+      ]),
+    );
+    const viewer = createViewer(() => state.value);
+
+    viewer.search.value = 'kitchen';
+    expect(viewer.visible.value.map((entry) => entry.key)).toEqual(['addr:aa:bb:cc:dd:ee:01']);
+
+    viewer.search.value = '';
+    expect(viewer.visible.value).toHaveLength(2);
+  });
+
+  test('composes with the class preset and distance band', () => {
+    const state = ref(
+      snapshot([
+        identity('addr:aa:bb:cc:dd:ee:01', {
+          label: 'Phone',
+          rssiSmoothed: -60,
+          classification: {
+            class: ObservationClasses.Personal,
+            showByDefault: true,
+            confidence: 0.8,
+            hoursObserved: 30,
+            advisory: true,
+          },
+        }),
+        identity('addr:aa:bb:cc:dd:ee:02', {
+          label: 'Phone charger',
+          rssiSmoothed: -90,
+          classification: {
+            class: ObservationClasses.Personal,
+            showByDefault: true,
+            confidence: 0.8,
+            hoursObserved: 30,
+            advisory: true,
+          },
+        }),
+      ]),
+    );
+    const viewer = createViewer(() => state.value);
+
+    viewer.search.value = 'phone';
+    viewer.classFilter.value = 'yours';
+    viewer.distanceRange.value = '2to5';
+
+    expect(viewer.visible.value).toHaveLength(0);
+  });
+});
+
+describe('stable ordering', () => {
+  test('a volatile-only snapshot update keeps the rendered order', () => {
+    const state = ref(
+      snapshot([
+        identity('addr:aa:bb:cc:dd:ee:02', { label: 'Beta', lastSeen: '2026-11-11T10:00:00Z' }),
+        identity('addr:aa:bb:cc:dd:ee:01', { label: 'Alpha', lastSeen: '2026-11-11T09:59:00Z' }),
+      ]),
+    );
+    const viewer = createViewer(() => state.value);
+    const before = viewer.visible.value.map((entry) => entry.key);
+
+    state.value = snapshot([
+      identity('addr:aa:bb:cc:dd:ee:01', { label: 'Alpha', lastSeen: '2026-11-11T10:00:05Z' }),
+      identity('addr:aa:bb:cc:dd:ee:02', { label: 'Beta', lastSeen: '2026-11-11T10:00:04Z' }),
+    ]);
+
+    expect(viewer.visible.value.map((entry) => entry.key)).toEqual(before);
   });
 });

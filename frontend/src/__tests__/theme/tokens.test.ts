@@ -83,17 +83,11 @@ describe('theme tokens', () => {
     expect([...missing].sort()).toEqual([]);
   });
 
-  /**
-   * The regression this file was written for.
-   *
-   * Scoped to the Home dashboard, where the reported defect was: a tile styling with a name the
-   * theme does not define renders its fallback on every theme, so the appearance is wrong in a way
-   * no unit test and no type check can see.
-   */
-  it('defines every custom property the Home tiles read', () => {
+  /** Undefined custom properties read by components under one directory. */
+  function undefinedTokensIn(directory: string): string[] {
     const defined = new Set([...declaredTokens(), ...componentDeclaredTokens()]);
     const missing: string[] = [];
-    for (const file of componentFiles(resolve(SOURCE_ROOT, 'components/home'))) {
+    for (const file of componentFiles(resolve(SOURCE_ROOT, directory))) {
       for (const match of readFileSync(file, 'utf8').matchAll(/var\(\s*(--[a-zA-Z0-9_-]+)/g)) {
         // `--nh-kind-${kind}` is a template prefix, not a literal name.
         if (match[1].endsWith('-')) continue;
@@ -102,6 +96,25 @@ describe('theme tokens', () => {
         }
       }
     }
-    expect([...new Set(missing)].sort()).toEqual([]);
+    return [...new Set(missing)].sort();
+  }
+
+  /**
+   * The regression this file was written for.
+   *
+   * Scoped to the Home dashboard, where the reported defect was: a tile styling with a name the
+   * theme does not define renders its fallback on every theme, so the appearance is wrong in a way
+   * no unit test and no type check can see.
+   */
+  it('defines every custom property the Home tiles read', () => {
+    expect(undefinedTokensIn('components/home')).toEqual([]);
+  });
+
+  /**
+   * The wireless viewer shipped with the same defect: a light `#f1f3f5` fallback painted a
+   * near-white notice on a dark page. The fix is only durable if the names stay defined.
+   */
+  it('defines every custom property the wireless components read', () => {
+    expect(undefinedTokensIn('components/wireless')).toEqual([]);
   });
 });

@@ -180,7 +180,7 @@
   .evidence-timeline {
     margin-top: 1rem;
     padding-top: 0.75rem;
-    border-top: 1px solid var(--border-subtle, #dee2e6);
+    border-top: 1px solid var(--nh-border);
     max-width: 34rem;
     width: 100%;
   }
@@ -189,7 +189,7 @@
     margin: 0 0 0.5rem;
     font-size: 0.85rem;
     font-weight: 600;
-    color: var(--text-muted, #495057);
+    color: var(--nh-text-muted);
   }
 
   .evidence-timeline__note,
@@ -197,11 +197,11 @@
     margin: 0;
     font-size: 0.75rem;
     line-height: 1.4;
-    color: var(--text-subtle, #868e96);
+    color: var(--nh-text-muted);
   }
 
   .evidence-timeline__error {
-    color: var(--danger, #c92a2a);
+    color: var(--nh-danger);
   }
 
   .evidence-timeline__days {
@@ -222,7 +222,7 @@
   }
 
   .evidence-timeline__date {
-    color: var(--text-muted, #495057);
+    color: var(--nh-text-muted);
     white-space: nowrap;
   }
 
@@ -234,31 +234,31 @@
   }
 
   .evidence-timeline__hour {
-    background: var(--surface-raised, #f1f3f5);
+    background: var(--nh-surface-2);
     border-radius: 1px;
   }
 
   .evidence-timeline__hour.is-present {
-    background: var(--accent-strong, #1864ab);
+    background: var(--nh-accent);
   }
 
   /* The night window is marked by outline, not a second colour, so it survives greyscale. */
   .evidence-timeline__hour.is-night {
-    outline: 1px dotted var(--text-subtle, #868e96);
+    outline: 1px dotted var(--nh-text-muted);
     outline-offset: -1px;
   }
 
   .evidence-timeline__figure,
   .evidence-timeline__signal {
     text-align: right;
-    color: var(--text-subtle, #868e96);
+    color: var(--nh-text-muted);
     font-variant-numeric: tabular-nums;
   }
 
   .evidence-timeline__legend {
     margin: 0.4rem 0 0;
     font-size: 0.68rem;
-    color: var(--text-subtle, #868e96);
+    color: var(--nh-text-muted);
   }
 
   .evidence-timeline__legend .evidence-timeline__hour {
@@ -272,7 +272,7 @@
     margin: 0.75rem 0 0.3rem;
     font-size: 0.78rem;
     font-weight: 600;
-    color: var(--text-muted, #495057);
+    color: var(--nh-text-muted);
   }
 
   .evidence-timeline__transitions ul {
@@ -292,14 +292,14 @@
 
   .evidence-timeline__when {
     font-size: 0.7rem;
-    color: var(--text-subtle, #868e96);
+    color: var(--nh-text-muted);
   }
 
   .evidence-timeline__reason {
     display: block;
     font-size: 0.7rem;
     line-height: 1.35;
-    color: var(--text-subtle, #868e96);
+    color: var(--nh-text-muted);
   }
 
   /*

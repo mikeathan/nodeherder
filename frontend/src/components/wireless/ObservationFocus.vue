@@ -193,9 +193,9 @@
     flex-direction: column;
     gap: 0.5rem;
     padding: 0.75rem;
-    border: 1px solid var(--border-subtle, #2a3441);
+    border: 1px solid var(--nh-border);
     border-radius: 0.5rem;
-    background: var(--surface-raised, rgba(255, 255, 255, 0.02));
+    background: var(--nh-surface-2);
     /* A panel, not a page: it never grows wider than its column. */
     min-width: 0;
     max-height: 70vh;
@@ -211,10 +211,10 @@
 
   .observation-focus__tag {
     padding: 0 0.35rem;
-    border: 1px dashed var(--border-subtle, #2a3441);
+    border: 1px dashed var(--nh-border);
     border-radius: 0.6rem;
     font-size: 0.65rem;
-    color: var(--text-subtle, #868e96);
+    color: var(--nh-text-muted);
   }
 
   .observation-focus__title {
@@ -226,7 +226,7 @@
   .observation-focus__key {
     margin: 0;
     font-size: 0.68rem;
-    color: var(--text-subtle, #868e96);
+    color: var(--nh-text-muted);
     overflow-wrap: anywhere;
   }
 
@@ -240,22 +240,22 @@
 
   .observation-focus__motion {
     font-size: 0.8rem;
-    color: var(--text-muted, #495057);
+    color: var(--nh-text-muted);
   }
 
   /* Only the actionable states get colour; "steady" deliberately does not draw the eye. */
   .observation-focus__motion.is-approaching {
-    color: var(--accent-strong, #4a9eff);
+    color: var(--nh-accent);
   }
 
   .observation-focus__motion.is-receding {
-    color: var(--warning, #b8860b);
+    color: var(--nh-warn);
   }
 
   .observation-focus__band-line {
     margin: -0.25rem 0 0;
     font-size: 0.7rem;
-    color: var(--text-subtle, #868e96);
+    color: var(--nh-text-muted);
   }
 
   .observation-focus__value {
@@ -267,7 +267,7 @@
 
   .observation-focus__band {
     font-size: 0.75rem;
-    color: var(--text-subtle, #868e96);
+    color: var(--nh-text-muted);
   }
 
   .observation-focus__class {
@@ -276,21 +276,21 @@
     align-items: flex-start;
     gap: 0.25rem;
     padding-top: 0.4rem;
-    border-top: 1px solid var(--border-subtle, #2a3441);
+    border-top: 1px solid var(--nh-border);
   }
 
   .observation-focus__reason {
     margin: 0;
     font-size: 0.78rem;
     line-height: 1.4;
-    color: var(--text-muted, #495057);
+    color: var(--nh-text-muted);
   }
 
   .observation-focus__note {
     margin: 0;
     font-size: 0.7rem;
     line-height: 1.35;
-    color: var(--text-subtle, #868e96);
+    color: var(--nh-text-muted);
   }
 
 
@@ -311,7 +311,7 @@
 
   .observation-focus__spark-line {
     fill: none;
-    stroke: var(--accent-primary, #4a9eff);
+    stroke: var(--nh-accent);
     stroke-width: 1.5;
     vector-effect: non-scaling-stroke;
   }
@@ -320,7 +320,7 @@
     margin-top: 0.2rem;
     font-size: 0.68rem;
     line-height: 1.35;
-    color: var(--text-subtle, #868e96);
+    color: var(--nh-text-muted);
   }
 
   .observation-focus__facts {
@@ -329,12 +329,12 @@
     gap: 0.3rem 0.75rem;
     margin: 0.4rem 0 0;
     padding-top: 0.5rem;
-    border-top: 1px solid var(--border-subtle, #2a3441);
+    border-top: 1px solid var(--nh-border);
     font-size: 0.72rem;
   }
 
   .observation-focus__facts dt {
-    color: var(--text-subtle, #868e96);
+    color: var(--nh-text-muted);
   }
 
   .observation-focus__facts dd {
@@ -347,11 +347,11 @@
     align-items: center;
     gap: 0.35rem;
     padding-top: 0.5rem;
-    border-top: 1px solid var(--border-subtle, #2a3441);
+    border-top: 1px solid var(--nh-border);
   }
 
   .observation-focus__pending {
     font-size: 0.72rem;
-    color: var(--text-subtle, #868e96);
+    color: var(--nh-text-muted);
   }
 </style>
