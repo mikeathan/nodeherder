@@ -56,7 +56,10 @@ test('statistics parse floating ranges, fit the measured axis and name range/mar
     {} as TooltipModel<'line' | 'bar'>,
     { dataset: { label: name }, raw: { x: 0, y } } as TooltipItem<'line' | 'bar'>
   );
-  expect(tooltip('Minimum–Maximum', [18, 24])).toBe('Minimum–Maximum: 18 – 24 °C');
-  expect(tooltip('Average', 21.25)).toBe('Average: 21.25 °C');
-  expect(tooltip('Last', null)).toBe('Last: Unknown');
+  // Temperature has no space before its symbol (see utils/units.ts); the spread carries the unit
+  // once, at the end, rather than repeating it on both bounds.
+  expect(tooltip('Minimum–Maximum', [18, 24])).toBe('Minimum–Maximum: 18 – 24°C');
+  expect(tooltip('Average', 21.25)).toBe('Average: 21.25°C');
+  // The shared units formatter owns the missing-value sentinel; this must not invent a second one.
+  expect(tooltip('Last', null)).toBe('Last: —');
 });

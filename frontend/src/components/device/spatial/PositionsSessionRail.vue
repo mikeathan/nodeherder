@@ -1,7 +1,11 @@
 <script setup lang="ts">
-  import { computed } from 'vue';
   import type { SpatialSession } from '@/services/spatial-history.service';
-  import { clock, durationLabel } from '@/domain/spatial/playback';
+  import {
+    RECORDINGS_EMPTY_COPY,
+    RECORDINGS_LOADING_COPY,
+    railMetaLabel,
+    railTimeLabel,
+  } from '@/domain/spatial/positions-labels';
 
   const props = defineProps<{
     /** Newest first; the caller owns ordering. */
@@ -15,23 +19,14 @@
   }>();
   const emit = defineEmits<{ select: [id: string] }>();
 
-  const showDate = computed(() => props.spanMs > 86_400_000);
-
-  function when(session: SpatialSession) {
-    const options = { date: showDate.value, seconds: false };
-    return `${clock(session.from, options)} – ${clock(session.to, options)}`;
-  }
-
-  function meta(session: SpatialSession) {
-    const slots = session.slots.length ? session.slots.join(', ') : 'none';
-    return `${durationLabel(session.to - session.from)} · ${session.points} points · slot ${slots}`;
-  }
+  const when = (session: SpatialSession): string => railTimeLabel(session, props.spanMs);
+  const meta = (session: SpatialSession): string => railMetaLabel(session);
 </script>
 
 <template>
   <div class="nh-session-rail">
     <p v-if="loading && !sessions.length" class="nh-muted nh-session-empty" role="status">
-      Loading recordings…
+      {{ RECORDINGS_LOADING_COPY }}
     </p>
     <ol v-else-if="sessions.length" class="nh-session-list" aria-label="Recorded sessions">
       <li v-for="session in sessions" :key="session.id">
@@ -53,7 +48,7 @@
       </li>
     </ol>
     <p v-else class="nh-muted nh-session-empty">
-      No recorded positions in this range. Enable “Record history” on the device and let a target move.
+      {{ RECORDINGS_EMPTY_COPY }}
     </p>
   </div>
 </template>
@@ -67,12 +62,13 @@
     padding: 0;
   }
   .nh-session-row {
+    position: relative;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 0.1rem 0.5rem;
     width: 100%;
     min-height: 2.75rem;
-    padding: 0.45rem 0.6rem;
+    padding: 0.45rem 0.6rem 0.45rem 0.75rem;
     border: 1px solid var(--nh-border);
     border-radius: var(--nh-radius-m);
     background: var(--nh-surface);
@@ -83,9 +79,19 @@
   .nh-session-row:hover {
     border-color: var(--nh-border-strong);
   }
+  /* The same selection shape as the range timeline: a quiet tint plus a leading edge bar. */
   .nh-session-row.is-selected {
     border-color: var(--nh-accent);
-    background: var(--nh-accent-soft);
+    background: color-mix(in srgb, var(--nh-accent) 22%, transparent);
+  }
+  .nh-session-row.is-selected::before {
+    content: '';
+    position: absolute;
+    inset-block: 0.35rem;
+    inset-inline-start: 0.2rem;
+    width: 3px;
+    border-radius: 2px;
+    background: var(--nh-accent);
   }
   .nh-session-row.is-pending {
     border-style: dashed;

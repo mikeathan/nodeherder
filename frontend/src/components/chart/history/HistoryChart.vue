@@ -4,6 +4,7 @@
   import type { Expose } from '@/types/device';
   import { clampHistoryRange, panHistoryRange, zoomHistoryRange, type HistoryRange } from '@/domain/history/range';
   import { formatExposeValue, exposeDisplayLabel } from '@/domain/exposes';
+  import { formatHistoryMoment, formatHistoryRange } from '@/domain/history/format';
   import NumericHistory from './NumericHistory.vue';
   import UiIcon from '@/components/ui/UiIcon.vue';
   import type { HistoryInteraction } from './interactions';
@@ -18,7 +19,7 @@
   const range = ref<HistoryRange>({ ...bounds.value });
   const readout = ref('');
   watch(() => props.series, () => { range.value = { ...bounds.value }; readout.value = ''; });
-  const rangeLabel = computed(() => `${new Date(range.value.from).toLocaleString()} – ${new Date(range.value.to).toLocaleString()}`);
+  const rangeLabel = computed(() => formatHistoryRange(range.value.from, range.value.to));
   function change(next: HistoryRange) { range.value = clampHistoryRange(next, bounds.value); readout.value = ''; }
   function scrub(at: number | null) {
     if (at === null) { readout.value = ''; return; }
@@ -27,7 +28,9 @@
     while (low < high) { const mid = (low + high) >>> 1; if (points[mid].timestamp < at) low = mid + 1; else high = mid; }
     const right = points[Math.min(low, points.length - 1)], left = points[Math.max(0, low - 1)];
     const point = right && left ? (Math.abs(right.timestamp - at) < Math.abs(left.timestamp - at) ? right : left) : right;
-    readout.value = point ? `${new Date(point.timestamp).toLocaleString()} · ${formatExposeValue(props.expose, point.value)}` : 'No recorded sample';
+    readout.value = point
+      ? `${formatHistoryMoment(point.timestamp)} · ${formatExposeValue(props.expose, point.value)}`
+      : 'No recorded sample';
   }
   const controls = [
     { label: 'Pan earlier', text: '←', run: () => change(panHistoryRange(range.value, bounds.value, -1)) },

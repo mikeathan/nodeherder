@@ -1,16 +1,17 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { confirm } from '@/composables/useConfirm';
 import { useHub } from '@/composables/useHub';
+import { isESPHomeDevice } from '@/domain/devices';
 import { useESPHomeEnrollmentList } from '@/composables/esphome/useESPHomeEnrollmentList';
 import { removeESPHomeDevice, updateESPHomeDevice } from '@/services/esphome';
-import type { ESPHomeEnrollment, ESPHomeEnrollmentUpdate } from '@/contracts/esphome';
-import { ConnectionTypes } from '@/types/device.type';
 import {
-  ESPHOME_EDIT_INPUT_ERROR,
-  ESPHOME_FORM_DEFAULT_PORT,
+  ESPHOME_DEFAULT_PORT,
+  ESPHOME_MESSAGES,
   ESPHOME_REMOVE_CONFIRMATION,
-  ESPHOME_REMOVE_RETRY_FAILED,
-  ESPHOME_SAVE_RETRY_FAILED,
+  type ESPHomeEnrollment,
+  type ESPHomeEnrollmentUpdate,
+} from '@/contracts/esphome';
+import {
   createEnrollmentUpdate,
   diagnosticMessage as diagnosticText,
   enrollmentDisplayName,
@@ -27,13 +28,16 @@ export function useESPHomeManageDialog(open: () => boolean) {
   const { items, loading, loaded, loadError, refresh, cancelLoad } = enrollmentList;
   const { devices, initialized } = useHub();
 
+  /**
+   * Devices in the registry that this dialog could enroll but has not.
+   *
+   * Uses the shared `isESPHomeDevice` predicate: an inline copy dropped the legacy "no provider
+   * yet" rule, so a device discovered before its provider was known was wrongly reported as
+   * unmatched (or missed).
+   */
   const unmatchedDevices = computed(() => {
     const enrolled = new Set(items.value.map((item) => item.id));
-    return devices.value.filter(
-      (device) =>
-        (device.provider === ConnectionTypes.ESPHome || device.connection_type === ConnectionTypes.ESPHome) &&
-        !enrolled.has(device.id)
-    );
+    return devices.value.filter((device) => isESPHomeDevice(device) && !enrolled.has(device.id));
   });
 
   const error = ref('');
@@ -43,7 +47,7 @@ export function useESPHomeManageDialog(open: () => boolean) {
   const editing = ref('');
   const editName = ref('');
   const editAddress = ref('');
-  const editPort = ref(ESPHOME_FORM_DEFAULT_PORT);
+  const editPort = ref(ESPHOME_DEFAULT_PORT);
   const keyMode = ref<ESPHomeKeyMode>('keep');
   const editKey = ref('');
   const saving = ref(false);
@@ -102,7 +106,7 @@ export function useESPHomeManageDialog(open: () => boolean) {
         await refresh();
       }
     } catch {
-      if (owner === generation) error.value = ESPHOME_REMOVE_RETRY_FAILED;
+      if (owner === generation) error.value = ESPHOME_MESSAGES.removeFailed;
     } finally {
       if (owner === generation) removing.value = '';
     }
@@ -122,7 +126,7 @@ export function useESPHomeManageDialog(open: () => boolean) {
 
   function connectionInput(): ESPHomeEnrollmentUpdate {
     if (!editAddress.value.trim() || !validESPHomePort(editPort.value) || (keyMode.value === 'replace' && !editKey.value.trim())) {
-      throw new Error(ESPHOME_EDIT_INPUT_ERROR);
+      throw new Error(ESPHOME_MESSAGES.editInputError);
     }
     return createEnrollmentUpdate(editName.value, editAddress.value, editPort.value, keyMode.value, editKey.value);
   }
@@ -135,7 +139,7 @@ export function useESPHomeManageDialog(open: () => boolean) {
     try {
       input = connectionInput();
     } catch (cause) {
-      error.value = cause instanceof Error ? cause.message : ESPHOME_EDIT_INPUT_ERROR;
+      error.value = cause instanceof Error ? cause.message : ESPHOME_MESSAGES.editInputError;
       return;
     }
     cancelLoad();
@@ -148,7 +152,7 @@ export function useESPHomeManageDialog(open: () => boolean) {
       closeEdit();
       await refresh();
     } catch (cause) {
-      if (owner === generation) error.value = cause instanceof Error ? cause.message : ESPHOME_SAVE_RETRY_FAILED;
+      if (owner === generation) error.value = cause instanceof Error ? cause.message : ESPHOME_MESSAGES.saveFailed;
     } finally {
       if (owner === generation) saving.value = false;
     }

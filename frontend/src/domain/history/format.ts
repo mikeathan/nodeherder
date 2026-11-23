@@ -38,6 +38,20 @@ export function formatHistoryMoment(timestamp: number): string {
   });
 }
 
+/**
+ * "Oct 24, 18:20 – Oct 24, 19:05" in the viewer's locale.
+ *
+ * Several surfaces print a period (chart readout, partial-coverage notice, sample table, the
+ * device toolbar); each used to call `toLocaleString()` with its own options, so the same span
+ * read differently in the tooltip and in the notice. This is the one owner of that pair.
+ *
+ * @param from Range start, epoch milliseconds.
+ * @param to Range end, epoch milliseconds.
+ */
+export function formatHistoryRange(from: number, to: number): string {
+  return `${formatHistoryMoment(from)} – ${formatHistoryMoment(to)}`;
+}
+
 /** "18:20" in the viewer's locale. */
 export function formatHistoryClock(timestamp: number): string {
   return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });

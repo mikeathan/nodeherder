@@ -34,7 +34,7 @@ export async function removeESPHomeDevice(id: string, signal?: AbortSignal): Pro
 /** Replaces connection settings; omitting the key preserves the stored credential. */
 export async function updateESPHomeDevice(id: string, input: ESPHomeEnrollmentUpdate, signal?: AbortSignal): Promise<void> {
   const response = await fetchWithAuth(`${ESPHOME_DEVICES_PATH}/${encodeURIComponent(id)}`, { method: 'PUT', headers: ESPHOME_MUTATION_HEADERS, body: JSON.stringify(input), signal });
-  if (response.status === 409) throw new Error('This address and port are already configured.');
+  if (response.status === 409) throw new Error(ESPHOME_MESSAGES.duplicate);
   if (response.status === 400) throw new Error(ESPHOME_MESSAGES.invalidInput);
   if (!response.ok) throw new Error(ESPHOME_MESSAGES.saveFailed);
 }
@@ -64,10 +64,11 @@ async function validateAddedResponse(response: Response): Promise<void> {
   validateESPHomeAdded(envelope);
 }
 
+/** Maps a failed add to the one shared message for that status; never invents wording. */
 function addFailureMessage(status: number): string {
-  if (status === 401) return 'Sign in again to add a device.';
-  if (status === 403) return 'Reload NodeHerder and try again.';
+  if (status === 401) return ESPHOME_MESSAGES.unauthorized;
+  if (status === 403) return ESPHOME_MESSAGES.forbidden;
   if (status === 409) return ESPHOME_MESSAGES.duplicate;
   if (status === 400) return ESPHOME_MESSAGES.invalidInput;
-  return 'The device could not be saved. Check device-provider storage and try again.';
+  return ESPHOME_MESSAGES.addFailed;
 }

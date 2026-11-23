@@ -3,6 +3,7 @@
   import type { HistorySeries } from '@/domain/history/types';
   import type { Expose } from '@/types/device';
   import { formatExposeValue } from '@/domain/exposes';
+  import { formatHistoryMoment } from '@/domain/history/format';
   const props = defineProps<{ series: HistorySeries; expose: Expose }>();
   const samplePage = ref(0);
   const pageCount = computed(() => Math.ceil(props.series.data.length / 100));
@@ -26,7 +27,7 @@
           </thead>
           <tbody>
             <tr v-for="(point, i) in samples" :key="i">
-              <td :title="new Date(point.timestamp).toISOString()">{{ new Date(point.timestamp).toLocaleString() }}</td>
+              <td :title="new Date(point.timestamp).toISOString()">{{ formatHistoryMoment(point.timestamp) }}</td>
               <td>{{ format(point.value) }}</td>
             </tr>
           </tbody>

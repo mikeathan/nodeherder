@@ -4,7 +4,7 @@
    * mutations live in useESPHomeManageDialog.ts; this component renders state.
    */
   import { ESPHOME_MAX_NAME_LENGTH, ESPHOME_PORT_MAX, ESPHOME_PORT_MIN } from '@/contracts/esphome';
-  import { ESPHOME_UNKNOWN_STATUS } from '@/domain/esphome';
+  import { connectionStatusLabel } from '@/domain/esphome';
   import { useESPHomeManageDialog } from '@/composables/esphome/useESPHomeManageDialog';
   import UiDialog from '@/components/ui/UiDialog.vue';
   import UiButton from '@/components/ui/UiButton.vue';
@@ -53,7 +53,7 @@
     <div v-for="item in items" :key="item.id" class="nh-provider-row">
       <div>
         <strong>{{ displayName(item) }}</strong><br />
-        <span class="nh-muted">{{ item.address }}:{{ item.port }} · {{ item.status || ESPHOME_UNKNOWN_STATUS }}<template v-if="item.reconnections"> · {{ item.reconnections }} reconnection attempts</template></span>
+        <span class="nh-muted">{{ item.address }}:{{ item.port }} · {{ connectionStatusLabel(item.status) }}<template v-if="item.reconnections"> · {{ item.reconnections }} reconnection attempts</template></span>
         <p v-if="item.diagnostic" class="nh-muted">{{ diagnosticMessage(item.diagnostic) }}</p>
       </div>
       <div>

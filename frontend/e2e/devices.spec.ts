@@ -38,7 +38,8 @@ test.describe('devices', () => {
     expect(requests.find((r) => r.method === 'POST')?.body).toMatchObject({ address: '192.168.1.2', port: 6053, encryption_key: 'test-key' });
     const manage = page.getByRole('dialog', { name: 'Manage ESPHome devices' });
     await expect(manage).toBeVisible();
-    await expect(manage).toContainText('offline');
+    // The wire value stays lower case; the dialog presents the label an operator can read.
+    await expect(manage).toContainText('Offline');
     await expect(manage).toContainText('Check the address');
     await manage.getByRole('button', { name: 'Edit Radar' }).click();
     await manage.getByLabel('IP address').fill('192.168.1.3');
@@ -293,6 +294,10 @@ test.describe('devices', () => {
   });
 
   test('spatial mappings save and show only current provider reports', async ({ page }, info) => {
+    // This scenario now walks the whole spatial surface — mapping, live view, calibration, the
+    // Positions player and the spec 067 playback flows — in one ordered story. It is an intentional
+    // end-to-end walk, so it gets a longer budget rather than being fragmented into unrelated tests.
+    test.setTimeout(90_000);
     await page.route('**/api/hubstate', async (route) => {
       const response = await route.fetch();
       const state = await response.json();
@@ -569,7 +574,15 @@ test.describe('devices', () => {
     await page.setViewportSize({ width: 1280, height: 600 });
     await page.getByRole('tab',{name:'History',exact:true}).click();
     await page.getByRole('button',{name:'Positions',exact:true}).click();
-    await expect(page.locator('.nh-session-row')).toHaveCount(3);
+    await expect(page.locator('.nh-session-row')).toHaveCount(4);
+    // The first load must place the playhead inside the confirmed recording. It used to stay at
+    // 0, so the clock showed the "—" sentinel and the canvas drew nothing until another
+    // recording was selected.
+    await expect(page.locator('.nh-transport-clock')).not.toHaveText('—');
+    // The newest fixture recording holds one sample (spec 067 AC-25), so it opens with nothing to
+    // draw. Select a recording that spans time before asserting on the canvas.
+    await page.locator('.nh-session-row[data-session-id="mock-session-morning"]').click();
+    await expect(page.locator('.nh-session-row[data-session-id="mock-session-morning"]')).toHaveAttribute('aria-pressed', 'true');
     const replayDistance = page.getByLabel('Distance', { exact: true });
     if (!(await replayDistance.isVisible())) {
       await page.locator('.nh-positions-main').first().getByRole('button', { name: 'View controls' }).click();
@@ -603,18 +616,25 @@ test.describe('devices', () => {
     await expect(page.locator('.nh-transport')).toBeVisible();
     expect(await page.locator('html').evaluate((html) => html.scrollWidth <= html.clientWidth)).toBe(true);
 
-    // AC-21: the recordings rail collapses and restores without changing the selection.
+    // AC-21: the recordings rail collapses and restores without changing the selection. The
+    // subject is "the same recording stays selected", not any particular fixture id.
     await expect(page.locator('.nh-positions-rail')).toBeVisible();
+    const selectedBefore = await page
+      .locator('.nh-coverage-segment[data-selected="true"]')
+      .getAttribute('data-session-id');
     const mainBefore = await page.locator('.nh-positions-main').boundingBox();
     const canvasBefore = await page.locator('.nh-spatial-canvas').boundingBox();
     await page.getByRole('button', { name: 'Hide recordings', exact: true }).click();
     await expect(page.locator('.nh-positions-rail')).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Show recordings (3)', exact: true })).toBeVisible();
-    await expect(page.locator('.nh-coverage-segment[data-session-id="mock-session-evening"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('button', { name: 'Show recordings (4)', exact: true })).toBeVisible();
+    await expect(page.locator('.nh-coverage-segment[data-selected="true"]')).toHaveAttribute(
+      'data-session-id',
+      selectedBefore!
+    );
     const canvasExpanded = await page.locator('.nh-spatial-canvas').boundingBox();
     expect(canvasExpanded!.width).toBeGreaterThan(canvasBefore!.width);
     expect(Math.abs(canvasExpanded!.height - canvasBefore!.height)).toBeLessThanOrEqual(1);
-    await page.getByRole('button', { name: 'Show recordings (3)', exact: true }).click();
+    await page.getByRole('button', { name: 'Show recordings (4)', exact: true }).click();
     await expect(page.locator('.nh-positions-rail')).toBeVisible();
 
     // AC-22: the viewer is wide and short, and zoom scales only its contents.
@@ -622,6 +642,10 @@ test.describe('devices', () => {
     expect(Math.abs(canvasRestored!.width - mainBefore!.width)).toBeLessThanOrEqual(2);
     expect(canvasRestored!.height).toBeGreaterThanOrEqual(16 * 16 - 1);
     expect(canvasRestored!.height).toBeLessThanOrEqual(24 * 16 + 1);
+    // Spec 067 AC-23: the transport must stay proportionate to the map, not overtake it. The
+    // regression this guards: narrowing the canvas made the player its own monument.
+    const transportBox = await page.locator('.nh-transport').boundingBox();
+    expect(transportBox!.height).toBeLessThanOrEqual(canvasRestored!.height * 0.6);
     const viewBoxWidth = async () =>
       Number((await page.locator('.nh-spatial-canvas').getAttribute('viewBox'))!.split(' ')[2]);
     const canvasBox = await page.locator('.nh-spatial-canvas').boundingBox();
@@ -670,21 +694,31 @@ test.describe('devices', () => {
     await heatFov.uncheck();
     await expect(page.locator('polygon.nh-fov')).toHaveCount(0);
     await page.getByRole('button', { name: 'Player', exact: true }).click();
-    await expect(page.locator('.nh-coverage-segment[data-session-id="mock-session-evening"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('.nh-coverage-segment[data-selected="true"]')).toHaveAttribute(
+      'data-session-id',
+      selectedBefore!
+    );
 
     await page.setViewportSize({ width: 768, height: 1024 });
     expect(await page.locator('html').evaluate((html) => html.scrollWidth <= html.clientWidth)).toBe(true);
     await page.setViewportSize({ width: 1280, height: 600 });
 
-    // Spec 057 AC-01: choosing a recording re-renders in place and never moves the page.
+    // The canvas section above already selected a recording with a span, which is what the
+    // in-place selection and scrubbing assertions below need.
+
     const range = page.getByLabel('Playback position');
     await range.scrollIntoViewIfNeeded();
     const beforeScroll = await appMain.evaluate((element) => element.scrollTop);
+    // A real page was scrolled into the player; a zero baseline with no action between reads
+    // would let this assertion pass without ever testing in-place selection.
     expect(beforeScroll).toBeGreaterThan(0);
-    await page.locator('.nh-session-row[data-session-id="mock-session-morning"]').click();
-    await expect(page.locator('.nh-session-row[data-session-id="mock-session-morning"]')).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.locator('.nh-coverage-segment[data-session-id="mock-session-morning"]')).toHaveAttribute('aria-pressed', 'true');
+    // Morning is already selected; choose a different recording or this never tests a change.
+    await page.locator('.nh-session-row[data-session-id="mock-session-afternoon"]').click();
+    await expect(page.locator('.nh-coverage-segment[data-session-id="mock-session-afternoon"]')).toHaveAttribute('data-selected', 'true');
     expect(Math.abs((await appMain.evaluate((element) => element.scrollTop)) - beforeScroll)).toBeLessThanOrEqual(2);
+    // Back to morning for the scrubber assertions below.
+    await page.locator('.nh-session-row[data-session-id="mock-session-morning"]').click();
+    await expect(page.locator('.nh-coverage-segment[data-session-id="mock-session-morning"]')).toHaveAttribute('data-selected', 'true');
 
     // AC-10/AC-12: movement episodes skip the recorded pause and mark the jump.
     await expect(page.locator('line.nh-hop')).toHaveCount(0);
@@ -709,6 +743,85 @@ test.describe('devices', () => {
     await expect.poll(async () => Number(await range.inputValue())).toBeGreaterThan(idleTime);
     await page.getByRole('button', { name: 'Pause', exact: true }).click();
 
+    // Spec 067 AC-02: Pause keeps the instant and Play resumes from it instead of restarting.
+    const pausedAt = Number(await range.inputValue());
+    await page.getByRole('button', { name: 'Play', exact: true }).click();
+    await page.getByRole('button', { name: 'Pause', exact: true }).click();
+    expect(Number(await range.inputValue())).toBeGreaterThanOrEqual(pausedAt);
+    await expect(page.locator('.nh-transport-clock')).toContainText(/\d{2}:\d{2}:\d{2}/);
+
+    // Spec 067 AC-06/AC-08/AC-16: Next recording moves to the next recording in the filter and
+    // the ends report themselves as disabled; Previous is available in the middle.
+    await expect(page.locator('.nh-transport-recording')).toContainText('Recording 2 of 4');
+    await page.getByRole('button', { name: 'Next recording', exact: true }).click();
+    await expect(page.locator('.nh-coverage-segment[data-session-id="mock-session-afternoon"]')).toHaveAttribute('data-selected', 'true');
+    await expect(page.locator('.nh-transport-recording')).toContainText('Recording 3 of 4');
+    await page.getByRole('button', { name: 'Previous recording', exact: true }).click();
+    await expect(page.locator('.nh-coverage-segment[data-session-id="mock-session-morning"]')).toHaveAttribute('data-selected', 'true');
+
+    // Spec 067 AC-09: Shift+Right is the keyboard equivalent of Next recording (the shortcut
+    // listens on the window, so no particular control needs focus).
+    await page.keyboard.press('Shift+ArrowRight');
+    await expect(page.locator('.nh-coverage-segment[data-session-id="mock-session-afternoon"]')).toHaveAttribute('data-selected', 'true');
+    await page.keyboard.press('Shift+ArrowLeft');
+    await expect(page.locator('.nh-coverage-segment[data-session-id="mock-session-morning"]')).toHaveAttribute('data-selected', 'true');
+
+    // Spec 067 AC-10/AC-11/AC-22: the range timeline renders one focusable control per recorded
+    // movement, each named with its time and recording.
+    await expect(page.locator('.nh-coverage-mark').first()).toBeVisible();
+    await expect(page.locator('.nh-coverage-head')).toContainText(/recorded positions?/);
+    await expect(page.locator('.nh-coverage-segment[data-session-id="mock-session-morning"]')).toHaveAttribute(
+      'aria-label', /recorded position/
+    );
+    const morningMarks = page.locator(
+      '.nh-coverage-segment[data-session-id="mock-session-morning"] .nh-coverage-mark'
+    );
+    await expect(morningMarks.first()).toHaveAttribute('aria-label', /Movement at/);
+    // Roving tabindex: the whole timeline is one Tab stop, not one per mark.
+    await expect(page.locator('.nh-coverage-mark[tabindex="0"]')).toHaveCount(1);
+    await morningMarks.first().focus();
+    const firstFocusedKey = await page.evaluate(() =>
+      document.activeElement?.getAttribute('data-key')
+    );
+    await page.keyboard.press('ArrowRight');
+    const nextFocusedKey = await page.evaluate(() =>
+      document.activeElement?.getAttribute('data-key')
+    );
+    expect(nextFocusedKey).not.toBe(firstFocusedKey);
+
+    // Activating a mark in a *different* recording selects that recording and plays from that
+    // mark — not its start. The recorded instant is compared, so an ignored activation cannot pass.
+    const afternoonSegment = page.locator('.nh-coverage-segment[data-session-id="mock-session-afternoon"]');
+    const afternoonMark = page.locator(
+      '.nh-coverage-segment[data-session-id="mock-session-afternoon"] .nh-coverage-mark'
+    ).nth(1);
+    await expect(afternoonMark).toHaveAttribute('data-at', /\d{10,}/);
+    const markAt = Number(await afternoonMark.getAttribute('data-at'));
+    expect(markAt).toBeGreaterThan(Number(await range.getAttribute('min')));
+    // Dense marks overlap, so dispatch the activation directly instead of hit-testing a covered
+    // point; this still exercises the mark's click handler and the no-bubble contract.
+    await afternoonMark.dispatchEvent('click');
+    await expect(afternoonSegment).toHaveAttribute('data-selected', 'true');
+    await page.getByRole('button', { name: 'Pause', exact: true }).click();
+    await expect.poll(async () => Number(await range.inputValue())).toBeGreaterThanOrEqual(markAt);
+
+    // Spec 067 AC-01/AC-03/AC-04/AC-20: Play all starts at the earliest recording and continues
+    // into the next one after a skipped gap, then reports the end of the filter.
+    await page.getByRole('button', { name: 'Play all recordings', exact: true }).click();
+    await expect(page.locator('.nh-coverage-segment[data-session-id="mock-session-night"]')).toHaveAttribute('data-selected', 'true');
+    await expect(page.locator('.nh-transport-recording')).toContainText('Recording 1 of 4');
+    await expect(page.getByRole('button', { name: 'Previous recording', exact: true })).toBeDisabled();
+    // The night recording is 2 s long, so playback crosses into the morning recording.
+    await expect.poll(
+      async () => page.locator('.nh-coverage-segment[data-session-id="mock-session-morning"]').getAttribute('data-selected'),
+      { timeout: 15_000 }
+    ).toBe('true');
+    // The gap must actually be reported as skipped. Accepting the pre-crossing / in-flight text
+    // let this pass without a skipped gap ever appearing.
+    await expect(page.locator('.nh-transport-status')).toContainText('Skipped');
+    await expect(page.getByRole('button', { name: 'Pause', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Pause', exact: true }).click();
+
     // AC-05/AC-20: a failed switch keeps the confirmed recording and explains the failure.
     await page.route('**/api/spatial/history**', async (route) => {
       const mode = new URL(route.request().url()).searchParams.get('mode');
@@ -720,7 +833,7 @@ test.describe('devices', () => {
     });
     await page.locator('.nh-session-row[data-session-id="mock-session-afternoon"]').click();
     await expect(page.getByRole('alert').filter({ hasText: 'Spatial history could not be loaded.' })).toBeVisible();
-    await expect(page.locator('.nh-coverage-segment[data-session-id="mock-session-morning"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('.nh-coverage-segment[data-session-id="mock-session-morning"]')).toHaveAttribute('data-selected', 'true');
     await page.unroute('**/api/spatial/history**');
 
     // AC-19: a session with no recorded points is explicit and offers nothing to play.
@@ -733,15 +846,20 @@ test.describe('devices', () => {
       await route.continue();
     });
     await page.locator('.nh-session-row[data-session-id="mock-session-afternoon"]').click();
-    await expect(page.getByText('No recorded positions in this session.')).toBeVisible();
+    // The summary still reports points for this recording, so the copy must name the disagreement
+    // instead of implying the recording holds nothing.
+    await expect(page.getByText(/lists 8 positions in this range, but none could be loaded/)).toBeVisible();
     await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeDisabled();
     await page.unroute('**/api/spatial/history**');
 
-    // AC-07/FE-04: segments are buttons, activate from the keyboard, and the scrubber steps.
-    await page.locator('.nh-coverage-segment[data-session-id="mock-session-evening"]').focus();
+    // AC-07/FE-04: movement marks are buttons, activate from the keyboard, and the scrubber steps.
+    await page
+      .locator('.nh-coverage-segment[data-session-id="mock-session-morning"] .nh-coverage-mark')
+      .first()
+      .focus();
     await page.keyboard.press('Enter');
-    await expect(page.locator('.nh-coverage-segment[data-session-id="mock-session-evening"]')).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.locator('.nh-session-row[data-session-id="mock-session-evening"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('.nh-coverage-segment[data-session-id="mock-session-morning"]')).toHaveAttribute('data-selected', 'true');
+    await expect(page.locator('.nh-session-row[data-session-id="mock-session-morning"]')).toHaveAttribute('aria-pressed', 'true');
     await range.focus();
     const beforeKey = Number(await range.inputValue());
     await page.keyboard.press('ArrowRight');
@@ -750,15 +868,41 @@ test.describe('devices', () => {
     // AC-15/AC-16: recordings move into the bottom sheet without losing the selection.
     await page.setViewportSize({ width: 390, height: 844 });
     await expect(page.locator('.nh-positions-rail')).toBeHidden();
-    const openRecordings = page.getByRole('button', { name: /Recordings \(3\)/ });
+    const openRecordings = page.getByRole('button', { name: /Recordings \(4\)/ });
     await openRecordings.click();
     const sheet = page.getByRole('dialog', { name: 'Recordings' });
     await expect(sheet).toBeVisible();
     await sheet.locator('.nh-session-row[data-session-id="mock-session-afternoon"]').click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
-    await expect(page.locator('.nh-coverage-segment[data-session-id="mock-session-afternoon"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('.nh-coverage-segment[data-session-id="mock-session-afternoon"]')).toHaveAttribute('data-selected', 'true');
     expect(await page.locator('html').evaluate((html) => html.scrollWidth <= html.clientWidth)).toBe(true);
     await page.setViewportSize(viewerViewport);
+
+    // AC-12: a recording whose hub omits `samples` still has one keyboard selection control, and
+    // it must not paint a mark where nothing was recorded.
+    await page.route('**/api/spatial/history**', async (route) => {
+      if (new URL(route.request().url()).searchParams.get('mode') !== 'sessions') {
+        await route.continue();
+        return;
+      }
+      const response = await route.fetch();
+      const body = await response.json();
+      for (const session of body) {
+        if (session.id === 'mock-session-morning') session.samples = [];
+      }
+      await route.fulfill({ response, json: body });
+    });
+    await page.getByRole('button', { name: 'Refresh', exact: true }).click();
+    const fallback = page.locator(
+      '.nh-coverage-segment[data-session-id="mock-session-morning"] .nh-coverage-mark.is-fallback'
+    );
+    await expect(fallback).toBeVisible();
+    await expect(fallback).toHaveAttribute('aria-label', /Play from/);
+    await expect(page.locator('.nh-coverage-segment[data-session-id="mock-session-morning"] .nh-coverage-mark:not(.is-fallback)')).toHaveCount(0);
+    await fallback.focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.nh-coverage-segment[data-session-id="mock-session-morning"]')).toHaveAttribute('data-selected', 'true');
+    await page.unroute('**/api/spatial/history**');
 
     // AC-18: an empty range explains itself and leaves nothing to play.
     await page.route('**/api/spatial/history**', async (route) => {

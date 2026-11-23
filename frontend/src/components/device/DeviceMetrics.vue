@@ -9,6 +9,7 @@
   import { coveredHistoryWindow, statisticsDisplaySeries } from '@/domain/history/stats';
   import { isEnergyCounter } from '@/domain/history/energy';
   import { historyEntityOptions } from '@/domain/history/entities';
+  import { formatHistoryRange } from '@/domain/history/format';
   import HistoryView from '@/components/chart/history/HistoryView.vue';
   import HistoryToolbar from '@/components/chart/history/HistoryToolbar.vue';
   const props = defineProps<{ id: string }>();
@@ -39,7 +40,9 @@
   }, { immediate: true });
   const range = computed(() => historyRange(hours.value, end.value, customFrom.value, customTo.value));
   const valid = computed(() => validHistoryRange(range.value));
-  const selectedRangeLabel = computed(() => valid.value ? `${new Date(range.value.from).toLocaleString()} – ${new Date(range.value.to).toLocaleString()}` : '');
+  const selectedRangeLabel = computed(() =>
+    valid.value ? formatHistoryRange(range.value.from, range.value.to) : ''
+  );
   watch([selected, hours, customFrom, customTo], () => {
     if (!selected.value || !valid.value) return;
     try { writeHistoryPreference(localStorage, props.id, { version: 1, preset: hours.value, expose: selected.value,
