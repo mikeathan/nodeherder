@@ -194,10 +194,16 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
       - name: Verify the Playwright image matches the installed version
+        # This job runs inside a container, where GitHub's default shell is `sh -e`, not bash.
+        # `[[ ]]` is a bash builtin: it printed "not found" and the guard silently passed for any
+        # version, so a drifting image would never be caught. Use the POSIX test and keep the
+        # expected version in one place for the comparison and both messages.
+        env:
+          EXPECTED_PLAYWRIGHT: "1.56.1"
         run: |
           installed=$(node -p "require('./node_modules/@playwright/test/package.json').version")
-          if [[ "$installed" != "1.56.1" ]]; then
-            echo "::error::@playwright/test $installed does not match the Playwright container image v1.56.1."
+          if [ "$installed" != "$EXPECTED_PLAYWRIGHT" ]; then
+            echo "::error::@playwright/test $installed does not match the Playwright container image v$EXPECTED_PLAYWRIGHT."
             echo "Update the container image tag in .github/workflows/ci.yml together with frontend/package.json."
             exit 1
           fi
