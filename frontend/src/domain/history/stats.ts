@@ -3,10 +3,29 @@ import type { HistoryPoint, HistorySeries } from './types';
 import type { Expose } from '@/types/device';
 import { displayNumber } from '@/domain/controls';
 
+/**
+ * The unit a numeric series should be presented in.
+ *
+ * Some exposes report a raw value whose meaningful unit differs from the wire unit: brightness is
+ * a percentage and colour temperature arrives as mired but reads as kelvin. This is the single
+ * owner of that mapping; components must not repeat the ternary.
+ */
+export function historyDisplayUnit(series: HistorySeries, expose: Expose): string {
+  if (expose.name === 'brightness') return '%';
+  if (expose.name === 'color_temp') return 'K';
+  return series.unit;
+}
+
 /** Convert every raw sample before aggregation, including nonlinear mired → kelvin. */
 export function statisticsDisplaySeries(series: HistorySeries, expose: Expose): HistorySeries {
-  return { ...series, unit: expose.name === 'brightness' ? '%' : expose.name === 'color_temp' ? 'K' : series.unit,
-    data: series.data.map((p) => ({ ...p, value: typeof p.value === 'number' ? displayNumber(expose, p.value) : p.value })) };
+  return {
+    ...series,
+    unit: historyDisplayUnit(series, expose),
+    data: series.data.map((point) => ({
+      ...point,
+      value: typeof point.value === 'number' ? displayNumber(expose, point.value) : point.value,
+    })),
+  };
 }
 
 export type DailyHistoryBucket = {

@@ -21,10 +21,16 @@ func (s *Service) Sessions(device string, from, to time.Time) ([]Session, error)
 	}
 	byID := make(map[string]*Session)
 	slots := make(map[string]map[int]bool)
+	// The activity summary only needs each session's recorded timestamps in order, not its points:
+	// a 7-day query can span hundreds of sessions, and retaining every Point would duplicate the
+	// whole store in memory for the duration of one request.
+	sampleTimes := make(map[string][]int64)
 	for _, chunk := range chunks {
 		entry := byID[chunk.Session]
 		if entry == nil {
-			entry = &Session{ID: chunk.Session, From: chunk.From, To: chunk.To}
+			// Slots starts non-nil: the wire contract is `number[]`, and a nil slice marshals as
+			// `null`, which the browser's slot label code does not expect.
+			entry = &Session{ID: chunk.Session, From: chunk.From, To: chunk.To, Slots: make([]int, 0)}
 			byID[chunk.Session] = entry
 			slots[chunk.Session] = make(map[int]bool)
 		}
@@ -40,6 +46,8 @@ func (s *Service) Sessions(device string, from, to time.Time) ([]Session, error)
 			if point.At >= from.UnixMilli() && point.At <= to.UnixMilli() {
 				entry.Points++
 				slots[chunk.Session][point.Slot] = true
+				// Collected in the same pass that counts points: no second read of the chunks.
+				sampleTimes[chunk.Session] = append(sampleTimes[chunk.Session], point.At)
 			}
 		}
 	}
@@ -52,6 +60,11 @@ func (s *Service) Sessions(device string, from, to time.Time) ([]Session, error)
 			entry.Slots = append(entry.Slots, slot)
 		}
 		sort.Ints(entry.Slots)
+		times := sampleTimes[id]
+		// Chunk keys sort by start time, so concatenation is already ascending; sorting keeps the
+		// drawn activity tied to real time order even if chunks overlap.
+		sort.Slice(times, func(i, j int) bool { return times[i] < times[j] })
+		entry.Samples = samplesFrom(times)
 		sessions = append(sessions, *entry)
 	}
 	sort.Slice(sessions, func(i, j int) bool { return sessions[i].From < sessions[j].From })
@@ -60,7 +73,10 @@ func (s *Service) Sessions(device string, from, to time.Time) ([]Session, error)
 
 // Points returns the ordered points for one session inside the requested range.
 func (s *Service) Points(device, session string, from, to time.Time) ([]Point, error) {
-	chunks, err := s.repo.Chunks(device, from, to)
+	// Same lookback as Sessions: a chunk that started before the window can still hold points
+	// inside it. Without it the list offers a recording whose detail loads empty, and the player
+	// reports "No recorded positions in this session" for a recording it just listed with points.
+	chunks, err := s.repo.Chunks(device, from.Add(-sourceIdleClose), to)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +103,10 @@ func (s *Service) Heatmap(device string, from, to time.Time, cellMM int) ([]Cell
 	if cellMM > 1000 {
 		cellMM = 1000
 	}
-	chunks, err := s.repo.Chunks(device, from, to)
+	// Same lookback as Sessions/Points: a chunk that started before the window can still hold
+	// points inside it. Without it the heatmap disagrees with the recordings and points it is
+	// drawn beside.
+	chunks, err := s.repo.Chunks(device, from.Add(-sourceIdleClose), to)
 	if err != nil {
 		return nil, err
 	}

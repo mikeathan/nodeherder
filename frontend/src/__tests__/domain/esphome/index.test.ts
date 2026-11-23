@@ -1,14 +1,14 @@
 import { describe, expect, test } from '@jest/globals';
 import {
-  ESPHOME_CONNECTION_FAILURE,
-  ESPHOME_DEFAULT_DEVICE_LABEL,
   createEnrollmentInput,
   createEnrollmentUpdate,
   diagnosticMessage,
+  connectionStatusLabel,
   enrollmentDisplayName,
   validESPHomeInput,
   validESPHomePort,
 } from '@/domain/esphome';
+import { ESPHOME_DEFAULT_DEVICE_LABEL, ESPHOME_MESSAGES } from '@/contracts/esphome';
 import { device } from '../../helpers/devices';
 
 describe('ESPHome onboarding helpers', () => {
@@ -46,10 +46,19 @@ describe('ESPHome onboarding helpers', () => {
     expect(createEnrollmentUpdate('Radar', '192.168.1.2', 6053, 'clear', 'ignore').encryption_key).toBe('');
   });
 
+  test('reported connection status is labelled, never echoed raw', () => {
+    // The hub sends "connecting"/"online"/"offline"; anything else is not a status this UI knows.
+    expect(connectionStatusLabel('connecting')).toBe('Connecting');
+    expect(connectionStatusLabel('online')).toBe('Online');
+    expect(connectionStatusLabel('offline')).toBe('Offline');
+    expect(connectionStatusLabel(undefined)).toBe('Not reported');
+    expect(connectionStatusLabel('something-new')).toBe('Not reported');
+  });
+
   test('display name and diagnostics have safe fallbacks', () => {
     expect(enrollmentDisplayName({ id: 'id', address: '192.168.1.2', port: 6053 }, [device('id', { friendly_name: 'Radar' })])).toBe('Radar');
     expect(enrollmentDisplayName({ id: 'other', address: '192.168.1.2', port: 6053 }, [])).toBe(ESPHOME_DEFAULT_DEVICE_LABEL);
     expect(diagnosticMessage('identity_conflict')).toContain('different device');
-    expect(diagnosticMessage('unknown')).toBe(ESPHOME_CONNECTION_FAILURE);
+    expect(diagnosticMessage('unknown')).toBe(ESPHOME_MESSAGES.connectionFailure);
   });
 });

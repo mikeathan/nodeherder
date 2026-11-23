@@ -93,8 +93,8 @@ export function objectPolygon(object: SpatialWorkspace['objects'][number], orien
   return roomPolygon(objectCorners(object), orientation);
 }
 
-/** Corners of one heat cell in sensor-relative millimetres. */
-export function heatCellCorners(cell: HeatCell): SpatialPoint[] {
+/** Corners of one heat cell in sensor-relative millimetres. Only the origin and the fixed size matter. */
+export function heatCellCorners(cell: { x: number; y: number }): SpatialPoint[] {
   return [
     { x: cell.x, y: cell.y },
     { x: cell.x + HEAT_CELL_MM, y: cell.y },

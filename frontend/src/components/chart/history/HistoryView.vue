@@ -10,7 +10,7 @@
   import type { HistoryMode } from '@/domain/history/export';
   import { coveredHistoryWindow } from '@/domain/history/stats';
   import { exposeKind, exposeValueColor, formatExposeValue } from '@/domain/exposes';
-  import { formatHistoryMoment } from '@/domain/history/format';
+  import { formatHistoryMoment, formatHistoryRange } from '@/domain/history/format';
   import NumericHistory from './NumericHistory.vue';
   import StateHistory from './StateHistory.vue';
   import UiIcon from '@/components/ui/UiIcon.vue';
@@ -35,7 +35,9 @@
     <p v-if="series.partial" class="history-notice" role="status">
       Partial history · narrow the period for complete results.
     </p>
-    <p v-if="series.partial && covered" class="history-notice">Covered samples: {{ new Date(covered.from).toLocaleString() }} – {{ new Date(covered.to).toLocaleString() }}. Newer samples may be missing.</p>
+    <p v-if="series.partial && covered" class="history-notice">
+      Covered samples: {{ formatHistoryRange(covered.from, covered.to) }}. Newer samples may be missing.
+    </p>
     <div v-if="!series.data.length" class="history-empty">
       <UiIcon name="chart" />
       <p>No recorded history for this period.</p>

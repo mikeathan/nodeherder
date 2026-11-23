@@ -7,6 +7,11 @@ export type SpatialSession = {
   points: number;
   slots: number[];
   capped: boolean;
+  /**
+   * When the recording actually stored a position, epoch ms, ascending and evenly sampled. The
+   * recorder only writes on movement, so these are the movement. Absent from older hubs.
+   */
+  samples?: number[];
 };
 export type SpatialPoint = { at: number; slot: number; x: number; y: number };
 export type SpatialHeatCell = { x: number; y: number; count: number };

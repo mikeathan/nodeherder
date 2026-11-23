@@ -22,6 +22,9 @@ const (
 	movementGateMM  = 300
 	quantizeMM      = 50
 	mergeDistanceMM = 350
+	// MaxSamplesPerSession bounds the summary a 7-day filter can carry back. The range timeline is
+	// a few hundred pixels wide, so more timestamps than this cannot be shown anyway.
+	MaxSamplesPerSession = 240
 )
 
 // Point is one quantised target position. At is Unix milliseconds.
@@ -49,6 +52,29 @@ type Session struct {
 	Points int    `json:"points"`
 	Slots  []int  `json:"slots"`
 	Capped bool   `json:"capped"`
+	// Samples lists when the recording actually stored a position inside the requested range,
+	// ascending, evenly sampled down to MaxSamplesPerSession. The recorder only writes a point when
+	// a target moved, so these ARE the movement. The range timeline draws them to show where a
+	// recording was active without a points request per recording.
+	//
+	// It deliberately does not carry "episode starts": those mark motion resuming after a pause, so
+	// a recording moving continuously would show almost none, which reads as missing data.
+	Samples []int64 `json:"samples,omitempty"`
+}
+
+// samplesFrom reduces ordered timestamps to at most MaxSamplesPerSession, spread evenly so the
+// shape of the activity is preserved instead of only its opening moments. Both endpoints survive,
+// matching the browser's own mark sampling.
+func samplesFrom(times []int64) []int64 {
+	if len(times) <= MaxSamplesPerSession {
+		return append([]int64(nil), times...)
+	}
+	last := len(times) - 1
+	sampled := make([]int64, 0, MaxSamplesPerSession)
+	for index := 0; index < MaxSamplesPerSession; index++ {
+		sampled = append(sampled, times[index*last/(MaxSamplesPerSession-1)])
+	}
+	return sampled
 }
 
 // Cell is one aggregated heatmap bucket in millimetres.

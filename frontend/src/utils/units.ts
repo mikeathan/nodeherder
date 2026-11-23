@@ -108,6 +108,27 @@ export function formatDistance(
   return `${formatNumber(metres / 1000, options.digits ?? 1)} km`;
 }
 
+/**
+ * Format a millimetre measurement as a distance.
+ *
+ * Spatial history stores millimetres; the UI reads metres and kilometres. Converting at the call
+ * site (`formatDistance(mm / 1000)`) is exactly the unit arithmetic the formatting rules keep out
+ * of components, and it invites the next caller to forget it.
+ */
+export function formatMillimetres(
+  millimetres: number | null | undefined,
+  options: QuantityOptions = {}
+): string {
+  if (millimetres == null || !Number.isFinite(millimetres)) return options.missing ?? '—';
+  const metres = millimetres / 1000;
+  // A sub-kilometre distance keeps two decimals: with metres' default zero digits, a 350 mm
+  // movement rendered "0 m", which reads as no movement at all. Trailing zeros are trimmed.
+  if (Math.abs(metres) < 1000 && options.digits === undefined) {
+    return formatDistance(metres, { ...options, digits: 2 });
+  }
+  return formatDistance(metres, options);
+}
+
 const BYTE_STEPS = [
   { unit: 'B', factor: 1, digits: 0 },
   { unit: 'KB', factor: 1024, digits: 0 },

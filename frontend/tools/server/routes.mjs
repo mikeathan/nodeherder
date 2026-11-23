@@ -53,18 +53,28 @@ export function registerRoutes(app) {
     base64Url(Buffer.from(Array.from({ length: len }, () => Math.floor(Math.random() * 256))));
   // Register HTTP GET route for /hubstate
 
-  // Recorded spatial history fixture: three sessions separated by gaps, so the range timeline,
-  // movement episodes, next-movement and the recordings rail all have something to show.
+  // Recorded spatial history fixture shaped like a real day: one three-minute recording holding
+  // most of the movement, a one-minute one, two single-sample ones, and a deliberately short
+  // "night" recording so a browser test can watch playback finish it and cross into "morning"
+  // without waiting. Stretches are in milliseconds from each recording's start.
   const spatialOffsets = {
-    'mock-session-morning': [0, 1_000, 2_000, 3_000, 143_000, 144_000],
-    'mock-session-afternoon': [0, 1_000, 2_000],
-    'mock-session-evening': [0, 1_000, 2_000, 3_000, 4_000],
+    'mock-session-night': [0, 1_000, 2_000],
+    // Morning keeps a long pause (AC-11) but few marks, so its short segment still has room for
+    // one mark per movement; afternoon is denser than its width allows and is sampled down.
+    'mock-session-morning': [0, 20_000, 40_000, 143_000, 144_000],
+    'mock-session-afternoon': [0, 3_000, 6_000, 9_000, 12_000, 15_000, 18_000, 21_000],
+    'mock-session-evening': [0],
   };
   const spatialBases = (now) => ({
+    'mock-session-night': now - 10_800_000,
     'mock-session-morning': now - 7_200_000,
     'mock-session-afternoon': now - 3_600_000,
     'mock-session-evening': now - 900_000,
   });
+  // One epoch for the whole process: deriving bases from Date.now() per request made a session's
+  // summary and its points disagree by however long the test had been running, so a point could
+  // fall outside its recording and the scrubber would clamp to an edge.
+  const spatialEpoch = Date.now();
   const spatialSessions = (now) => {
     const bases = spatialBases(now);
     return Object.entries(spatialOffsets).map(([id, offsets]) => ({
@@ -74,6 +84,9 @@ export function registerRoutes(app) {
       points: offsets.length,
       slots: [1],
       capped: false,
+      // Every recorded offset is activity: the recorder only stores on movement, so the stored
+      // positions ARE the movement. Marking only episode starts made recordings look empty.
+      samples: offsets.map((offset) => bases[id] + offset),
     }));
   };
   const spatialPoints = (now, session) => {
@@ -88,7 +101,7 @@ export function registerRoutes(app) {
     }));
   };
   app.get('/api/spatial/history', (req, res) => {
-    const now = Date.now();
+    const now = spatialEpoch;
     const mode = String(req.query.mode ?? 'sessions');
     if (mode === 'sessions') {
       return res.json(spatialSessions(now));

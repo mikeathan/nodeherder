@@ -47,11 +47,20 @@ export function useESPHomeEnrollmentList() {
     cancelLoad();
   }
 
-  /** Starts one polling timer; the caller decides when mutations make a read inappropriate. */
+  /**
+   * Starts one polling timer; the caller decides when mutations make a read inappropriate.
+   *
+   * A hidden tab keeps its timer (the timer itself is cheap) but skips the request: polling a
+   * backend for a dialog nobody can see costs the hub work and the operator's battery. Peers in
+   * this repo gate on `visibilitychange` the same way, and the next visible tick re-reads at once.
+   */
   function start(canRefresh: () => boolean) {
     stop();
     void refresh();
-    timer = setInterval(() => { if (canRefresh()) void refresh(); }, ESPHOME_POLL_INTERVAL_MS);
+    timer = setInterval(() => {
+      if (document.hidden || !canRefresh()) return;
+      void refresh();
+    }, ESPHOME_POLL_INTERVAL_MS);
   }
 
   /** Clears presentation data after the dialog closes; call stop before resetting. */

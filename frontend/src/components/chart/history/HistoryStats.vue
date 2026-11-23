@@ -4,41 +4,64 @@
   import type { HistorySeries } from '@/domain/history/types';
   import { numericStats } from '@/domain/history/numeric';
   import { dailyHistoryStats, statisticsDisplaySeries } from '@/domain/history/stats';
+  import { formatWithUnit } from '@/utils/units';
   import { statisticsHistoryOptions, type HistoryChartSeries } from './options';
-  import { useThemeSettings } from '@/composables/useThemeSettings';
+  import { useChartAppearance } from '@/composables/history/useChartAppearance';
   const HistoryCanvas = defineAsyncComponent(() => import('./HistoryCanvas.vue'));
   const props = defineProps<{ series: HistorySeries; expose: Expose; daily?: boolean }>();
-  const { mode, settings } = useThemeSettings();
+  const appearance = useChartAppearance();
   const displayed = computed(() => statisticsDisplaySeries(props.series, props.expose));
   const unit = computed(() => displayed.value.unit);
   const summary = computed(() => numericStats(displayed.value.data));
   const buckets = computed(() => props.daily ? dailyHistoryStats(displayed.value) : []);
   const basis = computed(() => displayed.value.data.filter((p) => typeof p.value === 'number').length);
-  const format = (value: number | null) => value === null ? 'Unknown' : `${Number(value.toFixed(2))} ${unit.value}`;
+  // Units own rounding, spacing and the missing-value placeholder; this must not invent a second
+  // sentinel ("Unknown") beside the one every sibling renders ("—").
+  const format = (value: number | null) => formatWithUnit(value, unit.value, { digits: 2 });
   const date = (value: number) => new Date(value).toLocaleDateString([], { month: 'short', day: 'numeric' });
+  /** Series colours come from the one appearance owner, not from a per-component token read. */
   const plotted = computed<HistoryChartSeries[]>(() => {
-    void settings.value;
-    void mode.value;
-    const css = getComputedStyle(document.documentElement);
-    const color = (token: string) => css.getPropertyValue(token).trim();
+    const style = appearance.value;
+    // Three measurements share this chart; the legend's three tokens must match the drawn series.
+    const color = style.series ?? { power: style.color, temp: style.color, contact: style.color };
+    const midpoint = (bucket: { start: number; end: number }) => (bucket.start + bucket.end) / 2;
     return [
-      { name: 'Minimum–Maximum', type: 'bar', color: color('--nh-kind-power'), outline: color('--nh-text'), data: buckets.value.map((b) => ({
-        x: (b.start + b.end) / 2, y: b.min === null || b.max === null ? null : [b.min, b.max],
-      })) },
-      { name: 'Average', type: 'line', pointStyle: 'circle', color: color('--nh-kind-temp'), outline: color('--nh-text'),
-        data: buckets.value.map((b) => ({ x: (b.start + b.end) / 2, y: b.avg })) },
-      { name: 'Last', type: 'line', pointStyle: 'rectRot', color: color('--nh-kind-contact'), outline: color('--nh-text'),
-        data: buckets.value.map((b) => ({ x: (b.start + b.end) / 2, y: b.last })) },
+      {
+        name: 'Minimum–Maximum',
+        type: 'bar',
+        color: color.power,
+        outline: style.text,
+        data: buckets.value.map((bucket) => ({
+          x: midpoint(bucket),
+          y: bucket.min === null || bucket.max === null ? null : [bucket.min, bucket.max],
+        })),
+      },
+      {
+        name: 'Average',
+        type: 'line',
+        pointStyle: 'circle',
+        color: color.temp,
+        outline: style.text,
+        data: buckets.value.map((bucket) => ({ x: midpoint(bucket), y: bucket.avg })),
+      },
+      {
+        name: 'Last',
+        type: 'line',
+        pointStyle: 'rectRot',
+        color: color.contact,
+        outline: style.text,
+        data: buckets.value.map((bucket) => ({ x: midpoint(bucket), y: bucket.last })),
+      },
     ];
   });
-  const options = computed(() => {
-    void settings.value;
-    const css = getComputedStyle(document.documentElement);
-    const color = css.getPropertyValue('--nh-accent').trim();
-    return statisticsHistoryOptions({ color, muted: css.getPropertyValue('--nh-text-muted').trim(), grid: css.getPropertyValue('--nh-chart-grid').trim(),
-      dark: mode.value === 'dark', compact: false, reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches },
-      buckets.value[0]?.start ?? props.series.from, buckets.value.at(-1)?.end ?? props.series.to, unit.value);
-  });
+  const options = computed(() =>
+    statisticsHistoryOptions(
+      appearance.value,
+      buckets.value[0]?.start ?? props.series.from,
+      buckets.value.at(-1)?.end ?? props.series.to,
+      unit.value
+    )
+  );
 </script>
 <template>
   <section aria-label="Sample statistics" class="history-statistics" :class="{ 'is-daily': daily }">

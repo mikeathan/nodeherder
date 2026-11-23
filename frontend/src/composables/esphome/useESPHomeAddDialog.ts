@@ -1,24 +1,24 @@
-import { onBeforeUnmount, ref } from 'vue';
+import { onBeforeUnmount, ref, watch } from 'vue';
 import { store } from '@/store';
-import { ESPHOME_MESSAGES, type ESPHomeCandidate } from '@/contracts/esphome';
-import { addESPHomeDevice, discoverESPHomeDevices } from '@/services/esphome';
 import {
-  ESPHOME_ADDED_NOTICE,
-  ESPHOME_ADD_INPUT_ERROR,
-  ESPHOME_DISCOVERY_FALLBACK,
-  ESPHOME_FORM_DEFAULT_PORT,
-  createEnrollmentInput,
-  validESPHomeInput,
-} from '@/domain/esphome';
+  ESPHOME_DEFAULT_PORT,
+  ESPHOME_MESSAGES,
+  type ESPHomeCandidate,
+} from '@/contracts/esphome';
+import { addESPHomeDevice, discoverESPHomeDevices } from '@/services/esphome';
+import { createEnrollmentInput, validESPHomeInput } from '@/domain/esphome';
 
 /**
  * Owns the add-dialog form, discovery candidates and cancellable requests.
  * The dialog component only renders state and emits close/added events.
  */
-export function useESPHomeAddDialog(hooks: { onClose: () => void; onAdded: () => void }) {
+export function useESPHomeAddDialog(
+  open: () => boolean,
+  hooks: { onClose: () => void; onAdded: () => void }
+) {
   const name = ref('');
   const address = ref('');
-  const port = ref(ESPHOME_FORM_DEFAULT_PORT);
+  const port = ref(ESPHOME_DEFAULT_PORT);
   const key = ref('');
   const busy = ref(false);
   const scanning = ref(false);
@@ -30,16 +30,21 @@ export function useESPHomeAddDialog(hooks: { onClose: () => void; onAdded: () =>
   function resetForm() {
     name.value = '';
     address.value = '';
-    port.value = ESPHOME_FORM_DEFAULT_PORT;
+    port.value = ESPHOME_DEFAULT_PORT;
     key.value = '';
     error.value = '';
     scanned.value = false;
     candidates.value = [];
   }
 
-  /** Cancels a pending request, discards the draft and closes the dialog. */
+  /** Discards the draft and closes the dialog; refused while a submit is in flight. */
   function close() {
     if (busy.value) return;
+    discardAndClose();
+  }
+
+  /** Unconditional teardown, for a successful submit that has already finished its request. */
+  function discardAndClose() {
     request?.abort();
     resetForm();
     hooks.onClose();
@@ -55,7 +60,7 @@ export function useESPHomeAddDialog(hooks: { onClose: () => void; onAdded: () =>
       candidates.value = await discoverESPHomeDevices(request.signal);
       scanned.value = true;
     } catch (cause) {
-      if (!(cause instanceof Error && cause.name === 'AbortError')) error.value = ESPHOME_DISCOVERY_FALLBACK;
+      if (!(cause instanceof Error && cause.name === 'AbortError')) error.value = ESPHOME_MESSAGES.discoveryUnavailable;
     } finally {
       scanning.value = false;
       request = undefined;
@@ -73,7 +78,7 @@ export function useESPHomeAddDialog(hooks: { onClose: () => void; onAdded: () =>
   async function submit() {
     if (busy.value || scanning.value) return;
     if (!validESPHomeInput(address.value, port.value)) {
-      error.value = ESPHOME_ADD_INPUT_ERROR;
+      error.value = ESPHOME_MESSAGES.addInputError;
       return;
     }
     busy.value = true;
@@ -81,9 +86,9 @@ export function useESPHomeAddDialog(hooks: { onClose: () => void; onAdded: () =>
     request = new AbortController();
     try {
       await addESPHomeDevice(createEnrollmentInput(name.value, address.value, port.value, key.value), request.signal);
-      busy.value = false;
-      close();
-      void store.dispatch('alerts/showSuccess', ESPHOME_ADDED_NOTICE);
+      // Not `close()`: the guard would refuse while `busy` is still true until `finally` runs.
+      discardAndClose();
+      void store.dispatch('alerts/showSuccess', ESPHOME_MESSAGES.addedNotice);
       hooks.onAdded();
     } catch (cause) {
       if (cause instanceof Error && cause.name === 'AbortError') return;
@@ -93,6 +98,17 @@ export function useESPHomeAddDialog(hooks: { onClose: () => void; onAdded: () =>
       request = undefined;
     }
   }
+
+  /*
+   * A parent can close the dialog without going through `close()` (route change, Escape on a
+   * wrapper). Reset on that path too: otherwise the draft survives, including the encryption key,
+   * and reopening shows a previous attempt's values.
+   */
+  watch(open, (isOpen) => {
+    if (isOpen) return;
+    request?.abort();
+    resetForm();
+  });
 
   onBeforeUnmount(() => request?.abort());
 

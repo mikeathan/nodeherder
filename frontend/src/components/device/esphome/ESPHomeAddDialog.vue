@@ -4,12 +4,12 @@
    * useESPHomeAddDialog.ts; this component renders the form.
    */
   import { ESPHOME_MAX_NAME_LENGTH, ESPHOME_PORT_MAX, ESPHOME_PORT_MIN } from '@/contracts/esphome';
-  import { ESPHOME_DEFAULT_DEVICE_LABEL } from '@/domain/esphome';
+  import { ESPHOME_DEFAULT_DEVICE_LABEL } from '@/contracts/esphome';
   import { useESPHomeAddDialog } from '@/composables/esphome/useESPHomeAddDialog';
   import UiDialog from '@/components/ui/UiDialog.vue';
   import UiButton from '@/components/ui/UiButton.vue';
 
-  defineProps<{ open: boolean }>();
+  const props = defineProps<{ open: boolean }>();
   const emit = defineEmits<{ (event: 'close'): void; (event: 'added'): void }>();
   const {
     name,
@@ -25,7 +25,7 @@
     discover,
     selectCandidate,
     submit,
-  } = useESPHomeAddDialog({
+  } = useESPHomeAddDialog(() => props.open, {
     onClose: () => emit('close'),
     onAdded: () => emit('added'),
   });

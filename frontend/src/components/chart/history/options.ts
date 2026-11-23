@@ -1,5 +1,6 @@
 import type { ChartOptions, ScriptableContext } from 'chart.js';
-import { formatHistoryAxisLabel } from '@/domain/history/format';
+import { formatHistoryAxisLabel, formatHistoryMoment } from '@/domain/history/format';
+import { formatWithUnit } from '@/utils/units';
 export type ChartAppearance = {
   color: string;
   muted: string;
@@ -12,6 +13,12 @@ export type ChartAppearance = {
   compact: boolean;
   reducedMotion: boolean;
   fontFamily?: string;
+  /**
+   * Distinct series colours for charts that plot several measurements at once (the statistics
+   * view). Optional so legacy appearance literals remain valid; `color` is the single-series
+   * fallback.
+   */
+  series?: { power: string; temp: string; contact: string };
 };
 export type HistoryChartOptions = ChartOptions<'line' | 'bar'>;
 export type HistoryChartPoint = { x: number; y: number | [number, number] | null };
@@ -64,15 +71,28 @@ export function statisticsHistoryOptions(style: ChartAppearance, from: number, t
     options.scales.x.ticks.callback = (value) => new Date(Number(value)).toLocaleDateString([], { month: 'short', day: 'numeric' });
   }
   if (options.plugins?.tooltip?.callbacks) {
-    options.plugins.tooltip.callbacks.label = (item) => {
-      const raw = item.raw as HistoryChartPoint;
-      const label = item.dataset.label ?? '';
-      const value = Array.isArray(raw.y) ? raw.y.map((n) => Number(n.toFixed(2))).join(' – ')
-        : raw.y === null ? 'Unknown' : Number(raw.y.toFixed(2));
-      return `${label}: ${value}${raw.y === null ? '' : ` ${unit}`}`;
-    };
+    // ONE formatter for every tooltip in the family; an inline copy here is what made the same
+    // sample print differently between the two charts.
+    options.plugins.tooltip.callbacks.label = (item) =>
+      `${item.dataset.label ?? ''}: ${tooltipValue((item.raw as HistoryChartPoint).y, unit)}`;
   }
   return options;
+}
+
+/**
+ * One tooltip value, formatted by the shared units formatter.
+ *
+ * The chart previously re-implemented rounding, spacing and the missing-value sentinel in three
+ * places, so the same sample read "Unknown" here and "—" elsewhere (and a unitless series left a
+ * trailing space). A spread range carries its unit once, at the end, rather than repeating it on
+ * both bounds.
+ */
+function tooltipValue(value: HistoryChartPoint['y'], unit: string): string {
+  if (Array.isArray(value)) {
+    const [low, high] = value;
+    return `${formatWithUnit(low, '', { digits: 2 })} – ${formatWithUnit(high, unit, { digits: 2 })}`;
+  }
+  return formatWithUnit(value, unit, { digits: 2 });
 }
 function lineDataset(style: ChartAppearance, step: boolean, linear: boolean): NonNullable<Datasets['line']> {
   return {
@@ -103,8 +123,8 @@ function tooltip(style: ChartAppearance, unit: string): Tooltip {
     displayColors: false,
     callbacks: {
       title: (items) =>
-        items.length && items[0].parsed.x !== null ? new Date(items[0].parsed.x).toLocaleString() : '',
-      label: (item) => (item.parsed.y === null ? 'Unknown' : `${Number(item.parsed.y.toFixed(2))} ${unit}`),
+        items.length && items[0].parsed.x !== null ? formatHistoryMoment(items[0].parsed.x) : '',
+      label: (item) => tooltipValue(item.parsed.y, unit),
     },
   };
 }
@@ -152,7 +172,8 @@ function yScale(style: ChartAppearance, unit: string, bars: boolean): NonNullabl
       color: style.muted,
       maxTicksLimit: 3,
       padding: 8,
-      callback: (value) => `${Number(Number(value).toFixed(1))} ${unit}`,
+      // Same formatter as the tooltip: axis and tooltip must space the unit identically.
+      callback: (value) => formatWithUnit(Number(value), unit, { digits: 1 }),
     },
   };
 }

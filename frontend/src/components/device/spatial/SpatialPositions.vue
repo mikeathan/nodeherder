@@ -1,27 +1,37 @@
 <script setup lang="ts">
-  import { computed, onBeforeUnmount, ref, watch } from 'vue';
+  import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
   import { copyWorkspace, screenPoint } from '@/domain/spatial/workspace';
-  import { SPATIAL_DEFAULT_ORIENTATION, SPATIAL_DEFAULT_SCALE_MM, SPATIAL_ILLUSTRATIVE_FOV } from '@/domain/spatial';
+  import {
+    SPATIAL_DEFAULT_ORIENTATION,
+    SPATIAL_DEFAULT_SCALE_MM,
+    SPATIAL_ILLUSTRATIVE_FOV,
+  } from '@/domain/spatial';
   import { sensorProjectedPoint } from '@/domain/spatial/canvas';
-  import { positionViewMetrics } from '@/domain/spatial/positions';
+  import { fittedPointsBounds, positionViewMetrics, zoomAnchorPoint } from '@/domain/spatial/positions';
   import { SpatialViewIds } from '@/domain/spatial/view';
-  import type { SpatialDisplayTrack } from '@/domain/spatial/tracks';
   import type { ZoneOccupancy } from '@/domain/spatial/occupancy';
-  import { HEAT_CELL_MM, type HeatCell } from '@/domain/spatial/analytics';
-  import type { SpatialHeatCell, SpatialPoint, SpatialSession } from '@/services/spatial-history.service';
-  import { spatialHistoryApi } from '@/services/spatial-history.service';
+  import { type HeatCell } from '@/domain/spatial/analytics';
   import { useDeviceSettings } from '@/composables/useDeviceSettings';
-  import { useSpatialPlayback } from '@/composables/useSpatialPlayback';
+  import { usePositionsHistory, POSITIONS_PRESETS } from '@/composables/positions/usePositionsHistory';
+  import { usePositionsPlayback } from '@/composables/positions/usePositionsPlayback';
+  import { useElementSize } from '@/composables/positions/useElementSize';
+  import { emptyRecordingLabel } from '@/domain/spatial/positions-labels';
   import {
     POSITIONS_HOP_MM,
     POSITIONS_IDLE_GAP_MS,
     POSITIONS_LAST_KNOWN_MS,
-    clock,
     idleSpans,
     playedDistanceMm,
     sessionSegments,
     trailGroups,
   } from '@/domain/spatial/playback';
+  import {
+    latestSampleAt,
+    playbackHopLinks,
+    playbackTrail,
+    playbackTracks,
+    recordedEnvelope,
+  } from '@/domain/spatial/positions-playback';
   import SpatialCanvas from './SpatialCanvas.vue';
   import SpatialViewer from './SpatialViewer.vue';
   import PositionsCoverageBar from './PositionsCoverageBar.vue';
@@ -30,40 +40,56 @@
   import UiButton from '@/components/ui/UiButton.vue';
   import UiDialog from '@/components/ui/UiDialog.vue';
 
-  type Preset = '1h' | '24h' | '7d';
-
   const props = defineProps<{ deviceId: string }>();
   const { settings } = useDeviceSettings(() => props.deviceId);
   const workspace = computed(() => copyWorkspace(settings.value.spatial?.workspace));
   const noOccupancy: ReadonlyMap<string, ZoneOccupancy> = new Map();
 
-  const preset = ref<Preset>('24h');
+  const history = usePositionsHistory(() => props.deviceId);
+  // Destructured to top-level bindings: Vue unwraps refs in the template only for setup-level
+  // bindings, not for properties reached through an object returned by a composable.
+  const {
+    preset,
+    from,
+    to,
+    sessions,
+    points,
+    cells,
+    selected,
+    confirmed,
+    supersededAt,
+    sessionsLoading,
+    pointsLoading,
+    heatmapLoading,
+    sessionsError,
+    pointsError,
+    heatmapError,
+    loadPoints,
+    loadHeatmap,
+    refresh,
+    choosePreset,
+  } = history;
+
+  const playbackState = usePositionsPlayback({
+    sessions,
+    confirmed,
+    load: (sessionId) => loadPoints(sessionId),
+    supersededAt,
+  });
+  const {
+    time,
+    playing,
+    speed,
+    reachedEnd,
+    awaitingCrossing,
+    pendingGap,
+    skippedGap,
+    neighbours,
+    recordings,
+    playback,
+  } = playbackState;
+
   const view = ref<'player' | 'heatmap'>('player');
-  const to = ref(Date.now());
-  const spans: Record<Preset, number> = {
-    '1h': 3_600_000,
-    '24h': 86_400_000,
-    '7d': 604_800_000,
-  };
-  const from = computed(() => to.value - spans[preset.value]);
-
-  const sessions = ref<SpatialSession[]>([]);
-  const points = ref<SpatialPoint[]>([]);
-  const cells = ref<SpatialHeatCell[]>([]);
-  /**
-   * `selected` is the recording the user asked for; `confirmed` is the one whose points are
-   * rendered. Keeping them apart lets a slow or failed switch keep the verified content on
-   * screen instead of presenting an unloaded session as current.
-   */
-  const selected = ref('');
-  const confirmed = ref('');
-
-  const sessionsLoading = ref(false);
-  const pointsLoading = ref(false);
-  const heatmapLoading = ref(false);
-  const sessionsError = ref('');
-  const pointsError = ref('');
-  const heatmapError = ref('');
   const showPath = ref(true);
   const showGrid = ref(true);
   const sheetOpen = ref(false);
@@ -72,86 +98,47 @@
   const zoomAnchor = ref<{ x: number; y: number } | null>(null);
   const showFov = ref(false);
   const showDistances = ref(false);
+  const viewer = ref<HTMLElement | null>(null);
+  const { width: viewerWidth, height: viewerHeight, measure: measureViewer } = useElementSize(viewer);
+
   const configuredFov = computed(() => workspace.value.sensor.fov);
   const displayFov = computed(() =>
     configuredFov.value > 0 ? configuredFov.value : SPATIAL_ILLUSTRATIVE_FOV
   );
-  const viewer = ref<HTMLElement | null>(null);
-  const viewerWidth = ref(0);
-  const viewerHeight = ref(0);
-  let viewerObserver: ResizeObserver | null = null;
-
   const activeSession = computed(() =>
     sessions.value.find((session) => session.id === confirmed.value)
   );
-  const bounds = computed(() =>
-    activeSession.value
-      ? { from: activeSession.value.from, to: activeSession.value.to }
-      : null
-  );
-  const playback = useSpatialPlayback(() => bounds.value);
-  const { time, playing, speed } = playback;
-
-  const sessionsNewestFirst = computed(() =>
-    [...sessions.value].sort((a, b) => b.from - a.from)
-  );
-  /**
-   * The overview fits the recorded envelope instead of the whole preset: a four-minute
-   * session inside a 24 h window would otherwise be a sub-pixel sliver. Sessions are
-   * returned ascending, so the first start and last end bound every recording.
-   */
-  const overviewFrom = computed(() => sessions.value[0]?.from ?? from.value);
-  const overviewTo = computed(() => sessions.value.at(-1)?.to ?? to.value);
+  const sessionsNewestFirst = computed(() => [...sessions.value].sort((a, b) => b.from - a.from));
+  const overview = computed(() => recordedEnvelope(sessions.value, from.value, to.value));
   const segments = computed(() =>
-    sessionSegments(sessions.value, overviewFrom.value, overviewTo.value)
+    sessionSegments(sessions.value, overview.value.from, overview.value.to)
   );
   const cellCount = computed(() => cells.value.length);
+
+  /** Heat cells with their intensity normalised for the canvas. */
   const heat = computed<HeatCell[]>(() => {
     const max = Math.max(1, ...cells.value.map((cell) => cell.count));
     return cells.value.map((cell) => ({ ...cell, intensity: cell.count / max }));
   });
 
-  /**
-   * Standard view fits the room and the confirmed session's points (plus visible heat cells
-   * in that mode). The zoom buttons shrink this box around its centre so points and the
-   * room grow without changing the panel height.
-   */
-  const fittedBounds = computed(() => {
-    const orientation = SPATIAL_DEFAULT_ORIENTATION;
-    const { outline, sensor } = workspace.value;
-    let minX = Number.POSITIVE_INFINITY;
-    let minY = Number.POSITIVE_INFINITY;
-    let maxX = Number.NEGATIVE_INFINITY;
-    let maxY = Number.NEGATIVE_INFINITY;
-    const add = (point: { x: number; y: number }) => {
-      minX = Math.min(minX, point.x);
-      minY = Math.min(minY, point.y);
-      maxX = Math.max(maxX, point.x);
-      maxY = Math.max(maxY, point.y);
-    };
-    add(screenPoint(sensor, orientation));
-    for (const point of outline) add(screenPoint(point, orientation));
-    for (const point of points.value) add(sensorProjectedPoint(point, sensor, orientation));
-    if (view.value === 'heatmap') {
-      for (const cell of cells.value) {
-        add(sensorProjectedPoint(cell, sensor, orientation));
-        add(
-          sensorProjectedPoint(
-            { x: cell.x + HEAT_CELL_MM, y: cell.y + HEAT_CELL_MM },
-            sensor,
-            orientation
-          )
-        );
-      }
-    }
-    if (!Number.isFinite(minX)) return null;
-    const width = Math.max(500, maxX - minX);
-    const height = Math.max(500, maxY - minY);
-    const pad = Math.max(width, height) * 0.08 + 150;
-    return { minX: minX - pad, minY: minY - pad, maxX: maxX + pad, maxY: maxY + pad };
-  });
+  /** Confirmed points projected into screen millimetres, with their timestamps. */
+  const projectedPoints = computed(() =>
+    points.value.map((point) => ({
+      at: point.at,
+      ...sensorProjectedPoint(point, workspace.value.sensor, SPATIAL_DEFAULT_ORIENTATION),
+    }))
+  );
+  const shownHeatCells = computed(() => (view.value === 'heatmap' ? cells.value : []));
 
-  /** Fitted view plus symbol scale for the recorded canvas. */
+  /** Fitted view box for the canvas; zoom shrinks it around the anchor. */
+  const fittedBounds = computed(() =>
+    fittedPointsBounds({
+      workspace: workspace.value,
+      points: projectedPoints.value,
+      heatCells: shownHeatCells.value,
+      orientation: SPATIAL_DEFAULT_ORIENTATION,
+    })
+  );
   const viewMetrics = computed(() =>
     positionViewMetrics({
       bounds: fittedBounds.value,
@@ -161,332 +148,165 @@
       zoom: zoom.value,
     })
   );
-
-  /**
-   * Screen point used to anchor a zoom level: the current sample (or the heat activity).
-   * It is captured when zoom changes or the playhead is moved explicitly, not on every
-   * playback tick, so the dot visibly travels across a fixed view.
-   */
-  function zoomAnchorPoint() {
-    const orientation = SPATIAL_DEFAULT_ORIENTATION;
-    const { sensor } = workspace.value;
-    if (view.value === 'heatmap' && cells.value.length) {
-      let minX = Number.POSITIVE_INFINITY;
-      let minY = Number.POSITIVE_INFINITY;
-      let maxX = Number.NEGATIVE_INFINITY;
-      let maxY = Number.NEGATIVE_INFINITY;
-      const add = (point: { x: number; y: number }) => {
-        minX = Math.min(minX, point.x);
-        minY = Math.min(minY, point.y);
-        maxX = Math.max(maxX, point.x);
-        maxY = Math.max(maxY, point.y);
-      };
-      for (const cell of cells.value) {
-        add(sensorProjectedPoint(cell, sensor, orientation));
-        add(
-          sensorProjectedPoint(
-            { x: cell.x + HEAT_CELL_MM, y: cell.y + HEAT_CELL_MM },
-            sensor,
-            orientation
-          )
-        );
-      }
-      return { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
-    }
-    const current = points.value.filter((point) => point.at <= time.value).at(-1);
-    return current
-      ? sensorProjectedPoint(current, sensor, orientation)
-      : screenPoint(sensor, orientation);
-  }
-
-  /** Session/preset/view switches clear the viewer's pan. */
-  const resetKey = computed(() => `${confirmed.value}:${preset.value}:${view.value}`);
   const baseViewBox = computed(() => viewMetrics.value.viewBox);
   const symbolScale = computed(() => viewMetrics.value.symbolScale);
   const labelStroke = computed(() => viewMetrics.value.labelStroke);
+  /** Session/preset/view switches clear the viewer's pan. */
+  const resetKey = computed(() => `${confirmed.value}:${preset.value}:${view.value}`);
+
+  /**
+   * Re-anchors the zoom on what is currently on screen. Called when the level changes or the
+   * operator moves the playhead, never on a playback tick.
+   */
+  function captureZoomAnchor(): void {
+    zoomAnchor.value =
+      zoom.value > 1
+        ? zoomAnchorPoint({
+            heatCells: cells.value,
+            projectedPoints: projectedPoints.value,
+            at: time.value,
+            sensor: workspace.value.sensor,
+            orientation: SPATIAL_DEFAULT_ORIENTATION,
+            heatmap: view.value === 'heatmap',
+          })
+        : null;
+  }
+
+  /** Explicit seeks re-anchor the zoom; playback ticks leave the view fixed. */
+  function seekTo(value: number): void {
+    playback.seek(value);
+    captureZoomAnchor();
+  }
 
   const groupedTrails = computed(() => trailGroups(points.value, time.value));
   const trails = computed(() =>
     groupedTrails.value
       .filter((group) => group.points.length)
-      .map((group) => toTrail(group.slot, group.points))
+      .map((group) => playbackTrail(group.slot, group.points))
   );
   const recentTrails = computed(() =>
     groupedTrails.value
       .filter((group) => group.recent.length > 1)
-      .map((group) => toTrail(group.slot, group.recent))
+      .map((group) => playbackTrail(group.slot, group.recent))
   );
-
-  const currentSampleAt = computed(() => {
-    let latest = 0;
-    for (const point of points.value) {
-      if (point.at > time.value) break;
-      latest = point.at;
-    }
-    return latest;
-  });
+  const currentSampleAt = computed(() => latestSampleAt(points.value, time.value));
 
   /**
-   * Gaps without a recorded sample, including the head and tail of the session. These are the
-   * same spans the transport draws as stripes, so the target indicator and the idle label
-   * cover the whole gap instead of only the part past the 10 s threshold.
+   * Spans with no recorded sample, including the head and tail of the recording. The transport
+   * draws the same spans, so the idle notice and the stripes cannot disagree.
    */
   const idleGaps = computed(() =>
     activeSession.value
       ? idleSpans(points.value, activeSession.value.from, activeSession.value.to)
       : []
   );
-  const activeIdleGap = computed(() => {
-    const at = time.value;
-    return idleGaps.value.find((gap) => at >= gap.from && at < gap.to) ?? null;
-  });
-
-  const tracks = computed<SpatialDisplayTrack[]>(() => {
-    const at = time.value;
-    if (!at) return [];
-    const latest = new Map<number, SpatialPoint>();
-    for (const point of points.value) {
-      if (point.at > at) break;
-      latest.set(point.slot, point);
-    }
-    const inGap = activeIdleGap.value !== null;
-    return [...latest.entries()].map(([slot, point]): SpatialDisplayTrack => {
-      const silentMs = at - point.at;
-      const stale = silentMs > POSITIONS_LAST_KNOWN_MS;
-      const idle = !stale && inGap;
-      return {
-        id: slot,
-        label: stale ? `Slot ${slot} · last seen ${clock(point.at)}` : `Slot ${slot}`,
-        slot,
-        x: point.x,
-        y: point.y,
-        rawX: point.x,
-        rawY: point.y,
-        vx: 0,
-        vy: 0,
-        at: point.at,
-        colorIndex: (slot - 1) % 4,
-        state: stale ? 'held' : idle ? 'idle' : 'live',
-      };
-    });
-  });
-
-  /**
-   * A connector between the previous and current sample. Drawn after a pause or a large
-   * jump, so a position that appears somewhere else explains where it came from.
-   */
-  const hopLinks = computed(() => {
-    if (!time.value) return [];
-    const pairs = new Map<number, { current?: SpatialPoint; previous?: SpatialPoint }>();
-    for (const point of points.value) {
-      if (point.at > time.value) break;
-      const entry = pairs.get(point.slot) ?? {};
-      entry.previous = entry.current;
-      entry.current = point;
-      pairs.set(point.slot, entry);
-    }
-    const links: { from: SpatialPoint; to: SpatialPoint }[] = [];
-    for (const { current, previous } of pairs.values()) {
-      if (!current || !previous) continue;
-      const jumped =
-        Math.hypot(current.x - previous.x, current.y - previous.y) > POSITIONS_HOP_MM;
-      if (current.at - previous.at > POSITIONS_IDLE_GAP_MS || jumped) {
-        links.push({ from: previous, to: current });
-      }
-    }
-    return links;
-  });
-
-  const distanceMm = computed(() => playedDistanceMm(points.value, time.value));
-  const totalDistanceMm = computed(() =>
-    playedDistanceMm(points.value, Number.POSITIVE_INFINITY)
+  const activeIdleGap = computed(
+    () => idleGaps.value.find((gap) => time.value >= gap.from && time.value < gap.to) ?? null
+  );
+  const tracks = computed(() =>
+    playbackTracks(points.value, time.value, activeIdleGap.value !== null, POSITIONS_LAST_KNOWN_MS)
+  );
+  const hopLinks = computed(() =>
+    playbackHopLinks(points.value, time.value, POSITIONS_IDLE_GAP_MS, POSITIONS_HOP_MM)
   );
   const idleForMs = computed(() => {
     const gap = activeIdleGap.value;
-    if (!gap || !currentSampleAt.value) return 0;
-    return Math.max(0, time.value - gap.from);
+    return gap && currentSampleAt.value ? Math.max(0, time.value - gap.from) : 0;
   });
+  const distanceMm = computed(() => playedDistanceMm(points.value, time.value));
+  const totalDistanceMm = computed(() => playedDistanceMm(points.value, Number.POSITIVE_INFINITY));
 
-  function toTrail(slot: number, points: SpatialPoint[]) {
-    return {
-      id: slot,
-      targets: points.map((point) => ({
-        id: point.slot,
-        x: point.x,
-        y: point.y,
-        distance: 0,
-      })),
-    };
-  }
+  const hasRecordings = computed(() => recordings.value.length > 1);
+  /** What an empty-looking recording means, given what its own summary claimed. */
+  const emptyRecordingText = computed(() =>
+    emptyRecordingLabel(activeSession.value?.points ?? 0)
+  );
+  /** Requested but not yet confirmed; shown as pending, never as current. */
+  const pendingId = computed(() => (selected.value !== confirmed.value ? selected.value : ''));
 
-  let pointsRequest = 0;
-  let sessionsRequest = 0;
-  let heatmapRequest = 0;
-
-  async function loadPoints(sessionId: string) {
-    const request = ++pointsRequest;
-    pointsLoading.value = true;
-    pointsError.value = '';
-    try {
-      const next = await spatialHistoryApi.points(
-        props.deviceId,
-        sessionId,
-        from.value,
-        to.value
-      );
-      if (request !== pointsRequest) return;
-      confirmed.value = sessionId;
-      points.value = next;
-      playback.pause();
-      playback.seek(next[0]?.at ?? sessions.value.find((s) => s.id === sessionId)?.from ?? 0);
-      if (zoom.value > 1) zoomAnchor.value = zoomAnchorPoint();
-    } catch (cause) {
-      if (request !== pointsRequest) return;
-      pointsError.value = (cause as Error).message;
-      selected.value = confirmed.value;
-    } finally {
-      if (request === pointsRequest) pointsLoading.value = false;
-    }
-  }
-
-  async function loadSessions() {
-    const request = ++sessionsRequest;
-    sessionsLoading.value = true;
-    sessionsError.value = '';
-    try {
-      const next = await spatialHistoryApi.sessions(props.deviceId, from.value, to.value);
-      if (request !== sessionsRequest) return;
-      sessions.value = next;
-      if (confirmed.value && !next.some((session) => session.id === confirmed.value)) {
-        confirmed.value = '';
-        points.value = [];
-        playback.pause();
-        playback.seek(0);
-        zoomAnchor.value = null;
-      }
-      if (!next.length) {
-        selected.value = '';
-        confirmed.value = '';
-        points.value = [];
-        playback.pause();
-        playback.seek(0);
-        zoomAnchor.value = null;
-        return;
-      }
-      const keep =
-        next.find((session) => session.id === selected.value) ?? next[next.length - 1];
-      selected.value = keep.id;
-      await loadPoints(keep.id);
-    } catch (cause) {
-      if (request !== sessionsRequest) return;
-      sessionsError.value = (cause as Error).message;
-    } finally {
-      if (request === sessionsRequest) sessionsLoading.value = false;
-    }
-  }
-
-  async function loadHeatmap() {
-    const request = ++heatmapRequest;
-    heatmapLoading.value = true;
-    heatmapError.value = '';
-    try {
-      const next = await spatialHistoryApi.heatmap(props.deviceId, from.value, to.value);
-      if (request !== heatmapRequest) return;
-      cells.value = next;
-      if (zoom.value > 1 && view.value === 'heatmap') zoomAnchor.value = zoomAnchorPoint();
-    } catch (cause) {
-      if (request !== heatmapRequest) return;
-      heatmapError.value = (cause as Error).message;
-      cells.value = [];
-    } finally {
-      if (request === heatmapRequest) heatmapLoading.value = false;
-    }
-  }
-
-  function refresh() {
-    void loadSessions();
-    void loadHeatmap();
-  }
-
-  function selectSession(id: string) {
+  /** Selects a recording without starting playback. */
+  function selectSession(id: string): void {
     if (!id) return;
     selected.value = id;
     sheetOpen.value = false;
-    void loadPoints(id);
+    void playbackState.select(id);
   }
 
-  /** Explicit seeks re-anchor the zoom; playback ticks leave the view fixed. */
-  function seekTo(value: number) {
-    playback.seek(value);
-    if (zoom.value > 1) zoomAnchor.value = zoomAnchorPoint();
+  /** Plays one recording from a recorded moment inside it. */
+  function playFrom(payload: { id: string; at: number }): void {
+    if (!payload.id) return;
+    selected.value = payload.id;
+    sheetOpen.value = false;
+    void playbackState.play(payload.id, payload.at);
   }
 
-  // The panel owns the buttons; capture the anchor whenever the level changes.
-  watch(zoom, (level) => {
-    zoomAnchor.value = level > 1 ? zoomAnchorPoint() : null;
-  });
+  /** Starts the whole filtered history at its earliest recording. */
+  function playAll(): void {
+    const first = recordings.value[0];
+    if (!first) return;
+    selected.value = first.id;
+    sheetOpen.value = false;
+    void playbackState.play(first.id, first.from);
+  }
 
-  function choosePreset(value: Preset) {
-    if (preset.value === value) {
-      to.value = Date.now();
-      refresh();
-      return;
+  /** Moves to the adjacent recording, keeping the play/pause state. */
+  function goToRecording(id: string | null): void {
+    if (!id) return;
+    selected.value = id;
+    sheetOpen.value = false;
+    void playbackState.goTo(id);
+  }
+
+  /**
+   * Chapter-style shortcuts, matching the players this view is modelled on. They require Shift so
+   * they never fight the scrubber's own arrow keys, and they do nothing in the heatmap view.
+   */
+  function onKeydown(event: KeyboardEvent): void {
+    if (view.value !== 'player' || !event.shiftKey) return;
+    // A window-level shortcut must not steal a chord from an input, a modifier chord, or a
+    // dialog sitting on top of the player.
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
+    if (sheetOpen.value) return;
+    const target = event.target as HTMLElement | null;
+    if (target && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))) return;
+    if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      goToRecording(neighbours.value.next);
+    } else if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      goToRecording(neighbours.value.previous);
     }
-    preset.value = value;
   }
+  onMounted(() => window.addEventListener('keydown', onKeydown));
+  onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
 
-  function chooseView(value: 'player' | 'heatmap') {
+  watch(zoom, captureZoomAnchor);
+  // A recording change while zoomed must re-anchor: the baseline did this after every load, and
+  // without it the zoom keeps the previous recording's target. Post-flush so the new playhead is
+  // already placed when the anchor is read.
+  watch(confirmed, () => captureZoomAnchor(), { flush: 'post' });
+
+  function chooseView(value: 'player' | 'heatmap'): void {
+    /*
+     * The transport is unmounted in the heatmap, so a running clock would keep crossing recording
+     * boundaries and issuing points requests for a surface nobody can see. Leaving the player is a
+     * pause, not a hidden play.
+     */
+    if (value === 'heatmap') playback.pause();
     view.value = value;
-    zoomAnchor.value =
-      value === 'player' && zoom.value > 1 ? zoomAnchorPoint() : null;
+    captureZoomAnchor();
     if (value === 'heatmap') void loadHeatmap();
   }
 
-  watch(
-    [preset, () => props.deviceId],
-    () => {
-      to.value = Date.now();
-      playback.pause();
-      zoomAnchor.value = null;
-      void loadSessions();
-      void loadHeatmap();
-    },
-    { immediate: true }
-  );
-
-  function measureViewer() {
-    const element = viewer.value;
-    if (!element) return;
-    const rect = element.getBoundingClientRect();
-    viewerWidth.value = rect.width;
-    viewerHeight.value = rect.height;
-  }
-
-  // The viewer aspect drives the fitted viewBox; re-observe when the view swaps the element.
-  watch(
-    viewer,
-    (element) => {
-      viewerObserver?.disconnect();
-      viewerObserver = null;
-      if (!element) return;
-      viewerObserver = new ResizeObserver((entries) => {
-        const box = entries[0]?.contentRect;
-        if (!box) return;
-        viewerWidth.value = box.width;
-        viewerHeight.value = box.height;
-      });
-      viewerObserver.observe(element);
-      measureViewer();
-    },
-    { flush: 'post' }
-  );
-
-  // Rail/view layout changes can precede the observer callback; measure after the DOM update.
-  watch([railOpen, view], () => measureViewer(), { flush: 'post' });
-  onBeforeUnmount(() => {
-    viewerObserver?.disconnect();
-    viewerObserver = null;
+  // The filter or device changed: stop the clock and drop a now-meaningless zoom anchor. The
+  // history composable owns re-reading the data, so this only resets playback.
+  watch([preset, () => props.deviceId], () => {
+    playback.pause();
+    zoomAnchor.value = null;
   });
+
+  // Layout changes can precede the observer callback; measure after the DOM update.
+  watch([railOpen, view], () => measureViewer(), { flush: 'post' });
 </script>
 
 <template>
@@ -494,7 +314,9 @@
     class="spatial-positions"
     aria-label="Recorded positions"
     :aria-busy="
-      sessionsLoading || pointsLoading || (view === 'heatmap' && heatmapLoading)
+      sessionsLoading ||
+      pointsLoading ||
+      (view === 'heatmap' && heatmapLoading)
     ">
     <div class="nh-positions-toolbar">
       <div role="group" aria-label="Positions view">
@@ -516,7 +338,7 @@
       <div class="nh-positions-actions">
         <div role="group" aria-label="History range">
           <UiButton
-            v-for="option in (['1h', '24h', '7d'] as const)"
+            v-for="option in POSITIONS_PRESETS"
             :key="option"
             size="sm"
             :variant="preset === option ? 'primary' : 'ghost'"
@@ -525,6 +347,19 @@
             {{ option }}
           </UiButton>
         </div>
+        <!--
+          One action for the whole filtered  The viewer opens on the newest recording
+          (spec 057 AC-04), so without this the operator would have to page backwards before a
+          continuous play could mean anything.
+        -->
+        <UiButton
+          v-if="view === 'player' && hasRecordings"
+          class="nh-play-all"
+          size="sm"
+          icon="run"
+          @click="playAll">
+          Play all recordings
+        </UiButton>
         <UiButton
           v-if="view === 'player'"
           class="nh-recordings-open"
@@ -541,14 +376,22 @@
           @click="railOpen = true">
           Show recordings ({{ sessions.length }})
         </UiButton>
-        <UiButton size="sm" variant="ghost" :loading="sessionsLoading" @click="refresh">
+        <UiButton
+          size="sm"
+          variant="ghost"
+          :loading="sessionsLoading"
+          @click="refresh">
           Refresh
         </UiButton>
       </div>
     </div>
 
-    <p v-if="sessionsError" class="nh-alert is-danger" role="alert">{{ sessionsError }}</p>
-    <p v-else-if="pointsError" class="nh-alert is-danger" role="alert">{{ pointsError }}</p>
+    <p v-if="sessionsError" class="nh-alert is-danger" role="alert">
+      {{ sessionsError }}
+    </p>
+    <p v-else-if="pointsError" class="nh-alert is-danger" role="alert">
+      {{ pointsError }}
+    </p>
     <p v-if="sessionsLoading && !sessions.length" class="nh-muted" role="status">
       Loading recorded positions…
     </p>
@@ -602,20 +445,25 @@
         <PositionsCoverageBar
           :segments="segments"
           :selected-id="confirmed"
-          :pending-id="selected !== confirmed ? selected : ''"
-          :from="overviewFrom"
-          :to="overviewTo"
-          :time="time"
+          :pending-id="pendingId"
+          :from="overview.from"
+          :to="overview.to"
           :loading="sessionsLoading"
-          @select="selectSession" />
+          @play-from="playFrom" />
 
+        <!--
+          A recording can be listed from its summary while its detail is empty (the summary counts
+          points inside the filter, the detail returns them). Saying only "no positions" leaves the
+          operator thinking the recording is broken, so state both numbers when they disagree.
+        -->
         <p v-if="confirmed && !pointsLoading && !points.length" class="nh-muted">
-          No recorded positions in this session.
+          {{ emptyRecordingText }}
         </p>
 
         <PositionsTransport
           v-if="activeSession"
           :session="activeSession"
+          :neighbours="neighbours"
           :time="time"
           :playing="playing"
           :speed="speed"
@@ -626,9 +474,15 @@
           :idle-for-ms="idleForMs"
           :last-sample-at="currentSampleAt"
           :has-points="points.length > 0"
+          :reached-end="reachedEnd"
+          :awaiting-crossing="awaitingCrossing"
+          :pending-gap="pendingGap"
+          :skipped-gap="skippedGap"
           @seek="seekTo"
           @toggle="playback.toggle"
           @next="seekTo"
+          @previous-recording="goToRecording(neighbours.previous)"
+          @next-recording="goToRecording(neighbours.next)"
           @update:speed="speed = $event"
           @update:show-path="showPath = $event" />
       </div>
@@ -646,7 +500,7 @@
         <PositionsSessionRail
           :sessions="sessionsNewestFirst"
           :selected-id="confirmed"
-          :pending-id="selected !== confirmed ? selected : ''"
+          :pending-id="pendingId"
           :span-ms="to - from"
           :loading="sessionsLoading || pointsLoading"
           @select="selectSession" />
@@ -687,7 +541,9 @@
           </div>
         </template>
       </SpatialViewer>
-      <p v-if="heatmapError" class="nh-alert is-danger" role="alert">{{ heatmapError }}</p>
+      <p v-if="heatmapError" class="nh-alert is-danger" role="alert">
+        {{ heatmapError }}
+      </p>
       <p v-else-if="!cellCount && !heatmapLoading" class="nh-muted">
         No recorded positions in this range.
       </p>
@@ -697,7 +553,7 @@
       <PositionsSessionRail
         :sessions="sessionsNewestFirst"
         :selected-id="confirmed"
-        :pending-id="selected !== confirmed ? selected : ''"
+        :pending-id="pendingId"
         :span-ms="to - from"
         :loading="sessionsLoading || pointsLoading"
         @select="selectSession" />
@@ -755,8 +611,11 @@
     border-bottom: 1px solid var(--nh-border);
   }
   .nh-rail-title {
-    font-size: 0.85rem;
+    font-size: 0.72rem;
     font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--nh-text-muted);
   }
   .nh-recordings-show {
     display: none;

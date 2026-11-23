@@ -47,6 +47,24 @@ export default [
     },
   },
   {
+    // Plain TypeScript was previously not linted at all: `files` matched only JS and `.vue`,
+    // so `npm run lint` proved nothing about the majority of the application. Parse with the
+    // TypeScript parser and keep only correctness rules (no formatting churn).
+    files: ['**/*.{ts,tsx}'],
+    plugins: {
+      '@typescript-eslint': tsPlugin,
+    },
+    languageOptions: {
+      parser: tsParser,
+      parserOptions,
+      globals,
+    },
+    rules: {
+      '@typescript-eslint/no-unused-vars': 'warn',
+      'no-console': 'warn',
+    },
+  },
+  {
     // Vue single-file components were previously skipped: the old `files: ['*.vue']`
     // pattern only matched the project root, and the removed
     // `vue/script-setup-uses-vars` rule aborted a root-level run. Parse

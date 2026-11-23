@@ -5,14 +5,15 @@
   import { displayNumber } from '@/domain/controls';
   import { decimate } from '@/domain/history/numeric';
   import { isEnergyCounter, energyBuckets } from '@/domain/history/energy';
-  import { exposeDisplayLabel, exposeKind } from '@/domain/exposes';
-  import { useThemeSettings } from '@/composables/useThemeSettings';
+  import { historyDisplayUnit } from '@/domain/history/stats';
+  import { exposeDisplayLabel } from '@/domain/exposes';
+  import { useChartAppearance } from '@/composables/history/useChartAppearance';
   import { historyOptions } from './options';
   import type { HistoryRange } from '@/domain/history/range';
   import type { HistoryInteraction } from './interactions';
   const HistoryCanvas = defineAsyncComponent(() => import('./HistoryCanvas.vue'));
   const props = defineProps<{ series: HistorySeries; expose: Expose; compact?: boolean; viewRange?: HistoryRange; interaction?: HistoryInteraction }>();
-  const { settings, mode } = useThemeSettings();
+  const appearance = useChartAppearance(props.expose, () => !!props.compact);
   const energy = computed(() => isEnergyCounter(props.series));
   const buckets = computed(() => energyBuckets(props.series.data, props.series.from, props.series.to));
   const chartable = computed(
@@ -29,37 +30,23 @@
       ? buckets.value.map((p) => ({ x: p.timestamp, y: p.value }))
       : decimate(props.series.data).map((p) => ({ x: p.timestamp, y: displayValue(p.value) }))
   );
-  const unit = computed(() =>
-    props.expose.name === 'brightness' ? '%' : props.expose.name === 'color_temp' ? 'K' : props.series.unit
-  );
+  // One owner for the display unit; this used to be a second copy of the domain's ternary.
+  const unit = computed(() => historyDisplayUnit(props.series, props.expose));
   function displayValue(value: unknown): number | null {
     if (typeof value !== 'number') return null;
     return displayNumber(props.expose, value);
   }
-  const options = computed(() => {
-    void settings.value;
-    const css = getComputedStyle(document.documentElement);
-    return historyOptions(
-      {
-        color: css.getPropertyValue(`--nh-kind-${exposeKind(props.expose.name)}`).trim(),
-        muted: css.getPropertyValue('--nh-text-muted').trim(),
-        grid: css.getPropertyValue('--nh-chart-grid').trim(),
-        surface: css.getPropertyValue('--nh-surface').trim(),
-        text: css.getPropertyValue('--nh-text').trim(),
-        border: css.getPropertyValue('--nh-border-strong').trim(),
-        dark: mode.value === 'dark',
-        compact: !!props.compact,
-        reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
-        fontFamily: getComputedStyle(document.body).fontFamily,
-      },
+  const options = computed(() =>
+    historyOptions(
+      appearance.value,
       props.viewRange?.from ?? props.series.from,
       props.viewRange?.to ?? props.series.to,
       unit.value,
       ['brightness', 'color_temp', 'battery', 'battpercentage'].includes(props.expose.name),
       energy.value || props.series.name === 'event_count',
       ['power', 'current', 'voltage'].includes(props.expose.name)
-    );
-  });
+    )
+  );
 </script>
 <template>
   <div
