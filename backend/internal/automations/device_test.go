@@ -276,6 +276,9 @@ const (
 )
 
 func TestPresenceConditionReportOrdering(t *testing.T) {
+	// Only a presence (primary) change starts actions. Illuminance-only changes are
+	// evaluated (and can cancel pending actions) but never command the light; this is
+	// what stops turning the light off from re-lighting it. See spec 068.
 	for _, tc := range []struct {
 		name    string
 		reports []map[string]any
@@ -283,10 +286,10 @@ func TestPresenceConditionReportOrdering(t *testing.T) {
 	}{
 		{"dark before presence", []map[string]any{{"presence": false, "illuminance": 100.0}, {"illuminance": 10.0}, {"presence": true}}, 1},
 		{"dark with presence", []map[string]any{{"presence": false, "illuminance": 100.0}, {"presence": true, "illuminance": 10.0}}, 1},
-		{"dark after presence", []map[string]any{{"presence": false, "illuminance": 100.0}, {"presence": true}, {"illuminance": 10.0}}, 1},
-		{"repeated full report", []map[string]any{{"presence": true, "illuminance": 100.0}, {"presence": true, "illuminance": 10.0}, {"presence": true, "illuminance": 10.0}}, 1},
-		{"changed eligible readings preserve historical evaluation", []map[string]any{{"presence": true, "illuminance": 45.0}, {"illuminance": 30.0}, {"illuminance": 0.0}, {"linkquality": 90.0}}, 3},
-		{"eligibility can recover again", []map[string]any{{"presence": true, "illuminance": 30.0}, {"illuminance": 100.0}, {"illuminance": 45.0}}, 2},
+		{"dark after presence (illuminance only)", []map[string]any{{"presence": false, "illuminance": 100.0}, {"presence": true}, {"illuminance": 10.0}}, 0},
+		{"repeated full report (presence unchanged)", []map[string]any{{"presence": true, "illuminance": 100.0}, {"presence": true, "illuminance": 10.0}, {"presence": true, "illuminance": 10.0}}, 0},
+		{"illuminance-only readings do not re-request", []map[string]any{{"presence": true, "illuminance": 45.0}, {"illuminance": 30.0}, {"illuminance": 0.0}, {"linkquality": 90.0}}, 1},
+		{"illuminance-only readings do not recover on their own", []map[string]any{{"presence": true, "illuminance": 30.0}, {"illuminance": 100.0}, {"illuminance": 45.0}}, 1},
 		{"empty room remains off", []map[string]any{{"presence": false, "illuminance": 100.0}, {"illuminance": 0.0}}, 0},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -304,17 +307,77 @@ func TestPresenceConditionReportOrdering(t *testing.T) {
 	}
 }
 
+// countingCondition wraps a real recipe condition to record how often selection
+// evaluates it, so a test can prove a dependency-only report was evaluated.
+type countingCondition struct {
+	automations.Condition
+	evaluations int
+}
+
+func (c *countingCondition) Evaluate(ctx automations.AutomationContext) bool {
+	c.evaluations++
+	return c.Condition.Evaluate(ctx)
+}
+
+// AC-02/AC-06: a condition-dependency change is evaluated but is not a request to
+// command a device. Turning the light off darkens the room; the resulting
+// illuminance-only update must not re-light it. Regression for spec 068.
+func TestIlluminanceOnlyChangeDoesNotStartActions(t *testing.T) {
+	r := newPresenceRig(t)
+	var probe *countingCondition
+	for _, trigger := range r.automation.GetTriggers() {
+		deviceTrigger, ok := trigger.(*automations.DeviceTrigger)
+		if !ok {
+			continue
+		}
+		for i, condition := range deviceTrigger.Conditions {
+			if condition.DependsOn("illuminance") {
+				probe = &countingCondition{Condition: condition}
+				deviceTrigger.Conditions[i] = probe
+			}
+		}
+	}
+	if probe == nil {
+		t.Fatal("presence recipe has no illuminance condition to observe")
+	}
+
+	r.report(map[string]any{"presence": true, "illuminance": 100.0})
+	r.expectNothing(t)
+	before := probe.evaluations
+
+	// Same presence, only illuminance changed (the room darkened because the light
+	// was switched off). This must be evaluated but must not publish state ON.
+	r.report(map[string]any{"illuminance": 39.0})
+	r.expectNothing(t)
+	if probe.evaluations <= before {
+		t.Fatal("dependency-only change was not evaluated")
+	}
+}
+
+// A late dark reading after the delayed OFF must not, by itself, relight the lamp;
+// a fresh presence transition in the dark does. The darkening report fails against
+// pre-fix code, which published state ON for a dependency-only change.
 func TestPresenceReturnAfterDelayedOffWithLateDarkReading(t *testing.T) {
 	r := newPresenceRig(t)
 	r.report(map[string]any{"presence": false, "illuminance": 100.0})
 	r.clock.Advance(5 * time.Minute)
 	r.expectCommand(t, lampOff)
-	r.report(map[string]any{"presence": true})
+
+	// Someone returns while the room is still bright: primary change, condition fails.
+	r.report(map[string]any{"presence": true, "illuminance": 100.0})
+	r.expectNothing(t)
+
+	// Only illuminance changed as the room darkened. Evaluated, never started.
 	r.report(map[string]any{"illuminance": 10.0})
+	r.expectNothing(t)
+
+	// A fresh presence transition in the dark starts ON.
+	r.report(map[string]any{"presence": false})
+	r.report(map[string]any{"presence": true})
 	r.expectCommand(t, lampOn)
-	r.report(map[string]any{"presence": true, "illuminance": 0.0})
-	r.expectCommand(t, lampOn)
-	r.report(map[string]any{"presence": true, "illuminance": 0.0})
+
+	// Repeated report is deduplicated.
+	r.report(map[string]any{"presence": true, "illuminance": 10.0})
 	r.expectNothing(t)
 }
 
@@ -322,13 +385,24 @@ func TestPresenceDependencyDoesNotRestartOrRetainOffDelay(t *testing.T) {
 	r := newPresenceRig(t)
 	r.report(map[string]any{"presence": false, "illuminance": 100.0})
 	r.clock.Advance(3 * time.Minute)
+	// Illuminance-only changes must not restart the pending OFF delay.
 	r.report(map[string]any{"presence": false, "illuminance": 10.0})
 	r.clock.Advance(2 * time.Minute)
 	r.expectCommand(t, lampOff)
-	r.report(map[string]any{"presence": false, "illuminance": 100.0})
+
+	// Illuminance-only darkening must not start ON.
+	r.report(map[string]any{"presence": false, "illuminance": 0.0})
+	r.expectNothing(t)
+
+	// A primary presence change in the dark starts ON; nothing is retained afterwards.
 	r.report(map[string]any{"presence": true})
-	r.report(map[string]any{"illuminance": 10.0})
 	r.expectCommand(t, lampOn)
+
+	// The lamp going off darkens an occupied room; this dependency-only report must
+	// not relight it. Pre-fix it published a second ON.
+	r.report(map[string]any{"illuminance": 39.0})
+	r.expectNothing(t)
+
 	r.clock.Advance(10 * time.Minute)
 	r.expectNothing(t)
 }
@@ -370,11 +444,13 @@ func TestManualAndDeviceRunsRemainIndependent(t *testing.T) {
 		t.Fatal(err)
 	}
 	r.expectCommand(t, lampOn)
-	r.automation.Evaluate(automations.NewDeviceEvent(r.sensor, map[string]interface{}{"illuminance": 10.0}))
+	// A device run selected by its primary property remains independent of the manual
+	// run above; dependency-only device updates no longer start actions.
+	r.automation.Evaluate(automations.NewDeviceEvent(r.sensor, map[string]interface{}{"presence": true, "illuminance": 10.0}))
 	r.expectCommand(t, lampOn)
 }
 
-func TestDependencyActionFailureIsReported(t *testing.T) {
+func TestActionFailureReportingFollowsSelection(t *testing.T) {
 	device := utils_test.CreateDeviceWithExposes("sensor", "sensor", []*devices.Entity{
 		utils_test.CreateEntity("presence", "binary", true),
 		utils_test.CreateEntity("illuminance", "numeric", 100.0),
@@ -384,20 +460,28 @@ func TestDependencyActionFailureIsReported(t *testing.T) {
 	trigger.Actions = []automations.MqttAction{automations.NewTriggerAction()} // deliberately unconfigured
 	automation := automations.NewDevice("sensor")
 	automation.Triggers = automations.TriggerList{trigger}
+	// Primary selection whose condition is not met: no action, no error.
 	if !automation.Evaluate(automations.NewDeviceEvent(device, map[string]interface{}{"presence": true})) {
 		t.Fatal("unmatched condition is not an action error")
 	}
+	// Dependency-only selection whose condition is met: evaluated, never started.
 	device.Exposes["illuminance"].Data.SetValue(10.0)
-	if automation.Evaluate(automations.NewDeviceEvent(device, map[string]interface{}{"illuminance": 10.0})) {
-		t.Fatal("dependency action failure was concealed")
+	if !automation.Evaluate(automations.NewDeviceEvent(device, map[string]interface{}{"illuminance": 10.0})) {
+		t.Fatal("dependency-only selection started an action")
 	}
-	device.Exposes["illuminance"].Data.SetValue(20.0)
-	if automation.Evaluate(automations.NewDeviceEvent(device, map[string]interface{}{"illuminance": 20.0})) {
-		t.Fatal("a previous failure must not suppress evaluation on the next changed dependency")
+	// Primary selection whose condition is met: the action runs and its failure is reported.
+	if automation.Evaluate(automations.NewDeviceEvent(device, map[string]interface{}{"presence": true, "illuminance": 10.0})) {
+		t.Fatal("primary action failure was concealed")
+	}
+	// A previous failure must not suppress the next primary selection (spec 010 AC-04).
+	if automation.Evaluate(automations.NewDeviceEvent(device, map[string]interface{}{"presence": true, "illuminance": 10.0})) {
+		t.Fatal("a previous failure suppressed the next primary run")
 	}
 }
 
-func TestConditionDependencyCancelsDelayedAction(t *testing.T) {
+// A condition-dependency change cancels a pending delayed action but never schedules
+// a new one; only a primary selection starts actions.
+func TestConditionDependencyCancelsButDoesNotStartDelayedAction(t *testing.T) {
 	r := newPresenceRig(t)
 	for _, trigger := range r.automation.GetTriggers() {
 		for _, action := range trigger.GetActions() {
@@ -408,7 +492,8 @@ func TestConditionDependencyCancelsDelayedAction(t *testing.T) {
 	r.report(map[string]any{"illuminance": 100.0})
 	r.clock.Advance(10 * time.Second)
 	r.expectNothing(t)
+	// Condition passes again, but only illuminance changed: no action is scheduled.
 	r.report(map[string]any{"illuminance": 10.0})
 	r.clock.Advance(5 * time.Second)
-	r.expectCommand(t, lampOn)
+	r.expectNothing(t)
 }

@@ -30,31 +30,49 @@ func InitFileLogger() {
 
 type logger struct {
 	log *logrus.Logger
+	// local shares the output and formatter but never receives hooks. Code that runs inside
+	// the remote hook's own delivery path must log here, or its log line would broadcast
+	// another frame and re-enter that path.
+	local *logrus.Logger
+}
+
+// sharedWriter serialises the two loggers onto one stream. logrus locks each logger
+// separately, so without this the hook-bearing and hook-free entries could interleave
+// mid-line when the process logs from several goroutines.
+type sharedWriter struct {
+	mu  sync.Mutex
+	out io.Writer
+}
+
+func (w *sharedWriter) Write(p []byte) (int, error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return w.out.Write(p)
+}
+
+func newLoggerPair(out io.Writer) *logger {
+	writer := &sharedWriter{out: out}
+	formatter := &easy.Formatter{
+		TimestampFormat: "2006-01-02 15:04:05.000",
+		LogFormat:       "[%lvl%]: %time% - %msg%\n",
+	}
+	build := func() *logrus.Logger {
+		return &logrus.Logger{
+			Out:       writer,
+			Level:     logrus.InfoLevel,
+			Formatter: formatter,
+			Hooks:     make(logrus.LevelHooks),
+		}
+	}
+	return &logger{log: build(), local: build()}
 }
 
 func newConsoleLogger() *logger {
-
-	log := &logrus.Logger{
-		Out:   os.Stdout,
-		Level: logrus.InfoLevel,
-		Formatter: &easy.Formatter{
-			TimestampFormat: "2006-01-02 15:04:05.000",
-			LogFormat:       "[%lvl%]: %time% - %msg%\n",
-		},
-		Hooks: make(logrus.LevelHooks),
-	}
-
-	return &logger{log: log}
+	return newLoggerPair(os.Stdout)
 }
 
 func newFileLogger(logName string, consoleOut io.Writer) *logger {
-
 	logPath := GetLogsDir()
-	// f, err := os.OpenFile(filepath.Join(LogPath, logName), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
-	// if err != nil {
-	// 	fmt.Println("Failed to create logfile" + err.Error())
-	// 	panic(err)
-	// }
 	lumberjackLogger := &lumberjack.Logger{
 		Filename:   filepath.Join(logPath, logName),
 		MaxSize:    2,     // Max size in MB
@@ -62,19 +80,7 @@ func newFileLogger(logName string, consoleOut io.Writer) *logger {
 		MaxAge:     30,    // Max age in days to keep a log file
 		Compress:   false, // Compress old log files
 	}
-
-	log := &logrus.Logger{
-		Out: io.MultiWriter(lumberjackLogger, consoleOut),
-
-		Level: logrus.InfoLevel,
-		Formatter: &easy.Formatter{
-			TimestampFormat: "2006-01-02 15:04:05.000",
-			LogFormat:       "[%lvl%]: %time% - %msg%\n",
-		},
-		Hooks: make(logrus.LevelHooks),
-	}
-
-	return &logger{log: log}
+	return newLoggerPair(io.MultiWriter(lumberjackLogger, consoleOut))
 }
 
 func SetLogLevel(level string) {
@@ -119,6 +125,27 @@ func LogWarnf(format string, msg ...interface{}) {
 
 func LogErrorf(format string, msg ...interface{}) {
 	log.Errorf(format, msg...)
+}
+
+// LogLocalDebug writes to the process log without firing remote hooks. Callers inside the
+// remote hook's delivery path use it so a diagnostic cannot broadcast another frame.
+func LogLocalDebug(msg ...interface{}) {
+	log.local.Debug(msg...)
+}
+
+// LogLocalDebugf is the formatted form of LogLocalDebug.
+func LogLocalDebugf(format string, msg ...interface{}) {
+	log.local.Debugf(format, msg...)
+}
+
+// LogLocalWarnf is the hook-free formatted warning logger.
+func LogLocalWarnf(format string, msg ...interface{}) {
+	log.local.Warnf(format, msg...)
+}
+
+// LogLocalErrorf is the hook-free formatted error logger.
+func LogLocalErrorf(format string, msg ...interface{}) {
+	log.local.Errorf(format, msg...)
 }
 
 type RemoteHook struct {
@@ -218,6 +245,7 @@ func (l *logger) SetLevel(level string) {
 	}
 
 	l.log.SetLevel(ll)
+	l.local.SetLevel(ll)
 	l.Infof("set loglevel: %s", ll.String())
 }
 

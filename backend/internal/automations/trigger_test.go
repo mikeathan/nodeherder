@@ -1377,20 +1377,80 @@ func TestDeviceTriggerOwnsSingleConditionEvaluation(t *testing.T) {
 	trigger.Actions = []automations.MqttAction{action}
 	automation := automations.NewDevice("sensor")
 	automation.Triggers = automations.TriggerList{trigger}
-	for i, changes := range []map[string]interface{}{{"contact": false}, {"temperature": 11.0}, {"contact": true, "temperature": 12.0}} {
-		if !automation.Evaluate(automations.NewDeviceEvent(device, changes)) {
+	for i, tc := range []struct {
+		changes map[string]interface{}
+		runs    int32
+	}{
+		{map[string]interface{}{"contact": false}, 1},                     // primary: executes
+		{map[string]interface{}{"temperature": 11.0}, 1},                  // dependency-only: evaluated, not started
+		{map[string]interface{}{"contact": true, "temperature": 12.0}, 2}, // primary: executes
+	} {
+		if !automation.Evaluate(automations.NewDeviceEvent(device, tc.changes)) {
 			t.Fatal("unexpected action failure")
 		}
 		if condition.evaluations != i+1 {
 			t.Fatalf("condition evaluations=%d, want %d", condition.evaluations, i+1)
 		}
-		if action.deviceRuns.Load() != int32(i+1) {
-			t.Fatal("trigger did not process its declared dependency")
+		if action.deviceRuns.Load() != tc.runs {
+			t.Fatalf("run %d: device runs=%d, want %d", i, action.deviceRuns.Load(), tc.runs)
 		}
 	}
 	automation.Evaluate(automations.NewDeviceEvent(device, map[string]interface{}{"linkquality": 90.0}))
 	if condition.evaluations != 3 {
 		t.Fatal("unrelated property evaluated the condition")
+	}
+}
+
+// customTrigger embeds BaseTrigger (selection only) and records both selection and
+// Process calls, so a test can distinguish "selected but skipped" from "not selected".
+type customTrigger struct {
+	automations.BaseTrigger
+	selections int
+	processed  int
+}
+
+func (c *customTrigger) AffectedBy(ctx automations.AutomationContext, changes map[string]interface{}) bool {
+	c.selections++
+	return c.BaseTrigger.AffectedBy(ctx, changes)
+}
+
+func (c *customTrigger) Process(automations.AutomationContext) error {
+	c.processed++
+	return nil
+}
+
+func TestCustomTriggerExecutesOnlyOnPrimarySelection(t *testing.T) {
+	// A trigger type without the dependency-only path must be selected but not
+	// executed on a condition-dependency change.
+	device := utils_test.CreateDeviceWithExposes("sensor", "sensor", []*devices.Entity{
+		utils_test.CreateEntity("contact", "binary", false),
+		utils_test.CreateEntity("temperature", "numeric", 10.0),
+	})
+	trigger := &customTrigger{}
+	trigger.Name = "contact"
+	trigger.Type = automations.DeviceTriggerType
+	trigger.Conditions = []automations.Condition{&temperatureCondition{}}
+	trigger.Actions = []automations.MqttAction{&recordingAction{}}
+	automation := automations.NewDevice("sensor")
+	automation.Triggers = automations.TriggerList{trigger}
+
+	if !automation.Evaluate(automations.NewDeviceEvent(device, map[string]interface{}{"temperature": 11.0})) {
+		t.Fatal("dependency-only selection failed")
+	}
+	if trigger.selections != 1 {
+		t.Fatalf("dependency-only update was not selected (selections=%d)", trigger.selections)
+	}
+	if trigger.processed != 0 {
+		t.Fatal("custom trigger executed on a dependency-only change")
+	}
+	if !automation.Evaluate(automations.NewDeviceEvent(device, map[string]interface{}{"contact": true})) {
+		t.Fatal("primary selection failed")
+	}
+	if trigger.selections != 2 {
+		t.Fatalf("primary update was not selected (selections=%d)", trigger.selections)
+	}
+	if trigger.processed != 1 {
+		t.Fatalf("custom trigger processed %d times, want 1", trigger.processed)
 	}
 }
 

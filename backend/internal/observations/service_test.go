@@ -191,6 +191,169 @@ func TestDiagnosticsAloneTriggerAPublish(t *testing.T) {
 	}
 }
 
+// Continuous per-packet telemetry must not publish a full snapshot on every 250 ms tick.
+// Structural changes still publish at the fast cadence. See spec 069.
+func TestTelemetryChurnPublishesAtTelemetryCadence(t *testing.T) {
+	clock := newFakeClock()
+	var published []model.Snapshot
+	service := NewService(Deps{
+		Store:        &recordingStore{},
+		Clock:        clock,
+		Publish:      func(s model.Snapshot) { published = append(published, s) },
+		TelemetryGap: 5 * time.Second,
+	})
+	service.RegisterSource("a", "Hall", []model.Medium{model.MediumBLEAdvertisement}, nil)
+	service.record(stableObservation("a", "addr:aa", -60, clock.Now()))
+	clock.Advance(time.Second)
+	service.flush()
+	if len(published) != 1 {
+		t.Fatalf("published %d snapshots after the structural change, want 1", len(published))
+	}
+
+	// Eight telemetry ticks inside one telemetry gap: only fresh RSSI and counters change.
+	for i := 0; i < 8; i++ {
+		service.RecordSourceActivity("a", 1, 1, clock.Now())
+		service.record(stableObservation("a", "addr:aa", -60-i, clock.Now()))
+		clock.Advance(defaultPublishGap)
+		service.flush()
+	}
+	if len(published) != 1 {
+		t.Fatalf("telemetry churn published %d snapshots inside one telemetry gap, want 1", len(published))
+	}
+
+	// Once the gap elapses the newest exact values reach the viewer in one snapshot.
+	clock.Advance(5 * time.Second)
+	service.flush()
+	if len(published) != 2 {
+		t.Fatalf("published %d snapshots after the telemetry gap, want 2", len(published))
+	}
+	last := published[len(published)-1]
+	if got := last.Sources[0].Diagnostics.Advertisements; got != 8 {
+		t.Fatalf("advertisements = %d, want the exact count 8", got)
+	}
+	if last.Identities[0].RSSI == nil || *last.Identities[0].RSSI != -67 {
+		t.Fatalf("rssi = %v, want the exact newest reading -67", last.Identities[0].RSSI)
+	}
+}
+
+// A structural change must not wait for the slow telemetry cadence.
+func TestStructuralChangePublishesAtPublishCadence(t *testing.T) {
+	clock := newFakeClock()
+	var published []model.Snapshot
+	service := NewService(Deps{
+		Store:        &recordingStore{},
+		Clock:        clock,
+		Publish:      func(s model.Snapshot) { published = append(published, s) },
+		TelemetryGap: time.Hour,
+	})
+	service.RegisterSource("a", "Hall", nil, nil)
+	clock.Advance(time.Second)
+	service.flush()
+	if len(published) != 1 {
+		t.Fatalf("published %d snapshots after registering a source, want 1", len(published))
+	}
+
+	// A new identity is structural, so it publishes at publishGap despite the long
+	// telemetry gap; telemetry-only churn on that same identity stays throttled.
+	service.record(stableObservation("a", "addr:aa", -60, clock.Now()))
+	clock.Advance(defaultPublishGap)
+	service.flush()
+	if len(published) != 2 {
+		t.Fatalf("structural change published %d snapshots, want 2", len(published))
+	}
+	service.RecordSourceActivity("a", 1, 1, clock.Now())
+	clock.Advance(defaultPublishGap)
+	service.flush()
+	if len(published) != 2 {
+		t.Fatalf("telemetry after a structural change published %d snapshots, want 2", len(published))
+	}
+}
+
+// A structural change that misses publishGap must not fall back to telemetryGap on the
+// next tick. lastStructural is only updated on publish, so the retry stays structural.
+func TestStructuralChangeRetriesAfterMissedPublishGap(t *testing.T) {
+	clock := newFakeClock()
+	var published []model.Snapshot
+	service := NewService(Deps{
+		Store:        &recordingStore{},
+		Clock:        clock,
+		Publish:      func(s model.Snapshot) { published = append(published, s) },
+		PublishGap:   time.Second,
+		TelemetryGap: time.Hour,
+	})
+	service.RegisterSource("a", "Hall", nil, nil)
+	clock.Advance(time.Second)
+	service.flush()
+	if len(published) != 1 {
+		t.Fatalf("published %d snapshots after registering a source, want 1", len(published))
+	}
+
+	// Same instant: changed but inside publishGap, so nothing is published.
+	service.record(stableObservation("a", "addr:aa", -60, clock.Now()))
+	service.flush()
+	if len(published) != 1 {
+		t.Fatalf("published %d snapshots inside publishGap, want 1", len(published))
+	}
+
+	// Telemetry churn in between must not turn the pending structural change into a
+	// telemetry-only one. At publishGap it publishes, well before telemetryGap.
+	service.RecordSourceActivity("a", 1, 1, clock.Now())
+	clock.Advance(time.Second)
+	service.flush()
+	if len(published) != 2 {
+		t.Fatalf("structural change published %d snapshots at publishGap, want 2", len(published))
+	}
+	if last := published[len(published)-1]; len(last.Identities) != 1 {
+		t.Fatalf("published snapshot has %d identities, want the structural change", len(last.Identities))
+	}
+}
+
+func TestTelemetryGapIsConfigurable(t *testing.T) {
+	clock := newFakeClock()
+	var published []model.Snapshot
+	service := NewService(Deps{
+		Store:        &recordingStore{},
+		Clock:        clock,
+		Publish:      func(s model.Snapshot) { published = append(published, s) },
+		TelemetryGap: 500 * time.Millisecond,
+	})
+	service.RegisterSource("a", "Hall", nil, nil)
+	clock.Advance(time.Second)
+	service.flush()
+
+	service.RecordSourceActivity("a", 1, 0, clock.Now())
+	clock.Advance(500 * time.Millisecond)
+	service.flush()
+	if len(published) != 2 {
+		t.Fatalf("published %d snapshots with a 500ms telemetry gap, want 2", len(published))
+	}
+}
+
+// With telemetry counters removed, source IDs must not be able to alias identity keys.
+// A NUL separator keeps the two sections distinct; this guards that invariance.
+func TestStructuralSignatureSeparatesSourcesFromIdentities(t *testing.T) {
+	twoSources := model.Snapshot{Sources: []model.SourceDescriptor{{ID: "a"}, {ID: "b"}}}
+	oneSourceAndIdentity := model.Snapshot{
+		Sources:    []model.SourceDescriptor{{ID: "a"}},
+		Identities: []model.IdentityView{{Key: "b"}},
+	}
+	if structuralSignature(twoSources) == structuralSignature(oneSourceAndIdentity) {
+		t.Fatal("source IDs and identity keys collided in the structural change key")
+	}
+}
+
+func TestTelemetryGapNeverBelowPublishGap(t *testing.T) {
+	service := NewService(Deps{
+		Store:        &recordingStore{},
+		Clock:        newFakeClock(),
+		PublishGap:   2 * time.Second,
+		TelemetryGap: time.Millisecond,
+	})
+	if service.telemetryGap != service.publishGap {
+		t.Fatalf("telemetryGap = %s, want the clamped %s", service.telemetryGap, service.publishGap)
+	}
+}
+
 // Repeated identical counters must not keep rebroadcasting; change detection still applies.
 func TestUnchangedDiagnosticsDoNotRepublish(t *testing.T) {
 	clock := newFakeClock()

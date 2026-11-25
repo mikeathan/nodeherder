@@ -73,7 +73,7 @@ version + image tag), enforced by the guard.
 | --- | --- | --- | --- |
 | AC-01 | .github/workflows/ci.yml | Run the desktop shard 1/2 inside the pinned image locally | PASS: 52 passed, 9 skipped in 1.4 minutes, Go hub fixture included |
 | AC-02 | .github/workflows/ci.yml, docs/ci.md | Compare matrix, reporters, artifacts and gate | PASS: unchanged partitions and artifact names; suite not modified |
-| AC-03 | .github/workflows/ci.yml | Guard step logic and image/package versions | PASS: image v1.56.1 == @playwright/test 1.56.1; mismatch exits 1 |
+| AC-03 | .github/workflows/ci.yml | Guard step logic and image/package versions | CORRECTED 2026-11-25: the recorded "mismatch exits 1" was false — the bash-only `[[ ]]` in the container's `sh -e` silently passed for every version. See `b25266b2` and [spec 068](../068-automation-feedback-loop-guard/spec.md) for the working guard |
 | AC-05, AC-06 | e2e/EntityViewDialog.spec.ts | Repeated leak runs on macOS and in the pinned Linux image | PASS: 1512/1512 nodes at 25 and 50 cycles, 6/6 passes |
 | AC-04 | workflow, docs/ci.md | Name review | PASS |
 

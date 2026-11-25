@@ -131,27 +131,43 @@ func (d *Device) MarshalJSON() ([]byte, error) {
 	return d.BaseAutomation.MarshalJSON()
 }
 
+// Evaluate selects triggers for one device event and starts actions only for a
+// primary-property change. A condition-dependency-only change evaluates conditions
+// and cancels pending actions, but never commands a device. It returns false for
+// non-device events and when an action fails. Manual runs bypass selection through
+// EvaluateTrigger.
 func (d *Device) Evaluate(event TriggerEvent) bool {
-	// only handle device events
 	deviceEvent, ok := event.(*DeviceEvent)
 	if !ok {
 		return false
 	}
 
 	ctx := deviceEvent.runContext(d.state)
+	payload := deviceEvent.Payload()
 	success := true
 	for _, trigger := range d.Triggers {
-		if !trigger.AffectedBy(ctx, deviceEvent.Payload()) {
+		if !trigger.AffectedBy(ctx, payload) {
 			continue
 		}
-		if err := trigger.Process(ctx); err != nil {
-			utils.LogErrorf("automation %s: %v", d.Id, err)
-			success = false
+		// Starting actions on a dependency-only change re-creates the device-control
+		// loop documented in specs/068-automation-feedback-loop-guard.
+		if _, primary := payload[trigger.GetName()]; primary {
+			if err := trigger.Process(ctx); err != nil {
+				utils.LogErrorf("automation %s: %v", d.Id, err)
+				success = false
+			}
+			continue
+		}
+		if dependent, ok := trigger.(dependencyOnlyTrigger); ok {
+			dependent.processDependencyChange(ctx)
 		}
 	}
 	return success
 }
 
+// EvaluateTrigger runs every trigger with the given name directly for a manual
+// event, bypassing device selection. It joins action failures and reports an error
+// when the event is not a device event or no trigger matches.
 func (d *Device) EvaluateTrigger(event TriggerEvent, triggerName string) error {
 
 	deviceEvent, ok := event.(*DeviceEvent)

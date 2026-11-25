@@ -112,9 +112,46 @@ Each configured device recipe has an immutable, derived set of primary and condi
 input names. The current published generation owns its set; replacement/reload builds a
 new one. Unrelated telemetry is rejected before a run context or condition evaluation.
 Unknown custom trigger/condition implementations conservatively retain full routing.
-`Trigger.AffectedBy` remains authoritative: state conditions can re-evaluate on relevant
-numeric changes; cached physical events cannot replay on unrelated updates. Manual runs
-use their explicit path. Filtering UI observations never filters automation inputs.
+`Trigger.AffectedBy` remains authoritative for *selection*: state conditions can re-evaluate on
+relevant numeric changes; cached physical events cannot replay on unrelated updates. It reads the
+primary name through `Trigger.GetName()`, matching `Device.Evaluate`; selection semantics are
+unchanged. Manual runs bypass selection through `Device.EvaluateTrigger`. Filtering UI
+observations never filters automation inputs.
+
+Selection is not execution. `Device.Evaluate` starts actions only when the trigger's own primary
+property changed. A condition-dependency-only update evaluates conditions (through the first
+condition that fails or reports no change) and cancels pending actions on a failing condition,
+but never commands a device; allowing it to execute would let a light's own darkening re-trigger
+a presence+dark rule and relight it. Only a trigger's primary property (or a manual run) may
+start actions — do not widen execution, change `AffectedBy`, or add selection state/caches
+without updating [spec 068](../../specs/068-automation-feedback-loop-guard/spec.md) and its
+plan. One known exception: the first `Seed` report after a device lane is created forwards the
+whole snapshot, so its primary keys read as changed; this is pre-existing restart behaviour,
+not a live update path. The deferred manual-override option (Option B) needs its own spec.
+
+### WebSocket fan-out
+
+`ws.WebSocket.Broadcast` is the single fan-out owner. It marshals once, enforces
+`maxBroadcastBytes` (larger than the inbound `maxMessageSize`, because a server-generated
+metrics result can exceed any client request), takes a session snapshot and writes to each
+valid session's bounded per-client queue. An over-bound frame is rejected and, for a result
+request, answered with `operationFailed`, so a pending browser request does not hang;
+`WebSocket.Diagnostics()` exposes the counted failures. It never
+sends on melody's `hub.broadcast` channel, which is unbuffered and owned by a single hub
+goroutine that invokes `errorHandler` synchronously while iterating sessions. A remote log
+line from that callback would call `Broadcast` again and wedge the hub permanently — every
+later register, unregister and broadcast would block, and logrus would stop writing because
+hooks fire before the entry is written. All melody callbacks and the WS request handler
+therefore use `utils.LogLocal*` (hook-free); session failures are counted in
+`BroadcastDiagnostics` with a bounded local warning. See
+[spec 069](../../specs/069-websocket-broadcast-resilience/spec.md).
+
+The `observations` event is a complete snapshot, not a delta. Its change key has two cadences:
+structural changes (identity membership, decisions, labels, classes, source IDs, gate,
+classification progress) publish at `publishGap`; telemetry-only churn (RSSI, signal windows,
+packet and diagnostic counters) publishes at the slower `telemetryGap`. Source names/media/facets
+and identity kind/vendor/stable are payload-only, as in the original key. Payload values stay
+exact, so a consumer that misses a snapshot still reconverges on the next one.
 
 ### Metric sampling
 

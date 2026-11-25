@@ -161,8 +161,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     # Browsers and their system libraries are baked into this image, so no apt/Chromium
-    # download runs per job (it ranged 20s-11m on hosted apt mirrors). Keep the tag equal
-    # to the @playwright/test version; the first step fails with a fix if they drift.
+    # download runs per job (it ranged 20s-11m on hosted apt mirrors). The guard step
+    # reads this tag and compares it to @playwright/test, so the tag is the single
+    # source of truth for the version check.
     container:
       image: mcr.microsoft.com/playwright:v1.56.1-noble
       options: --ipc=host
@@ -194,17 +195,22 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
       - name: Verify the Playwright image matches the installed version
-        # This job runs inside a container, where GitHub's default shell is `sh -e`, not bash.
-        # `[[ ]]` is a bash builtin: it printed "not found" and the guard silently passed for any
-        # version, so a drifting image would never be caught. Use the POSIX test and keep the
-        # expected version in one place for the comparison and both messages.
-        env:
-          EXPECTED_PLAYWRIGHT: "1.56.1"
+        # Container jobs default to `sh -e`; `[[ ]]` is a bash builtin, so the original
+        # guard silently passed for every version. Derive the expected version from this
+        # job's image tag instead of duplicating it, so a tag-only bump is caught too.
+        # `../` is relative to the job's `frontend` working directory.
         run: |
+          image_line=$(sed -n '/^[[:space:]]*image:.*playwright:v/p' ../.github/workflows/ci.yml | head -n 1)
+          expected=${image_line#*:v}
+          expected=${expected%%-*}
           installed=$(node -p "require('./node_modules/@playwright/test/package.json').version")
-          if [ "$installed" != "$EXPECTED_PLAYWRIGHT" ]; then
-            echo "::error::@playwright/test $installed does not match the Playwright container image v$EXPECTED_PLAYWRIGHT."
-            echo "Update the container image tag in .github/workflows/ci.yml together with frontend/package.json."
+          if [ -z "$expected" ]; then
+            echo "::error::could not read a playwright:v<version> image tag from .github/workflows/ci.yml."
+            exit 1
+          fi
+          if [ "$installed" != "$expected" ]; then
+            echo "::error::@playwright/test $installed does not match the Playwright container image v$expected."
+            echo "Update frontend/package.json and the container image tag in .github/workflows/ci.yml together."
             exit 1
           fi
           echo "Playwright $installed matches the browser image."

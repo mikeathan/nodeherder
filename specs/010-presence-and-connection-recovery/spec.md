@@ -80,3 +80,8 @@ User authorizes implementation on a new branch. Preserve historical relevant-upd
 with generic dependency declarations and no eligibility cache; event triggers require new events.
 No claimed maintainer ratification, exception or review approval.
 Current household report capture is outside automated verification and remains a limitation.
+
+- Superseded (decision 2026-11-23): dependency-only *execution* is restricted by
+  [spec 068](../068-automation-feedback-loop-guard/spec.md). Condition-dependency changes
+  still evaluate and cancel pending actions, but no longer start actions (AC-01/AC-02's
+  repeated ON requests). Dedup and cancellation obligations remain.

@@ -46,6 +46,14 @@ one-off findings. Respect the requested scope, including review-only and plannin
 work. Follow the [agent configuration guide](docs/sdd/agent-configuration.md) for
 skill discovery and verification.
 
+## Automation feedback-loop guard
+
+See [architecture.md](backend/docs/architecture.md#automation-routing) for the invariant,
+rationale and `Seed` exception, and [spec 068](specs/068-automation-feedback-loop-guard/spec.md)
+for its decisions. Only a trigger's primary property (or a manual run) may start actions;
+do not widen execution, change `AffectedBy`, or add selection state/caches without updating
+spec 068 and its plan. Option B (manual-override latch) needs its own spec.
+
 ## Commands
 
 - Backend (`backend/`): `go test ./...`; `go build ./...` for implementation changes.

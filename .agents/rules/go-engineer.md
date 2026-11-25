@@ -25,6 +25,11 @@ Scope: Go implementation, refactoring, review. Authority:
 - Explain non-obvious private algorithms and control flow with concise comments: concurrency and
   cleanup, revision/generation fencing, transactions, credential boundaries, date handling and
   shared-slice copying. Avoid comments that only narrate an assignment or obvious syntax.
+- Keep the automation feedback-loop guard documented in
+  [architecture.md](../../backend/docs/architecture.md#automation-routing) and
+  [spec 068](../../specs/068-automation-feedback-loop-guard/spec.md): only a trigger's
+  primary property (or a manual run) may start actions; do not widen execution, change
+  `AffectedBy`, or add selection state/caches without updating spec 068 and its plan.
 
 Review readability, ownership, error paths, and regression evidence. Before finishing, audit touched
 public declarations for useful GoDoc and complex flows for explanatory comments; passing tests alone
