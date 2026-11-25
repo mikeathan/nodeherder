@@ -36,9 +36,14 @@ Observed facts (verified against the pinned dependency):
 1. `webSocketImpl.Broadcast` stops using `BroadcastFilter`. It marshals once, enforces
    `maxBroadcastBytes` (8 MiB, deliberately larger than the 1 MiB inbound
    `maxMessageSize`, because `loadMetrics` results are server-generated and unbounded by
-   the client request), takes a session snapshot with `melody.Sessions()`, filters with
-   `auth.SessionValid` **before** taking `fanoutMu`, and calls `session.Write` per client.
-   `Session.Write` is a non-blocking enqueue onto melody's existing bounded 256-message
+   the client request), snapshots its own fan-out registry (sessions added in the connect
+   callback, removed on disconnect), filters with `auth.SessionValid` **before** taking
+   `fanoutMu`, and calls `session.Write` per client. The registry is not optional: melody
+   runs the connect callback only after sending on an unbuffered register channel, and its
+   hub goroutine may not have added the session yet, so a `melody.Sessions()` snapshot there
+   omitted the session in 2996/3000 probes and dropped the response to a client's first
+   request (post-merge correction below). `Session.Write` is a non-blocking enqueue onto
+   melody's existing bounded 256-message
    per-client queue. A closed session returns `ErrSessionClosed`; a full queue invokes
    melody's synchronous `errorHandler` on the **calling** goroutine (`session.go`
    `writeMessage`), which is why that handler must be hook-free and must never call
@@ -220,3 +225,48 @@ Second review pass (2026-11-25, independent agent; not human approval):
 - Corrected the architecture note's outbound-bound wording: a frame above
   `maxBroadcastBytes` is rejected (and a result request is answered with `operationFailed`),
   not "not silently dropped". No code change was needed.
+
+## Post-merge correction (2026-11-25)
+
+The merge run on `main` (`45630406279`) failed in both backend jobs. There was no
+`DATA RACE`; the failures were a test-timing assertion and a five-minute timeout, and both
+were caused by this branch's producer-side fan-out rather than by pre-existing tests.
+
+**Race job — `TestSlowClientDoesNotBlockFanoutAndErrorsStayLocal`.** The test wrote a fixed
+257-frame burst (queue depth + 1) and assumed it overflows. It overflows only if the
+writePump drains zero frames during the burst; a loaded runner drains at least one, all 257
+writes fit, and `ClientDrops` stays zero (`{SessionErrors:0 ...}` in the failure). Fixed by
+writing until `Diagnostics().ClientDrops` increments, with a 5 s deadline and a 64 KiB
+frame. The producer burst is 16 frames instead of a queue-sized burst, which could also fill
+the healthy client's queue on a CPU-starved runner and test the wrong failure. The test now
+observes the fan-out registry instead of replacing melody's connect handler, which also
+removed a slow/healthy mis-association.
+
+**Non-race job — `TestHandlingLoadMetricsMessage` (5-minute timeout).** Its session
+`readPump` was idle in `ReadMessage`; the client waited for a response that was never sent.
+`Broadcast` snapshotted `melody.Sessions()`, but melody sends on its unbuffered register
+channel and only then runs the connect callback, so the hub goroutine's `sessions.add` can
+still be pending. A probe found the session absent from `Sessions()` in **2996/3000**
+connect callbacks. A broadcast from the session's first message therefore found zero
+sessions and was silently dropped. The old `BroadcastFilter` path was ordered by the hub
+goroutine and had no such window: this was a regression from the fan-out change, confirmed
+by the same repetition (`-count=40 -cpu=2`) hanging on `TestRestartMCPMessage` on the merged
+tree and passing on `b25266b2`. Fixed with a fan-out registry on `webSocketImpl`, populated
+in the connect callback before `writePump`/`readPump` and removed on disconnect; `Broadcast`
+snapshots it and keeps returning `ErrClosed` after `Close`.
+`TestFirstRequestResponseIsNotDroppedByRegistration` asserts the session is registered
+before its first message and that the response reaches the client.
+
+**Startup readiness.** Reproducing also exposed melody's startup race: `NewWebSocket`
+returned before `hub.run` marked the instance open, so an immediate dial got a bad
+handshake. `NewWebSocket` now waits a bounded number of scheduler yields for that first
+step, which also protects the first client at process start.
+
+Verified (2026-11-25, post-fix):
+
+- probe: session missing from `melody.Sessions()` in 2996/3000 connect callbacks
+- `go test -count=40 -cpu=2 -timeout=200s ./internal/ws/` — pass twice with 0 failures;
+  the merged tree hung under the same command and `b25266b2` passes
+- `go test -race -count=100` on the three WS regressions, `-race -count=20` on the whole
+  package, and `-race -count=10 -cpu=2` on the package — pass
+- `go test -count=1 -timeout=5m ./...` and `go test -race -count=1 -timeout=5m ./...` — pass

@@ -60,3 +60,16 @@ Each task maps to requirement/acceptance IDs or a constitutional gate.
   `Session.Write` callback claim (a full queue invokes the synchronous, hook-free
   `errorHandler` on the caller) and the architecture outbound-bound wording; updated the
   spec status. No code finding required a change. Gate: NH-05, BE-03, AC-08; depends T010.
+- [x] T012 — Post-merge correction (2026-11-25, `main` run 45630406279):
+  `TestSlowClientDoesNotBlockFanoutAndErrorsStayLocal` assumed a fixed 257-frame burst
+  overflows the slow queue; it does only if the writePump drains nothing, so the race job
+  saw no drop. It now writes until `Diagnostics().ClientDrops` increments (5 s deadline,
+  64 KiB frame), observes the fan-out registry instead of replacing the connect handler,
+  and uses a short producer burst so the healthy client cannot be saturated. The non-race
+  job timed out because `Broadcast` snapshotted `melody.Sessions()`, which can omit a
+  session that is inside its connect callback (probe: 2996/3000) — a response to the
+  client's first request found zero sessions and was dropped. Added the fan-out registry
+  populated before message handling, and made `NewWebSocket` wait for melody's hub to open
+  so the first dial cannot receive a bad handshake. Added
+  `TestFirstRequestResponseIsNotDroppedByRegistration`. IDs: FR-01, AC-01, AC-02, AC-08;
+  gate: SC-01, BE-03; depends T011; details in plan.md's post-merge correction.

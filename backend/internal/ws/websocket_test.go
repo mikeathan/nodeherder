@@ -84,6 +84,24 @@ func awaitOtherSession(t *testing.T, socket *webSocketImpl, excluded *melody.Ses
 	}
 }
 
+// awaitFanoutSessions waits for the server's fan-out registry to hold want sessions and
+// returns them. Broadcast iterates this registry, not melody's own session set; a session
+// is registered before its first message can be handled.
+func awaitFanoutSessions(t *testing.T, socket *webSocketImpl, want int) []*melody.Session {
+	t.Helper()
+	deadline := time.Now().Add(3 * time.Second)
+	for {
+		sessions := socket.fanoutSessions()
+		if len(sessions) == want {
+			return sessions
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("fan-out sessions = %d, want %d", len(sessions), want)
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+}
+
 func closeWithoutBlocking(closeFn func()) {
 	done := make(chan struct{})
 	go func() { defer close(done); closeFn() }()
@@ -194,9 +212,7 @@ func TestRemoteLoggingDoesNotWedgeBroadcastOnClosedSession(t *testing.T) {
 // must stay local instead of producing remote "logger" frames.
 func TestSlowClientDoesNotBlockFanoutAndErrorsStayLocal(t *testing.T) {
 	socket := NewWebSocket().(*webSocketImpl)
-	connected := make(chan *melody.Session, 2)
 	socket.Start(func([]byte) {})
-	socket.conn.HandleConnect(func(s *melody.Session) { connected <- s })
 
 	emitter := &countingLogEmitter{}
 	utils.RegisterRemoteLoggerHook(emitter)
@@ -219,27 +235,22 @@ func TestSlowClientDoesNotBlockFanoutAndErrorsStayLocal(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer slow.Close()
+	// The slow client is the only registered session at this point, so the test cannot
+	// mis-associate it with the healthy connection: dial order and connect-callback order
+	// are not the same guarantee.
+	slowSession := awaitFanoutSessions(t, socket, 1)[0]
+
 	healthy, _, err := websocket.DefaultDialer.Dial(url, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer healthy.Close()
-
-	var slowSession *melody.Session
-	select {
-	case slowSession = <-connected:
-	case <-time.After(3 * time.Second):
-		t.Fatal("slow session did not connect")
-	}
-	select {
-	case <-connected:
-	case <-time.After(3 * time.Second):
-		t.Fatal("healthy session did not connect")
-	}
+	awaitFanoutSessions(t, socket, 2)
 
 	// Drain the healthy client. Only the slow session's bounded queue is filled, so the
-	// healthy client is never a saturation candidate on any CPU count.
-	_ = healthy.SetReadDeadline(time.Now().Add(10 * time.Second))
+	// healthy client is never a saturation candidate on any CPU count. The deadline covers
+	// the saturation phase, the producer phase and the final delivery wait with margin.
+	_ = healthy.SetReadDeadline(time.Now().Add(30 * time.Second))
 	delivered := make(chan string, 1)
 	go func() {
 		for {
@@ -260,16 +271,30 @@ func TestSlowClientDoesNotBlockFanoutAndErrorsStayLocal(t *testing.T) {
 	}()
 
 	// Saturate only the slow session, bypassing Broadcast so the healthy client sees
-	// exactly one small frame afterwards.
-	payload := strings.Repeat("x", 4<<10)
-	for i := 0; i <= messageQueueSize; i++ {
-		_ = slowSession.Write([]byte(payload))
+	// exactly one small frame afterwards. Keep writing until the bounded queue actually
+	// rejects a frame rather than assuming a fixed burst overflows it: the writePump
+	// drains into the kernel socket buffer, so a burst of queue depth + 1 overflows only
+	// when the writer drains zero frames meanwhile. On a loaded runner it drains one, the
+	// queue never fills, and the assertion sees no error at all — the post-merge race job
+	// failed exactly that way. A deadline keeps a genuine regression reportable.
+	frame := []byte(strings.Repeat("x", 64<<10))
+	deadline := time.Now().Add(5 * time.Second)
+	for socket.Diagnostics().ClientDrops == 0 {
+		if time.Now().After(deadline) {
+			t.Fatalf("slow client queue never overflowed: %+v", socket.Diagnostics())
+		}
+		if err := slowSession.Write(frame); err != nil {
+			t.Fatalf("slow session closed before its queue overflowed: %v", err)
+		}
 	}
 
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		for i := 0; i < messageQueueSize; i++ {
+		// A saturated session must not block the producer. A short burst is enough to
+		// exercise that path; a queue-sized burst could also fill the healthy client's
+		// queue on a CPU-starved runner, which would test the wrong failure.
+		for i := 0; i < 16; i++ {
 			if err := socket.Broadcast("state", fmt.Sprintf("%d", i)); err != nil {
 				return
 			}
@@ -294,7 +319,49 @@ func TestSlowClientDoesNotBlockFanoutAndErrorsStayLocal(t *testing.T) {
 	select {
 	case <-delivered:
 	case <-time.After(3 * time.Second):
-		t.Fatal("healthy client stopped receiving while another client was saturated")
+		t.Fatalf("healthy client stopped receiving while another client was saturated: %+v", socket.Diagnostics())
+	}
+}
+
+// A session must be broadcast-visible before its first message is handled. melody sends on
+// its unbuffered register channel and only then runs the connect callback, so the hub's own
+// session set can still be missing the session when that callback runs. A producer-side
+// snapshot from melody.Sessions() then omits it, the response to the client's first request
+// is dropped, and the client waits forever. The fan-out registry is populated in the connect
+// callback, before writePump/readPump, which closes that window.
+func TestFirstRequestResponseIsNotDroppedByRegistration(t *testing.T) {
+	socket := NewWebSocket().(*webSocketImpl)
+	socket.Start(func([]byte) {})
+	socket.conn.HandleMessage(func(s *melody.Session, _ []byte) {
+		socket.sessionsMu.RLock()
+		_, registered := socket.sessions[s]
+		socket.sessionsMu.RUnlock()
+		if !registered {
+			t.Error("session was not in the fan-out registry before its first message")
+		}
+		_ = socket.Broadcast("state", "response")
+	})
+	server := socketServer(t, socket)
+	conn, _, err := websocket.DefaultDialer.Dial("ws"+strings.TrimPrefix(server.URL, "http"), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+
+	if err := conn.WriteMessage(websocket.TextMessage, []byte("request")); err != nil {
+		t.Fatal(err)
+	}
+	_ = conn.SetReadDeadline(time.Now().Add(3 * time.Second))
+	_, message, err := conn.ReadMessage()
+	if err != nil {
+		t.Fatalf("first request response was not delivered: %v", err)
+	}
+	var event EventMessage
+	if err := json.Unmarshal(message, &event); err != nil {
+		t.Fatal(err)
+	}
+	if event.Type != "state" || event.Payload != "response" {
+		t.Fatalf("frame = %s, want a state response", message)
 	}
 }
 

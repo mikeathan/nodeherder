@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"node-herder/internal/auth"
 	"node-herder/utils"
+	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -96,6 +97,20 @@ type webSocketImpl struct {
 	// because the mutex is not reentrant. Session validity is checked before the lock.
 	fanoutMu sync.Mutex
 
+	// sessions is the fan-out registry. melody registers a session by sending on an
+	// unbuffered channel and only then runs the connect callback, so the hub's own session
+	// set can still be missing the session when that callback runs. A snapshot from
+	// melody.Sessions() right then omits it, and a response to the client's first request
+	// is dropped: the client waits forever. This registry is populated in the connect
+	// callback, before melody starts writePump/readPump, so a message cannot be handled
+	// before its session is broadcast-visible. Guarded by sessionsMu; never held with
+	// fanoutMu.
+	sessionsMu sync.RWMutex
+	sessions   map[*melody.Session]struct{}
+	// closed reports whether Close has run, so Broadcast keeps returning ErrClosed instead
+	// of writing to sessions that are being torn down.
+	closed atomic.Bool
+
 	sessionErrors   atomic.Uint64
 	clientDrops     atomic.Uint64
 	droppedFrames   atomic.Uint64
@@ -123,8 +138,19 @@ func NewWebSocket() WebSocket {
 	server.Config.MaxMessageSize = maxMessageSize
 	server.Config.MessageBufferSize = messageQueueSize
 	server.Upgrader.CheckOrigin = allowedWebSocketOrigin(utils.GetFrontendAllowedOrigins())
+	// melody.New starts the hub goroutine, which marks the instance open as its first
+	// statement. A request accepted before that step is rejected as closed, so the first
+	// client can receive a bad handshake. Wait for the goroutine to reach its loop; the
+	// bound keeps a pathological scheduler from stalling construction.
+	for attempt := 0; attempt < 1000; attempt++ {
+		if _, err := server.Sessions(); err == nil {
+			break
+		}
+		runtime.Gosched()
+	}
 	return &webSocketImpl{
-		conn: server,
+		conn:     server,
+		sessions: make(map[*melody.Session]struct{}),
 	}
 }
 
@@ -182,19 +208,15 @@ func (h *webSocketImpl) Broadcast(eventName string, data interface{}) error {
 
 	// BroadcastFilter sends on an unbuffered channel owned by melody's single hub goroutine.
 	// A log line emitted from that goroutine re-enters Broadcast through the remote logger
-	// hook and wedges the hub permanently. Fan out from the producer instead: melody's
-	// Sessions is a snapshot under a short read lock, and Session.Write is a non-blocking
-	// enqueue onto the per-client bounded queue.
-	sessions, err := h.conn.Sessions()
-	if err != nil {
-		return err
+	// hook and wedges the hub permanently. Fan out from the producer instead, from this
+	// server's own registry: melody.Sessions() can still be missing a session that is inside
+	// its connect callback, and a first request's response would then be dropped. Session
+	// validity is checked before fanoutMu; Session.Write is a non-blocking enqueue onto the
+	// per-client bounded queue.
+	if h.closed.Load() {
+		return melody.ErrClosed
 	}
-	eligible := make([]*melody.Session, 0, len(sessions))
-	for _, session := range sessions {
-		if auth.SessionValid(session.Request) {
-			eligible = append(eligible, session)
-		}
-	}
+	eligible := h.fanoutSessions()
 
 	h.fanoutMu.Lock()
 	defer h.fanoutMu.Unlock()
@@ -207,7 +229,38 @@ func (h *webSocketImpl) Broadcast(eventName string, data interface{}) error {
 	return nil
 }
 
+// fanoutSessions snapshots the registered sessions that are still authorised. It copies
+// under sessionsMu so the write loop holds the registry lock for as short a time as
+// possible; sessionsMu is never acquired while fanoutMu is held.
+func (h *webSocketImpl) fanoutSessions() []*melody.Session {
+	h.sessionsMu.RLock()
+	defer h.sessionsMu.RUnlock()
+	eligible := make([]*melody.Session, 0, len(h.sessions))
+	for session := range h.sessions {
+		if auth.SessionValid(session.Request) {
+			eligible = append(eligible, session)
+		}
+	}
+	return eligible
+}
+
+// trackSession makes a new session broadcast-visible. melody runs the connect callback
+// before writePump/readPump, so registering here precedes any message the session can
+// send; the hub's own add may still be pending.
+func (h *webSocketImpl) trackSession(session *melody.Session) {
+	h.sessionsMu.Lock()
+	h.sessions[session] = struct{}{}
+	h.sessionsMu.Unlock()
+}
+
+func (h *webSocketImpl) forgetSession(session *melody.Session) {
+	h.sessionsMu.Lock()
+	delete(h.sessions, session)
+	h.sessionsMu.Unlock()
+}
+
 func (h *webSocketImpl) Close() error {
+	h.closed.Store(true)
 	utils.LogLocalDebugf("WebSocket.Close")
 	return h.conn.Close()
 }
@@ -215,6 +268,11 @@ func (h *webSocketImpl) Close() error {
 func (h *webSocketImpl) Start(messageHandler func(message []byte)) {
 
 	h.conn.HandleConnect(func(s *melody.Session) {
+		// Make the session broadcast-visible before it can send or receive a message.
+		// melody has already upgraded and sent on its unbuffered register channel, but the
+		// hub goroutine may not have added the session to its set yet, so a producer-side
+		// snapshot there would omit it.
+		h.trackSession(s)
 		if attach, ok := s.Get("attachSession"); ok {
 			attach.(func(*melody.Session))(s)
 		}
@@ -225,6 +283,7 @@ func (h *webSocketImpl) Start(messageHandler func(message []byte)) {
 	})
 
 	h.conn.HandleDisconnect(func(s *melody.Session) {
+		h.forgetSession(s)
 		if id, ok := s.Get("id"); ok {
 			utils.LogLocalDebugf("WebSocket: client id %d disconnected", id)
 		} else {
