@@ -129,6 +129,29 @@ plan. One known exception: the first `Seed` report after a device lane is create
 whole snapshot, so its primary keys read as changed; this is pre-existing restart behaviour,
 not a live update path. The deferred manual-override option (Option B) needs its own spec.
 
+### WebSocket fan-out
+
+`ws.WebSocket.Broadcast` is the single fan-out owner. It marshals once, enforces
+`maxBroadcastBytes` (larger than the inbound `maxMessageSize`, so a full metrics range is not
+silently dropped), takes a session snapshot and writes to each valid session's bounded
+per-client queue. `WebSocket.Diagnostics()` exposes counted failures; a rejected result frame
+is answered with `operationFailed` so a pending browser request does not hang. It never
+sends on melody's `hub.broadcast` channel, which is unbuffered and owned by a single hub
+goroutine that invokes `errorHandler` synchronously while iterating sessions. A remote log
+line from that callback would call `Broadcast` again and wedge the hub permanently — every
+later register, unregister and broadcast would block, and logrus would stop writing because
+hooks fire before the entry is written. All melody callbacks and the WS request handler
+therefore use `utils.LogLocal*` (hook-free); session failures are counted in
+`BroadcastDiagnostics` with a bounded local warning. See
+[spec 069](../../specs/069-websocket-broadcast-resilience/spec.md).
+
+The `observations` event is a complete snapshot, not a delta. Its change key has two cadences:
+structural changes (identity membership, decisions, labels, classes, source IDs, gate,
+classification progress) publish at `publishGap`; telemetry-only churn (RSSI, signal windows,
+packet and diagnostic counters) publishes at the slower `telemetryGap`. Source names/media/facets
+and identity kind/vendor/stable are payload-only, as in the original key. Payload values stay
+exact, so a consumer that misses a snapshot still reconverges on the next one.
+
 ### Metric sampling
 
 Legacy settings named debounce are leading-edge interval sampling, not a wait for a

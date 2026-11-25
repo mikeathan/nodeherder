@@ -242,11 +242,13 @@ func NewWsHandler(hub ws.EventHub) *WsHandler {
 func (h *WsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	err := h.hub.HandleRequest(w, r)
 	if err != nil {
-		utils.LogErrorf("WsHandler: HandleRequest error %s", err.Error())
+		utils.LogLocalErrorf("WsHandler: HandleRequest error %s", err.Error())
 		return
 	}
 
-	utils.LogInfo("WsHandler: client connected")
+	// HandleRequest blocks until readPump returns, so this line reports a disconnect,
+	// not a connect. Keep it local: a remote frame here would re-enter the WS hub.
+	utils.LogLocalDebugf("WsHandler: websocket connection closed")
 }
 
 // List file logs

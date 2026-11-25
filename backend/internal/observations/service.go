@@ -32,8 +32,13 @@ import (
 // Aggregation limits. The publish gap bounds broadcast rate independently of inbound rate;
 // the identity cap bounds one snapshot; the source cap bounds descriptors.
 const (
-	defaultQueueSize     = 64
-	defaultPublishGap    = 250 * time.Millisecond
+	defaultQueueSize  = 64
+	defaultPublishGap = 250 * time.Millisecond
+	// defaultTelemetryGap bounds snapshots caused only by per-packet telemetry (RSSI,
+	// signal windows, packet and diagnostic counters). Those change on every BLE batch,
+	// so publishing them at defaultPublishGap broadcasts a full snapshot four times a
+	// second to every client forever. Structural changes still use defaultPublishGap.
+	defaultTelemetryGap  = time.Second
 	defaultStaleIdentity = 10 * time.Minute
 	maxSources           = 32
 	// defaultClassifyInterval bounds how often stored evidence is re-read. A device's class can
@@ -83,8 +88,11 @@ type Deps struct {
 	Publish func(model.Snapshot)
 	// Queue overrides the queue depth; 0 uses defaultQueueSize.
 	Queue int
-	// PublishGap overrides the broadcast interval; 0 uses defaultPublishGap.
+	// PublishGap overrides the structural broadcast interval; 0 uses defaultPublishGap.
 	PublishGap time.Duration
+	// TelemetryGap overrides the interval for snapshots that changed only by telemetry;
+	// 0 uses defaultTelemetryGap. Values below PublishGap are clamped to PublishGap.
+	TelemetryGap time.Duration
 	// StaleAfter drops identities not seen for this long; 0 uses defaultStaleIdentity.
 	StaleAfter time.Duration
 	// Dropped observes discarded batches, so a saturated queue is visible rather than silent.
@@ -119,6 +127,7 @@ type Service struct {
 	queue         chan model.Observation
 	dropped       func()
 	publishGap    time.Duration
+	telemetryGap  time.Duration
 	staleAfter    time.Duration
 	history       HistoryReader
 	recorder      ObservationRecorder
@@ -127,12 +136,13 @@ type Service struct {
 
 	wg sync.WaitGroup
 
-	mutex       sync.Mutex
-	sources     map[string]*sourceState
-	aggregates  map[string]*aggregate
-	arrivals    int
-	lastState   string
-	lastPublish time.Time
+	mutex          sync.Mutex
+	sources        map[string]*sourceState
+	aggregates     map[string]*aggregate
+	arrivals       int
+	lastState      string
+	lastStructural string
+	lastPublish    time.Time
 	// observing caches the gate's answer so the snapshot can carry it without asking again.
 	//
 	// The authoritative answer lives behind the integration runtime's lock, and Snapshot is called
@@ -188,6 +198,13 @@ func NewService(deps Deps) *Service {
 	if publishGap <= 0 {
 		publishGap = defaultPublishGap
 	}
+	telemetryGap := deps.TelemetryGap
+	if telemetryGap <= 0 {
+		telemetryGap = defaultTelemetryGap
+	}
+	if telemetryGap < publishGap {
+		telemetryGap = publishGap
+	}
 	staleAfter := deps.StaleAfter
 	if staleAfter <= 0 {
 		staleAfter = defaultStaleIdentity
@@ -203,6 +220,7 @@ func NewService(deps Deps) *Service {
 		queue:         make(chan model.Observation, queue),
 		dropped:       deps.Dropped,
 		publishGap:    publishGap,
+		telemetryGap:  telemetryGap,
 		staleAfter:    staleAfter,
 		history:       deps.History,
 		recorder:      deps.Recorder,
@@ -601,14 +619,27 @@ func (s *Service) flush() {
 	s.mutex.Lock()
 	snapshot := s.snapshotLocked(now)
 	rendered := renderSignature(snapshot)
-	changed := rendered != s.lastState && now.Sub(s.lastPublish) >= s.publishGap
+	structural := structuralSignature(snapshot)
+	changed := rendered != s.lastState
+	publish := false
 	if changed {
+		// Telemetry-only churn uses the slower cadence; a structural change must reach
+		// the viewer promptly. lastStructural is only updated on publish, so a structural
+		// change that missed its gap stays structural on the next tick.
+		gap := s.publishGap
+		if structural == s.lastStructural {
+			gap = s.telemetryGap
+		}
+		publish = now.Sub(s.lastPublish) >= gap
+	}
+	if publish {
 		s.lastState = rendered
+		s.lastStructural = structural
 		s.lastPublish = now
 	}
 	s.mutex.Unlock()
 
-	if changed && s.publish != nil {
+	if publish && s.publish != nil {
 		s.publish(snapshot)
 	}
 }
@@ -863,11 +894,30 @@ func sourceReadings(source map[string]*int) []model.SourceReading {
 	return readings
 }
 
-// renderSignature is the change-detection key for a snapshot. Timestamps are excluded because
-// a snapshot with unchanged content must not broadcast merely because time passed. Diagnostics
-// counters are included: a source receiving advertisements that decode to nothing changes no
-// identity, yet that is precisely the state the operator needs to see.
+// renderSignature is the full change-detection key for a snapshot. Timestamps are excluded
+// because a snapshot with unchanged content must not broadcast merely because time passed.
+// Diagnostics counters are included: a source receiving advertisements that decode to
+// nothing changes no identity, yet that is precisely the state the operator needs to see.
 func renderSignature(snapshot model.Snapshot) string {
+	return snapshotSignature(snapshot, true)
+}
+
+// structuralSignature is the change key without per-packet telemetry. It decides whether a
+// change is structural (publish at publishGap) or telemetry-only (publish at telemetryGap).
+// The payload always keeps exact values: only the cadence depends on this key.
+func structuralSignature(snapshot model.Snapshot) string {
+	return snapshotSignature(snapshot, false)
+}
+
+// snapshotSignature is the single encoder for both keys. With telemetry disabled it omits
+// the fields that change on every BLE batch: diagnostic counters, packet counts, RSSI,
+// smoothed RSSI, trend, trend delta and signal windows. The gate, classification
+// progress, source IDs, identity membership (keys), decisions, labels and classes remain,
+// so a meaningful change still broadcasts promptly. Source names/media/facets and
+// identity kind/vendor/stable were absent from the original key and remain absent;
+// they reach the viewer with the next snapshot. Both source IDs and identity keys are
+// NUL-terminated here, which relies on neither containing a NUL byte.
+func snapshotSignature(snapshot model.Snapshot, telemetry bool) string {
 	signature := make([]byte, 0, 64+len(snapshot.Identities)*32)
 	// The gate itself must participate. Closing it publishes one clearing snapshot, and without this
 	// the clearing snapshot would render identically to the last populated one — so the broadcast
@@ -889,31 +939,40 @@ func renderSignature(snapshot model.Snapshot) string {
 	for _, source := range snapshot.Sources {
 		signature = append(signature, source.ID...)
 		signature = append(signature, 0)
-		signature = appendUint64(signature, source.Diagnostics.Advertisements)
-		signature = appendUint64(signature, source.Diagnostics.Decoded)
-		signature = appendUint64(signature, source.Diagnostics.Dropped)
+		if telemetry {
+			signature = appendUint64(signature, source.Diagnostics.Advertisements)
+			signature = appendUint64(signature, source.Diagnostics.Decoded)
+			signature = appendUint64(signature, source.Diagnostics.Dropped)
+		}
+	}
+	if !telemetry {
+		// Without counter bytes, separate the source IDs from the identity keys so two
+		// different snapshots cannot encode to the same byte string.
+		signature = append(signature, 0)
 	}
 	for _, identity := range snapshot.Identities {
 		signature = append(signature, identity.Key...)
 		signature = append(signature, 0)
 		signature = append(signature, identity.Decision...)
 		signature = append(signature, identity.Label...)
-		signature = appendUint64(signature, identity.Packets)
-		if identity.RSSI != nil {
-			// Encode the full value so a reading moving outside one byte still registers.
-			signature = appendUint64(signature, uint64(int64(*identity.RSSI)+128))
-		}
-		// The smoothed value drives the displayed distance, so it must participate or the
-		// figure would freeze while the underlying window moved.
-		if identity.RSSISmoothed != nil {
-			signature = appendUint64(signature, uint64(int64(*identity.RSSISmoothed)+128))
-		}
-		// Trend and its sparkline change without any identity field changing, so they must
-		// participate or the arrow and history would freeze on a live device.
-		signature = append(signature, identity.Trend...)
-		signature = appendUint64(signature, uint64(int64(identity.TrendDeltaDB*8)+4096))
-		for _, sample := range identity.Signal {
-			signature = appendUint64(signature, uint64(int64(sample)+128))
+		if telemetry {
+			signature = appendUint64(signature, identity.Packets)
+			if identity.RSSI != nil {
+				// Encode the full value so a reading moving outside one byte still registers.
+				signature = appendUint64(signature, uint64(int64(*identity.RSSI)+128))
+			}
+			// The smoothed value drives the displayed distance, so it must participate or the
+			// figure would freeze while the underlying window moved.
+			if identity.RSSISmoothed != nil {
+				signature = appendUint64(signature, uint64(int64(*identity.RSSISmoothed)+128))
+			}
+			// Trend and its sparkline change without any identity field changing, so they must
+			// participate or the arrow and history would freeze on a live device.
+			signature = append(signature, identity.Trend...)
+			signature = appendUint64(signature, uint64(int64(identity.TrendDeltaDB*8)+4096))
+			for _, sample := range identity.Signal {
+				signature = appendUint64(signature, uint64(int64(sample)+128))
+			}
 		}
 		// Classification must participate or a class that changes without any other field changing
 		// would never be broadcast — the viewer would keep showing the old class indefinitely.

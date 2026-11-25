@@ -160,6 +160,36 @@ func TestRemoteHookEmitterCanDisableWithoutDeadlock(t *testing.T) {
 	}
 }
 
+// A local log line must never re-enter the remote hook. Code running inside the hook's
+// own delivery path (WS session callbacks) uses it; broadcasting its diagnostic would
+// produce another frame, another error and another log line in a loop.
+func TestLogLocalDoesNotFireRemoteHook(t *testing.T) {
+	setup()
+	var calls atomic.Int32
+	utils.RegisterRemoteLoggerHook(mocks.NewMockRemoteLoggerEmitter(func(string, interface{}) error {
+		calls.Add(1)
+		return nil
+	}))
+	utils.EnableRemoteLoggerHook(true)
+	t.Cleanup(func() {
+		utils.EnableRemoteLoggerHook(false)
+		utils.RemoveRemoteLoggerHook()
+	})
+
+	utils.LogLocalDebug("local debug")
+	utils.LogLocalDebugf("local %s", "debug")
+	utils.LogLocalWarnf("local %s", "warning")
+	utils.LogLocalErrorf("local %s", "error")
+	if got := calls.Load(); got != 0 {
+		t.Fatalf("local logs emitted %d remote frames, want 0", got)
+	}
+
+	utils.LogWarn("remote warning")
+	if got := calls.Load(); got != 1 {
+		t.Fatalf("ordinary log emitted %d remote frames, want 1", got)
+	}
+}
+
 func TestRemoveRemoteLoggerHook(t *testing.T) {
 
 	setup()

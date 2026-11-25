@@ -388,7 +388,9 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 	var eventMsg = &EventMessage{}
 
 	if err := json.Unmarshal(message, &eventMsg); err != nil {
-		utils.LogWarnf("wsServer handleHubEvents:  unmarshal error: %s", err.Error())
+		// Melody invokes this from a session callback; a remote frame here would add
+		// another broadcast for every malformed message.
+		utils.LogLocalWarnf("wsServer handleHubEvents: unmarshal error: %s", err.Error())
 		return
 	}
 
@@ -398,7 +400,7 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 		msg := c.onLoadAutomations()
 		err := c.Broadcast(Automations, msg)
 		if err != nil {
-			utils.LogErrorf("Failed to broadcast onLoadAutomations %s", err.Error())
+			utils.LogLocalErrorf("Failed to broadcast onLoadAutomations %s", err.Error())
 		}
 
 	case LoadMetrics:
@@ -468,27 +470,27 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 		// will need refactoring
 		err := c.onImportDashboardGroups(eventMsg.Payload)
 		if err != nil {
-			utils.LogErrorf("Failed to import dashboard groups: %v", err)
+			utils.LogLocalErrorf("Failed to import dashboard groups: %v", err)
 			c.Broadcast(OperationFailed, err.Error())
 			return
 		}
 		res, err := c.onLoadDashboardGroups()
 		if err != nil {
-			utils.LogErrorf("Failed to load dashboard groups: %v", err)
+			utils.LogLocalErrorf("Failed to load dashboard groups: %v", err)
 			c.Broadcast(OperationFailed, err.Error())
 
 			return
 		}
 		ds, ok := res.(map[string]*settings.DashboardGroup)
 		if !ok {
-			utils.LogErrorf("onLoadDashboardGroups: Failed to cast to map[string]*settings.DashboardGroup")
+			utils.LogLocalErrorf("onLoadDashboardGroups: Failed to cast to map[string]*settings.DashboardGroup")
 			c.Broadcast(OperationFailed, "Failed to cast to map[string]*settings.DashboardGroup")
 			return
 		}
 
 		err = c.Broadcast(DashboardGroups, ds)
 		if err != nil {
-			utils.LogErrorf("Failed to broadcast onLoadDashboardGroups %s", err.Error())
+			utils.LogLocalErrorf("Failed to broadcast onLoadDashboardGroups %s", err.Error())
 			c.Broadcast(OperationFailed, err.Error())
 		}
 
@@ -509,7 +511,7 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 
 	default:
 
-		utils.LogWarnf("Unknown event type: %s", eventMsg.Type)
+		utils.LogLocalWarnf("Unknown event type: %s", eventMsg.Type)
 		return
 	}
 }
@@ -532,7 +534,7 @@ func (c *eventHubImpl) execute(opts *eventExecutorOptions) {
 		if opts.ReportError {
 			err = c.Broadcast(OperationFailed, err.Error())
 			if err != nil {
-				utils.LogErrorf("Failed to broadcast OperationFailed %s", err.Error())
+				utils.LogLocalErrorf("Failed to broadcast OperationFailed %s", err.Error())
 			}
 		}
 		return
@@ -553,7 +555,12 @@ func (c *eventHubImpl) execute(opts *eventExecutorOptions) {
 	}
 	err = c.Broadcast(successEvent, reportResult)
 	if err != nil {
-		utils.LogErrorf("Failed to broadcast successEvent %s. Error: %s", successEvent, err.Error())
+		utils.LogLocalErrorf("Failed to broadcast successEvent %s. Error: %s", successEvent, err.Error())
+		// A rejected result must still answer the request. LoadMetrics in particular uses
+		// ReportError=false, so without this the browser waits forever with no diagnostic.
+		if reportErr := c.Broadcast(OperationFailed, err.Error()); reportErr != nil {
+			utils.LogLocalErrorf("Failed to broadcast OperationFailed %s", reportErr.Error())
+		}
 	}
 }
 
@@ -581,14 +588,14 @@ func (c *eventHubImpl) saveDeviceConfigOverride(payload interface{}) {
 	requestID, ok := token.(string)
 	if !ok || !validSettingsRequestID(requestID) {
 		if err := c.Broadcast(OperationFailed, invalidSettingsRequest); err != nil {
-			utils.LogErrorf("Failed to report invalid settings request: %v", err)
+			utils.LogLocalErrorf("Failed to report invalid settings request: %v", err)
 		}
 		return
 	}
 	deviceID, _ := fields[settingsDeviceIDKey].(string)
 	if len(deviceID) > maxSettingsDeviceID || strings.TrimSpace(deviceID) == "" || strings.ContainsRune(deviceID, '\x00') {
 		if err := c.Broadcast(OperationFailed, invalidSettingsDeviceID); err != nil {
-			utils.LogErrorf("Failed to report invalid settings device: %v", err)
+			utils.LogLocalErrorf("Failed to report invalid settings device: %v", err)
 		}
 		return
 	}
@@ -609,7 +616,7 @@ func (c *eventHubImpl) saveDeviceConfigOverride(payload interface{}) {
 		result.Success = true
 	}
 	if err := c.Broadcast(DeviceConfigSaveResult, result); err != nil {
-		utils.LogErrorf("Failed to report settings save result: %v", err)
+		utils.LogLocalErrorf("Failed to report settings save result: %v", err)
 	}
 }
 
