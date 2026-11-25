@@ -133,8 +133,13 @@ not a live update path. The deferred manual-override option (Option B) needs its
 
 `ws.WebSocket.Broadcast` is the single fan-out owner. It marshals once, enforces
 `maxBroadcastBytes` (larger than the inbound `maxMessageSize`, because a server-generated
-metrics result can exceed any client request), takes a session snapshot and writes to each
-valid session's bounded per-client queue. An over-bound frame is rejected and, for a result
+metrics result can exceed any client request), snapshots its own session registry and writes
+to each valid session's bounded per-client queue. The registry is populated in the connect
+callback, before melody starts `writePump`/`readPump`, and removed on disconnect. It is
+deliberate: melody sends on its unbuffered register channel and only then runs the connect
+callback, so the hub goroutine may not have added the session to its own set yet — a
+`melody.Sessions()` snapshot there omitted the session in 2996/3000 probes and dropped the
+response to a client's first request. An over-bound frame is rejected and, for a result
 request, answered with `operationFailed`, so a pending browser request does not hang;
 `WebSocket.Diagnostics()` exposes the counted failures. It never
 sends on melody's `hub.broadcast` channel, which is unbuffered and owned by a single hub

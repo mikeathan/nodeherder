@@ -115,6 +115,12 @@ remote logger hook enabled, plus fake-clock observation tests. No household devi
 payload is unchanged. No new public HTTP/WS/MQTT/MCP contract, route or persisted
 schema.
 
+Broadcast fans out from an internal session registry populated in the connect callback
+(before the session can process a message) and removed on disconnect. That is transport
+state bounded by connected clients, not business state, and it changes no wire contract.
+The registry exists because melody's own session set can lag the connect callback; see the
+plan's post-merge correction.
+
 ## Questions and assumptions
 
 - Q-01: Remote logging state on the deployed hub is unconfirmed (the local Docker
