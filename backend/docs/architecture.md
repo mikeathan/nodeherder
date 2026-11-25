@@ -112,9 +112,22 @@ Each configured device recipe has an immutable, derived set of primary and condi
 input names. The current published generation owns its set; replacement/reload builds a
 new one. Unrelated telemetry is rejected before a run context or condition evaluation.
 Unknown custom trigger/condition implementations conservatively retain full routing.
-`Trigger.AffectedBy` remains authoritative: state conditions can re-evaluate on relevant
-numeric changes; cached physical events cannot replay on unrelated updates. Manual runs
-use their explicit path. Filtering UI observations never filters automation inputs.
+`Trigger.AffectedBy` remains authoritative for *selection*: state conditions can re-evaluate on
+relevant numeric changes; cached physical events cannot replay on unrelated updates. It reads the
+primary name through `Trigger.GetName()`, matching `Device.Evaluate`; selection semantics are
+unchanged. Manual runs bypass selection through `Device.EvaluateTrigger`. Filtering UI
+observations never filters automation inputs.
+
+Selection is not execution. `Device.Evaluate` starts actions only when the trigger's own primary
+property changed. A condition-dependency-only update evaluates conditions (through the first
+condition that fails or reports no change) and cancels pending actions on a failing condition,
+but never commands a device; allowing it to execute would let a light's own darkening re-trigger
+a presence+dark rule and relight it. Only a trigger's primary property (or a manual run) may
+start actions — do not widen execution, change `AffectedBy`, or add selection state/caches
+without updating [spec 068](../../specs/068-automation-feedback-loop-guard/spec.md) and its
+plan. One known exception: the first `Seed` report after a device lane is created forwards the
+whole snapshot, so its primary keys read as changed; this is pre-existing restart behaviour,
+not a live update path. The deferred manual-override option (Option B) needs its own spec.
 
 ### Metric sampling
 

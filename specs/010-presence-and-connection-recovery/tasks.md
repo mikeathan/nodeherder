@@ -9,6 +9,8 @@ Spec: [spec.md](spec.md) | Plan/evidence: [plan.md](plan.md) | Status: Complete
 - [x] T003 — Implement generic stateless Condition.DependsOn / Trigger.AffectedBy and
   single processing path; FR-01/AC-01…04. Remove rejected eligibility cache; verify custom
   conditions, errors, cancellation, events, manual runs and historical changed-reading behavior.
+  Superseded (decision 2026-11-23) by [spec 068](../068-automation-feedback-loop-guard/spec.md):
+  dependency-only changes no longer execute actions, only evaluate/cancel.
 - [x] T004 — Repair socket/snapshot ownership, lifecycle cleanup and fixed notices;
   FR-02/AC-05…09. Verify startup DOM, viewport geometry, keyboard and recovery.
 - [x] T005 — Run full component checks, races, minimum Go toolchain and scoped quality;

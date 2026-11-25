@@ -9,6 +9,8 @@ Spec: [spec.md](spec.md) | Plan: [plan.md](plan.md) | Status: Complete
   desktop shard 1/2 passed 52 tests (9 skipped) in 1.4 minutes.
 - [x] T003 — Add the image/version guard and tighten the job timeout; FR-02, AC-03;
   depends T002; done: guard logic verified, image v1.56.1 matches package 1.56.1.
+  Corrected 2026-11-25: that verification was false — the bash-only test silently
+  passed under the container's `sh -e`. See `b25266b2` and spec 068.
 - [x] T004 — Rename jobs and steps to describe what runs, keeping `Run Tests`;
   AC-04; depends T002; done: workflow and `docs/ci.md` agree.
 - [x] T005 — Validate the workflow and record evidence; NH-05, SC-01; depends T002–T004;

@@ -51,11 +51,17 @@ func (t *BaseTrigger) GetName() string {
 // AffectedBy accepts the primary input and, for state sources, changes to any
 // declared condition dependency. A cached physical event must never be replayed
 // because another property changed. Selection has no eligibility history.
+//
+// Selection does NOT authorize action execution. Device.Evaluate starts actions only
+// when the trigger's primary property changed; a dependency-only selection is limited
+// to condition evaluation and cancellation, and manual runs bypass selection through
+// Device.EvaluateTrigger. Widening execution here reintroduces the control loop
+// documented in specs/068-automation-feedback-loop-guard.
 func (t *BaseTrigger) AffectedBy(ctx AutomationContext, changes map[string]interface{}) bool {
-	if _, primary := changes[t.Name]; primary {
+	if _, primary := changes[t.GetName()]; primary {
 		return true
 	}
-	source, exists := ctx.GetDevicePayload(t.Name)
+	source, exists := ctx.GetDevicePayload(t.GetName())
 	if !exists || source.IsEventValue(source.Data.Value()) {
 		return false
 	}
@@ -169,6 +175,27 @@ func (t *DeviceTrigger) Process(ctx AutomationContext) error {
 	return t.executeActions(ctx)
 }
 
+// dependencyOnlyTrigger is implemented by trigger types that distinguish an update
+// selected only by a condition dependency from one selected by their primary input.
+// Device.Evaluate uses it to keep dependency-only updates from starting actions.
+type dependencyOnlyTrigger interface {
+	processDependencyChange(ctx AutomationContext)
+}
+
+// processDependencyChange evaluates conditions for an update that changed only one
+// of this trigger's condition dependencies, never its primary property.
+//
+// A failing condition cancels pending actions (stopActions), but no action starts.
+// Starting actions here re-creates the device-control feedback loop fixed in
+// specs/068-automation-feedback-loop-guard: switching a light off darkens the room,
+// the presence+dark trigger then sees only an illuminance change and lights it again.
+// Do not execute actions here without updating that spec and plan.
+func (t *DeviceTrigger) processDependencyChange(ctx AutomationContext) {
+	// Evaluated for its cancellation side effect only; the result is intentionally
+	// discarded because no action may start on this path.
+	_ = t.conditionsPermitExecution(ctx)
+}
+
 func (t *DeviceTrigger) conditionsPermitExecution(ctx AutomationContext) bool {
 	// Retain feedback protection and the existing condition/value-change policy.
 	if len(t.Conditions) == 0 && !ctx.IsManualTrigger() {
@@ -180,7 +207,7 @@ func (t *DeviceTrigger) conditionsPermitExecution(ctx AutomationContext) bool {
 			t.stopActions()
 			return false
 		}
-		if !condition.HasValueChanged(t.Name, ctx) {
+		if !condition.HasValueChanged(t.GetName(), ctx) {
 			return false
 		}
 	}

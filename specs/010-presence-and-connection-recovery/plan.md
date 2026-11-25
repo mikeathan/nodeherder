@@ -10,8 +10,12 @@ or declared condition dependencies for state sources. `Device` orchestrates; `De
 owns condition checks, cancellation and action execution. No eligibility cache, copied dependency
 list, concrete condition casts or duplicate predicate evaluation. Custom conditions use the same
 contract. Time conditions have no device dependencies. Cached physical events cannot replay on
-condition changes. Existing HasValueChanged/action behavior remains, including repeated ON on
-changed eligible readings; identical reports stay deduplicated by the lifetime service.
+condition changes. Identical reports stay deduplicated by the lifetime service.
+
+Superseded (decision 2026-11-23): repeated ON on changed eligible readings is removed by
+[spec 068](../068-automation-feedback-loop-guard/spec.md). `DeviceTrigger.Process` (execution)
+now runs only for a trigger's primary property or a manual run; a condition-dependency change
+evaluates conditions and cancels pending actions through the separate dependency-only path.
 
 Frontend: Vuex socket state distinguishes startup, connected, reconnecting and disconnected.
 The socket module owns one connection, a 10-second handshake timeout, at most ten automatic
