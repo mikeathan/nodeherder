@@ -55,3 +55,8 @@ Each task maps to requirement/acceptance IDs or a constitutional gate.
   re-verified (test negative controls, `-cpu=1` flake, case-sensitive log assertion,
   outbound bound, diagnostics API, `fanoutMu` invariant comment, uncovered retry branch,
   stale traceability, generated drift). Gate: NH-01..06, BE-01..05; depends T009.
+- [x] T011 — Second independent review pass (2026-11-25; agent, not human approval):
+  re-ran build/vet/full suite/race/repeat tests and both negative controls; corrected the
+  `Session.Write` callback claim (a full queue invokes the synchronous, hook-free
+  `errorHandler` on the caller) and the architecture outbound-bound wording; updated the
+  spec status. No code finding required a change. Gate: NH-05, BE-03, AC-08; depends T010.

@@ -60,3 +60,8 @@ Each task maps to requirement/acceptance IDs or a constitutional gate.
   derive its expected version from the image tag; corrected the false AC-03 claim in
   specs/027; refreshed dates and verification evidence. Gate: NH-01..06, BE-01..05,
   `.agents/rules/go-engineer.md` GoDoc rule.
+- [x] T011 — Second independent review pass (2026-11-25; agent, not human approval):
+  reviewed the final `device.go`/`trigger.go` diff and all execution/selection call sites;
+  re-ran build, vet, full suite, automations/services race checks, the pre-fix negative
+  controls and the CI-guard mismatch cases. No code finding required a change. Gate:
+  NH-01..06, BE-01..05; depends T010.

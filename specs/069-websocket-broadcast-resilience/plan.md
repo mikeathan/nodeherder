@@ -39,8 +39,10 @@ Observed facts (verified against the pinned dependency):
    the client request), takes a session snapshot with `melody.Sessions()`, filters with
    `auth.SessionValid` **before** taking `fanoutMu`, and calls `session.Write` per client.
    `Session.Write` is a non-blocking enqueue onto melody's existing bounded 256-message
-   per-client queue and returns `ErrSessionClosed` for closed sessions without invoking a
-   callback. No producer ever waits on melody's hub goroutine. `fanoutMu` preserves the
+   per-client queue. A closed session returns `ErrSessionClosed`; a full queue invokes
+   melody's synchronous `errorHandler` on the **calling** goroutine (`session.go`
+   `writeMessage`), which is why that handler must be hook-free and must never call
+   `Broadcast`. No producer ever waits on melody's hub goroutine. `fanoutMu` preserves the
    global ordering that `hub.run` used to provide; its invariant is that nothing reachable
    from the locked region may emit a hook-bearing log or call `Broadcast` (the mutex is
    not reentrant). `WebSocket.Diagnostics()` exposes counted failures. A rejected result
@@ -195,3 +197,26 @@ path; its findings (test negative controls, `-cpu=1` flake, case-sensitive log a
 outbound bound, diagnostics API, invariant comments, uncovered retry branch, stale
 traceability, generated-file drift) were all fixed and re-verified. No human approval,
 ratification or household verification is claimed.
+
+Second review pass (2026-11-25, independent agent; not human approval):
+
+- Re-ran `gofmt -l .` (only pre-existing files listed; none touched here), `go build ./...`,
+  `go vet ./...`, `go test -count=1 -timeout=10m ./...` (53 packages, 0 failures),
+  `go test -race -count=1` on ws, utils and observations (0 races),
+  `go test -count=5 -cpu=1` on ws and observations (no flakes), and
+  `go test -run '^$' ./internal` (CI fixture compile check).
+- Re-ran the negative controls from a scratch copy: pre-fix `BroadcastFilter` fan-out plus
+  pre-fix remote `HandleError` logging makes
+  `TestRemoteLoggingDoesNotWedgeBroadcastOnClosedSession` fail with "broadcast wedged on
+  the melody hub goroutine"; pre-fix change detection makes
+  `TestTelemetryChurnPublishesAtTelemetryCadence` publish 9 snapshots in one gap and
+  `TestStructuralChangePublishesAtPublishCadence` publish 3, confirming both tests guard
+  the fix rather than restating it.
+- Reviewed the locking and callback paths against the pinned melody source. Correction:
+  `Session.Write` invokes `errorHandler` synchronously for a full queue (design item 1 now
+  says so). The committed `HandleError` is hook-free, so that callback cannot re-enter
+  `Broadcast` while `fanoutMu` is held; `logrus` fires hooks before writing, so no logger
+  lock is held across a broadcast. No remaining hub-goroutine re-entrancy path found.
+- Corrected the architecture note's outbound-bound wording: a frame above
+  `maxBroadcastBytes` is rejected (and a result request is answered with `operationFailed`),
+  not "not silently dropped". No code change was needed.

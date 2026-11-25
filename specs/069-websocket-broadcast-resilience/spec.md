@@ -1,6 +1,6 @@
 # Spec: WebSocket broadcast resilience
 
-ID: 069 | Status: Draft | Owner: mikeathan | Updated: 2026-11-25
+ID: 069 | Status: Implemented (unreviewed) | Owner: mikeathan | Updated: 2026-11-25
 Constitution: 1.0.0 | Components: backend
 
 ## Problem, scope, exclusions

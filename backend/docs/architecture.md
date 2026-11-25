@@ -132,10 +132,11 @@ not a live update path. The deferred manual-override option (Option B) needs its
 ### WebSocket fan-out
 
 `ws.WebSocket.Broadcast` is the single fan-out owner. It marshals once, enforces
-`maxBroadcastBytes` (larger than the inbound `maxMessageSize`, so a full metrics range is not
-silently dropped), takes a session snapshot and writes to each valid session's bounded
-per-client queue. `WebSocket.Diagnostics()` exposes counted failures; a rejected result frame
-is answered with `operationFailed` so a pending browser request does not hang. It never
+`maxBroadcastBytes` (larger than the inbound `maxMessageSize`, because a server-generated
+metrics result can exceed any client request), takes a session snapshot and writes to each
+valid session's bounded per-client queue. An over-bound frame is rejected and, for a result
+request, answered with `operationFailed`, so a pending browser request does not hang;
+`WebSocket.Diagnostics()` exposes the counted failures. It never
 sends on melody's `hub.broadcast` channel, which is unbuffered and owned by a single hub
 goroutine that invokes `errorHandler` synchronously while iterating sessions. A remote log
 line from that callback would call `Broadcast` again and wedge the hub permanently — every

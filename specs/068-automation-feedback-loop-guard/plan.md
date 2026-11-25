@@ -159,6 +159,12 @@ Checks run 2026-11-25 during review (reported by the reviewer, then repeated loc
   `shellcheck -s sh` on the guard script — clean
 - Pre-fix regression: `main` copies of `device.go`/`trigger.go` with the current tests
   fail all eight targeted tests, including the two strengthened ones
+- 2026-11-25 second independent review pass (agent, not human approval): repeated
+  `go build ./...`, `go vet ./...`, `go test -count=1 ./...` and
+  `go test -race ./internal/automations/... ./internal/services/...` (pass); a scratch
+  copy with `origin/main` `device.go`/`trigger.go` again fails the eight targeted tests;
+  both CI-guard mismatch cases re-exercised under `sh -e`. No code finding required a
+  change.
 
 Not run (environment-limited or unrelated to this diff):
 
