@@ -229,8 +229,9 @@ Second review pass (2026-11-25, independent agent; not human approval):
 ## Post-merge correction (2026-11-25)
 
 The merge run on `main` (`45630406279`) failed in both backend jobs. There was no
-`DATA RACE`; the failures were a test-timing assertion and a five-minute timeout, and both
-were caused by this branch's producer-side fan-out rather than by pre-existing tests.
+`DATA RACE`; the failures were a test-timing assertion and a five-minute timeout. Both trace
+to this branch's changes — a new test's timing assumption and an ordering regression in the
+producer-side fan-out — not to pre-existing tests.
 
 **Race job — `TestSlowClientDoesNotBlockFanoutAndErrorsStayLocal`.** The test wrote a fixed
 257-frame burst (queue depth + 1) and assumed it overflows. It overflows only if the
