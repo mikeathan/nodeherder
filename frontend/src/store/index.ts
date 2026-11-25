@@ -12,6 +12,7 @@ import { AssistantModule as assistant } from './modules/assistant/index';
 import { IntegrationsModule as integrations } from './modules/integrations';
 import { HomeModule as home } from './modules/home';
 import { ObservationsModule as observations } from './modules/observations';
+import { NotificationsModule as notifications } from './modules/notifications';
 import createPersistedState from 'vuex-persistedstate';
 
 // https://blog.openreplay.com/integrate-vuex-and-typescript/
@@ -34,6 +35,10 @@ export const store = createStore<RootState>({
       key: 'nodeherder_assistant',
       paths: ['assistant.activeConversation.id'],
     }),
+    createPersistedState({
+      key: 'nodeherder_notifications',
+      paths: ['notifications.items'],
+    }),
   ],
   state: {},
   actions: {
@@ -48,6 +53,7 @@ export const store = createStore<RootState>({
       commit('integrations/clear');
       commit('home/clear');
       commit('observations/clear');
+      commit('notifications/clear');
       commit('console/setEnabled', false);
     },
   },
@@ -63,6 +69,7 @@ export const store = createStore<RootState>({
     integrations,
     home,
     observations,
+    notifications,
   },
 });
 

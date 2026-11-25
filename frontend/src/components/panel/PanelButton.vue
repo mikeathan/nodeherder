@@ -6,13 +6,14 @@
   import { computed } from 'vue';
   import { RouteName } from '@/types/router';
   import { binaryOffValue, binaryOnValue, exposeKind, exposeRange, formatExposeValue, isBinaryOn, stateExposeOf } from '@/domain/exposes';
-  import { findDevice, statusOf } from '@/composables/useHub';
+  import { findDevice, statusOf, useHub } from '@/composables/useHub';
   import { useDeviceCommand } from '@/composables/useDeviceCommand';
   import { deviceIcon, exposeIcon } from '@/components/ui/icons';
   import UiIcon from '@/components/ui/UiIcon.vue';
 
   const props = defineProps<{ deviceId: string; expose: string; label: string }>();
   const { send, isPending, canControl } = useDeviceCommand();
+  const { isConnected } = useHub();
 
   const device = computed(() => findDevice(props.deviceId));
   const entity = computed(() => device.value?.exposes[props.expose]);
@@ -30,12 +31,18 @@
     if (!b || !on.value || typeof b.data !== 'number') return null;
     return Math.round((b.data / (exposeRange(b)?.max || 254)) * 100);
   });
+  /** Last-known state remains readable while the hub link is down; the control is disabled. */
+  const paused = computed(() => status.value === 'online' && !isConnected.value);
   const text = computed(() => {
     if (status.value === 'missing') return 'Removed';
     if (status.value === 'offline') return 'Offline';
     if (status.value === 'disabled') return 'Disabled';
-    if (sw.value) return (on.value ? 'On' : 'Off') + (ring.value !== null && brightness.value ? ` · ${formatExposeValue(brightness.value)}` : '');
-    return entity.value ? formatExposeValue(entity.value) : '—';
+    const value = sw.value
+      ? (on.value ? 'On' : 'Off') + (ring.value !== null && brightness.value ? ` · ${formatExposeValue(brightness.value)}` : '')
+      : entity.value
+        ? formatExposeValue(entity.value)
+        : '—';
+    return paused.value ? `Paused · ${value}` : value;
   });
   const icon = computed(() => (sw.value && device.value ? deviceIcon(device.value) : exposeIcon(props.expose, on.value)));
 
@@ -55,7 +62,7 @@
     :aria-pressed="on"
     :aria-busy="pending || undefined"
     :disabled="!canControl(device)"
-    :aria-label="`${label}: ${text}. Tap to turn ${on ? 'off' : 'on'}`"
+    :aria-label="paused ? `${label}: ${text}. Paused while the hub is offline` : `${label}: ${text}. Tap to turn ${on ? 'off' : 'on'}`"
     @click="toggle">
     <span class="pb-ic">
       <svg v-if="ring !== null" class="pb-ring" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44" pathLength="100" :stroke-dasharray="`${ring} 100`" /></svg>

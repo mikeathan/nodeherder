@@ -14,11 +14,43 @@
   } from './sections';
   import UiPageHeader from '@/components/ui/UiPageHeader.vue';
   import UiIcon from '@/components/ui/UiIcon.vue';
+  import { useThemeSettings } from '@/composables/useThemeSettings';
+  import { store } from '@/store';
+  import type { SettingsSectionId } from './sections';
 
   const route = useRoute();
   const router = useRouter();
 
   const groups = groupSettingsSections();
+  const { mode, settings: theme } = useThemeSettings();
+
+  /** One-line live summary under a rail label; cheap reads only, no transport calls. */
+  function summary(id: SettingsSectionId): string {
+    switch (id) {
+      case 'appearance':
+        return `${theme.value.theme} · ${mode.value} · ${theme.value.fontScale}%`;
+      case 'device-defaults': {
+        const defaults = store.getters['hub/deviceDefaults']();
+        return defaults ? `${defaults.metricsEnabled ? 'history on' : 'history off'}` : 'Not loaded';
+      }
+      case 'storage': {
+        const history = store.getters['hub/history']();
+        return history ? `Keep ${history.expireAt.value} ${history.expireAt.unit}` : 'Not loaded';
+      }
+      case 'logger': {
+        const logger = store.getters['hub/logger']();
+        return logger ? `${logger.level} · ${logger.enableRemoteLogger ? 'streaming' : 'paused'}` : 'Not loaded';
+      }
+      case 'mcp': {
+        const status = store.getters['hub/mcpStatus']();
+        return status?.running ? `Running · ${status.connectedClients ?? 0} clients` : 'Stopped';
+      }
+      case 'assistant':
+        return store.getters['hub/assistant']()?.url ? 'Address set' : 'Not configured';
+      default:
+        return '';
+    }
+  }
   const current = computed(() => resolveSettingsSection(route.query.section));
 
   function select(id: string) {
@@ -43,7 +75,10 @@
                 :aria-current="current.id === section.id ? 'page' : undefined"
                 @click.prevent="select(section.id)">
                 <UiIcon :name="section.icon" />
-                {{ section.title }}
+                <span class="nh-vtab-text">
+                  <b>{{ section.title }}</b>
+                  <small>{{ summary(section.id) }}</small>
+                </span>
               </a>
             </li>
           </ul>
@@ -109,6 +144,25 @@
   }
   .nh-vtab[aria-current='page'] .nh-ic {
     opacity: 1;
+  }
+  .nh-vtab-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .nh-vtab-text b {
+    font-weight: inherit;
+  }
+  .nh-vtab-text small {
+    color: var(--nh-text-muted);
+    font-size: 0.68rem;
+    font-weight: 400;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .nh-vtab[aria-current='page'] .nh-vtab-text small {
+    color: color-mix(in srgb, var(--nh-accent) 80%, var(--nh-text-muted));
   }
   .nh-vtab:hover {
     background: var(--nh-surface-2);

@@ -43,6 +43,20 @@
   const automations = useAutomationsLoader();
   const { mode, toggleMode } = useThemeSettings();
   const now = useNow(15_000);
+  // Schedule is the baseline; a manual toggle overrides it until the next page load. Ambient
+  // light is deliberately out of scope until a lux source is modelled in settings.
+  const NIGHT_START_MINUTES = 22 * 60 + 30;
+  const NIGHT_END_MINUTES = 6 * 60 + 30;
+  const nightOverride = ref<boolean | null>(null);
+  const scheduledNight = computed(() => {
+    const date = new Date(now.value);
+    const minutes = date.getHours() * 60 + date.getMinutes();
+    return minutes >= NIGHT_START_MINUTES || minutes < NIGHT_END_MINUTES;
+  });
+  const night = computed(() => nightOverride.value ?? scheduledNight.value);
+  function toggleNight() {
+    nightOverride.value = !night.value;
+  }
 
   const page = ref<'rooms' | 'status'>('rooms');
   const roomIndex = ref(Number(safeStorage.getItem(ROOM_KEY)) || 0);
@@ -56,6 +70,7 @@
   const block = computed(() => groups.value[current.value]);
   const room = computed(() => (block.value ? panelRoom(homeDeviceGroup(block.value), findDevice) : null));
   const panelItems = computed(() => (block.value && room.value ? homePanelItems(block.value, room.value) : []));
+  const visiblePanelItems = computed(() => (night.value ? panelItems.value.slice(0, 4) : panelItems.value));
   function pageName(index: number): string {
     const group = groups.value[index];
     if (group.kind === 'group') return group.name;
@@ -141,7 +156,7 @@
 </script>
 
 <template>
-  <div class="hp">
+  <div class="hp" :class="{ 'is-night': night }">
     <header class="hp-strip">
       <RouterLink :to="{ name: RouteName.GroupDashboard }" class="hp-logo" aria-label="Exit panel mode">
         <AppLogo :size="46" :wordmark="false" />
@@ -152,6 +167,12 @@
       </div>
       <span class="hp-gap" />
       <ConnectionStatus />
+      <UiButton
+        variant="ghost"
+        :icon="night ? 'light' : 'dark'"
+        :label="night ? 'Switch to day mode' : 'Switch to night mode'"
+        :aria-pressed="night"
+        @click="toggleNight" />
       <UiButton
         variant="ghost"
         :icon="mode === 'dark' ? 'light' : 'dark'"
@@ -197,11 +218,11 @@
           </div>
           <section
             class="hp-room"
-            :class="{ 'no-climate': !climate }"
+            :class="{ 'no-climate': !climate || night }"
             id="panel-room"
             :aria-labelledby="`panel-room-tab-${current}`"
             role="tabpanel">
-            <div v-if="climate" class="hp-climate">
+            <div v-if="climate && !night" class="hp-climate">
               <PanelDial
                 v-if="climate.online"
                 :value="climate.value"
@@ -216,7 +237,7 @@
               </div>
             </div>
             <div class="hp-buttons">
-              <template v-for="item in panelItems" :key="item.id">
+              <template v-for="item in visiblePanelItems" :key="item.id">
                 <PanelButton
                   v-if="item.kind === 'device'"
                   :device-id="item.button.deviceId"
@@ -309,6 +330,15 @@
 </template>
 
 <style scoped>
+  .hp.is-night {
+    filter: brightness(0.72) saturate(0.85);
+  }
+  .hp.is-night .hp-clock b {
+    font-size: clamp(3rem, 9vw, 6rem);
+  }
+  .hp.is-night .hp-buttons {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .hp {
     --hp-dock-target: 2.75rem;
     --hp-dock-padding: 0.3rem;

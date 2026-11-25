@@ -82,7 +82,7 @@ const routes: RouteRecordRaw[] = [
     path: '/consoleviewer',
     name: RouteName.ConsoleViewer,
     component: () => import('@/components/hub/console/ConsoleViewer.vue'),
-    meta: { title: 'Console', requiresAuth: true },
+    meta: { title: 'Logs', requiresAuth: true },
   },
   {
     path: '/settings',

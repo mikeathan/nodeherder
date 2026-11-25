@@ -14,5 +14,10 @@ export interface HubStateModuleState {
   appConfig: AppConfig;
   initialized: boolean;
   loadStatus: HubLoadStatus;
+  /**
+   * Wall-clock time (epoch ms) of the last accepted snapshot or live message.
+   * Null before the first sync and after logout. Display-only: it never gates commands.
+   */
+  lastSyncedAt: number | null;
   mcpStatus: MCPStatusType | null;
 }

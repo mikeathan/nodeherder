@@ -13,6 +13,7 @@
   import UiToggle from '@/components/ui/UiToggle.vue';
   import UiSettingRow from '@/components/ui/UiSettingRow.vue';
   import UiIcon from '@/components/ui/UiIcon.vue';
+  import LogArchiveCard from './LogArchiveCard.vue';
 
   const settings = computed<LoggerSettingsType | undefined>(() => store.getters['hub/logger']());
   const offline = computed(() => store.getters['ws/getConnectionStatus'] !== 'connected');
@@ -27,8 +28,8 @@
 <template>
   <section class="nh-section" aria-labelledby="logger-heading">
     <header class="nh-section-head">
-      <h2 id="logger-heading">Logger</h2>
-      <p class="nh-help">Live hub logs also appear in the Console screen.</p>
+      <h2 id="logger-heading">Logs &amp; diagnostics</h2>
+      <p class="nh-help">Live logs appear in the Logs screen. Archived files are downloaded through the hub's protected log routes.</p>
     </header>
 
     <p v-if="offline" class="nh-alert is-warn" role="status">
@@ -59,5 +60,7 @@
           @update:model-value="save('level', String($event))" />
       </UiSettingRow>
     </UiCard>
+
+    <LogArchiveCard />
   </section>
 </template>

@@ -99,7 +99,14 @@ for (const path of ['/groupdashboard', '/panel']) {
     close();
     await expect(chip).toHaveClass(/is-reconnecting/);
     await expect(chip).toHaveClass(/is-attention/);
-    expect((await content.boundingBox())?.y).toBe(before?.y);
+    // Spec 070 adds a snapshot banner in the notice row; content moves by exactly that row
+    // and does not jump again while the outage persists.
+    const banner = page.getByRole('status').filter({ hasText: 'Live updates paused' });
+    await expect(banner).toBeVisible();
+    const bannerBox = (await banner.boundingBox())!;
+    const shifted = await content.boundingBox();
+    expect(shifted!.y).toBeGreaterThan(before!.y);
+    expect(shifted!.y - before!.y).toBeLessThanOrEqual(bannerBox.height + 1);
     await chip.click();
     await expect(page.getByText('Reconnecting.', { exact: true })).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath('connection-loss.png') });
@@ -111,7 +118,11 @@ for (const path of ['/groupdashboard', '/panel']) {
     unavailable = true;
     close();
     await expect(chip).toHaveClass(/is-reconnecting/);
+    await expect(banner).toBeVisible();
+    expect((await content.boundingBox())?.y).toBe(shifted?.y);
     unavailable = false;
+    await expect(chip).toHaveClass(/is-connected/, { timeout: 10000 });
+    await expect(banner).toHaveCount(0);
     expect((await content.boundingBox())?.y).toBe(before?.y);
   });
 }

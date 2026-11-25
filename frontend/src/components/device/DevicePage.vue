@@ -11,7 +11,10 @@
   import { useHub } from '@/composables/useHub';
   import { useDeviceTabs } from '@/composables/device/useDeviceTabs';
   import { isESPHomeDevice } from '@/domain/devices';
-  import { DeviceTabIds, deviceCategorySections, deviceTabLabel, lastSeenLabel } from '@/domain/devices/page';
+  import { DeviceTabIds, deviceCategorySections, deviceTabLabel } from '@/domain/devices/page';
+  import { freshnessPolicy, reportFreshness } from '@/domain/devices/freshness';
+  import { useNow } from '@/composables/useClock';
+  import FreshnessLabel from '@/components/entity/FreshnessLabel.vue';
   import { supportsSpatialMapping } from '@/domain/spatial';
   import { deviceIcon } from '@/components/ui/icons';
   import UiPageHeader from '@/components/ui/UiPageHeader.vue';
@@ -21,7 +24,6 @@
   import UiButton from '@/components/ui/UiButton.vue';
   import SpatialPresenceChip from './spatial/SpatialPresenceChip.vue';
   import DeviceHistory from './DeviceHistory.vue';
-  import RelativeTime from '@/components/ui/RelativeTime.vue';
   import ExposeRow from '@/components/entity/ExposeRow.vue';
   import DeviceChips from '@/components/entity/DeviceChips.vue';
   import DeviceStatusChip from '@/components/entity/DeviceStatusChip.vue';
@@ -41,7 +43,10 @@
   const device = computed(() => findDevice(props.id));
   const status = computed(() => (device.value ? statusOf(device.value) : 'unknown'));
   const isESPHome = computed(() => isESPHomeDevice(device.value));
-  const lastSeenText = computed(() => lastSeenLabel(device.value));
+  const now = useNow();
+  const freshness = computed(() =>
+    device.value ? reportFreshness(device.value.last_seen, now.value, freshnessPolicy(device.value)) : 'unknown'
+  );
   const showESPHomeSettings = ref(false);
   const canMapSpatial = computed(() => supportsSpatialMapping(device.value));
 
@@ -68,8 +73,20 @@
       <DeviceStatusChip :device="device" />
       <SpatialPresenceChip v-if="canMapSpatial" :device="device" @open="selectTab(DeviceTabIds.Presence)" />
       <DeviceChips :device="device" />
-      <span class="nh-muted nh-dev-seen">{{ lastSeenText }} <RelativeTime :value="device.last_seen" /></span>
+      <FreshnessLabel
+        v-if="device"
+        class="nh-dev-seen"
+        :device="device"
+        :mode="status === 'offline' ? 'seen' : 'updated'" />
     </div>
+
+    <p v-if="status === 'online' && (freshness === 'quiet' || freshness === 'stale')" class="nh-alert is-warn" role="status">
+      <UiIcon name="clock" />
+      <span>
+        <b>{{ freshness === 'stale' ? 'Stale readings.' : 'Quiet device.' }}</b>
+        No report for a while. Values are last known; commands may not be delivered until it reports again.
+      </span>
+    </p>
 
     <div class="nh-tabs" role="tablist" aria-label="Device sections">
       <button

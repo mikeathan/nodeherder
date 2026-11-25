@@ -77,12 +77,15 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
     appConfig: createAppconfig(),
     initialized: false,
     loadStatus: 'idle',
+    lastSyncedAt: null,
     mcpStatus: null as MCPStatusType | null,
   }),
 
   getters: {
     loadStatus: (state) => state.loadStatus,
     isInitialized: (state) => (): boolean => state.initialized,
+    /** Epoch ms of the last accepted data sync; null before init. Display-only. */
+    lastSyncedAt: (state) => (): number | null => state.lastSyncedAt,
 
     // Device getters
     listAllDevices: (state) => (): Devices => {
@@ -221,6 +224,7 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
       state.appConfig = createAppconfig();
       state.initialized = false;
       state.loadStatus = 'idle';
+      state.lastSyncedAt = null;
     },
     clear(state) {
       state.deviceMap = {};
@@ -228,10 +232,17 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
       state.appConfig = createAppconfig();
       state.initialized = false;
       state.loadStatus = 'idle';
+      state.lastSyncedAt = null;
       state.mcpStatus = null;
     },
 
     setLoadStatus(state, status: HubLoadStatus) { state.loadStatus = status; },
+
+    /**
+     * Records a data sync for freshness display. Callers own throttling; this mutation is
+     * intentionally side-effect free so it can also be used by the snapshot path.
+     */
+    setLastSyncedAt(state, at: number) { state.lastSyncedAt = at; },
 
     setInitialized(state, initialized: boolean) {
       state.initialized = initialized;
@@ -243,6 +254,7 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
       commit('setAppConfig', payload.config);
       commit('setDevices', payload.devices);
       commit('setInitialized', true);
+      commit('setLastSyncedAt', Date.now());
     },
     init({ commit }, payload: HubStateSnapshot) {
       // The socket may report MCP status before this HTTP snapshot lands, so init resets
@@ -251,6 +263,7 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
       commit('setAppConfig', payload.config);
       commit('setDevices', payload.devices);
       commit('setInitialized', true);
+      commit('setLastSyncedAt', Date.now());
     },
 
     // AppConfig actions

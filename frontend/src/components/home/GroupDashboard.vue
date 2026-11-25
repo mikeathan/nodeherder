@@ -8,6 +8,9 @@
   import { useHomeLayoutFiles } from '@/composables/home/useHomeLayoutFiles';
   import { useHomeGrid } from '@/composables/home/useHomeGrid';
   import { useHub } from '@/composables/useHub';
+  import { useNow } from '@/composables/useClock';
+  import { overviewIssues, OVERVIEW_REASON_LABEL } from '@/domain/overview';
+  import UiIcon from '@/components/ui/UiIcon.vue';
   import UiPageHeader from '@/components/ui/UiPageHeader.vue';
   import UiButton from '@/components/ui/UiButton.vue';
   import UiEmpty from '@/components/ui/UiEmpty.vue';
@@ -23,7 +26,18 @@
   const files = useHomeLayoutFiles(home);
   const { layout, sources, busy, loading, writable, error, sourceError } = home;
   const { areaDialogOpen, areaToRename, addDialog, addDestination, cardToMove } = editor;
-  const { initialized } = useHub();
+  const { initialized, devices, isDeviceDisabled } = useHub();
+  const now = useNow();
+  const issues = computed(() =>
+    overviewIssues(devices.value, (device) => isDeviceDisabled(device.id), now.value)
+  );
+  const issueBreakdown = computed(() => {
+    const counts = new Map<string, number>();
+    for (const issue of issues.value) counts.set(issue.reason, (counts.get(issue.reason) ?? 0) + 1);
+    return [...counts.entries()]
+      .map(([reason, count]) => `${count} ${OVERVIEW_REASON_LABEL[reason as keyof typeof OVERVIEW_REASON_LABEL].toLowerCase()}`)
+      .join(' · ');
+  });
   const fileInput = ref<HTMLInputElement | null>(null);
   const dragging = ref(false);
   // Only this interaction copy is mutable by the drag library. Accepted membership stays in Vuex.
@@ -93,6 +107,11 @@
           @change="importSelectedFile" />
       </template>
     </UiPageHeader>
+    <div v-if="!editing && issues.length" class="nh-home-status" role="status">
+      <UiIcon name="warn" />
+      <span><b>{{ issues.length }} need a look</b> · {{ issueBreakdown }}</span>
+      <RouterLink :to="{ name: RouteName.Overview }">Overview →</RouterLink>
+    </div>
     <div v-if="feedback" class="nh-alert is-danger" role="alert">
       {{ feedback }}
       <UiButton size="sm" :disabled="busy || loading" @click="home.load">Reload layout</UiButton>
@@ -197,6 +216,35 @@
 </template>
 
 <style scoped>
+  .nh-home-status {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    flex-wrap: wrap;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: var(--nh-space);
+    border: var(--nh-border-w) solid color-mix(in srgb, var(--nh-warn) 28%, transparent);
+    background: var(--nh-warn-soft);
+    border-radius: var(--nh-radius-m);
+    font-size: 0.8rem;
+    color: var(--nh-text-muted);
+  }
+  .nh-home-status > .nh-ic {
+    width: 0.95rem;
+    height: 0.95rem;
+    color: var(--nh-warn);
+    flex: none;
+  }
+  .nh-home-status b {
+    color: var(--nh-text);
+  }
+  .nh-home-status a {
+    margin-left: auto;
+    color: var(--nh-text);
+    font-weight: 650;
+    text-decoration: none;
+    white-space: nowrap;
+  }
   /* Disabled controls suppress Chromium mouseup; let Home drags finish over them. */
   .nh-home.is-editing :deep(button:disabled) {
     pointer-events: none;

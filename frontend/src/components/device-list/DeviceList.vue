@@ -9,7 +9,7 @@
   import UiButton from '@/components/ui/UiButton.vue';
   import UiEmpty from '@/components/ui/UiEmpty.vue';
   import UiIcon from '@/components/ui/UiIcon.vue';
-  import RelativeTime from '@/components/ui/RelativeTime.vue';
+  import FreshnessLabel from '@/components/entity/FreshnessLabel.vue';
   import DeviceFilterBar from '@/components/entity/DeviceFilterBar.vue';
   import DeviceChips from '@/components/entity/DeviceChips.vue';
   import DeviceStatusChip from '@/components/entity/DeviceStatusChip.vue';
@@ -75,7 +75,7 @@
               </RouterLink>
             </td>
             <td class="hide-sm nh-chips-cell" colspan="2"><DeviceChips :device="d" /></td>
-            <td class="hide-sm"><RelativeTime :value="d.last_seen" /></td>
+            <td class="hide-sm"><FreshnessLabel :device="d" :mode="d.availability === 'offline' ? 'seen' : 'updated'" /></td>
             <td><DeviceStatusChip :device="d" /></td>
             <td class="nh-row-actions"><DeviceActions :device="d" compact /></td>
           </tr>

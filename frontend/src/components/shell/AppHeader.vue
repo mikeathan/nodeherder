@@ -10,6 +10,7 @@
   import AppLogo from '@/components/ui/AppLogo.vue';
   import DefaultViewButton from '@/components/ui/DefaultViewButton.vue';
   import ConnectionStatus from './ConnectionStatus.vue';
+  import NotificationBell from '@/components/hub/notifications/NotificationBell.vue';
 
   defineProps<{ navOpen: boolean }>();
   defineEmits<{ (e: 'toggle-nav'): void; (e: 'open-appearance'): void }>();
@@ -30,8 +31,10 @@
     <DefaultViewButton />
     <div class="nh-header-actions">
       <ConnectionStatus />
+      <NotificationBell />
+      <UiButton variant="ghost" icon="console" :to="{ name: RouteName.ConsoleViewer }" label="Logs" />
       <UiButton variant="ghost" :icon="mode === 'dark' ? 'light' : 'dark'" :label="mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'" @click="toggleMode" />
-      <UiButton variant="ghost" icon="palette" label="Appearance" @click="$emit('open-appearance')" />
+      <UiButton class="nh-header-palette" variant="ghost" icon="palette" label="Appearance" @click="$emit('open-appearance')" />
       <span v-if="user?.username" class="nh-user" :title="`Signed in as ${user.username}`">
         <UiIcon name="user" /><span class="hide-sm">{{ user.username }}</span>
       </span>
@@ -84,6 +87,11 @@
     text-decoration: none;
   }
   @media (max-width: 960px) {
+    /* Keep the two utility shortcuts and the page title; appearance lives in Settings. */
+    .nh-header-palette,
+    .nh-user {
+      display: none;
+    }
     .nh-menu-btn { min-width: 44px; min-height: 44px; }
     .nh-menu-btn,
     .nh-header-logo {
