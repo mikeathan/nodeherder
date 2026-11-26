@@ -51,6 +51,7 @@ describe('filter and sort', () => {
     const offline = device('o', { availability: 'offline' as never, last_seen: '2026-10-10T09:00:00Z' });
     expect(filterDevices([quiet, stale, fresh, offline], { ...DEFAULT_FILTERS, status: 'quiet' }, never, now).map((d) => d.id)).toEqual(['q']);
     expect(filterDevices([quiet, stale, fresh, offline], { ...DEFAULT_FILTERS, status: 'stale' }, never, now).map((d) => d.id)).toEqual(['s']);
+    expect(filterDevices([quiet, stale, fresh, offline], { ...DEFAULT_FILTERS, status: 'attention' }, never, now).map((d) => d.id)).toEqual(['q', 's', 'o']);
     expect(deviceStatus(quiet, false)).toBe('online');
   });
 

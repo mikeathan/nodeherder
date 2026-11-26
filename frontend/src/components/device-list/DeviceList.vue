@@ -1,6 +1,7 @@
 <script setup lang="ts">
   /* Device list (spec 007 US-03, AC-07…09): search, filters, sortable columns, bridge actions. */
-  import { computed, ref } from 'vue';
+  import { computed, ref, watch } from 'vue';
+  import { useRoute, useRouter } from 'vue-router';
   import { RouteName } from '@/types/router';
   import { useHub } from '@/composables/useHub';
   import { DEFAULT_FILTERS, DeviceFilters, DeviceSortKey, filterDevices, sortDevices } from '@/domain/network';
@@ -17,8 +18,35 @@
   import ESPHomeDeviceActions from './esphome/ESPHomeDeviceActions.vue';
 
   const { devices, initialized, isDeviceDisabled } = useHub();
-  const filters = ref<DeviceFilters>({ ...DEFAULT_FILTERS });
+  const route = useRoute();
+  const router = useRouter();
+  const STATUS_VALUES: readonly DeviceFilters['status'][] = ['all', 'online', 'quiet', 'stale', 'offline', 'disabled', 'attention'];
+  const requestedStatus = route.query.status;
+  const initialStatus = typeof requestedStatus === 'string' && STATUS_VALUES.includes(requestedStatus as DeviceFilters['status'])
+    ? (requestedStatus as DeviceFilters['status'])
+    : 'all';
+  const filters = ref<DeviceFilters>({
+    ...DEFAULT_FILTERS,
+    status: initialStatus,
+    query: typeof route.query.q === 'string' ? route.query.q : '',
+  });
   const sort = ref<{ key: DeviceSortKey; ascending: boolean }>({ key: 'name', ascending: true });
+
+  // Filters are deep-linkable so Overview can open “offline”, “quiet” or “needs a look” directly.
+  // replace keeps the back button on the page the user came from.
+  watch(
+    filters,
+    (value) => {
+      const query = { ...route.query };
+      if (value.status === 'all') delete query.status;
+      else query.status = value.status;
+      if (value.query.trim()) query.q = value.query;
+      else delete query.q;
+      if (query.status === route.query.status && query.q === route.query.q) return;
+      void router.replace({ query });
+    },
+    { deep: true }
+  );
 
   const rows = computed(() => sortDevices(filterDevices(devices.value, filters.value, (d) => isDeviceDisabled(d.id)), sort.value.key, sort.value.ascending));
 

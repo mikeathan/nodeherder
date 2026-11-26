@@ -53,7 +53,7 @@ export type DeviceFilters = {
   query: string;
   protocol: 'all' | string;
   power: 'all' | 'battery' | 'mains';
-  status: 'all' | 'online' | 'quiet' | 'stale' | 'offline' | 'disabled';
+  status: 'all' | 'online' | 'quiet' | 'stale' | 'offline' | 'disabled' | 'attention';
 };
 export type DeviceSortKey = 'name' | 'signal' | 'battery' | 'lastSeen';
 export const DEFAULT_FILTERS: DeviceFilters = { query: '', protocol: 'all', power: 'all', status: 'all' };
@@ -71,6 +71,13 @@ export function filterDevices(
     if (f.power !== 'all' && (f.power === 'battery') !== isBatteryPowered(d)) return false;
     if (f.status !== 'all') {
       const s = deviceStatus(d, isDisabled(d));
+      if (f.status === 'attention') {
+        if (s === 'offline' || s === 'disabled') return true;
+        if (hasLowBattery(d) || hasWeakLink(d)) return true;
+        const freshness = reportFreshness(d.last_seen, now, freshnessPolicy(d));
+        if (freshness === 'quiet' || freshness === 'stale') return true;
+        return false;
+      }
       if (f.status === 'quiet' || f.status === 'stale') {
         // Freshness is orthogonal to availability; a quiet online device still counts.
         if (s !== 'online') return false;

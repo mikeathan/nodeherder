@@ -98,6 +98,14 @@ Commands actually run:
 - Remaining: T013 consistency pass for editor/provider/Assistant/Login, and T014 server purge
   (still NH-06-blocked). Neither is represented by dead controls.
 
+## Review follow-up (2026-11-26)
+
+- Removed the duplicated Overview activity presentation: one filterable Recent activity card only.
+- Health-line counts and “Show more” now open `/devicelist?status=offline|online|quiet|stale|attention`
+  (and `q` search) with the corresponding filter preselected; filters stay URL-addressable.
+- Added the `attention` filter backed by availability + low battery/weak link + freshness.
+- Browser coverage: overview desktop/mobile and ActivityFeed desktop/mobile.
+
 ## Debt, risks, exceptions
 
 - Server purge, automation run history and panel lux override are deferred; UI does not advertise

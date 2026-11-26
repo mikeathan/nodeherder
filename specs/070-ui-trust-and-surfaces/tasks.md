@@ -42,6 +42,8 @@ after the check ran.
   container made the hash anchor inert); browser regression added.
 - [x] T022 — Browser-only Data & cleanup section: notifications, activity, log buffer and appearance,
   with confirmations; no server deletion and no dead controls.
+- [x] T023 — Overview activity is one list (removed the preview/full duplicate); health-line counts
+  and “Show more” deep-link the device list with `status`/`q`; device filters are URL-addressable.
 - [ ] T013 — Editors/deep flows: automation editor/creator, integration setup/provider, Assistant,
   Login consistency pass; IDs: FR-09. Not started: these already use the shared header/form/empty
   patterns and no concrete defect is recorded, so they stay a separate reviewed change.

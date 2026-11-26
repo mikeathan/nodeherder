@@ -19,7 +19,6 @@ test('activity search filters devices without changing recording, links or clear
     report = (id, data) => socket.send(JSON.stringify({ type: 'deviceUpdated', payload: { id, data } }));
   });
   await signIn(page, '/overview');
-  await page.getByText('All activity, filters and recording').click();
   const feed = page.locator('.nh-activity');
   const search = feed.getByRole('searchbox', { name: 'Filter activity by device name' });
   const rows = feed.locator('.nh-feed-row');
@@ -29,9 +28,9 @@ test('activity search filters devices without changing recording, links or clear
   const inventory = page.locator('.nh-health-line').getByRole('link').first();
   // Feed rendering and the socket can beat initial HTTP on a cold CI runner.
   // Hold that response deliberately, then wait for its device data to reach Vue.
-  await expect(inventory).toHaveText(/0 devices · 0 online/);
+  await expect(inventory).toHaveText(/^0 devices$/);
   releaseSnapshot();
-  await expect(inventory).toHaveText(new RegExp(`^${MOCK.deviceCount} devices · `));
+  await expect(inventory).toHaveText(new RegExp(`^${MOCK.deviceCount} devices$`));
   report!(MOCK.livingRoomLight.id, { brightness: 101 });
   report!(MOCK.atticSocket.id, { power: 12345 });
   await expect(rows).toHaveCount(2);
