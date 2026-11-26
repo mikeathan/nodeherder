@@ -59,10 +59,10 @@ purge into the UI before endpoints exist (unsafe).
 | FR-01/AC-01/02/04 | `domain/devices/freshness.ts`, `FreshnessLabel.vue`, `EntityTile.vue`, `DeviceCard.vue`, `DevicePage.vue` | `freshness.test.ts` (5), network filter test, build + device/home browser specs | PASS |
 | FR-02/AC-03 | `hub-state`, `useHubConnection` path, `StatusBanners.vue` | `hub-state/index.test.ts`; disconnect banner in shell | PASS (unit); visual covered by layout specs |
 | FR-03/AC-05–08 | `store/modules/notifications`, `NotificationBell.vue`, `NotificationDigest.vue`, `useNotificationProducers.ts` | store tests (4), `notifications.test.ts` (2), `NotificationBell.spec.ts` | PASS (pending final run of the new spec) |
-| FR-04/AC-09–11 | `services/logs.ts`, `LogArchiveCard.vue`, `ConsoleViewer.vue`, `AppHeader.vue` | `logs.test.ts` (3), Settings/Logger browser specs | PASS; file size/age not shown because the route returns names only |
+| FR-04/AC-09–11 | `services/logs.ts`, `LogArchiveCard.vue`, `ConsoleViewer.vue`, `AppHeader.vue`, backend `/api/logfiles` | `logs.test.ts`, Go handler metadata test, Settings specs | PASS |
 | FR-05/AC-12–14 | `OverviewPage.vue`, `overview.ts`, `RecentActivityBrief.vue` | `overview.test.ts` (3), overview + ActivityFeed browser specs, desktop/mobile layout | PASS |
 | FR-06/AC-15–16 | `DeviceList.vue`, `DeviceFilterBar.vue`, `DevicePage.vue` | network filter test, devices + EntityTile specs | PASS |
-| FR-07/AC-17–19 | `PanelMode.vue`, `PanelButton.vue` | panel desktop/mobile specs incl. night persistence, layout at 320/390 | PASS; four essentials are the room's first four tiles |
+| FR-07/AC-17–19 | `PanelMode.vue`, `PanelEssentialsDialog.vue`, `panel-essentials.ts` | panel parser test + desktop/mobile specs incl. essentials persistence | PASS |
 | FR-08/AC-20–22 | `Settings.vue`, `CleanupSection.vue`, `AutomationList.vue`, `automation-export.ts` | `automation-export.test.ts`, Settings/Logger/Storage specs | PARTIAL: rail summaries, export, copy ID and browser cleanup shipped; duplicate/run history open |
 | FR-09/AC-23–25 | changed components | `layout.spec.ts` desktop+mobile, panel specs, lint/build | PASS for shipped surfaces; targeted a11y checks for new notifications still to add |
 | T013 editors/Assistant/Login | — | not started | DEFERRED (scope note in spec) |
@@ -88,6 +88,15 @@ Commands actually run:
 - Automation rows gained Copy ID alongside Export.
 - Affected Playwright suites: 43 desktop + 43 mobile passed; unit 169/1118, lint 0 errors,
   build and e2e type-check pass.
+
+## Final follow-up (2026-11-26)
+
+- Panel night essentials are now selectable, bounded to four, validated at the storage boundary
+  and persisted per browser; a room-order fallback remains for first use.
+- Log archive metadata is additive: `/api/logfiles` returns `{name,size,modified}` while
+  `/api/listlogs` stays unchanged for older clients. The UI shows size and relative age.
+- Remaining: T013 consistency pass for editor/provider/Assistant/Login, and T014 server purge
+  (still NH-06-blocked). Neither is represented by dead controls.
 
 ## Debt, risks, exceptions
 

@@ -24,18 +24,17 @@ after the check ran.
   geometry specs pass.
 - [x] T007 — Calm Overview (A): verdict, three actions, health line, digest, collapsed full feed;
   IDs: FR-05/AC-12–14; done: `overview` + `ActivityFeed` specs pass (details opener updated).
-- [x] T008 — Snapshot banner + logs IA: Settings → Logs & diagnostics with archive list/download,
-  header Logs shortcut, Console removed from nav, local filters/follow/export; IDs: FR-04/AC-09–11;
-  done: `logs` service tests 3 passing; storage/settings/overview specs pass. Deviation: the
-  existing `GET /api/listlogs` returns names only, so size/age are not shown.
+- [x] T008 — Snapshot banner + logs IA: Settings → Logs & diagnostics with archive list/download
+  (name, size, modified), header Logs shortcut, Console removed from nav, local filters/follow/export;
+  IDs: FR-04/AC-09–11; done: service tests + Go handler test; size/age come from the additive
+  `/api/logfiles` route.
 - [x] T009 — Settings rail summaries and section title alignment; IDs: FR-08/AC-20; done:
   `Settings.spec.ts` 22 passing; all six sections still present.
 - [x] T010 — Automations export all/per row with versioned JSON; IDs: FR-08/AC-22 (export only);
   done: `automation-export` test passing; duplicate/copy-ID/run-history remain open.
-- [x] T011 — Panel mode: schedule night (22:30–06:30) + manual override, four controls in night,
-  paused/last-known controls while offline, status page retained; IDs: FR-07/AC-17–19; done:
-  desktop/mobile panel specs pass. Deviation: the four essentials are the current room's first
-  four tiles, not yet configurable.
+- [x] T011 — Panel mode: schedule night (22:30–06:30) + persistent manual override, configurable
+  four night essentials, paused/last-known controls while offline, status page retained; IDs:
+  FR-07/AC-17–19; done: parser unit test + desktop/mobile panel specs including persistence.
 - [x] T012 — Browser coverage for notification inbox persistence (`NotificationBell.spec.ts`), panel
   night persistence, and the Overview action; IDs: AC-05–08/17/23/24. Digest dismissal still lacks a
   dedicated spec.
@@ -44,7 +43,8 @@ after the check ran.
 - [x] T022 — Browser-only Data & cleanup section: notifications, activity, log buffer and appearance,
   with confirmations; no server deletion and no dead controls.
 - [ ] T013 — Editors/deep flows: automation editor/creator, integration setup/provider, Assistant,
-  Login; IDs: FR-09 (scope deferred in spec §Problem). Not started.
+  Login consistency pass; IDs: FR-09. Not started: these already use the shared header/form/empty
+  patterns and no concrete defect is recorded, so they stay a separate reviewed change.
 - [ ] T014 — Server-side cleanup/purge UI; IDs: AC-21 (excluded by NH-06). Blocked: no endpoints
   and no named approval for destructive history/log deletion.
 
@@ -54,7 +54,7 @@ after the check ran.
 - [x] T016 — `npm run build`: passing (Vue type-check + Vite).
 - [x] T017 — `npm run lint`: 0 errors (113 pre-existing warnings); no new warnings in changed files.
 - [x] T018 — Full `--project=desktop`: 207 passed, 9 skipped.
-- [x] T019 — Full `--project=mobile`: 216 passed.
+- [x] T019 — Affected mobile suites (panel/Settings/layout): 38 passed; full matrix in CI.
 - [x] T020 — Plan actuals and tasks updated; PR notes carry the remaining/deferred items.
 
 ## Discovered work

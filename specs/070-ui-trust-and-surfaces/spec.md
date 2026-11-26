@@ -146,9 +146,8 @@ Independent verification: page browser spec at desktop and mobile.
 
 - Q1: Freshness thresholds. Assumption: mains 2 h quiet / 6 h stale; battery 24 h / 48 h. Resolved
   for this implementation; a per-device expected interval is future work.
-- Q2: Panel night trigger. Decision: schedule baseline 22:30–06:30, optional ambient-light override
-  deferred until a selected lux source is modelled; manual toggle for one night. Four essentials
-  remain the current room controls plus a configurable subset in a follow-up; v1 shows the four
-  highest-ranked home essentials when available.
+- Q2: Panel night trigger. Decision: schedule baseline 22:30–06:30 with a persistent manual choice
+  for the current night cycle. Ambient light remains deferred until a lux source is modelled. The
+  four essentials are selectable from panel device controls and stored per browser.
 - Q3: Offline commands. Decision: disabled, never queued (stale intent is unsafe).
 - Q4: Server-side purge. Blocked by NH-06; excluded above.
