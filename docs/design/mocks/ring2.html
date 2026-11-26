@@ -1,0 +1,1989 @@
+<!doctype html>
+<html lang="en" data-mode="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NodeHerder UI — Ring 2 patterns and surfaces</title>
+<style>
+
+  :root{
+    --bg:#0b0b0d; --bg-2:#0f0f12; --surface:#151519; --surface-2:#1c1c21;
+    --border:#27272e; --border-strong:#3a3a44;
+    --text:#ececf2; --muted:#9c9caa; --faint:#6f6f7d;
+    --accent:#7c5cff; --accent-soft:rgba(124,92,255,.16);
+    --ok:#3ecf8e; --warn:#e8a33d; --danger:#e5544b; --info:#4aa3ff;
+    --kind-temp:#ef5350; --kind-hum:#29b6f6; --kind-power:#fb8c00; --kind-light:#f2b01e; --kind-energy:#43a047; --kind-motion:#7e57c2;
+    --r:14px; --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 var(--font);-webkit-font-smoothing:antialiased}
+  a{color:inherit}
+  h1,h2,h3,h4,p{margin:0}
+  svg.i{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  svg.i.sm{width:14px;height:14px}
+  svg.i.lg{width:22px;height:22px}
+
+  /* ---------- gallery chrome ---------- */
+  .gal{display:grid;grid-template-columns:250px minmax(0,1fr);gap:32px;max-width:1720px;margin:0 auto;padding:28px 28px 120px}
+  .gal-nav{position:sticky;top:24px;align-self:start;border:1px solid var(--border);background:var(--bg-2);border-radius:16px;padding:16px;max-height:calc(100vh - 48px);overflow:auto}
+  .gal-nav .brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.2px;margin-bottom:6px}
+  .brand-dot{width:26px;height:26px;border-radius:9px;background:linear-gradient(140deg,var(--accent),#4b2fd6);display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff}
+  .gal-nav p.note{color:var(--faint);font-size:11.5px;margin:0 0 14px}
+  .gal-nav ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+  .gal-nav a{display:flex;gap:9px;align-items:center;padding:7px 9px;border-radius:9px;text-decoration:none;color:var(--muted);font-size:13px}
+  .gal-nav a:hover{background:var(--surface);color:var(--text)}
+  .gal-nav .num{width:19px;height:19px;border-radius:6px;background:var(--surface-2);display:grid;place-items:center;font:600 10.5px/1 var(--mono);color:var(--faint)}
+  .gal-main{min-width:0}
+  .gal-head{margin-bottom:26px}
+  .gal-head h1{font-size:28px;letter-spacing:-.02em;font-weight:760}
+  .gal-head p{color:var(--muted);max-width:78ch;margin-top:8px}
+  .kicker{font:650 11px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+  .pill{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:650;border:1px solid var(--border);color:var(--muted);white-space:nowrap}
+  .pill.ok{color:var(--ok);border-color:rgba(62,207,142,.35);background:rgba(62,207,142,.08)}
+  .pill.warn{color:var(--warn);border-color:rgba(232,163,61,.35);background:rgba(232,163,61,.09)}
+  .pill.danger{color:var(--danger);border-color:rgba(229,84,75,.38);background:rgba(229,84,75,.1)}
+  .pill.info{color:var(--info);border-color:rgba(74,163,255,.35);background:rgba(74,163,255,.09)}
+  .pill.rec{color:#cabfff;border-color:rgba(124,92,255,.5);background:var(--accent-soft)}
+
+  .sec{margin:0 0 46px;scroll-margin-top:24px}
+  .sec-head{display:flex;gap:14px;align-items:baseline;flex-wrap:wrap;margin-bottom:6px}
+  .sec-head h2{font-size:21px;letter-spacing:-.01em;font-weight:720}
+  .sec-lede{color:var(--muted);max-width:88ch;margin-bottom:18px}
+  .finding{border-left:2px solid var(--warn);padding:2px 0 2px 12px;color:var(--muted);margin:14px 0;font-size:13px}
+  .finding b{color:var(--text)}
+
+  .variant{margin:22px 0 34px}
+  .v-head{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:10px}
+  .v-tag{font:700 11px/1.9 var(--mono);min-width:22px;height:22px;padding:0 6px;border-radius:7px;background:var(--accent-soft);color:#c9bdff;text-align:center;letter-spacing:.04em}
+  .v-head h3{font-size:15px;font-weight:680}
+  .v-note{color:var(--muted);font-size:12.5px;max-width:80ch;margin:2px 0 0}
+  .v-best{margin-left:auto}
+
+  .screen{position:relative;background:var(--bg);border:1px solid var(--border);border-radius:18px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.45)}
+  .app{display:grid;grid-template-columns:214px minmax(0,1fr);min-height:580px}
+  .side{border-right:1px solid var(--border);background:#0a0a0c;padding:16px 10px;display:flex;flex-direction:column;gap:2px}
+  .side .logo{display:flex;align-items:center;gap:9px;padding:4px 10px 16px;font-weight:700}
+  .side .logo .brand-dot{width:24px;height:24px;font-size:11px}
+  .nvi{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:9px;color:var(--muted);font-size:13px;text-decoration:none}
+  .nvi .i{width:16px;height:16px}
+  .nvi:hover{background:var(--surface);color:var(--text)}
+  .nvi.active{background:var(--accent-soft);color:#cabfff;font-weight:600}
+  .nvi .count{margin-left:auto;background:var(--danger);color:#fff;font:700 10px/1 var(--mono);padding:3px 6px;border-radius:999px}
+  .nvi .count.soft{background:rgba(232,163,61,.18);color:var(--warn)}
+  .side .spacer{flex:1}
+  .side .foot{border-top:1px solid var(--border);padding-top:10px;margin-top:10px}
+
+  .main{min-width:0;display:flex;flex-direction:column}
+  .top{display:flex;align-items:center;gap:10px;height:54px;padding:0 18px;border-bottom:1px solid var(--border);background:#0b0b0d;position:relative}
+  .top .ttl{font-weight:650;font-size:14px}
+  .top .right{margin-left:auto;display:flex;align-items:center;gap:6px}
+  .conn{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);border:1px solid var(--border);border-radius:999px;padding:3px 9px}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--ok)}
+  .conn.bad{color:#ffb6b1;border-color:rgba(229,84,75,.4);background:rgba(229,84,75,.08)}
+  .conn.bad .dot{background:var(--danger)}
+  .conn.warn2{color:#ffd59a;border-color:rgba(232,163,61,.35);background:rgba(232,163,61,.08)}
+  .conn.warn2 .dot{background:var(--warn)}
+  .ico-btn{width:30px;height:30px;display:grid;place-items:center;border:0;background:transparent;color:var(--muted);border-radius:9px;position:relative}
+  .ico-btn:hover{background:var(--surface);color:var(--text)}
+  .ico-btn .badge{position:absolute;top:-2px;right:-3px;min-width:15px;height:15px;padding:0 4px;border-radius:999px;background:var(--danger);color:#fff;font:700 9.5px/15px var(--mono);text-align:center;border:2px solid var(--bg)}
+  .body{padding:20px 22px 26px;flex:1}
+
+  .page-h{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:16px;flex-wrap:wrap}
+  .page-h h1{font-size:22px;font-weight:740;letter-spacing:-.02em}
+  .page-h .sub{color:var(--muted);font-size:12.5px;margin-top:2px}
+  .page-h .actions{display:flex;gap:8px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:32px;padding:0 12px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12.5px;font-weight:600;white-space:nowrap}
+  .btn .i{width:14px;height:14px}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.ghost{background:transparent}
+  .btn.danger{color:#ffb1ac;border-color:rgba(229,84,75,.4);background:rgba(229,84,75,.08)}
+  .btn.sm{height:26px;padding:0 9px;font-size:11.5px}
+  .btn.sq{width:32px;padding:0}
+
+  .area-head{display:flex;align-items:baseline;gap:10px;margin:20px 0 9px}
+  .area-head:first-of-type{margin-top:0}
+  .area-head h2{font-size:15px;font-weight:680}
+  .area-meta{color:var(--faint);font-size:11.5px}
+  .health{margin-left:auto;display:flex;gap:6px}
+  .tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  .tile{display:flex;gap:10px;align-items:flex-start;background:var(--surface);border:1px solid transparent;border-radius:var(--r);padding:11px 12px;min-width:0;position:relative}
+  .tile .ic{width:34px;height:34px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;flex:none;color:var(--muted)}
+  .tile .ic .i{width:17px;height:17px}
+  .tile .txt{min-width:0;display:flex;flex-direction:column;gap:1px}
+  .tile .lab{font-weight:640;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tile .val{font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:4px;white-space:nowrap;overflow:hidden}
+  .tile .dev{font-size:11px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tile .age{font-size:10.5px;color:var(--faint);display:flex;align-items:center;gap:4px;margin-top:2px}
+  .tile .age .i{width:11px;height:11px}
+  .tile.k-temp .ic{color:var(--kind-temp)} .tile.k-hum .ic{color:var(--kind-hum)}
+  .tile.k-power .ic{color:var(--kind-power)} .tile.k-light .ic{color:var(--kind-light)}
+  .tile.k-energy .ic{color:var(--kind-energy)} .tile.k-motion .ic{color:var(--kind-motion)}
+  .tile.off{opacity:.8}
+  .tile.off .ic{filter:grayscale(1);opacity:.6}
+  .tile.off .val{color:var(--danger)}
+  .tile.on{background:color-mix(in srgb,var(--accent) 8%,var(--surface))}
+  .tile.on .ic{background:rgba(124,92,255,.22);color:#cabfff}
+
+  /* variant 1A */
+  .tile.stale-a{box-shadow:inset 3px 0 0 var(--warn);border-color:rgba(232,163,61,.28)}
+  .tile.stale-a .age{color:var(--warn)}
+  /* variant 1B */
+  .tile.stale-b{opacity:.68}
+  .tile.stale-b .ic{filter:grayscale(.6)}
+  .chip-age{position:absolute;top:8px;right:8px;font:650 10px/1 var(--mono);color:var(--warn);background:rgba(232,163,61,.12);border:1px solid rgba(232,163,61,.32);border-radius:999px;padding:3px 6px}
+  .tile .val .tilde{color:var(--faint)}
+  /* variant 1C */
+  .statusline{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600}
+  .statusline.ok{color:var(--ok)} .statusline.quiet{color:var(--warn)} .statusline.dead{color:var(--danger)}
+  .statusline .i{width:12px;height:12px}
+  .banner{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:11px;font-size:12.5px;margin-bottom:16px}
+  .banner .i{width:16px;height:16px}
+  .banner.bad{background:rgba(229,84,75,.09);border:1px solid rgba(229,84,75,.3);color:#ffc9c5}
+  .banner .grow{flex:1}
+
+  /* ---------- console ---------- */
+  .console-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+  .search{display:flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--border);border-radius:9px;height:32px;padding:0 10px;min-width:230px;color:var(--faint);font-size:12.5px;flex:1 1 240px;max-width:360px}
+  .search .i{width:14px;height:14px}
+  .search kbd{margin-left:auto;font:600 10px/1 var(--mono);border:1px solid var(--border);border-radius:4px;padding:2px 4px;color:var(--faint)}
+  .lvl-chips{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:9px}
+  .lvl{font:650 10.5px/1 var(--mono);padding:4px 7px;border-radius:7px;border:1px solid var(--border);color:var(--muted);background:var(--surface)}
+  .lvl b{font-weight:800;margin-left:3px;color:var(--faint)}
+  .lvl.on{border-color:rgba(124,92,255,.55);background:var(--accent-soft);color:#cabfff}
+  .console{background:#0c0c0f;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  .log{display:grid;grid-template-columns:86px 54px 132px minmax(0,1fr);gap:10px;align-items:start;padding:5px 11px;font:12px/1.55 var(--mono);border-left:2px solid transparent}
+  .log:hover{background:#111116}
+  .log .t{color:var(--faint)}
+  .log .lv{font-weight:800;font-size:10.5px;letter-spacing:.03em;padding-top:1px}
+  .log .lv.info{color:#7cc7ff} .log .lv.warn{color:var(--warn)} .log .lv.error{color:#ff8d85} .log .lv.debug{color:#c69bff} .log .lv.trace{color:#8f8f9d}
+  .log .src{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .log .msg{color:#dcdce6;word-break:break-word}
+  .log.warn{border-left-color:rgba(232,163,61,.8);background:rgba(232,163,61,.045)}
+  .log.error{border-left-color:rgba(229,84,75,.85);background:rgba(229,84,75,.05)}
+  .console-foot{display:flex;align-items:center;gap:12px;padding:6px 11px;border-top:1px solid var(--border);color:var(--faint);font-size:11px}
+  .console-foot .right{margin-left:auto;display:flex;gap:12px}
+  .console-foot .live{color:var(--ok);display:flex;align-items:center;gap:5px}
+  .console-foot .live .dot{width:6px;height:6px;animation:pulse 1.6s infinite}
+  @keyframes pulse{50%{opacity:.35}}
+
+  /* console drawer */
+  .scrim{position:absolute;inset:0;background:rgba(0,0,0,.38)}
+  .drawer{position:absolute;left:0;right:0;bottom:0;height:55%;background:#0d0d10;border-top:1px solid var(--border-strong);box-shadow:0 -22px 60px rgba(0,0,0,.55);display:flex;flex-direction:column}
+  .drawer .grab{height:5px;display:grid;place-items:center;padding-top:7px}
+  .drawer .grab span{width:38px;height:4px;border-radius:99px;background:var(--border-strong)}
+  .drawer .dhead{display:flex;align-items:center;gap:9px;padding:6px 14px 8px;border-bottom:1px solid var(--border)}
+  .drawer .dhead .ttl{font-weight:650;font-size:13px}
+  .drawer .dhead .right{margin-left:auto;display:flex;gap:6px;align-items:center}
+  .drawer .dbody{flex:1;overflow:auto;padding:8px 10px}
+  .drawer .dbody .log{grid-template-columns:74px 50px 116px minmax(0,1fr);font-size:11.5px}
+  .dock{position:absolute;left:0;right:0;bottom:0;height:38px;display:flex;align-items:center;gap:9px;padding:0 14px;background:#0d0d10;border-top:1px solid var(--border);font-size:12px;color:var(--muted)}
+  .dock .last{color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dock .right{margin-left:auto;display:flex;gap:12px;align-items:center;color:var(--faint);font-size:11px}
+
+  /* settings */
+  .settings{display:grid;grid-template-columns:206px minmax(0,1fr);gap:22px;align-items:start}
+  .srail{display:flex;flex-direction:column;gap:14px}
+  .ssearch{display:flex;align-items:center;gap:7px;height:30px;padding:0 9px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--faint);font-size:12px}
+  .sgroup .gh{font:650 10px/1 var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--faint);padding:0 8px 6px}
+  .sitem{display:flex;gap:9px;padding:8px 9px;border-radius:9px;color:var(--muted);text-decoration:none;align-items:flex-start}
+  .sitem .i{margin-top:1px;width:15px;height:15px}
+  .sitem .st{display:flex;flex-direction:column;min-width:0}
+  .sitem .st b{font-weight:600;font-size:12.5px;color:var(--text)}
+  .sitem .st small{font-size:11px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sitem.active{background:var(--accent-soft)}
+  .sitem.active .st b{color:#cabfff}
+  .sitem:hover{background:var(--surface)}
+  .sbody{min-width:0}
+  .sbody h2{font-size:16px;font-weight:700}
+  .sbody .sdesc{color:var(--muted);font-size:12px;margin:2px 0 14px}
+  .sect-card{border:1px solid var(--border);border-radius:12px;background:var(--surface);overflow:hidden;margin-bottom:12px}
+  .sect-card>.ch{display:flex;align-items:center;gap:8px;padding:10px 13px;border-bottom:1px solid var(--border);font-weight:650;font-size:12.5px}
+  .sect-card>.ch .i{width:15px;height:15px;color:var(--accent)}
+  .sect-card>.ch .scope{margin-left:auto;font-size:10.5px;font-weight:600;color:var(--faint);border:1px solid var(--border);border-radius:999px;padding:2px 7px;text-transform:none;letter-spacing:0}
+  .row{display:flex;align-items:center;gap:14px;padding:11px 13px;border-bottom:1px solid var(--border)}
+  .row:last-child{border-bottom:0}
+  .row .rl{flex:1;min-width:0}
+  .row .rl b{display:block;font-size:12.5px;font-weight:600}
+  .row .rl small{display:block;color:var(--muted);font-size:11.5px;margin-top:1px}
+  .seg{display:inline-flex;background:var(--surface-2);border-radius:8px;padding:2px;gap:2px}
+  .seg span{padding:4px 10px;border-radius:6px;font-size:11.5px;color:var(--muted)}
+  .seg span.on{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.4)}
+  .swatches{display:flex;gap:6px;flex-wrap:wrap}
+  .sw{display:flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:8px;padding:4px 8px 4px 4px;font-size:11px;color:var(--muted)}
+  .sw i{width:16px;height:16px;border-radius:4px;background:linear-gradient(135deg,#8fa3c8,#e8eef7)}
+  .sw.on{border-color:rgba(124,92,255,.6);color:var(--text)}
+  .toggle{width:34px;height:19px;border-radius:99px;background:var(--border-strong);position:relative;flex:none}
+  .toggle::after{content:"";position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:#fff}
+  .toggle.on{background:var(--accent)} .toggle.on::after{left:17px}
+  .health-strip{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+  .hchip{display:flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--bg-2);border-radius:10px;padding:7px 10px;font-size:11.5px;color:var(--muted)}
+  .hchip b{color:var(--text);font-weight:650}
+  .hchip .i{width:14px;height:14px;color:var(--accent)}
+  .setgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  .setgroup-label{font:650 10px/1 var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin:14px 2px 8px}
+  .setgroup-label:first-of-type{margin-top:0}
+  .setcard{border:1px solid var(--border);border-radius:12px;background:var(--surface);padding:13px;display:flex;flex-direction:column;gap:7px;min-height:112px;text-decoration:none}
+  .setcard:hover{border-color:var(--border-strong)}
+  .setcard .ic{width:28px;height:28px;border-radius:8px;background:var(--accent-soft);color:#c9bdff;display:grid;place-items:center}
+  .setcard .ic .i{width:15px;height:15px}
+  .setcard b{font-size:13px}
+  .setcard small{color:var(--muted);font-size:11.5px;line-height:1.45}
+  .setcard .chips{display:flex;gap:5px;flex-wrap:wrap;margin-top:auto}
+  .minichip{font-size:10.5px;color:var(--muted);background:var(--surface-2);border-radius:6px;padding:2px 6px}
+
+  .meter{height:7px;border-radius:99px;background:var(--surface-2);overflow:hidden;margin-top:6px}
+  .meter i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#a58bff);width:var(--w)}
+  .statline{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-top:6px}
+
+  /* notifications */
+  .panel{position:absolute;top:0;right:0;bottom:0;width:392px;background:#0f0f13;border-left:1px solid var(--border-strong);box-shadow:-30px 0 80px rgba(0,0,0,.6);display:flex;flex-direction:column}
+  .panel .ph{display:flex;align-items:center;gap:8px;padding:14px 14px 10px}
+  .panel .ph h2{font-size:14px;font-weight:700}
+  .panel .ph .right{margin-left:auto;display:flex;gap:6px}
+  .ptabs{display:flex;gap:4px;padding:0 14px 10px}
+  .ptab{font-size:11.5px;color:var(--muted);padding:4px 9px;border-radius:7px}
+  .ptab.on{background:var(--accent-soft);color:#cabfff;font-weight:650}
+  .plist{flex:1;overflow:auto;padding:0 10px 10px}
+  .pgroup{font:650 10px/1 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--faint);padding:10px 6px 6px}
+  .nitem{display:flex;gap:10px;padding:10px;border-radius:10px;align-items:flex-start}
+  .nitem:hover{background:var(--surface)}
+  .nitem.unread{background:rgba(124,92,255,.06)}
+  .nitem .nic{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;flex:none;background:var(--surface-2);color:var(--muted)}
+  .nitem .nic .i{width:14px;height:14px}
+  .nitem .nic.err{background:rgba(229,84,75,.13);color:#ff9d96}
+  .nitem .nic.warn{background:rgba(232,163,61,.13);color:var(--warn)}
+  .nitem .nic.info{background:rgba(74,163,255,.12);color:var(--info)}
+  .nitem .nt{min-width:0;flex:1}
+  .nitem .nt b{font-size:12.5px;font-weight:620;display:block}
+  .nitem .nt p{font-size:11.5px;color:var(--muted);margin-top:1px}
+  .nitem .nt .acts{display:flex;gap:8px;margin-top:6px}
+  .nitem .nt .acts a{font-size:11px;color:#b6a6ff;text-decoration:none;font-weight:600}
+  .nitem .when{font-size:10px;color:var(--faint);white-space:nowrap;padding-top:2px}
+  .pfoot{border-top:1px solid var(--border);padding:9px 14px;font-size:11px;color:var(--faint);display:flex;gap:10px;align-items:center}
+  .pfoot a{margin-left:auto;color:#b6a6ff;text-decoration:none;font-weight:600}
+
+  /* digest */
+  .digest{border:1px solid rgba(124,92,255,.38);background:linear-gradient(180deg,rgba(124,92,255,.1),rgba(124,92,255,.03));border-radius:13px;padding:13px 14px;margin-bottom:16px}
+  .digest .dh{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .digest .dh .i{width:16px;height:16px;color:#c9bdff}
+  .digest .dh b{font-size:13px}
+  .digest .dh .since{color:var(--faint);font-size:11px}
+  .digest .dh .right{margin-left:auto;display:flex;gap:6px}
+  .drow{display:flex;align-items:center;gap:9px;padding:6px 0;font-size:12px;border-top:1px dashed rgba(124,92,255,.18)}
+  .drow .i{width:13px;height:13px}
+  .drow .what{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .drow a{color:#b6a6ff;font-size:11px;font-weight:650;text-decoration:none}
+
+  /* automation */
+  .autolist{display:flex;flex-direction:column;gap:8px}
+  .autorow{display:flex;align-items:center;gap:11px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;position:relative}
+  .autorow .aic{width:32px;height:32px;border-radius:9px;background:var(--accent-soft);color:#c9bdff;display:grid;place-items:center;flex:none}
+  .autorow .atxt{min-width:0;flex:1}
+  .autorow .atxt b{display:block;font-size:13px}
+  .autorow .atxt small{display:block;color:var(--muted);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .autorow .atxt .sum{color:var(--faint);font-size:11px;margin-top:2px}
+  .autorow .aside{display:flex;align-items:center;gap:8px;margin-left:auto}
+  .menu{position:absolute;top:44px;right:10px;width:196px;background:#15151a;border:1px solid var(--border-strong);border-radius:11px;box-shadow:0 18px 50px rgba(0,0,0,.6);padding:5px;z-index:5}
+  .menu .mi{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:7px;font-size:12px;color:var(--text)}
+  .menu .mi .i{width:14px;height:14px;color:var(--muted)}
+  .menu .mi:hover{background:var(--surface-2)}
+  .menu .mi.danger{color:#ff9d96}.menu .mi.danger .i{color:#ff9d96}
+  .menu .sep{height:1px;background:var(--border);margin:4px 2px}
+  .menu .hint{font-size:10.5px;color:var(--faint);padding:2px 9px 4px}
+
+  /* ---------- mobile frames ---------- */
+  .mobile-rules{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0 20px}
+  .rule{border:1px solid var(--border);border-radius:11px;background:var(--bg-2);padding:10px 11px}
+  .rule b{display:block;font-size:12px;margin-bottom:2px}
+  .rule small{color:var(--muted);font-size:11px;line-height:1.45}
+  .phones{display:flex;flex-wrap:wrap;gap:22px;align-items:flex-start}
+  .phone{width:414px;padding:11px;background:#17171c;border:1px solid #32323a;border-radius:48px;box-shadow:0 30px 70px rgba(0,0,0,.5)}
+  .m-screen{width:390px;height:812px;background:var(--bg);border-radius:38px;overflow:hidden;position:relative;display:flex;flex-direction:column}
+  .m-status{height:26px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font:600 11px/1 var(--font);color:var(--muted)}
+  .m-status .right{display:flex;align-items:center;gap:5px}
+  .sig{display:flex;align-items:flex-end;gap:2px;height:9px}
+  .sig i{width:2.5px;background:var(--muted);border-radius:1px}
+  .sig i:nth-child(1){height:3px}.sig i:nth-child(2){height:5px}.sig i:nth-child(3){height:7px}.sig i:nth-child(4){height:9px;opacity:.4}
+  .batt{width:18px;height:9px;border:1px solid var(--muted);border-radius:2.5px;position:relative}
+  .batt::before{content:"";position:absolute;inset:1.5px;width:11px;background:var(--muted);border-radius:1px}
+  .batt::after{content:"";position:absolute;right:-3px;top:2.5px;width:1.5px;height:4px;background:var(--muted);border-radius:1px}
+  .m-head{height:52px;flex:none;display:flex;align-items:center;gap:6px;padding:0 8px 0 6px;border-bottom:1px solid var(--border);background:#0b0b0d}
+  .m-title{font-weight:660;font-size:14.5px;flex:1;min-width:0;padding-left:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .m-ico{width:40px;height:40px;display:grid;place-items:center;border:0;background:transparent;color:var(--muted);border-radius:11px;position:relative;flex:none}
+  .m-ico .i{width:19px;height:19px}
+  .m-ico .m-badge{position:absolute;top:3px;right:2px;min-width:15px;height:15px;padding:0 4px;border-radius:99px;background:var(--danger);color:#fff;font:700 9px/15px var(--mono);text-align:center;border:2px solid var(--bg)}
+  .m-textbtn{height:44px;padding:0 8px;border:0;background:transparent;color:#b6a6ff;font-size:12px;font-weight:650}
+  .m-body{flex:1;overflow:auto;padding:12px 14px 20px}
+  .m-body.flush{padding:0}
+  .m-banner{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:11px;font-size:11.5px;line-height:1.4;margin-bottom:12px}
+  .m-banner .i{width:15px;height:15px;flex:none}
+  .m-banner.bad{background:rgba(229,84,75,.09);border:1px solid rgba(229,84,75,.3);color:#ffc9c5}
+  .m-banner .grow{flex:1}
+  .m-banner .retry{color:#ffb1ac;font-weight:700;font-size:11px;white-space:nowrap}
+  .m-digest{border:1px solid rgba(124,92,255,.4);background:linear-gradient(180deg,rgba(124,92,255,.11),rgba(124,92,255,.03));border-radius:13px;padding:11px 12px;margin-bottom:14px}
+  .m-digest .dh{display:flex;align-items:center;gap:7px}
+  .m-digest .dh b{font-size:12.5px}
+  .m-digest .dh .i{width:15px;height:15px;color:#c9bdff}
+  .m-digest .since{color:var(--faint);font-size:10px;margin-left:auto}
+  .m-digest .drow{display:flex;align-items:center;gap:7px;padding:6px 0 0;font-size:11px;color:var(--muted)}
+  .m-digest .drow .i{width:12px;height:12px}
+  .m-digest .drow span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .m-digest .drow a{color:#b6a6ff;font-weight:650;text-decoration:none;font-size:10.5px}
+  .m-digest .more{display:flex;gap:8px;margin-top:9px}
+  .m-digest .more .btn{flex:1;height:30px;font-size:11.5px}
+  .m-area{display:flex;align-items:center;gap:7px;margin:15px 2px 7px}
+  .m-area h3{font-size:14px;font-weight:680}
+  .m-area .n{color:var(--faint);font-size:11px}
+  .m-area .chips{margin-left:auto;display:flex;gap:5px}
+  .m-tile{display:flex;gap:10px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:11px 12px;margin-bottom:8px;position:relative}
+  .m-tile .ic{width:34px;height:34px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;flex:none;color:var(--muted)}
+  .m-tile .ic .i{width:17px;height:17px}
+  .m-tile .txt{min-width:0;display:flex;flex-direction:column;gap:1px}
+  .m-tile .lab{font-weight:640;font-size:13px}
+  .m-tile .val{font-size:13px;color:var(--muted)}
+  .m-tile .dev{font-size:11px;color:var(--faint)}
+  .m-tile .age{font-size:10.5px;color:var(--faint);display:flex;align-items:center;gap:4px;margin-top:1px}
+  .m-tile .age .i{width:11px;height:11px}
+  .m-tile.stale{box-shadow:inset 3px 0 0 var(--warn);border-color:rgba(232,163,61,.3)}
+  .m-tile.stale .age{color:var(--warn)}
+  .m-tile.off .ic{filter:grayscale(1);opacity:.6}
+  .m-tile.off .val{color:var(--danger)}
+  .m-tile.on{background:color-mix(in srgb,var(--accent) 8%,var(--surface))}
+  .m-tile.on .ic{background:rgba(124,92,255,.22);color:#cabfff}
+  .m-tile .corner{position:absolute;top:9px;right:10px;font:650 10px/1 var(--mono);color:var(--warn);background:rgba(232,163,61,.12);border:1px solid rgba(232,163,61,.3);border-radius:99px;padding:3px 6px}
+  .m-search{display:flex;align-items:center;gap:8px;height:38px;padding:0 11px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--faint);font-size:12.5px;margin-bottom:10px}
+  .m-search .i{width:15px;height:15px}
+  .m-tabs{display:flex;gap:4px;background:var(--surface-2);border-radius:10px;padding:3px;margin-bottom:12px}
+  .m-tab{flex:1;text-align:center;font-size:11.5px;color:var(--muted);padding:7px 4px;border-radius:8px;white-space:nowrap}
+  .m-tab.on{background:var(--surface);color:var(--text);font-weight:650;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+  .m-chips{display:flex;gap:5px;overflow:auto;padding-bottom:8px;margin:0 -14px 8px;padding-left:14px;padding-right:14px;scrollbar-width:none}
+  .m-chips::-webkit-scrollbar{display:none}
+  .m-chip{font:650 10.5px/1 var(--mono);padding:5px 8px;border-radius:8px;border:1px solid var(--border);color:var(--muted);background:var(--surface);white-space:nowrap}
+  .m-chip.on{border-color:rgba(124,92,255,.55);background:var(--accent-soft);color:#cabfff}
+  .m-chip .n{margin-left:3px;color:var(--faint)}
+  .m-log{border-left:2px solid transparent;padding:7px 4px 7px 8px;border-bottom:1px solid rgba(39,39,46,.6);font:11.5px/1.45 var(--mono)}
+  .m-log .meta{display:flex;gap:7px;align-items:center;color:var(--faint);font-size:10px}
+  .m-log .meta .lv{font-weight:800;font-size:9.5px}
+  .m-log .meta .lv.info{color:#7cc7ff}.m-log .meta .lv.warn{color:var(--warn)}.m-log .meta .lv.error{color:#ff8d85}
+  .m-log .meta .src{color:var(--muted);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .m-log .msg{color:#dcdce6;margin-top:2px;word-break:break-word}
+  .m-log.warn{border-left-color:rgba(232,163,61,.8);background:rgba(232,163,61,.04)}
+  .m-log.error{border-left-color:rgba(229,84,75,.85);background:rgba(229,84,75,.05)}
+  .m-foot{flex:none;border-top:1px solid var(--border);padding:7px 14px;display:flex;align-items:center;gap:9px;font-size:10.5px;color:var(--faint);background:#0b0b0d}
+  .m-foot .live{color:var(--ok);display:flex;align-items:center;gap:5px}
+  .m-foot .live .dot{width:6px;height:6px}
+  .m-foot .right{margin-left:auto;display:flex;gap:10px}
+  .m-grab{height:20px;flex:none;display:grid;place-items:center}
+  .m-grab span{width:38px;height:4px;border-radius:99px;background:var(--border-strong)}
+  .m-card{border:1px solid var(--border);border-radius:13px;background:var(--surface);padding:12px 13px;margin-bottom:9px}
+  .m-card .ct{display:flex;align-items:center;gap:8px;font-weight:650;font-size:12.5px;margin-bottom:4px}
+  .m-card .ct .i{width:15px;height:15px;color:var(--accent)}
+  .m-card p{color:var(--muted);font-size:11.5px;line-height:1.45}
+  .m-card .chips{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
+  .m-list{border:1px solid var(--border);border-radius:13px;overflow:hidden;background:var(--surface)}
+  .m-item{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;border-bottom:1px solid var(--border);text-decoration:none;color:inherit}
+  .m-item:last-child{border-bottom:0}
+  .m-item .ic{width:28px;height:28px;border-radius:8px;background:var(--surface-2);display:grid;place-items:center;flex:none;color:var(--muted);margin-top:1px}
+  .m-item .ic .i{width:15px;height:15px}
+  .m-item .tx{flex:1;min-width:0}
+  .m-item .tx b{display:block;font-size:12.5px;font-weight:620}
+  .m-item .tx small{display:block;color:var(--muted);font-size:11px;margin-top:1px;line-height:1.4}
+  .m-item .go{color:var(--faint);margin-top:4px}
+  .m-item .btn{min-height:36px}
+  .m-item .go .i{width:15px;height:15px}
+  .m-item.warn .ic{background:rgba(232,163,61,.13);color:var(--warn)}
+  .m-item.err .ic{background:rgba(229,84,75,.13);color:#ff9d96}
+  .m-group{font:650 10px/1 var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--faint);padding:14px 3px 6px}
+  .m-row{display:flex;align-items:center;gap:12px;padding:12px 13px;border-bottom:1px solid var(--border);background:var(--surface)}
+  .m-row:last-child{border-bottom:0}
+  .m-row .rl{flex:1;min-width:0}
+  .m-row .rl b{display:block;font-size:12.5px;font-weight:600}
+  .m-row .rl small{display:block;color:var(--muted);font-size:11px;margin-top:1px;line-height:1.4}
+  .m-row.stack{flex-wrap:wrap}
+  .m-row.stack .ctl{flex:1 1 100%;margin-top:7px}
+  .m-input{height:38px;border:1px solid var(--border);background:var(--bg-2);border-radius:9px;display:flex;align-items:center;padding:0 11px;color:var(--faint);font:12px var(--mono)}
+  .m-seg{display:flex;background:var(--surface-2);border-radius:9px;padding:3px;gap:2px}
+  .m-seg span{flex:1;text-align:center;font-size:11.5px;color:var(--muted);padding:6px 4px;border-radius:7px}
+  .m-seg span.on{background:var(--surface);color:var(--text);font-weight:650;box-shadow:0 1px 3px rgba(0,0,0,.35)}
+  .m-tilehead{display:flex;align-items:center;gap:8px;margin:2px 2px 8px}
+  .m-tilehead .scope{font-size:10px;color:var(--faint);border:1px solid var(--border);border-radius:99px;padding:2px 7px}
+  .m-tilehead h2{font-size:16px;font-weight:700}
+  .m-kv{display:flex;justify-content:space-between;gap:10px;font-size:11.5px;padding:5px 0}
+  .m-kv span:first-child{color:var(--muted)}
+  .m-meter{height:6px;border-radius:99px;background:var(--surface-2);overflow:hidden;margin-top:6px}
+  .m-meter i{display:block;height:100%;background:var(--accent);width:var(--w)}
+  .m-scrim{position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:4}
+  .m-sheet{position:absolute;left:0;right:0;bottom:0;background:#131318;border-top:1px solid var(--border-strong);border-radius:20px 20px 0 0;box-shadow:0 -20px 60px rgba(0,0,0,.6);z-index:5;padding-bottom:14px}
+  .m-sheet .sh{display:flex;align-items:center;gap:8px;padding:10px 14px 8px}
+  .m-sheet .sh b{font-size:13.5px;font-weight:680}
+  .m-sheet .sh small{color:var(--faint);font-size:11px}
+  .m-sheet .sh .x{margin-left:auto}
+  .m-sheet .sa{display:flex;align-items:center;gap:10px;padding:13px 16px;font-size:12.5px;border-top:1px solid var(--border)}
+  .m-sheet .sa .i{width:16px;height:16px;color:var(--muted)}
+  .m-sheet .sa.danger{color:#ff9d96}.m-sheet .sa.danger .i{color:#ff9d96}
+  .m-sheet .sf{padding:8px 14px 6px}
+  .m-sheet .sf .btn{width:100%;height:40px;font-size:13px}
+  .m-sheet .impact{background:rgba(229,84,75,.07);border:1px solid rgba(229,84,75,.25);border-radius:10px;margin:8px 14px;padding:9px 11px;font-size:11px;color:#ffc9c5;line-height:1.45}
+  .m-sheet .typebox{margin:10px 14px 4px}
+  .m-sheet .typebox small{display:block;color:var(--muted);font-size:10.5px;margin-bottom:5px}
+  .m-navdrawer{position:absolute;top:0;bottom:0;left:0;width:270px;background:#0d0d10;border-right:1px solid var(--border-strong);z-index:6;padding:14px 10px;display:flex;flex-direction:column;gap:2px}
+  .m-navdrawer .nvi{padding:10px 11px}
+  .m-navdrawer .m-scrim{left:270px;right:0}
+  @media (max-width: 1100px){
+    .mobile-rules{grid-template-columns:1fr}
+    .phone{transform-origin:top left}
+  }
+
+  .gallery-foot{color:var(--faint);font-size:12px;border-top:1px solid var(--border);padding-top:16px;margin-top:10px}
+  @media (max-width: 1100px){
+    .gal{grid-template-columns:1fr;padding:18px 14px 90px}
+    .gal-nav{position:static;max-height:none}
+    .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .setgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  }
+
+
+  /* ---------- ring 2 additions ---------- */
+  .r2nav{position:sticky;top:0;z-index:30;display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:10px 0 12px;background:linear-gradient(var(--bg) 70%,transparent);backdrop-filter:blur(8px);margin-bottom:8px}
+  .r2nav a{font-size:12px;color:var(--muted);text-decoration:none;border:1px solid var(--border);border-radius:999px;padding:5px 11px;background:var(--bg-2)}
+  .r2nav a:hover{color:var(--text);border-color:var(--border-strong)}
+  .r2nav .spacer{flex:1}
+  .r2nav .back{color:#b6a6ff;border-color:rgba(124,92,255,.4)}
+
+  .sheet{border:1px solid var(--border);border-radius:18px;background:var(--bg);padding:22px;box-shadow:0 24px 80px rgba(0,0,0,.45)}
+  .sheet-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;border-bottom:1px solid var(--border);padding-bottom:14px;margin-bottom:18px}
+  .sheet-head h2{font-size:18px;letter-spacing:-.01em}
+  .sheet-head p{color:var(--muted);font-size:12px;margin-top:3px}
+  .specgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  .spec{border:1px solid var(--border);border-radius:13px;background:var(--bg-2);padding:14px;min-width:0}
+  .spec.wide{grid-column:1/-1}
+  .spec h3{font:650 10.5px/1 var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin-bottom:11px}
+  .spec p.help{color:var(--muted);font-size:11.5px;margin-top:9px;line-height:1.5}
+  .spec .code{font:11px var(--mono);color:var(--faint)}
+  .srow{display:flex;align-items:center;gap:9px;padding:6px 0;border-bottom:1px dashed rgba(39,39,46,.8);font-size:12px}
+  .srow:last-child{border-bottom:0}
+  .srow .nm{width:96px;color:var(--muted);font-size:11px;flex:none}
+  .srow .where{color:var(--faint);font-size:11px;margin-left:auto;text-align:right}
+  .freshbar{display:flex;height:10px;border-radius:99px;overflow:hidden;margin:6px 0 8px}
+  .freshbar i{display:block;height:100%}
+  .freshbar .f1{width:58%;background:var(--ok)}
+  .freshbar .f2{width:22%;background:var(--warn)}
+  .freshbar .f3{width:20%;background:var(--danger)}
+  .freshlabels{display:flex;justify-content:space-between;font:10px var(--mono);color:var(--faint)}
+
+  .btnrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .btnrow .btn.primary{box-shadow:0 6px 18px rgba(124,92,255,.25)}
+  .btn.link{background:transparent;border-color:transparent;color:#b6a6ff;padding:0 4px}
+  .btn[disabled]{opacity:.45}
+  .btn:active{opacity:.82}
+  .btn:focus-visible,.m-ico:focus-visible,.pbtn:focus-visible,.p-tab:focus-visible,.picon:focus-visible,.nvi:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .m-chip{min-height:34px;display:inline-flex;align-items:center}
+  .m-tab{min-height:34px;display:flex;align-items:center;justify-content:center}
+  .spin{width:12px;height:12px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;display:inline-block}
+
+  .anarow{display:flex;gap:10px;align-items:center;padding:9px 10px;border:1px solid var(--border);border-radius:11px;background:var(--surface);margin-bottom:7px;position:relative}
+  .anarow .n{position:absolute;left:-7px;top:-7px;width:16px;height:16px;border-radius:50%;background:var(--accent);color:#fff;font:700 9px/16px var(--mono);text-align:center;border:2px solid var(--bg)}
+  .anarow .ic{width:30px;height:30px;border-radius:8px;background:var(--accent-soft);color:#c9bdff;display:grid;place-items:center;flex:none}
+  .anarow .ic .i{width:15px;height:15px}
+  .anarow .tx{min-width:0;flex:1}
+  .anarow .tx b{display:block;font-size:12px}
+  .anarow .tx small{display:block;color:var(--muted);font-size:10.5px}
+  .anarow .meta{font-size:10.5px;color:var(--faint);text-align:right}
+  .analegend{color:var(--faint);font-size:10.5px;line-height:1.6;margin-top:9px}
+  .analegend b{color:var(--muted);font-weight:650}
+
+  .states{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+  .statebox{border:1px solid var(--border);border-radius:10px;background:var(--surface);min-height:112px;padding:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center}
+  .statebox .ic{width:28px;height:28px;border-radius:8px;background:var(--surface-2);color:var(--muted);display:grid;place-items:center}
+  .statebox b{font-size:11.5px}
+  .statebox small{font-size:10px;color:var(--faint);line-height:1.4}
+  .statebox.skel{align-items:stretch;justify-content:flex-start;gap:7px}
+  .skl{display:block;height:8px;border-radius:99px;background:linear-gradient(90deg,var(--surface-2),#2a2a31,var(--surface-2));background-size:200% 100%;animation:shimmer 1.6s infinite}
+  @keyframes shimmer{to{background-position:-200% 0}}
+
+  .confirm-mini{border:1px solid var(--border-strong);border-radius:12px;background:#141419;padding:13px}
+  .confirm-mini h4{font-size:13px;margin-bottom:2px}
+  .confirm-mini .sub{color:var(--faint);font-size:10.5px}
+  .confirm-mini .impact{margin:9px 0;padding:8px 9px;border-radius:8px;background:rgba(229,84,75,.08);border:1px solid rgba(229,84,75,.25);color:#ffc9c5;font-size:10.5px;line-height:1.45}
+  .confirm-mini .inp{height:32px;border:1px solid var(--border);border-radius:8px;background:var(--bg);display:flex;align-items:center;padding:0 9px;font:11px var(--mono);color:var(--faint)}
+  .confirm-mini .acts{display:flex;gap:7px;margin-top:9px}
+  .confirm-mini .acts .btn{flex:1;height:30px;font-size:11px}
+
+  /* devices table */
+  .dtool{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:9px}
+  .dtool .search{max-width:340px}
+  .dtool .right{margin-left:auto;display:flex;gap:6px;align-items:center;color:var(--faint);font-size:11px}
+  .dt{width:100%;border-collapse:collapse;font-size:12px}
+  .dt th{text-align:left;font-weight:650;font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);padding:8px 10px;border-bottom:1px solid var(--border-strong);white-space:nowrap}
+  .dt td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+  .dt tr:last-child td{border-bottom:0}
+  .dt tbody tr:hover{background:var(--surface-2)}
+  .dt .dev{display:flex;align-items:center;gap:9px;min-width:0}
+  .dt .dev .ic{width:30px;height:30px;border-radius:9px;background:var(--surface-2);display:grid;place-items:center;color:var(--muted);flex:none}
+  .dt .dev .ic .i{width:15px;height:15px}
+  .dt .dev b{display:block;font-size:12.5px}
+  .dt .dev small{display:block;color:var(--faint);font:10px var(--mono)}
+  .dt .muted{color:var(--muted)}
+  .dt .seen{display:flex;flex-direction:column;gap:1px;font-size:11.5px;white-space:nowrap}
+  .dt .seen.quiet{color:var(--warn)}
+  .dt .seen .age{font-size:10px;color:var(--faint)}
+  .dt .seen.quiet .age{color:rgba(232,163,61,.8)}
+  .dt .acts{text-align:right;white-space:nowrap}
+  .dt .ico-btn{width:26px;height:26px}
+  .tablewrap{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface)}
+  .tablefoot{display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--border);color:var(--faint);font-size:10.5px}
+  .tablefoot .right{margin-left:auto;display:flex;gap:10px}
+  .quietcall{display:flex;gap:8px;align-items:center;padding:8px 11px;border-radius:10px;background:rgba(232,163,61,.07);border:1px solid rgba(232,163,61,.25);color:rgba(255,213,154,.95);font-size:11.5px;margin-bottom:10px}
+  .quietcall .i{width:14px;height:14px}
+  .quietcall .right{margin-left:auto;color:#ffd59a;font-weight:650;white-space:nowrap}
+
+  /* mobile device rows */
+  .mdev{border:1px solid var(--border);border-radius:12px;background:var(--surface);padding:11px 12px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start}
+  .mdev.quiet{border-color:rgba(232,163,61,.3);box-shadow:inset 3px 0 0 var(--warn)}
+  .mdev.off{opacity:.85}
+  .mdev .ic{width:32px;height:32px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;color:var(--muted);flex:none}
+  .mdev .ic .i{width:16px;height:16px}
+  .mdev .tx{flex:1;min-width:0}
+  .mdev .tx b{display:block;font-size:12.5px}
+  .mdev .tx small{display:block;color:var(--muted);font-size:10.5px}
+  .mdev .tx .line{display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap}
+  .mdev .tx .line .t{font-size:10px;color:var(--faint)}
+  .mdev.quiet .tx .line .t{color:var(--warn)}
+  .mdev .go{align-self:center;color:var(--faint)}
+
+  /* overview */
+  .statgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
+  .stat{border:1px solid var(--border);border-radius:12px;background:var(--surface);padding:12px;position:relative;min-width:0;text-decoration:none;color:inherit}
+  .stat .hint{text-decoration:none;color:var(--faint)}
+  .stat .lab{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .stat .lab .i{width:13px;height:13px}
+  .stat .val{font-size:21px;font-weight:740;letter-spacing:-.02em;margin-top:3px}
+  .stat .hint{font-size:10.5px;color:var(--faint);margin-top:1px}
+  .stat.warn{border-color:rgba(232,163,61,.32);background:rgba(232,163,61,.04)}
+  .stat .corner{position:absolute;top:10px;right:10px}
+  .agroup{border:1px solid var(--border);border-radius:12px;background:var(--surface);overflow:hidden;margin-bottom:10px}
+  .agroup .gh{display:flex;align-items:center;gap:7px;padding:8px 11px;border-bottom:1px solid var(--border);font-size:10.5px;color:var(--muted);font-weight:650;letter-spacing:.03em;text-transform:uppercase}
+  .agroup .gh .i{width:13px;height:13px}
+  .agroup .gh .n{margin-left:auto;color:var(--faint);font:10px var(--mono);text-transform:none;letter-spacing:0}
+  .arow{display:flex;gap:9px;align-items:center;padding:9px 11px;border-bottom:1px solid var(--border)}
+  .arow:last-child{border-bottom:0}
+  .arow .ic{width:27px;height:27px;border-radius:8px;background:var(--surface-2);display:grid;place-items:center;color:var(--muted);flex:none}
+  .arow .ic .i{width:14px;height:14px}
+  .arow .tx{flex:1;min-width:0}
+  .arow .tx b{display:block;font-size:12px}
+  .arow .tx small{display:block;color:var(--muted);font-size:10.5px}
+  .arow .right{display:flex;gap:6px;align-items:center;white-space:nowrap}
+
+  /* integrations */
+  .irow{display:flex;gap:11px;align-items:flex-start;padding:12px 13px;border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:8px}
+  .irow.attention{border-color:rgba(232,163,61,.32);box-shadow:inset 3px 0 0 var(--warn)}
+  .irow.error{border-color:rgba(229,84,75,.32);box-shadow:inset 3px 0 0 var(--danger)}
+  .irow .ic{width:34px;height:34px;border-radius:10px;background:var(--surface-2);display:grid;place-items:center;color:var(--muted);flex:none}
+  .irow .ic .i{width:17px;height:17px}
+  .irow .tx{flex:1;min-width:0}
+  .irow .tx .h{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .irow .tx b{font-size:12.5px}
+  .irow .tx .prov{font-size:10.5px;color:var(--faint)}
+  .irow .tx p{font-size:11.5px;color:var(--muted);margin-top:3px}
+  .irow .tx .meta{display:flex;gap:10px;margin-top:5px;font-size:10.5px;color:var(--faint);flex-wrap:wrap}
+  .irow .side{display:flex;flex-direction:column;align-items:flex-end;gap:6px;background:transparent;border:0;padding:0}
+  .irow .side .acts{display:flex;gap:4px}
+  .iggroup{margin-bottom:4px}
+  .iggroup .gh{font-size:11px;color:var(--faint);font-weight:650;text-transform:uppercase;letter-spacing:.06em;margin:12px 2px 7px}
+  .iggroup:first-of-type .gh{margin-top:0}
+
+  /* device detail */
+  .dhead{display:flex;gap:13px;align-items:flex-start;margin-bottom:12px}
+  .dhead .hero{width:46px;height:46px;border-radius:13px;background:var(--accent-soft);color:#c9bdff;display:grid;place-items:center;flex:none}
+  .dhead .hero .i{width:22px;height:22px}
+  .dhead .t{min-width:0;flex:1}
+  .dhead .t h1{font-size:21px;letter-spacing:-.02em}
+  .dhead .t p{color:var(--muted);font-size:11.5px;margin-top:2px}
+  .dhead .acts{display:flex;gap:5px}
+  .trust{display:flex;gap:12px;align-items:center;flex-wrap:wrap;border:1px solid rgba(232,163,61,.32);background:rgba(232,163,61,.05);border-radius:11px;padding:10px 12px;margin-bottom:12px;font-size:11.5px}
+  .trust .i{width:16px;height:16px;color:var(--warn)}
+  .trust b{color:#ffd59a}
+  .trust .grow{flex:1;min-width:200px;color:var(--muted)}
+  .trust .right{color:var(--faint);font-size:10.5px}
+  .dtabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:14px}
+  .dtab{padding:7px 11px;font-size:12px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
+  .dtab.on{color:var(--text);border-bottom-color:var(--accent);font-weight:650}
+  .detailgrid{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:12px;align-items:start}
+  .readrow{display:flex;align-items:center;gap:10px;padding:10px 13px;border-bottom:1px solid var(--border)}
+  .readrow:last-child{border-bottom:0}
+  .readrow .rl{flex:1;min-width:0}
+  .readrow .rl b{display:block;font-size:12px}
+  .readrow .rl small{display:block;font-size:10.5px;color:var(--faint)}
+  .readrow .rv{font-size:13px;font-weight:600;white-space:nowrap}
+  .readrow .rv small{display:block;font-size:9.5px;color:var(--warn);text-align:right;font-weight:500}
+  .slider{height:6px;border-radius:99px;background:var(--surface-2);width:120px;position:relative}
+  .slider i{position:absolute;left:0;top:0;height:100%;width:62%;background:var(--accent);border-radius:99px}
+  .slider::after{content:"";position:absolute;left:62%;top:50%;width:12px;height:12px;border-radius:50%;background:#fff;transform:translate(-50%,-50%);box-shadow:0 0 0 3px var(--bg)}
+  .dside .sect-card{margin-bottom:10px}
+  .sect-card .ch .right{margin-left:auto;display:flex;gap:5px}
+
+  .phones.two{max-width:100%}
+
+  /* home status strip */
+  .homestatus{display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:10px;background:rgba(232,163,61,.06);border:1px solid rgba(232,163,61,.24);font-size:11.5px;color:var(--muted);margin-bottom:14px}
+  .homestatus .i{width:14px;height:14px;color:var(--warn)}
+  .homestatus b{color:#ffd59a}
+  .homestatus a{margin-left:auto;color:#ffd59a;font-weight:650;text-decoration:none;white-space:nowrap}
+  .homestatus.ok{background:rgba(62,207,142,.06);border-color:rgba(62,207,142,.22)}
+  .homestatus.ok .i,.homestatus.ok b{color:var(--ok)}
+  .homestatus.ok a{color:var(--ok)}
+  .homestatus .time{margin-left:auto;color:var(--faint);font-size:10.5px}
+  .homestatus .time + a{margin-left:10px}
+
+  /* calm overview */
+  .calm{max-width:940px}
+  .calm-hero{display:flex;gap:14px;align-items:center;padding:16px 17px;border-radius:14px;border:1px solid rgba(232,163,61,.3);background:linear-gradient(120deg,rgba(232,163,61,.1),rgba(232,163,61,.02));margin-bottom:16px}
+  .calm-hero .ic{width:40px;height:40px;border-radius:12px;background:rgba(232,163,61,.16);color:var(--warn);display:grid;place-items:center;flex:none}
+  .calm-hero .ic .i{width:20px;height:20px}
+  .calm-hero .tx{flex:1;min-width:0}
+  .calm-hero h2{font-size:18px;letter-spacing:-.01em}
+  .calm-hero p{font-size:12px;color:var(--muted);margin-top:2px}
+  .calm-hero.ok{border-color:rgba(62,207,142,.3);background:linear-gradient(120deg,rgba(62,207,142,.09),rgba(62,207,142,.02))}
+  .calm-hero.ok .ic{background:rgba(62,207,142,.15);color:var(--ok)}
+  .calm-sect{margin-bottom:18px}
+  .calm-sect .sh{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+  .calm-sect .sh h2{font-size:12px;font-weight:680;letter-spacing:.01em}
+  .calm-sect .sh .right{margin-left:auto}
+  .prio{border:1px solid var(--border);border-radius:12px;background:var(--surface);overflow:hidden}
+  .prio .prow{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border)}
+  .prio .prow:last-child{border-bottom:0}
+  .prio .prow .ic{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;flex:none;background:var(--surface-2);color:var(--muted)}
+  .prio .prow .ic .i{width:14px;height:14px}
+  .prio .prow .tx{flex:1;min-width:0}
+  .prio .prow .tx b{display:block;font-size:12px}
+  .prio .prow .tx small{display:block;font-size:10.5px;color:var(--muted)}
+  .prio .prow .go{display:flex;gap:6px}
+  .prio .prow.sev1 .ic{background:rgba(229,84,75,.13);color:#ff9d96}
+  .prio .prow.sev2 .ic{background:rgba(232,163,61,.13);color:var(--warn)}
+  .prio-foot{display:flex;justify-content:center;padding:7px;border-top:1px solid var(--border)}
+  .prio-foot a{font-size:11px;color:#b6a6ff;text-decoration:none;font-weight:600}
+  .healthline{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--border);border-radius:11px;background:var(--bg-2);font-size:11.5px;color:var(--muted);margin-bottom:16px}
+  .healthline a{color:var(--text);text-decoration:none;border-bottom:1px dotted var(--border-strong)}
+  .healthline .sep{color:var(--border-strong)}
+  .brief{display:flex;flex-direction:column;gap:0}
+  .brief .brow{display:flex;gap:9px;align-items:baseline;padding:4px 0;font-size:11.5px;color:var(--muted)}
+  .brief .brow time{font:10.5px var(--mono);color:var(--faint);width:36px;flex:none}
+  .brief .brow b{color:var(--text);font-weight:600}
+  .allclear{display:flex;gap:9px;align-items:center;font-size:11.5px;color:var(--muted);padding:9px 11px;border:1px dashed rgba(62,207,142,.3);border-radius:10px;background:rgba(62,207,142,.04)}
+  .allclear .i{width:14px;height:14px;color:var(--ok)}
+
+  /* domain board */
+  .domains{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+  .domain{display:flex;align-items:center;gap:11px;padding:11px 13px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+  .domain .ic{width:32px;height:32px;border-radius:9px;background:var(--accent-soft);color:#c9bdff;display:grid;place-items:center;flex:none}
+  .domain .ic .i{width:16px;height:16px}
+  .domain .tx{flex:1;min-width:0}
+  .domain .tx b{display:block;font-size:12.5px}
+  .domain .tx small{display:block;font-size:11px;color:var(--muted)}
+  .domain .right{display:flex;gap:6px;align-items:center}
+  .domain.warn{border-color:rgba(232,163,61,.28)}
+
+  /* panel mode */
+  .pframe{width:1160px;height:725px;border-radius:18px;overflow:hidden;position:relative;display:flex;flex-direction:column;color:#eef4f2;border:1px solid var(--border);background:radial-gradient(55rem 34rem at 8% -12%,rgba(92,196,236,.14),transparent 70%),radial-gradient(46rem 30rem at 106% 112%,rgba(241,217,181,.1),transparent 70%),#0b0b0d;font-family:var(--font)}
+  .p-top{display:flex;align-items:center;gap:18px;padding:20px 28px 8px}
+  .p-logo{width:38px;height:38px;border-radius:12px;background:linear-gradient(140deg,#7c5cff,#4b2fd6);display:grid;place-items:center;font-weight:800;font-size:13px;color:#fff;flex:none}
+  .p-clock b{display:block;font-size:40px;font-weight:300;letter-spacing:-.04em;line-height:1}
+  .p-clock span{display:block;color:var(--muted);font-size:11.5px;margin-top:3px}
+  .p-topright{margin-left:auto;display:flex;align-items:center;gap:10px}
+  .picon{width:40px;height:40px;border-radius:11px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:var(--muted);display:grid;place-items:center}
+  .p-tabs{display:flex;gap:6px;padding:10px 28px 0;flex-wrap:wrap}
+  .p-tab{padding:8px 16px;border-radius:999px;font-size:12.5px;color:var(--muted);border:1px solid transparent}
+  .p-tab.on{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.14);color:#fff;font-weight:600}
+  .p-grid{flex:1;display:grid;grid-template-columns:minmax(0,.82fr) minmax(0,1.3fr);gap:24px;padding:16px 28px;min-height:0}
+  .p-climate{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:0}
+  .pdial{width:250px;height:250px;border-radius:50%;position:relative;background:conic-gradient(from 135deg,rgba(92,196,236,.9) 0deg 205deg,rgba(255,255,255,.07) 205deg 270deg,transparent 270deg 360deg);box-shadow:0 0 60px rgba(92,196,236,.12)}
+  .pdial::before{content:"";position:absolute;inset:16px;border-radius:50%;background:#0d0f13;border:1px solid rgba(255,255,255,.05)}
+  .pdial .pin{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+  .pdial .pv{font-size:62px;font-weight:250;letter-spacing:-.05em;line-height:1}
+  .pdial .pl{font-size:12px;color:var(--muted);margin-top:6px}
+  .pdial .pc{font-size:11px;color:rgba(92,196,236,.9);margin-top:2px}
+  .p-meta{font-size:11px;color:var(--muted)}
+  .p-controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));gap:11px;min-height:0;max-height:540px;align-self:center}
+  .pbtn{border-radius:18px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.035);padding:15px 16px;display:flex;flex-direction:column;justify-content:flex-start;gap:10px;min-height:0;position:relative;color:inherit;text-align:left}
+  .pbtn .ic{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.05);display:grid;place-items:center;color:var(--muted)}
+  .pbtn .ic .i{width:18px;height:18px}
+  .pbtn b{font-size:14px;font-weight:500;display:block}
+  .pbtn small{font-size:11px;color:var(--muted);display:block;margin-top:2px}
+  .pbtn.on{border-color:rgba(241,217,181,.35);background:linear-gradient(160deg,rgba(241,217,181,.17),rgba(241,217,181,.04))}
+  .pbtn.on .ic{background:rgba(241,217,181,.24);color:#ffe9c6}
+  .pbtn .state{font-size:11px;color:var(--muted);margin-top:auto}
+  .pbtn.on .state{color:#ffe9c6}
+  .p-dock{display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 0 max(10px,env(safe-area-inset-bottom))}
+  .p-dock .item{display:flex;align-items:center;gap:7px;padding:8px 16px;border-radius:999px;font-size:12px;color:var(--muted)}
+  .p-dock .item.on{background:rgba(255,255,255,.08);color:#fff}
+  .p-dock .item .i{width:15px;height:15px}
+  .p-banner{display:flex;align-items:center;gap:9px;margin:0 28px;padding:9px 12px;border-radius:10px;background:rgba(229,84,75,.11);border:1px solid rgba(229,84,75,.32);color:#ffc9c5;font-size:11.5px}
+  .p-banner .i{width:15px;height:15px}
+  .p-banner .right{margin-left:auto;font-weight:650;color:#ffb1ac;white-space:nowrap}
+  .pframe.night{background:radial-gradient(50rem 30rem at 50% -10%,rgba(241,217,181,.08),transparent 70%),#080706;color:#e9e0cf}
+  .pframe.night .p-clock b{font-size:76px;font-weight:250}
+  .pframe.night .p-clock span{font-size:12.5px;color:#a89c86}
+  .pframe.night .p-tab.on{background:rgba(241,217,181,.12);border-color:rgba(241,217,181,.22);color:#ffe9c6}
+  .p-nightgrid{flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(2,minmax(0,1fr));gap:12px;padding:10px 0 0;margin:0 auto;width:calc(100% - 56px);min-height:0;max-height:500px}
+  .p-nightgrid .pbtn{padding:18px;opacity:.85}
+  .p-nightgrid .pbtn.on{opacity:1}
+  .p-status{padding:6px 28px 0;flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:22px;align-content:start}
+  .p-status h1{font-size:24px;font-weight:300;letter-spacing:-.02em;margin-bottom:14px}
+  .pstats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  .pstat{border:1px solid rgba(255,255,255,.08);border-radius:16px;background:rgba(255,255,255,.035);padding:15px 16px}
+  .pstat .l{font-size:11px;color:var(--muted);display:flex;gap:6px;align-items:center}
+  .pstat .v{font-size:34px;font-weight:250;letter-spacing:-.03em;margin-top:6px}
+  .pstat .v small{font-size:13px;color:var(--muted);font-weight:400}
+  .pstat .h{font-size:10.5px;color:var(--muted);margin-top:2px}
+  .pstatus-list{display:flex;flex-direction:column;gap:7px}
+  .p-status-right h2{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:8px}
+  .p-foot{margin-top:14px;font-size:10.5px;color:var(--faint)}
+  .pstatus-row{display:flex;align-items:center;gap:10px;padding:10px 13px;border:1px solid rgba(255,255,255,.07);border-radius:12px;background:rgba(255,255,255,.03)}
+  .pstatus-row .i{width:15px;height:15px;color:var(--warn)}
+  .pstatus-row b{font-size:12.5px;font-weight:500}
+  .pstatus-row small{font-size:11px;color:var(--muted);margin-left:auto}
+
+  @media (max-width: 1100px){
+    .specgrid{grid-template-columns:1fr}
+    .states{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .detailgrid{grid-template-columns:1fr}
+    .dt{font-size:11.5px}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-devices" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></symbol>
+  <symbol id="i-bot" viewBox="0 0 24 24"><rect x="4" y="7" width="16" height="12" rx="4"/><path d="M12 3v4M9 13h.01M15 13h.01"/></symbol>
+  <symbol id="i-terminal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7 9 3 3-3 3M13 15h4"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.9 4.9 7 7M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 2 21h20z"/><path d="M12 9v5M12 17h.01"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+  <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M2 8a16 16 0 0 1 20 0M5 12a11 11 0 0 1 14 0M8.5 15.5a6 6 0 0 1 7 0M12 19h.01"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-wifioff" viewBox="0 0 24 24"><path d="M2 8a16 16 0 0 1 20 0M5 12a11 11 0 0 1 14 0M8.5 15.5a6 6 0 0 1 7 0M12 19h.01M2 2l20 20"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-thermo" viewBox="0 0 24 24"><path d="M14 14.8V5a2 2 0 1 0-4 0v9.8a4 4 0 1 0 4 0z"/></symbol>
+  <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 3s6 6 6 10a6 6 0 0 1-12 0c0-4 6-10 6-10z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+  <symbol id="i-db" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7M21 3v6h-6"/></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M4 20c8 0 16-4 16-16C10 4 4 10 4 20z"/><path d="M4 20 14 10"/></symbol>
+  <symbol id="i-wave" viewBox="0 0 24 24"><path d="M2 12c2 0 2-4 4-4s2 8 4 8 2-8 4-8 2 4 4 4h4"/></symbol>
+
+  <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/><path d="M13.4 10.6 18 6"/><path d="M3.5 18a9 9 0 1 1 17 0"/></symbol>
+  <symbol id="i-signal" viewBox="0 0 24 24"><path d="M4 18v-3M9 18v-6M14 18v-9M19 18V5"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L18 10a2.8 2.8 0 0 0-4-4L4 16z"/></symbol>
+  <symbol id="i-zigbee" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/></symbol>
+  <symbol id="i-blinds" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 9h16M4 14h16"/></symbol>
+  <symbol id="i-signout" viewBox="0 0 24 24"><path d="M15 12H3M7 8l-4 4 4 4M13 4h6a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6"/></symbol>
+</svg>
+
+<div class="gal">
+  <nav class="gal-nav" aria-label="Ring 2 sections">
+    <div class="brand"><span class="brand-dot">NH</span> Ring 2</div>
+    <p class="note">Adjacent daily surfaces. Same tokens and primitives as the Ring 1 gallery.</p>
+    <ol>
+      <li><a href="#patterns"><span class="num">0</span> P0 pattern sheet</a></li>
+      <li><a href="#home"><span class="num">1</span> Home consistency</a></li>
+      <li><a href="#devices"><span class="num">2</span> Devices</a></li>
+      <li><a href="#device"><span class="num">3</span> Device detail</a></li>
+      <li><a href="#overview"><span class="num">4</span> Overview · calm</a></li>
+      <li><a href="#integrations"><span class="num">5</span> Integrations</a></li>
+      <li><a href="#panel"><span class="num">6</span> Panel mode</a></li>
+      <li><a href="#decisions"><span class="num">7</span> Decisions</a></li>
+    </ol>
+  </nav>
+
+  <main class="gal-main">
+    <div class="r2nav">
+      <a class="back" href="ui-improvements.html">← Ring 1 gallery</a>
+      <a href="#patterns">Patterns</a><a href="#home">Home</a><a href="#devices">Devices</a><a href="#device">Device</a>
+      <a href="#overview">Overview</a><a href="#integrations">Integrations</a><a href="#panel">Panel</a>
+      <span class="spacer"></span>
+      <span class="pill rec">Ring 2 · 1 sheet + 14 frames</span>
+    </div>
+
+    <header class="gal-head">
+      <p class="kicker">NodeHerder · design exploration · ring 2</p>
+      <h1>Daily surfaces, one system</h1>
+      <p>Ring 2 aligns the surfaces people use every day: Home, Devices, a device, the redesigned
+        Overview, Integrations and Panel mode. It starts with a pattern sheet, because the goal is not
+        six new pages — it is one vocabulary for freshness, actions, rows and states. All frames reuse
+        the Ring 1 tokens; nothing here introduces a new visual language. Reviewed against
+        <code>ui-ux-pro-max</code> guidance for hierarchy, touch targets, contrast, focus and
+        confirmation.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+        <span class="pill rec">Recommendation: ring 0 patterns first, then devices + overview</span>
+        <span class="pill">No production code changed</span>
+      </div>
+    </header>
+
+    <!-- ============================================================ P0 PATTERNS -->
+    <section class="sec" id="patterns">
+      <div class="sec-head"><h2>P0 · Pattern sheet (Ring 0 primitives)</h2><span class="pill rec">build first</span></div>
+      <p class="sec-lede">Extract these from Ring 1 while implementing it, not as a separate design project.
+        If these are stable, Devices, Overview and Integrations become assembly rather than redesign.</p>
+
+      <div class="sheet">
+        <div class="sheet-head">
+          <div><h2>NodeHerder interaction sheet</h2><p>Status · actions · rows · header · states · destructive confirmation</p></div>
+          <span class="pill">v0.1 · companion to Rings 1–2</span>
+        </div>
+
+        <div class="specgrid">
+
+          <div class="spec wide">
+            <h3>1 · Status and freshness vocabulary</h3>
+            <div class="srow"><span class="nm">Fresh</span><span class="pill ok">● Online · 18 s</span><span class="where">Devices, Home, device header · normal</span></div>
+            <div class="srow"><span class="nm">Quiet</span><span class="pill warn">◷ Quiet · 4 h</span><span class="where">Home, Devices, Overview · amber hint, controls stay enabled</span></div>
+            <div class="srow"><span class="nm">Stale</span><span class="pill warn" style="border-color:rgba(229,84,75,.4);color:#ffb1ac;background:rgba(229,84,75,.09)">◷ Stale · 1 d</span><span class="where">Devices, device header · amber-red, “last known” labels</span></div>
+            <div class="srow"><span class="nm">Offline</span><span class="pill danger">⚠ Offline</span><span class="where">All surfaces · values last known, controls paused</span></div>
+            <div class="srow"><span class="nm">Disabled</span><span class="pill">⊘ Disabled</span><span class="where">Devices, integrations · hub ignores updates</span></div>
+            <div class="srow"><span class="nm">Unknown</span><span class="pill">? Unknown</span><span class="where">Before first report or after removal</span></div>
+            <div class="srow"><span class="nm">Pending</span><span class="pill info">↻ Refreshing…</span><span class="where">Integration rows, device commands · never a spinner alone</span></div>
+            <div class="srow"><span class="nm">Failed</span><span class="pill danger">⚠ Failed</span><span class="where">Automations, integrations · links to the reason</span></div>
+            <p class="help"><b>Rule:</b> availability and silence are separate facts. A quiet device is still
+              “Online” for automation routing; the chip adds the silence. Never encode both in one colour.</p>
+            <div style="margin-top:12px">
+              <div class="freshbar"><i class="f1"></i><i class="f2"></i><i class="f3"></i></div>
+              <div class="freshlabels"><span>fresh · within interval</span><span>quiet · 3× (min 15 min)</span><span>stale · 12× (min 6 h) or socket down</span></div>
+            </div>
+          </div>
+
+          <div class="spec">
+            <h3>2 · Action hierarchy</h3>
+            <div class="btnrow">
+              <button class="btn primary"><svg class="i"><use href="#i-plus"/></svg>Primary</button>
+              <button class="btn">Secondary</button>
+              <button class="btn ghost">Ghost</button>
+              <button class="btn danger">Danger</button>
+              <button class="btn link">Link</button>
+            </div>
+            <div class="btnrow" style="margin-top:9px">
+              <button class="btn sq"><svg class="i"><use href="#i-more"/></svg></button>
+              <button class="btn sq ghost"><svg class="i"><use href="#i-download"/></svg></button>
+              <button class="btn" disabled>Disabled</button>
+              <button class="btn primary"><span class="spin"></span>Saving…</button>
+              <button class="btn sm">Small</button>
+            </div>
+            <p class="help">One primary per view or sheet. Destructive actions are never primary and always
+              confirm. Icon-only buttons carry an accessible name; 44 px on touch.</p>
+          </div>
+
+          <div class="spec">
+            <h3>3 · Page header anatomy</h3>
+            <div class="dhead" style="margin-bottom:8px">
+              <a href="#" style="align-self:center;color:var(--faint)"><svg class="i"><use href="#i-back"/></svg></a>
+              <span class="hero"><svg class="i"><use href="#i-bolt"/></svg></span>
+              <div class="t"><h1 style="font-size:17px">Attic room light</h1><p>Zigbee router · Attic room</p></div>
+              <div class="acts"><button class="btn sm ghost"><svg class="i"><use href="#i-download"/></svg></button><button class="btn sm ghost"><svg class="i"><use href="#i-more"/></svg></button></div>
+            </div>
+            <p class="help">Back (only when there is history), optional hero, one <code>h1</code>, one-line
+              context, actions right. Status chips sit below the header, never inside the title.</p>
+          </div>
+
+          <div class="spec wide">
+            <h3>4 · Row anatomy</h3>
+            <div class="anarow"><span class="ic"><svg class="i"><use href="#i-sun"/></svg></span>
+              <div class="tx"><b>Attic room light</b><small>Living room · Zigbee router</small></div>
+              <div class="meta">Quiet · 4 h<br><span style="color:var(--faint)">signal 47</span></div>
+              <button class="btn sq sm ghost"><svg class="i"><use href="#i-more"/></svg></button></div>
+            <div class="anarow"><span class="ic"><svg class="i"><use href="#i-leaf"/></svg></span>
+              <div class="tx"><b>Garden waste</b><small>Waste collection · Bins</small></div>
+              <div class="meta">Needs refreshing<br><span style="color:var(--faint)">checked 6 h ago</span></div>
+              <button class="btn sq sm ghost"><svg class="i"><use href="#i-refresh"/></svg></button></div>
+            <div class="anarow"><span class="ic"><svg class="i"><use href="#i-bolt"/></svg></span>
+              <div class="tx"><b>Hallway light on motion</b><small>Failed 3× · last run 14:02</small></div>
+              <div class="meta">Automation<br><span style="color:var(--faint)">3 triggers</span></div>
+              <button class="btn sq sm ghost"><svg class="i"><use href="#i-more"/></svg></button></div>
+            <div class="analegend">Order: identity and icon · one line of context (type or latest summary) · state,
+              freshness and one secondary metric · one overflow or one primary action. Rows do not have more than
+              two actions inline; everything else goes in the menu or sheet.</div>
+          </div>
+
+          <div class="spec wide">
+            <h3>5 · States</h3>
+            <div class="states">
+              <div class="statebox skel"><span class="skl" style="width:60%"></span><span class="skl" style="width:85%"></span><span class="skl" style="width:40%"></span></div>
+              <div class="statebox"><span class="ic"><svg class="i"><use href="#i-devices"/></svg></span><b>No devices yet</b><small>Pair a device or send data to the hub.</small></div>
+              <div class="statebox"><span class="ic" style="color:#ff9d96;background:rgba(229,84,75,.12)"><svg class="i"><use href="#i-alert"/></svg></span><b>Could not load</b><small>Hub did not answer. Retry or open logs.</small></div>
+              <div class="statebox"><span class="ic"><svg class="i"><use href="#i-search"/></svg></span><b>No matches</b><small>Clear filters to see all 42.</small></div>
+            </div>
+            <p class="help">Every list has four states; “empty” and “no matches” are different messages.
+              Loading uses the same skeleton shape as the final row, never a centred spinner.</p>
+          </div>
+
+          <div class="spec">
+            <h3>6 · Destructive confirmation</h3>
+            <div class="confirm-mini">
+              <h4>Delete all history?</h4><span class="sub">Cannot be undone</span>
+              <div class="impact">Removes 1.2 M readings across 42 devices. Automations keep running.</div>
+              <div class="inp">DELETE</div>
+              <div class="acts"><button class="btn">Cancel</button><button class="btn" style="background:var(--danger);border-color:var(--danger);color:#fff">Delete</button></div>
+            </div>
+          </div>
+
+          <div class="spec">
+            <h3>7 · Interaction contract</h3>
+            <div class="srow"><span class="nm">Focus</span><span>2 px ring + 2 px offset; never removed; not obscured by sticky bars</span></div>
+            <div class="srow"><span class="nm">Press</span><span>80–150 ms opacity/elevation; no layout shift</span></div>
+            <div class="srow"><span class="nm">Hover</span><span>Enhancement only; every action works by tap and keyboard</span></div>
+            <div class="srow"><span class="nm">Live counts</span><span>Announce “3 items need attention”, not the bare number</span></div>
+            <div class="srow"><span class="nm">Disabled</span><span>Native disabled + reduced emphasis; never looks tappable</span></div>
+            <p class="help">Kept deliberately small: no new motion system, no hover-dependent affordance,
+              no colour-only state. Sheets trap focus, close on <code>Esc</code>, and restore it.</p>
+          </div>
+
+          <div class="spec">
+            <h3>8 · Tokens and targets</h3>
+            <div class="srow"><span class="nm">Targets</span><span>44 px touch · 30 px dense desktop</span></div>
+            <div class="srow"><span class="nm">Spacing</span><span>4 · 8 · 12 · 16 · 24 · 32</span></div>
+            <div class="srow"><span class="nm">Radii</span><span>7 · 14 · 20 · 999</span></div>
+            <div class="srow"><span class="nm">Type</span><span>11 / 12 / 12.5 / 14 / 21 / 28</span></div>
+            <div class="srow"><span class="nm">Motion</span><span>160 ms · reduced-motion honoured</span></div>
+            <p class="help">Use existing <code>--nh-*</code> tokens. No new palette entries.</p>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ============================================================ 1. HOME -->
+    <section class="sec" id="home">
+      <div class="sec-head"><h2>1 · Home consistency pass</h2><span class="pill rec">control surface</span></div>
+      <p class="sec-lede">Home is the control surface; Overview is the status surface. Ring 2 adds one thing
+        to Home: a compact status strip that links to the calm Overview, plus room-level health. No new
+        cards, no duplicated network tables, no second attention list.</p>
+      <p class="finding"><b>Design rule:</b> Home answers “turn this on / what is this room doing?”.
+        Overview answers “is anything wrong, and what first?”. The same status vocabulary, different jobs.</p>
+
+      <div class="variant">
+        <div class="v-head"><span class="v-tag">D</span><div><h3>Desktop — status strip, then rooms</h3>
+          <p class="v-note">One strip between the header and the rooms. Room headings carry a health count
+            only when something is wrong; otherwise they stay quiet.</p></div>
+          <span class="pill rec">recommended</span></div>
+        <div class="screen">
+          <div class="app">
+            <aside class="side">
+              <div class="logo"><span class="brand-dot">NH</span> NodeHerder</div>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-home"/></svg>Overview</a>
+              <a class="nvi active" href="#"><svg class="i"><use href="#i-home"/></svg>Home</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-devices"/></svg>Devices</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-link"/></svg>Integrations</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-bolt"/></svg>Automations</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-bot"/></svg>Assistant</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-settings"/></svg>Settings</a>
+            </aside>
+            <div class="main">
+              <div class="top"><span class="ttl">Home</span>
+                <div class="right"><span class="conn"><span class="dot"></span> Connected</span>
+                  <button class="ico-btn" aria-label="Notifications"><svg class="i"><use href="#i-bell"/></svg><span class="badge">3</span></button></div></div>
+              <div class="body">
+                <div class="page-h"><div><h1>Home</h1><div class="sub">4 areas · 18 tiles</div></div>
+                  <div class="actions"><button class="btn"><svg class="i"><use href="#i-wave"/></svg>Panel mode</button>
+                    <button class="btn">Edit layout</button></div></div>
+
+                <div class="homestatus">
+                  <svg class="i"><use href="#i-alert"/></svg>
+                  <span><b>5 need a look</b> · 2 offline · 3 quiet</span>
+                  <span class="time">Snapshot 16:32</span>
+                  <a href="#">Overview →</a>
+                </div>
+
+                <div class="area-head"><h2>Living room</h2><span class="area-meta">4 tiles</span>
+                  <span class="health"><span class="pill warn">1 quiet</span><span class="pill danger">1 offline</span></span></div>
+                <div class="tiles">
+                  <article class="tile k-power on"><span class="ic"><svg class="i"><use href="#i-bolt"/></svg></span>
+                    <div class="txt"><span class="lab">TV power socket</span><span class="val">On · 42 W</span><span class="dev">Living room socket</span>
+                      <span class="age"><svg class="i"><use href="#i-clock"/></svg>Updated 18 s ago</span></div></article>
+                  <article class="tile k-light stale-a"><span class="ic"><svg class="i"><use href="#i-sun"/></svg></span>
+                    <div class="txt"><span class="lab">Brightness</span><span class="val">136 lx</span><span class="dev">Living room illuminance</span>
+                      <span class="age"><svg class="i"><use href="#i-clock"/></svg>Updated 4 h ago · not reporting</span></div></article>
+                  <article class="tile k-light off"><span class="ic"><svg class="i"><use href="#i-sun"/></svg></span>
+                    <div class="txt"><span class="lab">Ceiling light</span><span class="val">Offline</span><span class="dev">Living Room Light</span>
+                      <span class="age"><svg class="i"><use href="#i-clock"/></svg>Last seen 2 h ago</span></div></article>
+                </div>
+
+                <div class="area-head"><h2>Attic room</h2><span class="area-meta">5 tiles</span>
+                  <span class="health"><span class="pill warn">1 quiet</span><span class="pill danger">1 offline</span></span></div>
+                <div class="tiles">
+                  <article class="tile k-temp"><span class="ic"><svg class="i"><use href="#i-thermo"/></svg></span>
+                    <div class="txt"><span class="lab">Temperature</span><span class="val">18 °C</span><span class="dev">Attic temperature sensor</span>
+                      <span class="age"><svg class="i"><use href="#i-clock"/></svg>Updated 1 min ago</span></div></article>
+                  <article class="tile k-light stale-a"><span class="ic"><svg class="i"><use href="#i-sun"/></svg></span>
+                    <div class="txt"><span class="lab">Brightness</span><span class="val">42 lx</span><span class="dev">Attic room light</span>
+                      <span class="age"><svg class="i"><use href="#i-clock"/></svg>Updated 4 h ago · not reporting</span></div></article>
+                  <article class="tile k-power on"><span class="ic"><svg class="i"><use href="#i-bolt"/></svg></span>
+                    <div class="txt"><span class="lab">State</span><span class="val">On</span><span class="dev">Attic power socket</span>
+                      <span class="age"><svg class="i"><use href="#i-clock"/></svg>Updated 25 s ago</span></div></article>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="variant">
+        <div class="v-head"><span class="v-tag">M</span><div><h3>Mobile — same strip, digest moved to Overview</h3>
+          <p class="v-note">The “while you were away” digest belongs on the status surface, not on the control
+            surface. Home keeps one line and gets straight to the rooms.</p></div>
+          <span class="pill rec">recommended</span></div>
+        <div class="phones two">
+          <div class="phone"><div class="m-screen">
+            <div class="m-status"><span>16:32</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><svg class="i" style="width:14px;height:14px"><use href="#i-wifi"/></svg><span class="batt"></span></span></div>
+            <header class="m-head">
+              <button class="m-ico"><svg class="i"><use href="#i-menu"/></svg></button>
+              <span class="m-title">Home</span>
+              <button class="m-ico"><svg class="i"><use href="#i-bell"/></svg><span class="m-badge">3</span></button>
+              <button class="m-ico"><svg class="i"><use href="#i-terminal"/></svg><span class="m-badge">2</span></button>
+            </header>
+            <div class="m-body">
+              <div class="m-card" style="margin-bottom:12px;padding:9px 11px;border-color:rgba(232,163,61,.28);background:rgba(232,163,61,.05)">
+                <div style="display:flex;align-items:center;gap:7px">
+                  <svg class="i" style="width:14px;height:14px;color:var(--warn)"><use href="#i-alert"/></svg>
+                  <b style="font-size:11.5px;color:#ffd59a">5 need a look</b>
+                  <a href="#" style="margin-left:auto;font-size:11px;color:#ffd59a;font-weight:650;text-decoration:none">Overview →</a>
+                </div>
+                <div style="font-size:10px;color:var(--faint);margin-top:3px">2 offline · 3 quiet · snapshot 16:32</div>
+              </div>
+              <div class="m-area"><h3>Living room</h3><span class="n">4 tiles</span>
+                <span class="chips"><span class="pill warn">1 quiet</span></span></div>
+              <article class="m-tile on"><span class="ic"><svg class="i"><use href="#i-bolt"/></svg></span>
+                <div class="txt"><span class="lab">TV power socket</span><span class="val">On · 42 W</span>
+                  <span class="dev">Living room socket</span><span class="age"><svg class="i"><use href="#i-clock"/></svg>Updated 18 s ago</span></div></article>
+              <article class="m-tile stale"><span class="ic"><svg class="i"><use href="#i-sun"/></svg></span>
+                <div class="txt"><span class="lab">Brightness</span><span class="val">136 lx</span>
+                  <span class="dev">Living room illuminance</span><span class="age"><svg class="i"><use href="#i-clock"/></svg>Updated 4 h ago · not reporting</span></div></article>
+              <article class="m-tile off"><span class="ic"><svg class="i"><use href="#i-sun"/></svg></span>
+                <div class="txt"><span class="lab">Ceiling light</span><span class="val">Offline</span>
+                  <span class="dev">Living Room Light</span><span class="age"><svg class="i"><use href="#i-clock"/></svg>Last seen 2 h ago</span></div></article>
+              <div class="m-area"><h3>Attic room</h3><span class="n">5 tiles</span>
+                <span class="chips"><span class="pill danger">1 offline</span></span></div>
+              <article class="m-tile"><span class="ic"><svg class="i"><use href="#i-thermo"/></svg></span>
+                <div class="txt"><span class="lab">Temperature</span><span class="val">18 °C</span>
+                  <span class="dev">Attic sensor</span><span class="age"><svg class="i"><use href="#i-clock"/></svg>Updated 1 min ago</span></div></article>
+              <article class="m-tile stale"><span class="ic"><svg class="i"><use href="#i-sun"/></svg></span>
+                <div class="txt"><span class="lab">Brightness</span><span class="val">42 lx</span>
+                  <span class="dev">Attic room light</span><span class="age"><svg class="i"><use href="#i-clock"/></svg>Updated 4 h ago</span></div></article>
+            </div>
+          </div></div>
+          <div class="v-note" style="max-width:360px;margin-top:14px">
+            <b>What changed</b><br>• Digest card no longer appears on Home.<br>
+            • One status strip; the full story is one tap away.<br>
+            • Room chips only when something is wrong.<br>
+            • Tiles unchanged from Ring 1 — no third card design.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ 1. DEVICES -->
+    <section class="sec" id="devices">
+      <div class="sec-head"><h2>2 · Devices</h2><span class="pill warn">same trust defect as Home</span></div>
+      <p class="sec-lede">The list already has search, filters, sorting and last-seen data; it just does not
+        use them to tell the truth. Add freshness as a first-class column, group “needs a look”, and make
+        the row actions usable on touch. Keep the table on desktop — it is genuinely efficient here.</p>
+      <p class="finding"><b>Evidence:</b> <code>DeviceList.vue</code> sort by <code>lastSeen</code> exists;
+        <code>DeviceStatusChip</code> only renders availability; filters include online/offline but no
+        quiet/stale. Actions are icon-only in a table cell.</p>
+
+      <div class="variant">
+        <div class="v-head"><span class="v-tag">D</span><div><h3>Desktop — table with freshness and attention</h3>
+          <p class="v-note">One new column (“Last seen”) becomes a freshness signal; the status cell now
+            combines availability + silence. A quiet banner links to the three affected devices.</p></div>
+          <span class="pill rec">recommended</span></div>
+        <div class="screen">
+          <div class="app">
+            <aside class="side">
+              <div class="logo"><span class="brand-dot">NH</span> NodeHerder</div>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-home"/></svg>Overview</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-home"/></svg>Home</a>
+              <a class="nvi active" href="#"><svg class="i"><use href="#i-devices"/></svg>Devices</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-link"/></svg>Integrations</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-bolt"/></svg>Automations</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-bot"/></svg>Assistant</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-settings"/></svg>Settings</a>
+            </aside>
+            <div class="main">
+              <div class="top"><span class="ttl">Devices</span>
+                <div class="right"><span class="conn"><span class="dot"></span> Connected</span>
+                  <button class="ico-btn" aria-label="Notifications"><svg class="i"><use href="#i-bell"/></svg><span class="badge">3</span></button></div></div>
+              <div class="body">
+                <div class="page-h">
+                  <div><h1>Devices</h1><div class="sub">42 devices · 3 need a look</div></div>
+                  <div class="actions"><button class="btn"><svg class="i"><use href="#i-download"/></svg>Export</button>
+                    <button class="btn primary"><svg class="i"><use href="#i-plus"/></svg>Add device</button></div>
+                </div>
+
+                <div class="quietcall"><svg class="i"><use href="#i-clock"/></svg>
+                  <span><b>3 devices have not reported for over 6 h.</b> Availability still shows them online.</span>
+                  <span class="right">Review →</span></div>
+
+                <div class="dtool">
+                  <label class="search"><svg class="i"><use href="#i-search"/></svg>Search name or ID…<kbd>/</kbd></label>
+                  <span class="pill warn">Quiet 3</span><span class="pill danger">Offline 2</span><span class="pill">Disabled 1</span>
+                  <div class="right"><span>Sort</span><button class="btn sm ghost">Last seen <svg class="i"><use href="#i-down"/></svg></button></div>
+                </div>
+
+                <div class="tablewrap">
+                  <table class="dt">
+                    <thead><tr>
+                      <th style="width:34%">Device</th><th>Type</th><th>Signal</th><th>Power</th>
+                      <th>Last seen</th><th>Status</th><th style="text-align:right">Actions</th>
+                    </tr></thead>
+                    <tbody>
+                      <tr>
+                        <td><span class="dev"><span class="ic"><svg class="i"><use href="#i-thermo"/></svg></span>
+                          <span><b>Attic room temperature sensor</b><small>0x00124b0029207763</small></span></span></td>
+                        <td class="muted">Zigbee</td><td class="muted">68 LQI</td><td class="muted">Battery 92 %</td>
+                        <td><span class="seen">18 s ago<span class="age">just now</span></span></td>
+                        <td><span class="pill ok">Online</span></td>
+                        <td class="acts"><button class="ico-btn"><svg class="i"><use href="#i-more"/></svg></button></td>
+                      </tr>
+                      <tr>
+                        <td><span class="dev"><span class="ic"><svg class="i"><use href="#i-sun"/></svg></span>
+                          <span><b>Attic room light</b><small>0x00158d0007b0a2c1</small></span></span></td>
+                        <td class="muted">Zigbee</td><td class="muted">47 LQI</td><td class="muted">Mains</td>
+                        <td><span class="seen quiet">4 h ago<span class="age">not reporting</span></span></td>
+                        <td><span class="pill warn">Online · quiet</span></td>
+                        <td class="acts"><button class="ico-btn"><svg class="i"><use href="#i-more"/></svg></button></td>
+                      </tr>
+                      <tr>
+                        <td><span class="dev"><span class="ic"><svg class="i"><use href="#i-sun"/></svg></span>
+                          <span><b>Living Room Light</b><small>0x00124b00a1b2c3d4</small></span></span></td>
+                        <td class="muted">Zigbee</td><td class="muted">—</td><td class="muted">Mains</td>
+                        <td><span class="seen quiet">2 h ago<span class="age">last seen</span></span></td>
+                        <td><span class="pill danger">Offline</span></td>
+                        <td class="acts"><button class="ico-btn"><svg class="i"><use href="#i-more"/></svg></button></td>
+                      </tr>
+                      <tr>
+                        <td><span class="dev"><span class="ic"><svg class="i"><use href="#i-shield"/></svg></span>
+                          <span><b>Attic smoke alarm</b><small>0xa4c138c383ac3fc8</small></span></span></td>
+                        <td class="muted">Zigbee</td><td class="muted">—</td><td class="muted">Battery 74 %</td>
+                        <td><span class="seen quiet">1 d ago<span class="age">stale</span></span></td>
+                        <td><span class="pill warn">Online · stale</span></td>
+                        <td class="acts"><button class="ico-btn"><svg class="i"><use href="#i-more"/></svg></button></td>
+                      </tr>
+                      <tr>
+                        <td><span class="dev"><span class="ic"><svg class="i"><use href="#i-drop"/></svg></span>
+                          <span><b>Kitchen humidity</b><small>0x00158d0007b0a2d9</small></span></span></td>
+                        <td class="muted">Zigbee</td><td class="muted">91 LQI</td><td class="muted">Battery 100 %</td>
+                        <td><span class="seen">2 min ago<span class="age">just now</span></span></td>
+                        <td><span class="pill ok">Online</span></td>
+                        <td class="acts"><button class="ico-btn"><svg class="i"><use href="#i-more"/></svg></button></td>
+                      </tr>
+                      <tr>
+                        <td><span class="dev"><span class="ic"><svg class="i"><use href="#i-bolt"/></svg></span>
+                          <span><b>Hallway socket</b><small>esphome-hallway-01</small></span></span></td>
+                        <td class="muted">ESPHome</td><td class="muted">Wi-Fi −61</td><td class="muted">Mains</td>
+                        <td><span class="seen">35 s ago<span class="age">just now</span></span></td>
+                        <td><span class="pill">Disabled</span></td>
+                        <td class="acts"><button class="ico-btn"><svg class="i"><use href="#i-more"/></svg></button></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <div class="tablefoot"><span>Showing 6 of 42</span><span>Filtered by: none</span>
+                    <span class="right"><span>Rows per page 50</span><span>1 / 1</span></span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="variant">
+        <div class="v-head"><span class="v-tag">M</span><div><h3>Mobile — grouped rows, not a table</h3>
+          <p class="v-note">“Needs a look” first, then all devices. Each row is one tap target with a 44 px
+            overflow; filters are chips that scroll.</p></div>
+          <span class="pill rec">recommended</span></div>
+        <div class="phones two">
+          <div class="phone"><div class="m-screen">
+            <div class="m-status"><span>16:32</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><svg class="i" style="width:14px;height:14px"><use href="#i-wifi"/></svg><span class="batt"></span></span></div>
+            <header class="m-head">
+              <button class="m-ico"><svg class="i"><use href="#i-menu"/></svg></button>
+              <span class="m-title">Devices</span>
+              <button class="m-ico"><svg class="i"><use href="#i-search"/></svg></button>
+              <button class="m-ico"><svg class="i"><use href="#i-filter"/></svg></button>
+            </header>
+            <div class="m-body">
+              <div class="m-search"><svg class="i"><use href="#i-search"/></svg>Search name or ID…</div>
+              <div class="m-chips">
+                <span class="m-chip on">All 42</span><span class="m-chip">Online 38</span>
+                <span class="m-chip" style="color:var(--warn);border-color:rgba(232,163,61,.35)">Quiet 3</span>
+                <span class="m-chip" style="color:#ff9d96;border-color:rgba(229,84,75,.4)">Offline 2</span>
+                <span class="m-chip">Disabled 1</span>
+              </div>
+              <div class="m-group" style="padding-top:4px;color:var(--warn)">Needs a look · 3</div>
+              <div class="mdev quiet">
+                <span class="ic"><svg class="i"><use href="#i-sun"/></svg></span>
+                <div class="tx"><b>Attic room light</b><small>Zigbee router · mains</small>
+                  <div class="line"><span class="pill warn">Online · quiet</span><span class="t">4 h ago</span></div></div>
+                <button class="m-ico" style="align-self:center;width:36px;height:36px"><svg class="i"><use href="#i-more"/></svg></button>
+              </div>
+              <div class="mdev off">
+                <span class="ic"><svg class="i"><use href="#i-sun"/></svg></span>
+                <div class="tx"><b>Living Room Light</b><small>Zigbee router · mains</small>
+                  <div class="line"><span class="pill danger">Offline</span><span class="t">last seen 2 h ago</span></div></div>
+                <button class="m-ico" style="align-self:center;width:36px;height:36px"><svg class="i"><use href="#i-more"/></svg></button>
+              </div>
+              <div class="mdev quiet">
+                <span class="ic"><svg class="i"><use href="#i-shield"/></svg></span>
+                <div class="tx"><b>Attic smoke alarm</b><small>Zigbee end device · battery 74 %</small>
+                  <div class="line"><span class="pill warn">Online · stale</span><span class="t">1 d ago</span></div></div>
+                <button class="m-ico" style="align-self:center;width:36px;height:36px"><svg class="i"><use href="#i-more"/></svg></button>
+              </div>
+              <div class="m-group">All devices · 42</div>
+              <div class="mdev">
+                <span class="ic"><svg class="i"><use href="#i-thermo"/></svg></span>
+                <div class="tx"><b>Attic room temperature sensor</b><small>Zigbee · battery 92 %</small>
+                  <div class="line"><span class="pill ok">Online</span><span class="t">18 s ago</span></div></div>
+                <button class="m-ico" style="align-self:center;width:36px;height:36px"><svg class="i"><use href="#i-more"/></svg></button>
+              </div>
+              <div class="mdev">
+                <span class="ic"><svg class="i"><use href="#i-drop"/></svg></span>
+                <div class="tx"><b>Kitchen humidity</b><small>Zigbee · battery 100 %</small>
+                  <div class="line"><span class="pill ok">Online</span><span class="t">2 min ago</span></div></div>
+                <button class="m-ico" style="align-self:center;width:36px;height:36px"><svg class="i"><use href="#i-more"/></svg></button>
+              </div>
+              <div class="mdev">
+                <span class="ic"><svg class="i"><use href="#i-bolt"/></svg></span>
+                <div class="tx"><b>Hallway socket</b><small>ESPHome · Wi-Fi −61 dBm</small>
+                  <div class="line"><span class="pill">Disabled</span><span class="t">35 s ago</span></div></div>
+                <button class="m-ico" style="align-self:center;width:36px;height:36px"><svg class="i"><use href="#i-more"/></svg></button>
+              </div>
+            </div>
+          </div></div>
+          <div class="v-note" style="max-width:360px;margin-top:14px">
+            <b>Notes</b><br>• Row height stays under 76 px; two lines max.<br>
+            • The overflow opens the Ring 1 bottom sheet, not a popover.<br>
+            • Quiet/stale rows keep controls enabled; only offline pauses them.<br>
+            • Filters scroll; the active filter is always first so it stays visible.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ 2. DEVICE DETAIL -->
+    <section class="sec" id="device">
+      <div class="sec-head"><h2>3 · Device detail</h2><span class="pill warn">trust header</span></div>
+      <p class="sec-lede">The page already has tabs, controls, diagnostics and a settings tab. The change is
+        a trust header: status, age, and an explicit warning when availability and silence disagree. Values
+        get an “as of” timestamp so a stale reading is never mistaken for a live one.</p>
+
+      <div class="variant">
+        <div class="v-head"><span class="v-tag">D</span><div><h3>Desktop — trust header + last-known values</h3>
+          <p class="v-note">Controls keep working for quiet devices but the warning sets expectations. The
+            right column holds diagnostics and maintenance, including export.</p></div>
+          <span class="pill rec">recommended</span></div>
+        <div class="screen">
+          <div class="app">
+            <aside class="side">
+              <div class="logo"><span class="brand-dot">NH</span> NodeHerder</div>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-home"/></svg>Overview</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-home"/></svg>Home</a>
+              <a class="nvi active" href="#"><svg class="i"><use href="#i-devices"/></svg>Devices</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-link"/></svg>Integrations</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-bolt"/></svg>Automations</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-bot"/></svg>Assistant</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-settings"/></svg>Settings</a>
+            </aside>
+            <div class="main">
+              <div class="top"><span class="ttl">Devices · Attic room light</span>
+                <div class="right"><span class="conn"><span class="dot"></span> Connected</span></div></div>
+              <div class="body">
+                <div class="dhead">
+                  <span class="hero"><svg class="i"><use href="#i-sun"/></svg></span>
+                  <div class="t"><h1>Attic room light</h1><p>Zigbee router · Attic room · 0x00158d0007b0a2c1</p></div>
+                  <div class="acts">
+                    <button class="btn sm ghost"><svg class="i"><use href="#i-refresh"/></svg>Interview</button>
+                    <button class="btn sm ghost"><svg class="i"><use href="#i-more"/></svg></button>
+                  </div>
+                </div>
+
+                <div class="trust">
+                  <svg class="i"><use href="#i-clock"/></svg>
+                  <div class="grow"><b>Quiet since 12:32.</b> Availability still reports online. Values are last
+                    known; commands may not be delivered until the device reports again.</div>
+                  <span class="pill warn">Online · quiet 4 h</span>
+                  <span class="right">LQI 47 · mains</span>
+                </div>
+
+                <div class="dtabs"><span class="dtab on">Controls</span><span class="dtab">History</span><span class="dtab">Settings</span><span class="dtab">About</span></div>
+
+                <div class="detailgrid">
+                  <div>
+                    <div class="sect-card">
+                      <div class="ch"><svg class="i"><use href="#i-gauge"/></svg>Readings and controls
+                        <span class="right"><span class="pill">as of 12:32</span></span></div>
+                      <div class="readrow"><div class="rl"><b>State</b><small>Last known · reported 4 h ago</small></div>
+                        <div class="toggle on"></div><span class="rv" style="font-size:11px;color:var(--faint)">On</span></div>
+                      <div class="readrow"><div class="rl"><b>Brightness</b><small>Last known · reported 4 h ago</small></div>
+                        <div class="slider"><i></i></div><span class="rv">62 %</span></div>
+                      <div class="readrow"><div class="rl"><b>Illuminance</b><small>Living room illuminance</small></div>
+                        <span class="rv">136 lx</span></div>
+                      <div class="readrow"><div class="rl"><b>Link quality</b><small>Weak signal for this router</small></div>
+                        <span class="rv" style="color:var(--warn)">47 LQI</span></div>
+                    </div>
+                    <div class="sect-card">
+                      <div class="ch"><svg class="i"><use href="#i-clock"/></svg>Recent history
+                        <span class="right"><button class="btn sm ghost">Open history</button></span></div>
+                      <div class="readrow"><div class="rl"><small>12:32</small><b>Brightness 60 % → 62 %</b></div><span class="rv" style="font-size:11px;color:var(--faint)">device</span></div>
+                      <div class="readrow"><div class="rl"><small>12:31</small><b>State On</b></div><span class="rv" style="font-size:11px;color:var(--faint)">device</span></div>
+                      <div class="readrow"><div class="rl"><small>09:14</small><b>Brightness 40 % → 60 %</b></div><span class="rv" style="font-size:11px;color:var(--faint)">automation</span></div>
+                    </div>
+                  </div>
+                  <div class="dside">
+                    <div class="sect-card">
+                      <div class="ch"><svg class="i"><use href="#i-signal"/></svg>Diagnostics</div>
+                      <div class="readrow"><div class="rl"><b>Last report</b></div><span class="rv" style="font-size:12px;color:var(--warn)">4 h ago</span></div>
+                      <div class="readrow"><div class="rl"><b>Reconnects (24 h)</b></div><span class="rv" style="font-size:12px">3</span></div>
+                      <div class="readrow"><div class="rl"><b>Interview</b></div><span class="rv" style="font-size:12px">Complete</span></div>
+                      <div class="readrow"><div class="rl"><b>Firmware</b></div><span class="rv" style="font-size:12px">1.0.9</span></div>
+                    </div>
+                    <div class="sect-card">
+                      <div class="ch"><svg class="i"><use href="#i-settings"/></svg>Device actions</div>
+                      <div class="readrow"><div class="rl"><b>Rename</b><small>Automations follow the device.</small></div><button class="btn sm">Rename</button></div>
+                      <div class="readrow"><div class="rl"><b>Export readings</b><small>CSV from history.</small></div><button class="btn sm"><svg class="i"><use href="#i-download"/></svg></button></div>
+                      <div class="readrow"><div class="rl"><b>Remove device</b><small>Force or block options on confirm.</small></div><button class="btn sm danger">Remove</button></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="variant">
+        <div class="v-head"><span class="v-tag">M</span><div><h3>Mobile — stacked, sticky actions</h3>
+          <p class="v-note">The trust header becomes a card; tabs scroll; controls stack. A sticky bottom bar
+            keeps History one thumb away and makes the stale state impossible to miss.</p></div>
+          <span class="pill rec">recommended</span></div>
+        <div class="phones two">
+          <div class="phone"><div class="m-screen">
+            <div class="m-status"><span>16:32</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><svg class="i" style="width:14px;height:14px"><use href="#i-wifi"/></svg><span class="batt"></span></span></div>
+            <header class="m-head">
+              <button class="m-ico"><svg class="i"><use href="#i-back"/></svg></button>
+              <span class="m-title">Attic room light</span>
+              <button class="m-ico"><svg class="i"><use href="#i-more"/></svg></button>
+            </header>
+            <div class="m-body">
+              <div class="m-card" style="border-color:rgba(232,163,61,.35);background:rgba(232,163,61,.05);padding:11px 12px">
+                <div style="display:flex;align-items:center;gap:7px"><svg class="i" style="width:15px;height:15px;color:var(--warn)"><use href="#i-clock"/></svg>
+                  <b style="font-size:12px;color:#ffd59a">Online · quiet 4 h</b></div>
+                <p style="margin-top:5px">No report since 12:32. Values are last known; commands may not reach it.</p>
+              </div>
+              <div class="m-chips" style="margin-top:4px"><span class="m-chip on">Controls</span><span class="m-chip">History</span><span class="m-chip">Settings</span><span class="m-chip">About</span></div>
+              <div class="m-list">
+                <div class="m-row"><div class="rl"><b>State</b><small>Last known · 4 h ago</small></div><div class="toggle on"></div></div>
+                <div class="m-row stack"><div class="rl"><b>Brightness · 62 %</b><small>Last known · 4 h ago</small></div>
+                  <div class="ctl"><div class="m-meter"><i style="--w:62%"></i></div></div></div>
+                <div class="m-row"><div class="rl"><b>Illuminance</b><small>Living room</small></div><span style="font-size:12.5px">136 lx</span></div>
+                <div class="m-row"><div class="rl"><b>Link quality</b><small>Weak signal</small></div><span style="font-size:12.5px;color:var(--warn)">47 LQI</span></div>
+              </div>
+              <div class="m-group">Diagnostics</div>
+              <div class="m-list">
+                <div class="m-row"><div class="rl"><b>Last report</b></div><span style="font-size:12px;color:var(--warn)">4 h ago</span></div>
+                <div class="m-row"><div class="rl"><b>Reconnects (24 h)</b></div><span style="font-size:12px">3</span></div>
+                <div class="m-row"><div class="rl"><b>Firmware</b></div><span style="font-size:12px">1.0.9</span></div>
+              </div>
+            </div>
+            <div class="m-foot" style="padding:8px 12px">
+              <button class="btn" style="flex:1;height:40px">Settings</button>
+              <button class="btn primary" style="flex:1.4;height:40px"><svg class="i"><use href="#i-clock"/></svg>History</button>
+            </div>
+          </div></div>
+          <div class="v-note" style="max-width:360px;margin-top:14px">
+            <b>Notes</b><br>• The warning is above the controls, not a toast.<br>
+            • Every value marked “last known” carries its age.<br>
+            • Destructive actions (remove) live behind the header menu and a sheet.<br>
+            • The bottom bar disappears on the Settings tab to avoid stacking actions.
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ============================================================ 4. OVERVIEW -->
+    <section class="sec" id="overview">
+      <div class="sec-head"><h2>4 · Overview, redesigned</h2><span class="pill warn">too noisy</span></div>
+      <p class="sec-lede">The current Overview stacks four stat cards, a connection group, three attention
+        groups, an activity feed and a network table — nine competing blocks, most repeating each other.
+        The fix is hierarchy, not deletion: one verdict, the top three actions, one compact health line,
+        and the rest below the fold or behind a link.</p>
+
+      <div class="variant">
+        <div class="v-head"><span class="v-tag">A</span><div><h3>“Calm” — one verdict, three actions, one line of facts</h3>
+          <p class="v-note">Recommended. A single status card states the verdict in plain language; “Start
+            here” lists the three highest-value actions; everything else becomes one links-only health line.
+            No network table, no four-card stat row, no duplicate attention groups. All-clear state:
+            “Everything looks fine. 42 devices reporting, 24 automations on.” — no empty-card graveyard.</p></div>
+          <span class="pill rec">recommended</span></div>
+        <div class="screen">
+          <div class="app">
+            <aside class="side">
+              <div class="logo"><span class="brand-dot">NH</span> NodeHerder</div>
+              <a class="nvi active" href="#"><svg class="i"><use href="#i-home"/></svg>Overview</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-home"/></svg>Home</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-devices"/></svg>Devices</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-link"/></svg>Integrations</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-bolt"/></svg>Automations</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-bot"/></svg>Assistant</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-settings"/></svg>Settings</a>
+            </aside>
+            <div class="main">
+              <div class="top"><span class="ttl">Overview</span>
+                <div class="right"><span class="conn"><span class="dot"></span> Connected</span><span class="conn">Snapshot 16:32</span>
+                  <button class="ico-btn" aria-label="Notifications"><svg class="i"><use href="#i-bell"/></svg><span class="badge">3</span></button></div></div>
+              <div class="body">
+                <div class="page-h"><div><h1>Overview</h1><div class="sub">What needs you, in order.</div></div>
+                  <div class="actions"><button class="btn"><svg class="i"><use href="#i-refresh"/></svg>Refresh</button></div></div>
+
+                <div class="calm">
+                  <section class="calm-hero">
+                    <span class="ic"><svg class="i"><use href="#i-alert"/></svg></span>
+                    <div class="tx"><h2>5 things need a look</h2>
+                      <p>2 devices offline · 3 quiet · 1 automation failing · 1 integration stale</p></div>
+                    <button class="btn primary">Review in order</button>
+                  </section>
+
+                  <div class="calm-sect">
+                    <div class="sh"><h2>Start here</h2><span class="right pill warn">3 of 5</span></div>
+                    <div class="prio">
+                      <div class="prow sev1">
+                        <span class="ic"><svg class="i"><use href="#i-sun"/></svg></span>
+                        <div class="tx"><b>Living Room Light is offline</b><small>Controls paused · last seen 14:30 · mains powered, so this is unexpected</small></div>
+                        <div class="go"><button class="btn sm">Open device</button></div>
+                      </div>
+                      <div class="prow sev1">
+                        <span class="ic"><svg class="i"><use href="#i-bolt"/></svg></span>
+                        <div class="tx"><b>Hallway light on motion is failing</b><small>3 attempts since 14:02 · target device is offline</small></div>
+                        <div class="go"><button class="btn sm">Why?</button><button class="btn sm ghost">Disable</button></div>
+                      </div>
+                      <div class="prow sev2">
+                        <span class="ic"><svg class="i"><use href="#i-leaf"/></svg></span>
+                        <div class="tx"><b>Waste collection is stale</b><small>Last refresh 6 h ago · collection dates may be wrong</small></div>
+                        <div class="go"><button class="btn sm">Refresh</button></div>
+                      </div>
+                      <div class="prio-foot"><a href="#">Show 2 more · quiet devices</a></div>
+                    </div>
+                  </div>
+
+                  <div class="healthline">
+                    <span><a href="#">42 devices</a> · 38 online · 3 quiet · 1 stale</span><span class="sep">|</span>
+                    <span><a href="#">24 of 32 automations</a> on</span><span class="sep">|</span>
+                    <span><a href="#">5 of 6 integrations</a> ready</span><span class="sep">|</span>
+                    <span><a href="#">28 MB</a> history · 10 days</span>
+                  </div>
+
+                  <div class="calm-sect" style="margin-bottom:0">
+                    <div class="sh"><h2>Recent</h2><span class="right"><a href="#" style="font-size:11px;color:#b6a6ff;text-decoration:none;font-weight:600">View all</a></span></div>
+                    <div class="brief">
+                      <div class="brow"><time>16:31</time><b>Kitchen humidity</b><span>48 % → 49 %</span></div>
+                      <div class="brow"><time>16:28</time><b>Hallway socket</b><span>On → Off</span></div>
+                      <div class="brow"><time>16:22</time><b>Attic smoke alarm</b><span>rejoined</span></div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="variant">
+        <div class="v-head"><span class="v-tag">B</span><div><h3>“Domain board” — one row per subsystem</h3>
+          <p class="v-note">Alternative for operator-minded users: four stable rows (Devices, Automations,
+            Integrations, Storage) with a state and a drilldown, plus a change feed. More scannable than A
+            for people who think in systems; less warm. Same information, no stat cards.</p></div>
+          <span class="pill">alternative</span></div>
+        <div class="screen">
+          <div class="app">
+            <aside class="side">
+              <div class="logo"><span class="brand-dot">NH</span> NodeHerder</div>
+              <a class="nvi active" href="#"><svg class="i"><use href="#i-home"/></svg>Overview</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-home"/></svg>Home</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-devices"/></svg>Devices</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-link"/></svg>Integrations</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-bolt"/></svg>Automations</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-bot"/></svg>Assistant</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-settings"/></svg>Settings</a>
+            </aside>
+            <div class="main">
+              <div class="top"><span class="ttl">Overview</span>
+                <div class="right"><span class="conn"><span class="dot"></span> Connected</span><span class="conn">Snapshot 16:32</span></div></div>
+              <div class="body">
+                <div class="page-h"><div><h1>Overview</h1><div class="sub">5 things need a look across 4 systems.</div></div>
+                  <div class="actions"><button class="btn primary">Review 5</button></div></div>
+
+                <div class="domains">
+                  <div class="domain warn"><span class="ic"><svg class="i"><use href="#i-devices"/></svg></span>
+                    <div class="tx"><b>Devices</b><small>38 of 42 online · 3 quiet · 1 stale · 2 offline</small></div>
+                    <div class="right"><span class="pill warn">3 need a look</span><button class="btn sm">Review</button></div></div>
+                  <div class="domain warn"><span class="ic"><svg class="i"><use href="#i-bolt"/></svg></span>
+                    <div class="tx"><b>Automations</b><small>24 of 32 on · 1 failing repeatedly · last attempt 14:02</small></div>
+                    <div class="right"><span class="pill danger">1 failing</span><button class="btn sm">Review</button></div></div>
+                  <div class="domain warn"><span class="ic"><svg class="i"><use href="#i-link"/></svg></span>
+                    <div class="tx"><b>Integrations</b><small>5 of 6 ready · waste collection 6 h stale · weather alert error</small></div>
+                    <div class="right"><span class="pill warn">2 need a look</span><button class="btn sm">Review</button></div></div>
+                  <div class="domain"><span class="ic"><svg class="i"><use href="#i-db"/></svg></span>
+                    <div class="tx"><b>Storage</b><small>28 MB of 45 MB · 10-day retention · 36 GB free</small></div>
+                    <div class="right"><span class="pill ok">Healthy</span><button class="btn sm ghost">Manage</button></div></div>
+                </div>
+
+                <div class="calm-sect">
+                  <div class="sh"><h2>What changed</h2><span class="right"><a href="#" style="font-size:11px;color:#b6a6ff;text-decoration:none;font-weight:600">Full activity</a></span></div>
+                  <div class="prio">
+                    <div class="prow"><span class="ic" style="color:var(--ok)"><svg class="i"><use href="#i-check"/></svg></span>
+                      <div class="tx"><b>Hub link restored</b><small>2 devices rejoined after the 16:09 drop.</small></div><span style="font-size:10px;color:var(--faint)">16:22</span></div>
+                    <div class="prow"><span class="ic"><svg class="i"><use href="#i-clock"/></svg></span>
+                      <div class="tx"><b>Attic room light crossed quiet</b><small>No report for 4 h; availability still online.</small></div><span style="font-size:10px;color:var(--faint)">16:02</span></div>
+                    <div class="prow"><span class="ic" style="color:#ff9d96"><svg class="i"><use href="#i-alert"/></svg></span>
+                      <div class="tx"><b>Hallway automation failed</b><small>Target device offline; third attempt today.</small></div><span style="font-size:10px;color:var(--faint)">14:02</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="variant">
+        <div class="v-head"><span class="v-tag">M</span><div><h3>Mobile — the calm version</h3>
+          <p class="v-note">Verdict, three actions, one line of facts, three recent events. This is also where
+            the “while you were away” digest belongs.</p></div>
+          <span class="pill rec">recommended</span></div>
+        <div class="phones two">
+          <div class="phone"><div class="m-screen">
+            <div class="m-status"><span>16:32</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><svg class="i" style="width:14px;height:14px"><use href="#i-wifi"/></svg><span class="batt"></span></span></div>
+            <header class="m-head">
+              <button class="m-ico"><svg class="i"><use href="#i-menu"/></svg></button>
+              <span class="m-title">Overview</span>
+              <button class="m-ico"><svg class="i"><use href="#i-bell"/></svg><span class="m-badge">3</span></button>
+            </header>
+            <div class="m-body">
+              <div class="m-digest" style="margin-bottom:12px">
+                <div class="dh"><svg class="i"><use href="#i-bell"/></svg><b>While you were away</b><span class="since">since 19:40</span></div>
+                <div class="drow"><svg class="i" style="color:var(--warn)"><use href="#i-clock"/></svg><span>Attic light quiet for 4 h</span><a href="#">Open</a></div>
+                <div class="drow"><svg class="i" style="color:var(--danger)"><use href="#i-bolt"/></svg><span>Hallway automation failed 3×</span><a href="#">Open</a></div>
+              </div>
+              <div class="m-card" style="border-color:rgba(232,163,61,.32);background:rgba(232,163,61,.06)">
+                <div style="display:flex;gap:9px;align-items:center">
+                  <span style="width:34px;height:34px;border-radius:10px;background:rgba(232,163,61,.16);color:var(--warn);display:grid;place-items:center"><svg class="i" style="width:17px;height:17px"><use href="#i-alert"/></svg></span>
+                  <div><b style="font-size:14px">5 things need a look</b>
+                    <div style="font-size:10.5px;color:var(--muted)">2 offline · 3 quiet · 1 failing</div></div>
+                  <a href="#" style="margin-left:auto;font-size:11px;color:#ffd59a;font-weight:650;text-decoration:none">Review</a>
+                </div>
+              </div>
+              <div class="m-group" style="padding-top:10px">Start here</div>
+              <div class="m-list">
+                <div class="m-item err"><span class="ic"><svg class="i"><use href="#i-sun"/></svg></span>
+                  <div class="tx"><b>Living Room Light is offline</b><small>Controls paused · last seen 2 h ago</small></div>
+                  <span class="go"><svg class="i"><use href="#i-right"/></svg></span></div>
+                <div class="m-item err"><span class="ic"><svg class="i"><use href="#i-bolt"/></svg></span>
+                  <div class="tx"><b>Hallway automation failing</b><small>3 attempts · target offline</small></div>
+                  <button class="btn sm" style="align-self:center">Why?</button></div>
+                <div class="m-item warn"><span class="ic"><svg class="i"><use href="#i-leaf"/></svg></span>
+                  <div class="tx"><b>Waste collection stale</b><small>6 h since last refresh</small></div>
+                  <button class="btn sm" style="align-self:center">Refresh</button></div>
+              </div>
+              <div style="font-size:10.5px;color:var(--faint);line-height:1.7;margin-top:10px">
+                42 devices · 38 online · <span style="color:var(--warn)">3 quiet</span> · 24/32 automations · 28 MB
+              </div>
+              <div class="m-group">Recent</div>
+              <div style="font-size:10.5px;color:var(--muted);line-height:1.9">
+                <div style="display:flex;gap:8px"><span style="color:var(--faint);font-family:var(--mono)">16:31</span><b style="color:var(--text);font-weight:600">Kitchen humidity</b><span>48 → 49 %</span></div>
+                <div style="display:flex;gap:8px"><span style="color:var(--faint);font-family:var(--mono)">16:28</span><b style="color:var(--text);font-weight:600">Hallway socket</b><span>On → Off</span></div>
+              </div>
+            </div>
+          </div></div>
+          <div class="v-note" style="max-width:360px;margin-top:14px">
+            <b>Removed from mobile</b><br>• Four stat cards<br>• Network table<br>
+            • Connection/automation/integration groups<br>• Full activity list<br><br>
+            <b>Kept</b>: verdict, top actions, one-line health, three events.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ 4. INTEGRATIONS -->
+    <section class="sec" id="integrations">
+      <div class="sec-head"><h2>5 · Integrations</h2><span class="pill warn">hidden failures</span></div>
+      <p class="sec-lede">The board already has filters, grouped entries, refresh, schedule and error state.
+        Ring 2 surfaces them: a board-level summary, a “needs attention” filter, and row status text that
+        names the reason instead of only colouring it.</p>
+      <p class="finding"><b>Evidence:</b> <code>IntegrationEntry.vue</code> shows status + schedule;
+        <code>connectionEntryStatus()</code> already returns ready / attention / disabled;
+        <code>last_error</code> and <code>freshness</code> exist in the domain.</p>
+
+      <div class="variant">
+        <div class="v-head"><span class="v-tag">D</span><div><h3>Desktop — summary, attention filter, explicit reasons</h3>
+          <p class="v-note">Rows stay grouped by type; a top strip answers “is anything stale?” before you
+            scan. Refresh is inline, settings stays reachable, and the error reason is written out.</p></div>
+          <span class="pill rec">recommended</span></div>
+        <div class="screen">
+          <div class="app">
+            <aside class="side">
+              <div class="logo"><span class="brand-dot">NH</span> NodeHerder</div>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-home"/></svg>Overview</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-home"/></svg>Home</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-devices"/></svg>Devices</a>
+              <a class="nvi active" href="#"><svg class="i"><use href="#i-link"/></svg>Integrations</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-bolt"/></svg>Automations</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-bot"/></svg>Assistant</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-settings"/></svg>Settings</a>
+            </aside>
+            <div class="main">
+              <div class="top"><span class="ttl">Integrations</span>
+                <div class="right"><span class="conn"><span class="dot"></span> Connected</span>
+                  <button class="ico-btn" aria-label="Notifications"><svg class="i"><use href="#i-bell"/></svg><span class="badge">3</span></button></div></div>
+              <div class="body">
+                <div class="page-h"><div><h1>Integrations</h1><div class="sub">6 integrations · 4 active · 1 needs refresh</div></div>
+                  <div class="actions"><button class="btn"><svg class="i"><use href="#i-edit"/></svg>Edit layout</button>
+                    <button class="btn primary"><svg class="i"><use href="#i-plus"/></svg>Add integration</button></div></div>
+
+                <div class="quietcall" style="background:rgba(232,163,61,.07)">
+                  <svg class="i"><use href="#i-refresh"/></svg>
+                  <span><b>Waste collection has not refreshed for 6 h.</b> The last collection dates may be out of date.</span>
+                  <span class="right">Refresh all →</span></div>
+
+                <div class="dtool">
+                  <label class="search"><svg class="i"><use href="#i-search"/></svg>Search name, type or postcode…<kbd>/</kbd></label>
+                  <span class="pill warn">Needs attention 2</span><span class="pill ok">Ready 4</span><span class="pill">Disabled 1</span>
+                  <div class="right"><span>Auto refresh</span><button class="btn sm ghost">All</button></div>
+                </div>
+
+                <div class="iggroup"><div class="gh">Waste collection</div>
+                  <div class="irow attention">
+                    <span class="ic"><svg class="i"><use href="#i-leaf"/></svg></span>
+                    <div class="tx"><div class="h"><b>Garden waste</b><span class="prov">Bins · provider</span></div>
+                      <p>Next collection Tue 1 Dec · Brown bin</p>
+                      <div class="meta"><span>Auto 6 h · next 18:00</span><span style="color:var(--warn)">Checked 6 h ago</span></div></div>
+                    <div class="side"><span class="pill warn">Needs refreshing</span>
+                      <div class="acts"><button class="btn sm">Refresh</button><button class="btn sq sm ghost"><svg class="i"><use href="#i-settings"/></svg></button></div></div>
+                  </div>
+                  <div class="irow">
+                    <span class="ic"><svg class="i"><use href="#i-leaf"/></svg></span>
+                    <div class="tx"><div class="h"><b>Recycling</b><span class="prov">Bins · provider</span></div>
+                      <p>Next collection Tue 15 Dec · Blue bin</p>
+                      <div class="meta"><span>Auto 6 h · next 18:00</span><span>Checked 12 min ago</span></div></div>
+                    <div class="side"><span class="pill ok">Ready</span>
+                      <div class="acts"><button class="btn sm">Refresh</button><button class="btn sq sm ghost"><svg class="i"><use href="#i-settings"/></svg></button></div></div>
+                  </div>
+                </div>
+
+                <div class="iggroup"><div class="gh">Weather</div>
+                  <div class="irow">
+                    <span class="ic"><svg class="i"><use href="#i-sun"/></svg></span>
+                    <div class="tx"><div class="h"><b>Nether Edge weather</b><span class="prov">Open-Meteo</span></div>
+                      <p>5 °C · cloudy · high 6° / low 2°</p>
+                      <div class="meta"><span>Continuous · refreshed 16:00</span><span>Rain 4 %</span></div></div>
+                    <div class="side"><span class="pill ok">Ready</span>
+                      <div class="acts"><button class="btn sq sm ghost"><svg class="i"><use href="#i-settings"/></svg></button></div></div>
+                  </div>
+                  <div class="irow">
+                    <span class="ic"><svg class="i"><use href="#i-alert"/></svg></span>
+                    <div class="tx"><div class="h"><b>Weather alerts</b><span class="prov">Met Office</span></div>
+                      <p>No active warnings</p>
+                      <div class="meta"><span>Auto 30 min · next 16:30</span><span style="color:#ff9d96">Last error: provider timeout</span></div></div>
+                    <div class="side"><span class="pill danger">Error</span>
+                      <div class="acts"><button class="btn sm">Retry</button><button class="btn sq sm ghost"><svg class="i"><use href="#i-settings"/></svg></button></div></div>
+                  </div>
+                </div>
+
+                <div class="iggroup"><div class="gh">Energy</div>
+                  <div class="irow">
+                    <span class="ic"><svg class="i"><use href="#i-bolt"/></svg></span>
+                    <div class="tx"><div class="h"><b>Octopus electricity</b><span class="prov">Octopus</span></div>
+                      <p>317.9 kWh this month · £62.40</p>
+                      <div class="meta"><span>Auto 1 h · next 17:00</span><span>Checked 14 min ago</span></div></div>
+                    <div class="side"><span class="pill ok">Ready</span>
+                      <div class="acts"><button class="btn sm">Refresh</button><button class="btn sq sm ghost"><svg class="i"><use href="#i-settings"/></svg></button></div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="variant">
+        <div class="v-head"><span class="v-tag">M</span><div><h3>Mobile — summary, filters, grouped rows</h3>
+          <p class="v-note">Refresh becomes a 40 px icon button per row; status and reason share one line.
+            Group headings stay because they are the fastest way to scan six integrations.</p></div>
+          <span class="pill rec">recommended</span></div>
+        <div class="phones two">
+          <div class="phone"><div class="m-screen">
+            <div class="m-status"><span>16:32</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><svg class="i" style="width:14px;height:14px"><use href="#i-wifi"/></svg><span class="batt"></span></span></div>
+            <header class="m-head">
+              <button class="m-ico"><svg class="i"><use href="#i-menu"/></svg></button>
+              <span class="m-title">Integrations</span>
+              <button class="m-ico"><svg class="i"><use href="#i-search"/></svg></button>
+              <button class="m-ico"><svg class="i"><use href="#i-plus"/></svg></button>
+            </header>
+            <div class="m-body">
+              <div class="m-banner bad" style="background:rgba(232,163,61,.08);border-color:rgba(232,163,61,.28);color:#ffd59a">
+                <svg class="i"><use href="#i-refresh"/></svg><span class="grow"><b>1 integration is stale.</b> Waste dates may be out of date.</span><span class="retry" style="color:#ffd59a">Refresh</span>
+              </div>
+              <div class="m-chips">
+                <span class="m-chip on">All 6</span><span class="m-chip" style="color:var(--warn);border-color:rgba(232,163,61,.35)">Needs attention 2</span>
+                <span class="m-chip">Ready 4</span><span class="m-chip">Disabled 1</span>
+              </div>
+              <div class="m-group" style="padding-top:4px">Waste collection</div>
+              <div class="mdev quiet">
+                <span class="ic"><svg class="i"><use href="#i-leaf"/></svg></span>
+                <div class="tx"><b>Garden waste</b><small>Next Tue 1 Dec · Brown bin</small>
+                  <div class="line"><span class="pill warn">Needs refreshing</span><span class="t">6 h ago</span></div></div>
+                <button class="m-ico" style="align-self:center"><svg class="i"><use href="#i-refresh"/></svg></button>
+              </div>
+              <div class="mdev">
+                <span class="ic"><svg class="i"><use href="#i-leaf"/></svg></span>
+                <div class="tx"><b>Recycling</b><small>Next Tue 15 Dec · Blue bin</small>
+                  <div class="line"><span class="pill ok">Ready</span><span class="t">12 min ago</span></div></div>
+                <button class="m-ico" style="align-self:center"><svg class="i"><use href="#i-refresh"/></svg></button>
+              </div>
+              <div class="m-group">Weather</div>
+              <div class="mdev">
+                <span class="ic"><svg class="i"><use href="#i-sun"/></svg></span>
+                <div class="tx"><b>Nether Edge weather</b><small>5 °C · cloudy · high 6° / low 2°</small>
+                  <div class="line"><span class="pill ok">Ready</span><span class="t">16:00</span></div></div>
+                <button class="m-ico" style="align-self:center"><svg class="i"><use href="#i-right"/></svg></button>
+              </div>
+              <div class="mdev" style="border-color:rgba(229,84,75,.32);box-shadow:inset 3px 0 0 var(--danger)">
+                <span class="ic" style="color:#ff9d96"><svg class="i"><use href="#i-alert"/></svg></span>
+                <div class="tx"><b>Weather alerts</b><small>Provider timeout · no warnings shown</small>
+                  <div class="line"><span class="pill danger">Error</span><button class="btn sm">Retry</button></div></div>
+              </div>
+              <div class="m-group">Energy</div>
+              <div class="mdev">
+                <span class="ic"><svg class="i"><use href="#i-bolt"/></svg></span>
+                <div class="tx"><b>Octopus electricity</b><small>317.9 kWh · £62.40</small>
+                  <div class="line"><span class="pill ok">Ready</span><span class="t">14 min ago</span></div></div>
+                <button class="m-ico" style="align-self:center"><svg class="i"><use href="#i-refresh"/></svg></button>
+              </div>
+            </div>
+          </div></div>
+          <div class="v-note" style="max-width:360px;margin-top:14px">
+            <b>Notes</b><br>• The stale/error reason is text, not just a red edge.<br>
+            • Retry is inline; settings stays one tap on the detail page.<br>
+            • Continuous integrations have no refresh action — no dead button.<br>
+            • “Refresh all” lives in the banner, not as a permanent header action.
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ============================================================ 6. PANEL MODE -->
+    <section class="sec" id="panel">
+      <div class="sec-head"><h2>6 · Panel mode</h2><span class="pill warn">wall tablet · 2 m glance</span></div>
+      <p class="sec-lede">Panel mode is not a responsive page — it is a different device. The design brief:
+        readable at two metres, tappable with a thumb, no navigation chrome, honest when the hub is down, and
+        calm at night. It keeps the same data and commands; only scale, density and priority change.</p>
+      <p class="finding"><b>Current:</b> full-screen room pager, climate dial, tile buttons, status page with
+        four dials, dock. <b>Changes:</b> larger targets, one accent light, night simplification, offline
+        banner that never blocks controls silently.</p>
+
+      <div class="variant">
+        <div class="v-head"><span class="v-tag">P1</span><div><h3>Day — one room, two jobs: climate and switches</h3>
+          <p class="v-note">Clock and weather are glanceable, not dominant. The climate dial is the only large
+            instrument; everything else is a big target with state and value.</p></div>
+          <span class="pill rec">recommended</span></div>
+        <div class="pframe">
+          <header class="p-top">
+            <span class="p-logo">NH</span>
+            <div class="p-clock"><b>16:32</b><span>Tuesday 25 November</span></div>
+            <div class="p-topright"><span class="conn"><span class="dot"></span> Connected</span>
+              <span class="p-meta">5 °C · cloudy</span>
+              <button class="picon" aria-label="Appearance"><svg class="i"><use href="#i-sun"/></svg></button></div>
+          </header>
+          <nav class="p-tabs" aria-label="Rooms">
+            <span class="p-tab on">Living room</span><span class="p-tab">Attic room</span>
+            <span class="p-tab">Kitchen</span><span class="p-tab">Garden</span>
+          </nav>
+          <main class="p-grid">
+            <section class="p-climate">
+              <div class="pdial"><div class="pin"><span class="pv">18°</span><span class="pl">Living room</span><span class="pc">61 % humidity</span></div></div>
+              <span class="p-meta">Updated 1 min ago · thermostat</span>
+            </section>
+            <section class="p-controls">
+              <button class="pbtn on"><span class="ic"><svg class="i"><use href="#i-sun"/></svg></span>
+                <div><b>Ceiling light</b><small>Brightness</small></div><span class="state">On · 62 %</span></button>
+              <button class="pbtn"><span class="ic"><svg class="i"><use href="#i-bolt"/></svg></span>
+                <div><b>TV socket</b><small>Power</small></div><span class="state">Off</span></button>
+              <button class="pbtn on"><span class="ic"><svg class="i"><use href="#i-sun"/></svg></span>
+                <div><b>Floor lamp</b><small>Warm white</small></div><span class="state">On · 40 %</span></button>
+              <button class="pbtn"><span class="ic"><svg class="i"><use href="#i-thermo"/></svg></span>
+                <div><b>Radiator</b><small>Target</small></div><span class="state">21 °C</span></button>
+              <button class="pbtn"><span class="ic"><svg class="i"><use href="#i-blinds"/></svg></span>
+                <div><b>Blinds</b><small>Living room</small></div><span class="state">Closed</span></button>
+              <button class="pbtn"><span class="ic"><svg class="i"><use href="#i-play"/></svg></span>
+                <div><b>Evening</b><small>Scene</small></div><span class="state">Run</span></button>
+              <button class="pbtn"><span class="ic"><svg class="i"><use href="#i-sun"/></svg></span>
+                <div><b>Side lamp</b><small>Reading</small></div><span class="state">Off</span></button>
+              <button class="pbtn"><span class="ic"><svg class="i"><use href="#i-bolt"/></svg></span>
+                <div><b>Porch light</b><small>Outside</small></div><span class="state">Off</span></button>
+              <button class="pbtn"><span class="ic"><svg class="i"><use href="#i-shield"/></svg></span>
+                <div><b>Away</b><small>Scene</small></div><span class="state">Run</span></button>
+            </section>
+          </main>
+          <nav class="p-dock"><span class="item on"><svg class="i"><use href="#i-home"/></svg>Rooms</span>
+            <span class="item"><svg class="i"><use href="#i-gauge"/></svg>Status</span>
+            <span class="item"><svg class="i"><use href="#i-signout"/></svg>Exit</span></nav>
+        </div>
+      </div>
+
+      <div class="variant">
+        <div class="v-head"><span class="v-tag">P2</span><div><h3>Night + offline — the honest, dimmed panel</h3>
+          <p class="v-note">After bedtime the panel drops to four essentials and a large clock. When the hub
+            is unreachable it says so once, at the top, and every control reads “Paused” instead of pretending.</p></div>
+          <span class="pill rec">recommended</span></div>
+        <div class="pframe night">
+          <div class="p-banner" style="margin-top:14px"><svg class="i"><use href="#i-wifioff"/></svg>
+            <span><b>Hub offline.</b> Showing the snapshot from 16:32 (23 min old). Commands are paused.</span>
+            <span class="right">Retry</span></div>
+          <header class="p-top">
+            <span class="p-logo">NH</span>
+            <div class="p-clock" style="text-align:center;margin:auto"><b>23:14</b><span>Tuesday 25 November · night</span></div>
+            <div class="p-topright"><span class="conn bad"><span class="dot"></span> Offline</span></div>
+          </header>
+          <div class="p-nightgrid">
+            <button class="pbtn on"><span class="ic"><svg class="i"><use href="#i-sun"/></svg></span>
+              <div><b>Hallway</b><small>Night light</small></div><span style="font-size:30px;font-weight:300;margin-top:auto">On</span><span class="state">Paused · 23 min ago</span></button>
+            <button class="pbtn"><span class="ic"><svg class="i"><use href="#i-bolt"/></svg></span>
+              <div><b>Front door</b><small>Lock</small></div><span style="font-size:30px;font-weight:300;margin-top:auto">Locked</span><span class="state">Paused · 23 min ago</span></button>
+            <button class="pbtn"><span class="ic"><svg class="i"><use href="#i-thermo"/></svg></span>
+              <div><b>Bedroom</b><small>Thermostat</small></div><span style="font-size:30px;font-weight:300;margin-top:auto">17 °C</span><span class="state">Paused · 23 min ago</span></button>
+            <button class="pbtn"><span class="ic"><svg class="i"><use href="#i-shield"/></svg></span>
+              <div><b>Alarm</b><small>Security</small></div><span style="font-size:30px;font-weight:300;margin-top:auto">Armed</span><span class="state">Paused · 23 min ago</span></button>
+          </div>
+          <nav class="p-dock"><span class="item on"><svg class="i"><use href="#i-home"/></svg>Rooms</span>
+            <span class="item"><svg class="i"><use href="#i-gauge"/></svg>Status</span>
+            <span class="item"><svg class="i"><use href="#i-signout"/></svg>Exit</span></nav>
+        </div>
+      </div>
+
+      <div class="variant">
+        <div class="v-head"><span class="v-tag">P3</span><div><h3>Status — instruments, not a dashboard</h3>
+          <p class="v-note">Four large readings and a short attention list. No graphs, no tables, no scrolling
+            for the common case; each row is a 44 px target.</p></div>
+          <span class="pill rec">recommended</span></div>
+        <div class="pframe">
+          <header class="p-top">
+            <span class="p-logo">NH</span>
+            <div class="p-clock"><b>16:32</b><span>Tuesday 25 November</span></div>
+            <div class="p-topright"><span class="conn"><span class="dot"></span> Connected</span>
+              <span class="p-meta">45 min since restart</span></div>
+          </header>
+          <main class="p-status">
+            <div>
+              <h1>Status</h1>
+              <div class="pstats">
+                <div class="pstat"><div class="l">Devices online</div><div class="v">38<small> / 42</small></div><div class="h">3 quiet · 1 stale</div></div>
+                <div class="pstat"><div class="l">Average signal</div><div class="v">62<small> LQI</small></div><div class="h">3 weak links</div></div>
+                <div class="pstat"><div class="l">Batteries healthy</div><div class="v">11<small> / 12</small></div><div class="h">1 below 20 %</div></div>
+                <div class="pstat"><div class="l">Automations on</div><div class="v">24<small> / 32</small></div><div class="h">1 failing</div></div>
+              </div>
+              <div class="p-foot">Detection checked 16:31 · hub v0.18.0 · 45 min since restart</div>
+              <div style="margin-top:16px">
+                <h2 style="font-size:13px;color:var(--muted);font-weight:600;margin-bottom:6px">Recent</h2>
+                <div class="pstatus-list" style="gap:4px">
+                  <div class="pstatus-row" style="padding:7px 11px;border-color:transparent;background:transparent"><b style="font-weight:400">Kitchen humidity</b><small>48 → 49 % · 16:31</small></div>
+                  <div class="pstatus-row" style="padding:7px 11px;border-color:transparent;background:transparent"><b style="font-weight:400">Hallway socket</b><small>On → Off · 16:28</small></div>
+                </div>
+              </div>
+            </div>
+            <div class="p-status-right">
+              <h2>Needs a look</h2>
+              <div class="pstatus-list">
+                <div class="pstatus-row"><svg class="i"><use href="#i-sun"/></svg><b>Living Room Light</b><small>Offline · 2 h</small></div>
+                <div class="pstatus-row"><svg class="i"><use href="#i-bolt"/></svg><b>Hallway light on motion</b><small>Failed 3× · 14:02</small></div>
+                <div class="pstatus-row"><svg class="i"><use href="#i-leaf"/></svg><b>Waste collection</b><small>Stale · 6 h</small></div>
+                <div class="pstatus-row"><svg class="i"><use href="#i-alert"/></svg><b>Weather alerts</b><small>Provider timeout</small></div>
+              </div>
+            </div>
+          </main>
+          <nav class="p-dock"><span class="item"><svg class="i"><use href="#i-home"/></svg>Rooms</span>
+            <span class="item on"><svg class="i"><use href="#i-gauge"/></svg>Status</span>
+            <span class="item"><svg class="i"><use href="#i-signout"/></svg>Exit</span></nav>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ 7. DECISIONS -->
+    <section class="sec" id="decisions">
+      <div class="sec-head"><h2>7 · Decisions to confirm</h2><span class="pill info">before spec</span></div>
+      <div class="specgrid">
+        <div class="spec">
+          <h3>Ring 2 scope</h3>
+          <p class="help">Home, Devices, Device detail, Overview, Integrations and Panel mode. Editors,
+            Assistant and Login stay out. Home only gets the status strip and room health, not a rebuild.</p>
+        </div>
+        <div class="spec">
+          <h3>Overview direction</h3>
+          <p class="help"><b>A “Calm”</b> is recommended: one verdict, three actions, one health line,
+            three events. <b>B “Domain board”</b> is the operator alternative. Pick one; do not ship both.</p>
+        </div>
+        <div class="spec">
+          <h3>Home ↔ Overview boundary</h3>
+          <p class="help">Home is control, Overview is status. The “while you were away” digest moves to
+            Overview. Home keeps a single status strip linking to it.</p>
+        </div>
+        <div class="spec">
+          <h3>Panel mode rules</h3>
+          <p class="help">Night mode drops to four essentials plus a large clock; offline shows one banner
+            and marks controls “Paused”. Confirm how night is triggered (schedule vs ambient light) and
+            which four controls are configurable.</p>
+        </div>
+        <div class="spec">
+          <h3>Device list truth</h3>
+          <p class="help">Add both a <code>quiet</code> filter and a freshness column, not only the combined
+            status chip. Keep the table on desktop; card rows on mobile.</p>
+        </div>
+        <div class="spec">
+          <h3>Integrations refresh</h3>
+          <p class="help">Per-row refresh plus one board-level “Refresh all”. No refresh-on-open; it
+            invites rate limits. Continuous integrations show no refresh button.</p>
+        </div>
+        <div class="spec">
+          <h3>Interaction contract</h3>
+          <p class="help">Ring 0 extraction during Ring 1: visible focus, 44 px primary targets, 8 px gaps,
+            colour never alone, specific destructive confirmation, no hover-only affordances.</p>
+        </div>
+        <div class="spec">
+          <h3>Panel scope</h3>
+          <p class="help">Panel is a landscape wall surface, not a responsive phone layout. It keeps its
+            own density and font scale; it does not need to match desktop card sizes.</p>
+        </div>
+      </div>
+    </section>
+
+    <p class="gallery-foot">Static prototype · no production code changed · companion:
+      <code>docs/design/ui-experience-review.md</code> §8 · Ring 1 gallery:
+      <a href="ui-improvements.html" style="color:#b6a6ff">ui-improvements.html</a>.</p>
+  </main>
+</div>
+</body>
+</html>

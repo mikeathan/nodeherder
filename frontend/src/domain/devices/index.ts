@@ -38,7 +38,7 @@ export const LOW_BATTERY = 20;
 
 export const isOnline = (d: Device): boolean => d.availability === DeviceAvailabilityTypes.Online;
 /** power_source is free text from the bridge, e.g. "battery", "mains (single phase)". */
-export const isBatteryPowered = (d: Device): boolean => (d.power_source ?? '').toLowerCase().includes('battery');
+export const isBatteryPowered = (d: Pick<Device, 'power_source'>): boolean => (d.power_source ?? '').toLowerCase().includes('battery');
 
 const numeric = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 

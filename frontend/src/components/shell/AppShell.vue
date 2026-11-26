@@ -8,6 +8,7 @@
   import { computed, ref, watch } from 'vue';
   import { useRoute } from 'vue-router';
   import { useHubConnection } from '@/composables/useHubConnection';
+  import { useNotificationProducers } from '@/composables/useNotificationProducers';
   import { useActivityFeed } from '@/composables/useActivityFeed';
   import { usePermitJoinTracking } from '@/composables/usePermitJoin';
   import Notifications from '@/components/hub/alerts/Notifications.vue';
@@ -27,6 +28,7 @@
   useActivityFeed();
   usePermitJoinTracking();
   useHubConnection();
+  useNotificationProducers();
 
   watch(
     () => route.fullPath,

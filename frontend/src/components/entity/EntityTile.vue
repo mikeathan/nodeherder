@@ -17,6 +17,9 @@
     stateExposeOf,
   } from '@/domain/exposes';
   import { exposeIcon } from '@/components/ui/icons';
+  import { freshnessPolicy, reportFreshness } from '@/domain/devices/freshness';
+  import { useNow } from '@/composables/useClock';
+  import FreshnessLabel from './FreshnessLabel.vue';
   import { findDevice, statusOf } from '@/composables/useHub';
   import { useDeviceCommand } from '@/composables/useDeviceCommand';
   import { emitOpenEntityViewDialog } from '@/contracts/dialog-events';
@@ -30,6 +33,10 @@
   const device = computed(() => findDevice(props.deviceId));
   const entity = computed<Expose | undefined>(() => device.value?.exposes[props.expose]);
   const status = computed(() => (device.value ? statusOf(device.value) : 'missing'));
+  const now = useNow();
+  const freshness = computed(() =>
+    device.value ? reportFreshness(device.value.last_seen, now.value, freshnessPolicy(device.value)) : 'unknown'
+  );
 
   /** The switch this tile toggles: itself, or the device's state expose. */
   const switchExpose = computed<Expose | undefined>(() => {
@@ -79,10 +86,14 @@
 <template>
   <div
     class="nh-tile"
-    :class="[`kind-${exposeKind(expose)}`, `is-${status}`, { 'is-on': isOn, 'is-alert': isAlert }]"
+    :class="[
+      `kind-${exposeKind(expose)}`,
+      `is-${status}`,
+      `is-${freshness}`,
+      { 'is-on': isOn, 'is-alert': isAlert },
+    ]"
     :data-device="deviceId"
-    :data-expose="expose"
-    :title="entity?.description || undefined">
+    :data-expose="expose">
     <button
       v-if="switchExpose"
       type="button"
@@ -103,6 +114,11 @@
         {{ value }}
       </span>
       <span class="nh-tile-dev">{{ device?.friendly_name ?? deviceId }}</span>
+      <FreshnessLabel
+        v-if="device"
+        class="nh-tile-age"
+        :device="device"
+        :mode="status === 'offline' ? 'seen' : 'updated'" />
     </button>
     <button
       v-if="editing"
@@ -207,6 +223,17 @@
     color: var(--nh-text-muted);
     max-width: 100%;
     overflow-wrap: anywhere;
+  }
+  .nh-tile-age {
+    margin-top: 0.1rem;
+  }
+  .nh-tile.is-quiet {
+    box-shadow: inset 3px 0 0 var(--nh-warn);
+    border-color: color-mix(in srgb, var(--nh-warn) 30%, transparent);
+  }
+  .nh-tile.is-stale {
+    box-shadow: inset 3px 0 0 var(--nh-danger);
+    border-color: color-mix(in srgb, var(--nh-danger) 30%, transparent);
   }
   .nh-tile.is-on {
     background: color-mix(in srgb, var(--nh-kc, var(--nh-accent)) 9%, var(--nh-surface));

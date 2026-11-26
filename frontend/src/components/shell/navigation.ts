@@ -25,7 +25,6 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { route: RouteName.Integrations, label: 'Integrations', icon: 'connections', includes: [RouteName.Integration, RouteName.IntegrationSetup, RouteName.IntegrationProvider, RouteName.IntegrationHelp,RouteName.IntegrationNotFound] },
   { route: RouteName.Viewer, label: 'Automations', icon: 'automation', includes: [RouteName.Editor, RouteName.Creator] },
   { route: RouteName.Assistant, label: 'Assistant', icon: 'assistant' },
-  { route: RouteName.ConsoleViewer, label: 'Console', icon: 'console' },
   { route: RouteName.Settings, label: 'Settings', icon: 'settings' },
 ];
 

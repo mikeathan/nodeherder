@@ -56,7 +56,7 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
   },
   {
     id: 'logger',
-    title: 'Logger',
+    title: 'Logs & diagnostics',
     group: SETTINGS_GROUPS.hub,
     icon: 'settingsLogger',
     content: defineAsyncComponent(() => import('@/components/hub/settings/LoggerSettings.vue')),

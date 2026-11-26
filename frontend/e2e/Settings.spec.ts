@@ -10,20 +10,20 @@ test('settings rail groups sections and keeps the open one in the URL', async ({
   await expect(rail.getByText('Hub', { exact: true })).toBeVisible();
   const hubGroup = rail.getByRole('list', { name: 'Hub' });
   await expect(hubGroup.getByRole('link')).toHaveText([
-    'Device defaults',
-    'Storage & retention',
-    'Logger',
-    'MCP server',
-    'Assistant',
+    /Device defaults/,
+    /Storage & retention/,
+    /Logs & diagnostics/,
+    /MCP server/,
+    /Assistant/,
   ]);
 
   await expect(rail.getByRole('link', { name: 'Appearance' })).toHaveAttribute('aria-current', 'page');
   await expect(page).toHaveURL(/\/settings$/);
   await expect(page.getByRole('heading', { level: 2, name: 'Appearance', exact: true })).toHaveCount(1);
 
-  await rail.getByRole('link', { name: 'Logger' }).click();
+  await rail.getByRole('link', { name: /Logs & diagnostics/ }).click();
   await expect(page).toHaveURL(/section=logger$/);
-  await expect(rail.getByRole('link', { name: 'Logger' })).toHaveAttribute('aria-current', 'page');
+  await expect(rail.getByRole('link', { name: /Logs & diagnostics/ })).toHaveAttribute('aria-current', 'page');
   await expect(page.getByRole('heading', { level: 1, name: 'Settings' })).toBeVisible();
 });
 
@@ -32,7 +32,7 @@ test('each section is reachable by URL and exposes exactly one section heading',
     ['appearance', 'Appearance'],
     ['device-defaults', 'Device defaults'],
     ['storage', 'Storage & retention'],
-    ['logger', 'Logger'],
+    ['logger', 'Logs & diagnostics'],
     ['mcp', 'MCP server'],
     ['assistant', 'Assistant'],
   ];

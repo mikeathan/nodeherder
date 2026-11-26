@@ -15,6 +15,7 @@
   import UiIcon from '@/components/ui/UiIcon.vue';
   import UiToggle from '@/components/ui/UiToggle.vue';
   import UiChip from '@/components/ui/UiChip.vue';
+  import { downloadAutomations } from '@/services/automation-export';
 
   const { automations, loaded, setEnabled, remove, run } = useAutomations();
   const query = ref('');
@@ -39,6 +40,14 @@
       });
   });
 
+  function exportOne(a: Automation) {
+    downloadAutomations([a], `automation-${a.friendlyname}`);
+  }
+
+  function exportAll() {
+    downloadAutomations(automations.value);
+  }
+
   async function onDelete(a: Automation) {
     const ok = await confirm({ title: `Delete “${a.friendlyname}”?`, message: 'The automation and all its triggers are removed from the hub.', confirmLabel: 'Delete', danger: true });
     if (ok) remove(a.id);
@@ -49,6 +58,7 @@
   <div>
     <UiPageHeader title="Automations" :subtitle="`${automations.length} automations · ${automations.filter((a) => a.enabled).length} on`">
       <template #actions>
+        <UiButton v-if="automations.length" icon="export" @click="exportAll">Export all</UiButton>
         <UiButton variant="primary" icon="add" :to="{ name: RouteName.Creator }">New automation</UiButton>
       </template>
     </UiPageHeader>
@@ -79,6 +89,7 @@
         <div class="nh-auto-side">
           <UiChip v-if="r.scheduled" icon="schedule" tone="info">Scheduled</UiChip>
           <UiButton v-if="r.runnable" size="sm" icon="run" @click="run(r.automation, r.runnable.name)">Run</UiButton>
+          <UiButton size="sm" variant="ghost" icon="export" :label="`Export ${r.automation.friendlyname}`" @click="exportOne(r.automation)" />
           <UiToggle :model-value="r.automation.enabled" :label="`${r.automation.friendlyname} on`" @update:model-value="setEnabled(r.automation, $event)" />
           <UiButton size="sm" variant="ghost" icon="delete" class="is-danger" :label="`Delete ${r.automation.friendlyname}`" @click="onDelete(r.automation)" />
         </div>

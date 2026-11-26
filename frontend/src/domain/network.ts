@@ -4,6 +4,7 @@
  */
 import { Device } from '@/types/device';
 import { batteryLevel, compareByName, deviceStatus, hasLowBattery, hasWeakLink, isBatteryPowered, isOnline, linkQuality } from './devices';
+import { freshnessPolicy, reportFreshness } from './devices/freshness';
 
 export type NetworkSummary = {
   total: number;
@@ -52,12 +53,17 @@ export type DeviceFilters = {
   query: string;
   protocol: 'all' | string;
   power: 'all' | 'battery' | 'mains';
-  status: 'all' | 'online' | 'offline' | 'disabled';
+  status: 'all' | 'online' | 'quiet' | 'stale' | 'offline' | 'disabled';
 };
 export type DeviceSortKey = 'name' | 'signal' | 'battery' | 'lastSeen';
 export const DEFAULT_FILTERS: DeviceFilters = { query: '', protocol: 'all', power: 'all', status: 'all' };
 
-export function filterDevices(devices: Device[], f: DeviceFilters, isDisabled: (d: Device) => boolean): Device[] {
+export function filterDevices(
+  devices: Device[],
+  f: DeviceFilters,
+  isDisabled: (d: Device) => boolean,
+  now: number = Date.now()
+): Device[] {
   const q = f.query.trim().toLowerCase();
   return devices.filter((d) => {
     if (q && !`${d.friendly_name} ${d.id} ${d.description ?? ''}`.toLowerCase().includes(q)) return false;
@@ -65,7 +71,13 @@ export function filterDevices(devices: Device[], f: DeviceFilters, isDisabled: (
     if (f.power !== 'all' && (f.power === 'battery') !== isBatteryPowered(d)) return false;
     if (f.status !== 'all') {
       const s = deviceStatus(d, isDisabled(d));
-      if (f.status === 'online' ? s !== 'online' : s !== f.status) return false;
+      if (f.status === 'quiet' || f.status === 'stale') {
+        // Freshness is orthogonal to availability; a quiet online device still counts.
+        if (s !== 'online') return false;
+        if (reportFreshness(d.last_seen, now, freshnessPolicy(d)) !== f.status) return false;
+      } else if (f.status === 'online' ? s !== 'online' : s !== f.status) {
+        return false;
+      }
     }
     return true;
   });

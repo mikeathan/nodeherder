@@ -3,7 +3,7 @@ import { test, expect, signIn } from './support/fixtures';
 // Spec 059 US-03: labelled logger controls that save the complete settings object.
 test('logger toggle and level save complete settings', async ({ page, ws }) => {
   await signIn(page, '/settings?section=logger');
-  await expect(page.getByRole('heading', { level: 2, name: 'Logger' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 2, name: 'Logs & diagnostics' })).toBeVisible();
 
   const toggle = page.getByRole('switch', { name: 'Send hub logs to this browser' });
   await expect(toggle).toHaveAttribute('aria-checked', 'false');

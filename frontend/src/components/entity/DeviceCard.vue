@@ -12,6 +12,7 @@
   import ExposeRow from './ExposeRow.vue';
   import DeviceChips from './DeviceChips.vue';
   import DeviceStatusChip from './DeviceStatusChip.vue';
+  import FreshnessLabel from './FreshnessLabel.vue';
 
   const props = defineProps<{ device: Device }>();
   const status = computed(() => statusOf(props.device));
@@ -44,7 +45,7 @@
     <p v-else class="nh-dcard-none">No live values. Open the device for details.</p>
     <footer class="nh-dcard-foot">
       <DeviceChips :device="device" />
-      <span v-if="isKnownTime(device.last_seen)" class="nh-dcard-seen"><RelativeTime :value="device.last_seen" /></span>
+      <FreshnessLabel :device="device" :mode="status === 'offline' ? 'seen' : 'updated'" class="nh-dcard-seen" />
     </footer>
   </article>
 </template>

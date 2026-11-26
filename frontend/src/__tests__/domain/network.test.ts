@@ -1,6 +1,7 @@
 import { describe, expect, test } from '@jest/globals';
 import { DEFAULT_FILTERS, filterDevices, needsAttention, sortDevices, summarizeNetwork } from '@/domain/network';
 import { device, expose, hubDevices } from '../helpers/devices';
+import { deviceStatus } from '@/domain/devices';
 
 const never = () => false;
 
@@ -42,6 +43,17 @@ describe('filter and sort', () => {
     expect(filterDevices(list, { ...DEFAULT_FILTERS, status: 'disabled' }, (d) => d.id === 'z3').map((d) => d.id)).toEqual(['z3']);
     expect(filterDevices(list, { ...DEFAULT_FILTERS, status: 'online' }, (d) => d.id === 'z3').map((d) => d.id)).toEqual(['z1']);
   });
+  test('freshness filters never reclassify availability', () => {
+    const now = Date.parse('2026-10-10T12:00:00Z');
+    const quiet = device('q', { last_seen: '2026-10-10T09:00:00Z' });
+    const stale = device('s', { last_seen: '2026-10-10T05:00:00Z' });
+    const fresh = device('f', { last_seen: '2026-10-10T11:59:00Z' });
+    const offline = device('o', { availability: 'offline' as never, last_seen: '2026-10-10T09:00:00Z' });
+    expect(filterDevices([quiet, stale, fresh, offline], { ...DEFAULT_FILTERS, status: 'quiet' }, never, now).map((d) => d.id)).toEqual(['q']);
+    expect(filterDevices([quiet, stale, fresh, offline], { ...DEFAULT_FILTERS, status: 'stale' }, never, now).map((d) => d.id)).toEqual(['s']);
+    expect(deviceStatus(quiet, false)).toBe('online');
+  });
+
   test('sorts by name case-insensitively, signal/battery with missing last both directions, recent first', () => {
     expect(sortDevices(list, 'name').map((d) => d.id)).toEqual(['z2', 'z3', 'z1']);
     expect(sortDevices(list, 'name', false).map((d) => d.id)).toEqual(['z1', 'z3', 'z2']);

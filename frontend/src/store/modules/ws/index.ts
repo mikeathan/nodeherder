@@ -50,7 +50,7 @@ function scheduleReconnect(context: Context) {
 const actionEvents = new Map([
   ['automations', 'automations/init'], ['deviceList', 'hub/setDevices'],
   ['appConfig', 'hub/setAppConfig'], ['metrics', 'metrics/store'],
-  ['logger', 'console/addMessage'], ['operationFailed', 'alerts/showError'],
+  ['logger', 'console/addMessage'],
 ]);
 const mutationEvents = new Map([
   [DEVICE_CONFIG_SAVE_RESULT, 'ws/setDeviceConfigSaveResult'],
@@ -62,6 +62,20 @@ const mutationEvents = new Map([
   ['bridgeConfig', 'hub/setBridgeSettings'], ['deviceAdded', 'hub/addDevice'],
   ['dashboardGroups', 'hub/setDashboardGroups'], ['mcpStatus', 'hub/setMCPStatus'],
 ]);
+
+/**
+ * Data-sync timestamps churn on every message. Commit at most once per second; the age
+ * banner only needs second-level accuracy and per-message commits would re-render the shell.
+ */
+const syncTouchIntervalMs = 1000;
+let lastSyncTouch = 0;
+
+function touchLastSynced(context: Context) {
+  const now = Date.now();
+  if (now - lastSyncTouch < syncTouchIntervalMs) return;
+  lastSyncTouch = now;
+  context.commit('hub/setLastSyncedAt', now, { root: true });
+}
 
 type HubMessage = { type: string; payload?: unknown };
 function decodeMessage(raw: string): HubMessage | null {
@@ -75,6 +89,7 @@ function decodeMessage(raw: string): HubMessage | null {
 }
 
 function routeMessage(context: Context, message: HubMessage) {
+  touchLastSynced(context);
   const action = actionEvents.get(message.type);
   if (action) {
     context.dispatch(action, message.payload, { root: true });
@@ -83,6 +98,23 @@ function routeMessage(context: Context, message: HubMessage) {
   const mutation = mutationEvents.get(message.type);
   if (mutation) {
     context.commit(mutation, message.payload, { root: true });
+    return;
+  }
+  if (message.type === 'operationFailed') {
+    const text = typeof message.payload === 'string' && message.payload ? message.payload : 'Operation failed';
+    context.dispatch('alerts/showError', text, { root: true });
+    context.dispatch(
+      'notifications/notify',
+      {
+        severity: 'error',
+        category: 'system',
+        title: 'Operation failed',
+        body: text,
+        dedupeKey: `operation:${text}`,
+        action: { label: 'Open logs', to: '/consoleviewer' },
+      },
+      { root: true }
+    );
     return;
   }
   if (message.type === 'operationSuccess') {

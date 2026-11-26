@@ -19,6 +19,8 @@
   const statuses = [
     { value: 'all', label: 'Any status' },
     { value: 'online', label: 'Online' },
+    { value: 'quiet', label: 'Quiet (not reporting)' },
+    { value: 'stale', label: 'Stale' },
     { value: 'offline', label: 'Offline' },
     { value: 'disabled', label: 'Disabled' },
   ];

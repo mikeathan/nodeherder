@@ -1,0 +1,1964 @@
+<!doctype html>
+<html lang="en" data-mode="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NodeHerder UI — exploration mocks</title>
+<style>
+  :root{
+    --bg:#0b0b0d; --bg-2:#0f0f12; --surface:#151519; --surface-2:#1c1c21;
+    --border:#27272e; --border-strong:#3a3a44;
+    --text:#ececf2; --muted:#9c9caa; --faint:#6f6f7d;
+    --accent:#7c5cff; --accent-soft:rgba(124,92,255,.16);
+    --ok:#3ecf8e; --warn:#e8a33d; --danger:#e5544b; --info:#4aa3ff;
+    --kind-temp:#ef5350; --kind-hum:#29b6f6; --kind-power:#fb8c00; --kind-light:#f2b01e; --kind-energy:#43a047; --kind-motion:#7e57c2;
+    --r:14px; --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 var(--font);-webkit-font-smoothing:antialiased}
+  a{color:inherit}
+  h1,h2,h3,h4,p{margin:0}
+  svg.i{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  svg.i.sm{width:14px;height:14px}
+  svg.i.lg{width:22px;height:22px}
+
+  /* ---------- gallery chrome ---------- */
+  .gal{display:grid;grid-template-columns:250px minmax(0,1fr);gap:32px;max-width:1720px;margin:0 auto;padding:28px 28px 120px}
+  .gal-nav{position:sticky;top:24px;align-self:start;border:1px solid var(--border);background:var(--bg-2);border-radius:16px;padding:16px;max-height:calc(100vh - 48px);overflow:auto}
+  .gal-nav .brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.2px;margin-bottom:6px}
+  .brand-dot{width:26px;height:26px;border-radius:9px;background:linear-gradient(140deg,var(--accent),#4b2fd6);display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff}
+  .gal-nav p.note{color:var(--faint);font-size:11.5px;margin:0 0 14px}
+  .gal-nav ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+  .gal-nav a{display:flex;gap:9px;align-items:center;padding:7px 9px;border-radius:9px;text-decoration:none;color:var(--muted);font-size:13px}
+  .gal-nav a:hover{background:var(--surface);color:var(--text)}
+  .gal-nav .num{width:19px;height:19px;border-radius:6px;background:var(--surface-2);display:grid;place-items:center;font:600 10.5px/1 var(--mono);color:var(--faint)}
+  .gal-main{min-width:0}
+  .gal-head{margin-bottom:26px}
+  .gal-head h1{font-size:28px;letter-spacing:-.02em;font-weight:760}
+  .gal-head p{color:var(--muted);max-width:78ch;margin-top:8px}
+  .kicker{font:650 11px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+  .pill{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:650;border:1px solid var(--border);color:var(--muted);white-space:nowrap}
+  .pill.ok{color:var(--ok);border-color:rgba(62,207,142,.35);background:rgba(62,207,142,.08)}
+  .pill.warn{color:var(--warn);border-color:rgba(232,163,61,.35);background:rgba(232,163,61,.09)}
+  .pill.danger{color:var(--danger);border-color:rgba(229,84,75,.38);background:rgba(229,84,75,.1)}
+  .pill.info{color:var(--info);border-color:rgba(74,163,255,.35);background:rgba(74,163,255,.09)}
+  .pill.rec{color:#cabfff;border-color:rgba(124,92,255,.5);background:var(--accent-soft)}
+
+  .sec{margin:0 0 46px;scroll-margin-top:24px}
+  .sec-head{display:flex;gap:14px;align-items:baseline;flex-wrap:wrap;margin-bottom:6px}
+  .sec-head h2{font-size:21px;letter-spacing:-.01em;font-weight:720}
+  .sec-lede{color:var(--muted);max-width:88ch;margin-bottom:18px}
+  .finding{border-left:2px solid var(--warn);padding:2px 0 2px 12px;color:var(--muted);margin:14px 0;font-size:13px}
+  .finding b{color:var(--text)}
+
+  .variant{margin:22px 0 34px}
+  .v-head{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:10px}
+  .v-tag{font:700 11px/1.9 var(--mono);min-width:22px;height:22px;padding:0 6px;border-radius:7px;background:var(--accent-soft);color:#c9bdff;text-align:center;letter-spacing:.04em}
+  .v-head h3{font-size:15px;font-weight:680}
+  .v-note{color:var(--muted);font-size:12.5px;max-width:80ch;margin:2px 0 0}
+  .v-best{margin-left:auto}
+
+  .screen{position:relative;background:var(--bg);border:1px solid var(--border);border-radius:18px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.45)}
+  .app{display:grid;grid-template-columns:214px minmax(0,1fr);min-height:580px}
+  .side{border-right:1px solid var(--border);background:#0a0a0c;padding:16px 10px;display:flex;flex-direction:column;gap:2px}
+  .side .logo{display:flex;align-items:center;gap:9px;padding:4px 10px 16px;font-weight:700}
+  .side .logo .brand-dot{width:24px;height:24px;font-size:11px}
+  .nvi{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:9px;color:var(--muted);font-size:13px;text-decoration:none}
+  .nvi .i{width:16px;height:16px}
+  .nvi:hover{background:var(--surface);color:var(--text)}
+  .nvi.active{background:var(--accent-soft);color:#cabfff;font-weight:600}
+  .nvi .count{margin-left:auto;background:var(--danger);color:#fff;font:700 10px/1 var(--mono);padding:3px 6px;border-radius:999px}
+  .nvi .count.soft{background:rgba(232,163,61,.18);color:var(--warn)}
+  .side .spacer{flex:1}
+  .side .foot{border-top:1px solid var(--border);padding-top:10px;margin-top:10px}
+
+  .main{min-width:0;display:flex;flex-direction:column}
+  .top{display:flex;align-items:center;gap:10px;height:54px;padding:0 18px;border-bottom:1px solid var(--border);background:#0b0b0d;position:relative}
+  .top .ttl{font-weight:650;font-size:14px}
+  .top .right{margin-left:auto;display:flex;align-items:center;gap:6px}
+  .conn{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);border:1px solid var(--border);border-radius:999px;padding:3px 9px}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--ok)}
+  .conn.bad{color:#ffb6b1;border-color:rgba(229,84,75,.4);background:rgba(229,84,75,.08)}
+  .conn.bad .dot{background:var(--danger)}
+  .conn.warn2{color:#ffd59a;border-color:rgba(232,163,61,.35);background:rgba(232,163,61,.08)}
+  .conn.warn2 .dot{background:var(--warn)}
+  .ico-btn{width:30px;height:30px;display:grid;place-items:center;border:0;background:transparent;color:var(--muted);border-radius:9px;position:relative}
+  .ico-btn:hover{background:var(--surface);color:var(--text)}
+  .ico-btn .badge{position:absolute;top:-2px;right:-3px;min-width:15px;height:15px;padding:0 4px;border-radius:999px;background:var(--danger);color:#fff;font:700 9.5px/15px var(--mono);text-align:center;border:2px solid var(--bg)}
+  .body{padding:20px 22px 26px;flex:1}
+
+  .page-h{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:16px;flex-wrap:wrap}
+  .page-h h1{font-size:22px;font-weight:740;letter-spacing:-.02em}
+  .page-h .sub{color:var(--muted);font-size:12.5px;margin-top:2px}
+  .page-h .actions{display:flex;gap:8px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:32px;padding:0 12px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12.5px;font-weight:600;white-space:nowrap}
+  .btn .i{width:14px;height:14px}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.ghost{background:transparent}
+  .btn.danger{color:#ffb1ac;border-color:rgba(229,84,75,.4);background:rgba(229,84,75,.08)}
+  .btn.sm{height:26px;padding:0 9px;font-size:11.5px}
+  .btn.sq{width:32px;padding:0}
+
+  .area-head{display:flex;align-items:baseline;gap:10px;margin:20px 0 9px}
+  .area-head:first-of-type{margin-top:0}
+  .area-head h2{font-size:15px;font-weight:680}
+  .area-meta{color:var(--faint);font-size:11.5px}
+  .health{margin-left:auto;display:flex;gap:6px}
+  .tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  .tile{display:flex;gap:10px;align-items:flex-start;background:var(--surface);border:1px solid transparent;border-radius:var(--r);padding:11px 12px;min-width:0;position:relative}
+  .tile .ic{width:34px;height:34px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;flex:none;color:var(--muted)}
+  .tile .ic .i{width:17px;height:17px}
+  .tile .txt{min-width:0;display:flex;flex-direction:column;gap:1px}
+  .tile .lab{font-weight:640;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tile .val{font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:4px;white-space:nowrap;overflow:hidden}
+  .tile .dev{font-size:11px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tile .age{font-size:10.5px;color:var(--faint);display:flex;align-items:center;gap:4px;margin-top:2px}
+  .tile .age .i{width:11px;height:11px}
+  .tile.k-temp .ic{color:var(--kind-temp)} .tile.k-hum .ic{color:var(--kind-hum)}
+  .tile.k-power .ic{color:var(--kind-power)} .tile.k-light .ic{color:var(--kind-light)}
+  .tile.k-energy .ic{color:var(--kind-energy)} .tile.k-motion .ic{color:var(--kind-motion)}
+  .tile.off{opacity:.8}
+  .tile.off .ic{filter:grayscale(1);opacity:.6}
+  .tile.off .val{color:var(--danger)}
+  .tile.on{background:color-mix(in srgb,var(--accent) 8%,var(--surface))}
+  .tile.on .ic{background:rgba(124,92,255,.22);color:#cabfff}
+
+  /* variant 1A */
+  .tile.stale-a{box-shadow:inset 3px 0 0 var(--warn);border-color:rgba(232,163,61,.28)}
+  .tile.stale-a .age{color:var(--warn)}
+  /* variant 1B */
+  .tile.stale-b{opacity:.68}
+  .tile.stale-b .ic{filter:grayscale(.6)}
+  .chip-age{position:absolute;top:8px;right:8px;font:650 10px/1 var(--mono);color:var(--warn);background:rgba(232,163,61,.12);border:1px solid rgba(232,163,61,.32);border-radius:999px;padding:3px 6px}
+  .tile .val .tilde{color:var(--faint)}
+  /* variant 1C */
+  .statusline{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600}
+  .statusline.ok{color:var(--ok)} .statusline.quiet{color:var(--warn)} .statusline.dead{color:var(--danger)}
+  .statusline .i{width:12px;height:12px}
+  .banner{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:11px;font-size:12.5px;margin-bottom:16px}
+  .banner .i{width:16px;height:16px}
+  .banner.bad{background:rgba(229,84,75,.09);border:1px solid rgba(229,84,75,.3);color:#ffc9c5}
+  .banner .grow{flex:1}
+
+  /* ---------- console ---------- */
+  .console-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+  .search{display:flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--border);border-radius:9px;height:32px;padding:0 10px;min-width:230px;color:var(--faint);font-size:12.5px;flex:1 1 240px;max-width:360px}
+  .search .i{width:14px;height:14px}
+  .search kbd{margin-left:auto;font:600 10px/1 var(--mono);border:1px solid var(--border);border-radius:4px;padding:2px 4px;color:var(--faint)}
+  .lvl-chips{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:9px}
+  .lvl{font:650 10.5px/1 var(--mono);padding:4px 7px;border-radius:7px;border:1px solid var(--border);color:var(--muted);background:var(--surface)}
+  .lvl b{font-weight:800;margin-left:3px;color:var(--faint)}
+  .lvl.on{border-color:rgba(124,92,255,.55);background:var(--accent-soft);color:#cabfff}
+  .console{background:#0c0c0f;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  .log{display:grid;grid-template-columns:86px 54px 132px minmax(0,1fr);gap:10px;align-items:start;padding:5px 11px;font:12px/1.55 var(--mono);border-left:2px solid transparent}
+  .log:hover{background:#111116}
+  .log .t{color:var(--faint)}
+  .log .lv{font-weight:800;font-size:10.5px;letter-spacing:.03em;padding-top:1px}
+  .log .lv.info{color:#7cc7ff} .log .lv.warn{color:var(--warn)} .log .lv.error{color:#ff8d85} .log .lv.debug{color:#c69bff} .log .lv.trace{color:#8f8f9d}
+  .log .src{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .log .msg{color:#dcdce6;word-break:break-word}
+  .log.warn{border-left-color:rgba(232,163,61,.8);background:rgba(232,163,61,.045)}
+  .log.error{border-left-color:rgba(229,84,75,.85);background:rgba(229,84,75,.05)}
+  .console-foot{display:flex;align-items:center;gap:12px;padding:6px 11px;border-top:1px solid var(--border);color:var(--faint);font-size:11px}
+  .console-foot .right{margin-left:auto;display:flex;gap:12px}
+  .console-foot .live{color:var(--ok);display:flex;align-items:center;gap:5px}
+  .console-foot .live .dot{width:6px;height:6px;animation:pulse 1.6s infinite}
+  @keyframes pulse{50%{opacity:.35}}
+
+  /* console drawer */
+  .scrim{position:absolute;inset:0;background:rgba(0,0,0,.38)}
+  .drawer{position:absolute;left:0;right:0;bottom:0;height:55%;background:#0d0d10;border-top:1px solid var(--border-strong);box-shadow:0 -22px 60px rgba(0,0,0,.55);display:flex;flex-direction:column}
+  .drawer .grab{height:5px;display:grid;place-items:center;padding-top:7px}
+  .drawer .grab span{width:38px;height:4px;border-radius:99px;background:var(--border-strong)}
+  .drawer .dhead{display:flex;align-items:center;gap:9px;padding:6px 14px 8px;border-bottom:1px solid var(--border)}
+  .drawer .dhead .ttl{font-weight:650;font-size:13px}
+  .drawer .dhead .right{margin-left:auto;display:flex;gap:6px;align-items:center}
+  .drawer .dbody{flex:1;overflow:auto;padding:8px 10px}
+  .drawer .dbody .log{grid-template-columns:74px 50px 116px minmax(0,1fr);font-size:11.5px}
+  .dock{position:absolute;left:0;right:0;bottom:0;height:38px;display:flex;align-items:center;gap:9px;padding:0 14px;background:#0d0d10;border-top:1px solid var(--border);font-size:12px;color:var(--muted)}
+  .dock .last{color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dock .right{margin-left:auto;display:flex;gap:12px;align-items:center;color:var(--faint);font-size:11px}
+
+  /* settings */
+  .settings{display:grid;grid-template-columns:206px minmax(0,1fr);gap:22px;align-items:start}
+  .srail{display:flex;flex-direction:column;gap:14px}
+  .ssearch{display:flex;align-items:center;gap:7px;height:30px;padding:0 9px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--faint);font-size:12px}
+  .sgroup .gh{font:650 10px/1 var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--faint);padding:0 8px 6px}
+  .sitem{display:flex;gap:9px;padding:8px 9px;border-radius:9px;color:var(--muted);text-decoration:none;align-items:flex-start}
+  .sitem .i{margin-top:1px;width:15px;height:15px}
+  .sitem .st{display:flex;flex-direction:column;min-width:0}
+  .sitem .st b{font-weight:600;font-size:12.5px;color:var(--text)}
+  .sitem .st small{font-size:11px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sitem.active{background:var(--accent-soft)}
+  .sitem.active .st b{color:#cabfff}
+  .sitem:hover{background:var(--surface)}
+  .sbody{min-width:0}
+  .sbody h2{font-size:16px;font-weight:700}
+  .sbody .sdesc{color:var(--muted);font-size:12px;margin:2px 0 14px}
+  .sect-card{border:1px solid var(--border);border-radius:12px;background:var(--surface);overflow:hidden;margin-bottom:12px}
+  .sect-card>.ch{display:flex;align-items:center;gap:8px;padding:10px 13px;border-bottom:1px solid var(--border);font-weight:650;font-size:12.5px}
+  .sect-card>.ch .i{width:15px;height:15px;color:var(--accent)}
+  .sect-card>.ch .scope{margin-left:auto;font-size:10.5px;font-weight:600;color:var(--faint);border:1px solid var(--border);border-radius:999px;padding:2px 7px;text-transform:none;letter-spacing:0}
+  .row{display:flex;align-items:center;gap:14px;padding:11px 13px;border-bottom:1px solid var(--border)}
+  .row:last-child{border-bottom:0}
+  .row .rl{flex:1;min-width:0}
+  .row .rl b{display:block;font-size:12.5px;font-weight:600}
+  .row .rl small{display:block;color:var(--muted);font-size:11.5px;margin-top:1px}
+  .seg{display:inline-flex;background:var(--surface-2);border-radius:8px;padding:2px;gap:2px}
+  .seg span{padding:4px 10px;border-radius:6px;font-size:11.5px;color:var(--muted)}
+  .seg span.on{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.4)}
+  .swatches{display:flex;gap:6px;flex-wrap:wrap}
+  .sw{display:flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:8px;padding:4px 8px 4px 4px;font-size:11px;color:var(--muted)}
+  .sw i{width:16px;height:16px;border-radius:4px;background:linear-gradient(135deg,#8fa3c8,#e8eef7)}
+  .sw.on{border-color:rgba(124,92,255,.6);color:var(--text)}
+  .toggle{width:34px;height:19px;border-radius:99px;background:var(--border-strong);position:relative;flex:none}
+  .toggle::after{content:"";position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:#fff}
+  .toggle.on{background:var(--accent)} .toggle.on::after{left:17px}
+  .health-strip{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+  .hchip{display:flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--bg-2);border-radius:10px;padding:7px 10px;font-size:11.5px;color:var(--muted)}
+  .hchip b{color:var(--text);font-weight:650}
+  .hchip .i{width:14px;height:14px;color:var(--accent)}
+  .setgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  .setgroup-label{font:650 10px/1 var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin:14px 2px 8px}
+  .setgroup-label:first-of-type{margin-top:0}
+  .setcard{border:1px solid var(--border);border-radius:12px;background:var(--surface);padding:13px;display:flex;flex-direction:column;gap:7px;min-height:112px;text-decoration:none}
+  .setcard:hover{border-color:var(--border-strong)}
+  .setcard .ic{width:28px;height:28px;border-radius:8px;background:var(--accent-soft);color:#c9bdff;display:grid;place-items:center}
+  .setcard .ic .i{width:15px;height:15px}
+  .setcard b{font-size:13px}
+  .setcard small{color:var(--muted);font-size:11.5px;line-height:1.45}
+  .setcard .chips{display:flex;gap:5px;flex-wrap:wrap;margin-top:auto}
+  .minichip{font-size:10.5px;color:var(--muted);background:var(--surface-2);border-radius:6px;padding:2px 6px}
+
+  .meter{height:7px;border-radius:99px;background:var(--surface-2);overflow:hidden;margin-top:6px}
+  .meter i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#a58bff);width:var(--w)}
+  .statline{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-top:6px}
+
+  /* notifications */
+  .panel{position:absolute;top:0;right:0;bottom:0;width:392px;background:#0f0f13;border-left:1px solid var(--border-strong);box-shadow:-30px 0 80px rgba(0,0,0,.6);display:flex;flex-direction:column}
+  .panel .ph{display:flex;align-items:center;gap:8px;padding:14px 14px 10px}
+  .panel .ph h2{font-size:14px;font-weight:700}
+  .panel .ph .right{margin-left:auto;display:flex;gap:6px}
+  .ptabs{display:flex;gap:4px;padding:0 14px 10px}
+  .ptab{font-size:11.5px;color:var(--muted);padding:4px 9px;border-radius:7px}
+  .ptab.on{background:var(--accent-soft);color:#cabfff;font-weight:650}
+  .plist{flex:1;overflow:auto;padding:0 10px 10px}
+  .pgroup{font:650 10px/1 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--faint);padding:10px 6px 6px}
+  .nitem{display:flex;gap:10px;padding:10px;border-radius:10px;align-items:flex-start}
+  .nitem:hover{background:var(--surface)}
+  .nitem.unread{background:rgba(124,92,255,.06)}
+  .nitem .nic{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;flex:none;background:var(--surface-2);color:var(--muted)}
+  .nitem .nic .i{width:14px;height:14px}
+  .nitem .nic.err{background:rgba(229,84,75,.13);color:#ff9d96}
+  .nitem .nic.warn{background:rgba(232,163,61,.13);color:var(--warn)}
+  .nitem .nic.info{background:rgba(74,163,255,.12);color:var(--info)}
+  .nitem .nt{min-width:0;flex:1}
+  .nitem .nt b{font-size:12.5px;font-weight:620;display:block}
+  .nitem .nt p{font-size:11.5px;color:var(--muted);margin-top:1px}
+  .nitem .nt .acts{display:flex;gap:8px;margin-top:6px}
+  .nitem .nt .acts a{font-size:11px;color:#b6a6ff;text-decoration:none;font-weight:600}
+  .nitem .when{font-size:10px;color:var(--faint);white-space:nowrap;padding-top:2px}
+  .pfoot{border-top:1px solid var(--border);padding:9px 14px;font-size:11px;color:var(--faint);display:flex;gap:10px;align-items:center}
+  .pfoot a{margin-left:auto;color:#b6a6ff;text-decoration:none;font-weight:600}
+
+  /* digest */
+  .digest{border:1px solid rgba(124,92,255,.38);background:linear-gradient(180deg,rgba(124,92,255,.1),rgba(124,92,255,.03));border-radius:13px;padding:13px 14px;margin-bottom:16px}
+  .digest .dh{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .digest .dh .i{width:16px;height:16px;color:#c9bdff}
+  .digest .dh b{font-size:13px}
+  .digest .dh .since{color:var(--faint);font-size:11px}
+  .digest .dh .right{margin-left:auto;display:flex;gap:6px}
+  .drow{display:flex;align-items:center;gap:9px;padding:6px 0;font-size:12px;border-top:1px dashed rgba(124,92,255,.18)}
+  .drow .i{width:13px;height:13px}
+  .drow .what{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .drow a{color:#b6a6ff;font-size:11px;font-weight:650;text-decoration:none}
+
+  /* automation */
+  .autolist{display:flex;flex-direction:column;gap:8px}
+  .autorow{display:flex;align-items:center;gap:11px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;position:relative}
+  .autorow .aic{width:32px;height:32px;border-radius:9px;background:var(--accent-soft);color:#c9bdff;display:grid;place-items:center;flex:none}
+  .autorow .atxt{min-width:0;flex:1}
+  .autorow .atxt b{display:block;font-size:13px}
+  .autorow .atxt small{display:block;color:var(--muted);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .autorow .atxt .sum{color:var(--faint);font-size:11px;margin-top:2px}
+  .autorow .aside{display:flex;align-items:center;gap:8px;margin-left:auto}
+  .menu{position:absolute;top:44px;right:10px;width:196px;background:#15151a;border:1px solid var(--border-strong);border-radius:11px;box-shadow:0 18px 50px rgba(0,0,0,.6);padding:5px;z-index:5}
+  .menu .mi{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:7px;font-size:12px;color:var(--text)}
+  .menu .mi .i{width:14px;height:14px;color:var(--muted)}
+  .menu .mi:hover{background:var(--surface-2)}
+  .menu .mi.danger{color:#ff9d96}.menu .mi.danger .i{color:#ff9d96}
+  .menu .sep{height:1px;background:var(--border);margin:4px 2px}
+  .menu .hint{font-size:10.5px;color:var(--faint);padding:2px 9px 4px}
+
+  /* ---------- mobile frames ---------- */
+  .mobile-rules{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0 20px}
+  .rule{border:1px solid var(--border);border-radius:11px;background:var(--bg-2);padding:10px 11px}
+  .rule b{display:block;font-size:12px;margin-bottom:2px}
+  .rule small{color:var(--muted);font-size:11px;line-height:1.45}
+  .phones{display:flex;flex-wrap:wrap;gap:22px;align-items:flex-start}
+  .phone{width:414px;padding:11px;background:#17171c;border:1px solid #32323a;border-radius:48px;box-shadow:0 30px 70px rgba(0,0,0,.5)}
+  .m-screen{width:390px;height:812px;background:var(--bg);border-radius:38px;overflow:hidden;position:relative;display:flex;flex-direction:column}
+  .m-status{height:26px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font:600 11px/1 var(--font);color:var(--muted)}
+  .m-status .right{display:flex;align-items:center;gap:5px}
+  .sig{display:flex;align-items:flex-end;gap:2px;height:9px}
+  .sig i{width:2.5px;background:var(--muted);border-radius:1px}
+  .sig i:nth-child(1){height:3px}.sig i:nth-child(2){height:5px}.sig i:nth-child(3){height:7px}.sig i:nth-child(4){height:9px;opacity:.4}
+  .batt{width:18px;height:9px;border:1px solid var(--muted);border-radius:2.5px;position:relative}
+  .batt::before{content:"";position:absolute;inset:1.5px;width:11px;background:var(--muted);border-radius:1px}
+  .batt::after{content:"";position:absolute;right:-3px;top:2.5px;width:1.5px;height:4px;background:var(--muted);border-radius:1px}
+  .m-head{height:52px;flex:none;display:flex;align-items:center;gap:6px;padding:0 8px 0 6px;border-bottom:1px solid var(--border);background:#0b0b0d}
+  .m-title{font-weight:660;font-size:14.5px;flex:1;min-width:0;padding-left:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .m-ico{width:40px;height:40px;display:grid;place-items:center;border:0;background:transparent;color:var(--muted);border-radius:11px;position:relative;flex:none}
+  .m-ico .i{width:19px;height:19px}
+  .m-ico .m-badge{position:absolute;top:3px;right:2px;min-width:15px;height:15px;padding:0 4px;border-radius:99px;background:var(--danger);color:#fff;font:700 9px/15px var(--mono);text-align:center;border:2px solid var(--bg)}
+  .m-textbtn{height:44px;padding:0 8px;border:0;background:transparent;color:#b6a6ff;font-size:12px;font-weight:650}
+  .m-body{flex:1;overflow:auto;padding:12px 14px 20px}
+  .m-body.flush{padding:0}
+  .m-banner{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:11px;font-size:11.5px;line-height:1.4;margin-bottom:12px}
+  .m-banner .i{width:15px;height:15px;flex:none}
+  .m-banner.bad{background:rgba(229,84,75,.09);border:1px solid rgba(229,84,75,.3);color:#ffc9c5}
+  .m-banner .grow{flex:1}
+  .m-banner .retry{color:#ffb1ac;font-weight:700;font-size:11px;white-space:nowrap}
+  .m-digest{border:1px solid rgba(124,92,255,.4);background:linear-gradient(180deg,rgba(124,92,255,.11),rgba(124,92,255,.03));border-radius:13px;padding:11px 12px;margin-bottom:14px}
+  .m-digest .dh{display:flex;align-items:center;gap:7px}
+  .m-digest .dh b{font-size:12.5px}
+  .m-digest .dh .i{width:15px;height:15px;color:#c9bdff}
+  .m-digest .since{color:var(--faint);font-size:10px;margin-left:auto}
+  .m-digest .drow{display:flex;align-items:center;gap:7px;padding:6px 0 0;font-size:11px;color:var(--muted)}
+  .m-digest .drow .i{width:12px;height:12px}
+  .m-digest .drow span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .m-digest .drow a{color:#b6a6ff;font-weight:650;text-decoration:none;font-size:10.5px}
+  .m-digest .more{display:flex;gap:8px;margin-top:9px}
+  .m-digest .more .btn{flex:1;height:30px;font-size:11.5px}
+  .m-area{display:flex;align-items:center;gap:7px;margin:15px 2px 7px}
+  .m-area h3{font-size:14px;font-weight:680}
+  .m-area .n{color:var(--faint);font-size:11px}
+  .m-area .chips{margin-left:auto;display:flex;gap:5px}
+  .m-tile{display:flex;gap:10px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:11px 12px;margin-bottom:8px;position:relative}
+  .m-tile .ic{width:34px;height:34px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;flex:none;color:var(--muted)}
+  .m-tile .ic .i{width:17px;height:17px}
+  .m-tile .txt{min-width:0;display:flex;flex-direction:column;gap:1px}
+  .m-tile .lab{font-weight:640;font-size:13px}
+  .m-tile .val{font-size:13px;color:var(--muted)}
+  .m-tile .dev{font-size:11px;color:var(--faint)}
+  .m-tile .age{font-size:10.5px;color:var(--faint);display:flex;align-items:center;gap:4px;margin-top:1px}
+  .m-tile .age .i{width:11px;height:11px}
+  .m-tile.stale{box-shadow:inset 3px 0 0 var(--warn);border-color:rgba(232,163,61,.3)}
+  .m-tile.stale .age{color:var(--warn)}
+  .m-tile.off .ic{filter:grayscale(1);opacity:.6}
+  .m-tile.off .val{color:var(--danger)}
+  .m-tile.on{background:color-mix(in srgb,var(--accent) 8%,var(--surface))}
+  .m-tile.on .ic{background:rgba(124,92,255,.22);color:#cabfff}
+  .m-tile .corner{position:absolute;top:9px;right:10px;font:650 10px/1 var(--mono);color:var(--warn);background:rgba(232,163,61,.12);border:1px solid rgba(232,163,61,.3);border-radius:99px;padding:3px 6px}
+  .m-search{display:flex;align-items:center;gap:8px;height:38px;padding:0 11px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--faint);font-size:12.5px;margin-bottom:10px}
+  .m-search .i{width:15px;height:15px}
+  .m-tabs{display:flex;gap:4px;background:var(--surface-2);border-radius:10px;padding:3px;margin-bottom:12px}
+  .m-tab{flex:1;text-align:center;font-size:11.5px;color:var(--muted);padding:7px 4px;border-radius:8px;white-space:nowrap}
+  .m-tab.on{background:var(--surface);color:var(--text);font-weight:650;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+  .m-chips{display:flex;gap:5px;overflow:auto;padding-bottom:8px;margin:0 -14px 8px;padding-left:14px;padding-right:14px;scrollbar-width:none}
+  .m-chips::-webkit-scrollbar{display:none}
+  .m-chip{font:650 10.5px/1 var(--mono);padding:5px 8px;border-radius:8px;border:1px solid var(--border);color:var(--muted);background:var(--surface);white-space:nowrap}
+  .m-chip.on{border-color:rgba(124,92,255,.55);background:var(--accent-soft);color:#cabfff}
+  .m-chip .n{margin-left:3px;color:var(--faint)}
+  .m-log{border-left:2px solid transparent;padding:7px 4px 7px 8px;border-bottom:1px solid rgba(39,39,46,.6);font:11.5px/1.45 var(--mono)}
+  .m-log .meta{display:flex;gap:7px;align-items:center;color:var(--faint);font-size:10px}
+  .m-log .meta .lv{font-weight:800;font-size:9.5px}
+  .m-log .meta .lv.info{color:#7cc7ff}.m-log .meta .lv.warn{color:var(--warn)}.m-log .meta .lv.error{color:#ff8d85}
+  .m-log .meta .src{color:var(--muted);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .m-log .msg{color:#dcdce6;margin-top:2px;word-break:break-word}
+  .m-log.warn{border-left-color:rgba(232,163,61,.8);background:rgba(232,163,61,.04)}
+  .m-log.error{border-left-color:rgba(229,84,75,.85);background:rgba(229,84,75,.05)}
+  .m-foot{flex:none;border-top:1px solid var(--border);padding:7px 14px;display:flex;align-items:center;gap:9px;font-size:10.5px;color:var(--faint);background:#0b0b0d}
+  .m-foot .live{color:var(--ok);display:flex;align-items:center;gap:5px}
+  .m-foot .live .dot{width:6px;height:6px}
+  .m-foot .right{margin-left:auto;display:flex;gap:10px}
+  .m-grab{height:20px;flex:none;display:grid;place-items:center}
+  .m-grab span{width:38px;height:4px;border-radius:99px;background:var(--border-strong)}
+  .m-card{border:1px solid var(--border);border-radius:13px;background:var(--surface);padding:12px 13px;margin-bottom:9px}
+  .m-card .ct{display:flex;align-items:center;gap:8px;font-weight:650;font-size:12.5px;margin-bottom:4px}
+  .m-card .ct .i{width:15px;height:15px;color:var(--accent)}
+  .m-card p{color:var(--muted);font-size:11.5px;line-height:1.45}
+  .m-card .chips{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
+  .m-list{border:1px solid var(--border);border-radius:13px;overflow:hidden;background:var(--surface)}
+  .m-item{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;border-bottom:1px solid var(--border);text-decoration:none;color:inherit}
+  .m-item:last-child{border-bottom:0}
+  .m-item .ic{width:28px;height:28px;border-radius:8px;background:var(--surface-2);display:grid;place-items:center;flex:none;color:var(--muted);margin-top:1px}
+  .m-item .ic .i{width:15px;height:15px}
+  .m-item .tx{flex:1;min-width:0}
+  .m-item .tx b{display:block;font-size:12.5px;font-weight:620}
+  .m-item .tx small{display:block;color:var(--muted);font-size:11px;margin-top:1px;line-height:1.4}
+  .m-item .go{color:var(--faint);margin-top:4px}
+  .m-item .go .i{width:15px;height:15px}
+  .m-item.warn .ic{background:rgba(232,163,61,.13);color:var(--warn)}
+  .m-item.err .ic{background:rgba(229,84,75,.13);color:#ff9d96}
+  .m-group{font:650 10px/1 var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--faint);padding:14px 3px 6px}
+  .m-row{display:flex;align-items:center;gap:12px;padding:12px 13px;border-bottom:1px solid var(--border);background:var(--surface)}
+  .m-row:last-child{border-bottom:0}
+  .m-row .rl{flex:1;min-width:0}
+  .m-row .rl b{display:block;font-size:12.5px;font-weight:600}
+  .m-row .rl small{display:block;color:var(--muted);font-size:11px;margin-top:1px;line-height:1.4}
+  .m-row.stack{flex-wrap:wrap}
+  .m-row.stack .ctl{flex:1 1 100%;margin-top:7px}
+  .m-input{height:38px;border:1px solid var(--border);background:var(--bg-2);border-radius:9px;display:flex;align-items:center;padding:0 11px;color:var(--faint);font:12px var(--mono)}
+  .m-seg{display:flex;background:var(--surface-2);border-radius:9px;padding:3px;gap:2px}
+  .m-seg span{flex:1;text-align:center;font-size:11.5px;color:var(--muted);padding:6px 4px;border-radius:7px}
+  .m-seg span.on{background:var(--surface);color:var(--text);font-weight:650;box-shadow:0 1px 3px rgba(0,0,0,.35)}
+  .m-tilehead{display:flex;align-items:center;gap:8px;margin:2px 2px 8px}
+  .m-tilehead .scope{font-size:10px;color:var(--faint);border:1px solid var(--border);border-radius:99px;padding:2px 7px}
+  .m-tilehead h2{font-size:16px;font-weight:700}
+  .m-kv{display:flex;justify-content:space-between;gap:10px;font-size:11.5px;padding:5px 0}
+  .m-kv span:first-child{color:var(--muted)}
+  .m-meter{height:6px;border-radius:99px;background:var(--surface-2);overflow:hidden;margin-top:6px}
+  .m-meter i{display:block;height:100%;background:var(--accent);width:var(--w)}
+  .m-scrim{position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:4}
+  .m-sheet{position:absolute;left:0;right:0;bottom:0;background:#131318;border-top:1px solid var(--border-strong);border-radius:20px 20px 0 0;box-shadow:0 -20px 60px rgba(0,0,0,.6);z-index:5;padding-bottom:14px}
+  .m-sheet .sh{display:flex;align-items:center;gap:8px;padding:10px 14px 8px}
+  .m-sheet .sh b{font-size:13.5px;font-weight:680}
+  .m-sheet .sh small{color:var(--faint);font-size:11px}
+  .m-sheet .sh .x{margin-left:auto}
+  .m-sheet .sa{display:flex;align-items:center;gap:10px;padding:13px 16px;font-size:12.5px;border-top:1px solid var(--border)}
+  .m-sheet .sa .i{width:16px;height:16px;color:var(--muted)}
+  .m-sheet .sa.danger{color:#ff9d96}.m-sheet .sa.danger .i{color:#ff9d96}
+  .m-sheet .sf{padding:8px 14px 6px}
+  .m-sheet .sf .btn{width:100%;height:40px;font-size:13px}
+  .m-sheet .impact{background:rgba(229,84,75,.07);border:1px solid rgba(229,84,75,.25);border-radius:10px;margin:8px 14px;padding:9px 11px;font-size:11px;color:#ffc9c5;line-height:1.45}
+  .m-sheet .typebox{margin:10px 14px 4px}
+  .m-sheet .typebox small{display:block;color:var(--muted);font-size:10.5px;margin-bottom:5px}
+  .m-navdrawer{position:absolute;top:0;bottom:0;left:0;width:270px;background:#0d0d10;border-right:1px solid var(--border-strong);z-index:6;padding:14px 10px;display:flex;flex-direction:column;gap:2px}
+  .m-navdrawer .nvi{padding:10px 11px}
+  .m-navdrawer .m-scrim{left:270px;right:0}
+  @media (max-width: 1100px){
+    .mobile-rules{grid-template-columns:1fr}
+    .phone{transform-origin:top left}
+  }
+
+  .gallery-foot{color:var(--faint);font-size:12px;border-top:1px solid var(--border);padding-top:16px;margin-top:10px}
+  @media (max-width: 1100px){
+    .gal{grid-template-columns:1fr;padding:18px 14px 90px}
+    .gal-nav{position:static;max-height:none}
+    .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .setgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-devices" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></symbol>
+  <symbol id="i-bot" viewBox="0 0 24 24"><rect x="4" y="7" width="16" height="12" rx="4"/><path d="M12 3v4M9 13h.01M15 13h.01"/></symbol>
+  <symbol id="i-terminal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7 9 3 3-3 3M13 15h4"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.9 4.9 7 7M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 2 21h20z"/><path d="M12 9v5M12 17h.01"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+  <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M2 8a16 16 0 0 1 20 0M5 12a11 11 0 0 1 14 0M8.5 15.5a6 6 0 0 1 7 0M12 19h.01"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-wifioff" viewBox="0 0 24 24"><path d="M2 8a16 16 0 0 1 20 0M5 12a11 11 0 0 1 14 0M8.5 15.5a6 6 0 0 1 7 0M12 19h.01M2 2l20 20"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-thermo" viewBox="0 0 24 24"><path d="M14 14.8V5a2 2 0 1 0-4 0v9.8a4 4 0 1 0 4 0z"/></symbol>
+  <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 3s6 6 6 10a6 6 0 0 1-12 0c0-4 6-10 6-10z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+  <symbol id="i-db" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7M21 3v6h-6"/></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M4 20c8 0 16-4 16-16C10 4 4 10 4 20z"/><path d="M4 20 14 10"/></symbol>
+  <symbol id="i-wave" viewBox="0 0 24 24"><path d="M2 12c2 0 2-4 4-4s2 8 4 8 2-8 4-8 2 4 4 4h4"/></symbol>
+</svg>
+
+<div class="gal">
+  <nav class="gal-nav" aria-label="Mock sections">
+    <div class="brand"><span class="brand-dot">NH</span> UI exploration</div>
+    <p class="note">Static mocks. Dark theme. Open in a browser; each frame is a variant to compare.</p>
+    <ol>
+      <li><a href="#summary"><span class="num">0</span> Summary &amp; shortlist</a></li>
+      <li><a href="#home"><span class="num">1</span> Home cards &amp; staleness</a></li>
+      <li><a href="#console"><span class="num">2</span> Console / logs</a></li>
+      <li><a href="#alerts"><span class="num">3</span> Attention inbox</a></li>
+      <li><a href="#settings"><span class="num">4</span> Settings &amp; maintenance</a></li>
+      <li><a href="#automation"><span class="num">5</span> Automation actions</a></li>
+      <li><a href="#mobile"><span class="num">6</span> Mobile views (all areas)</a></li>
+    </ol>
+  </nav>
+
+  <main class="gal-main">
+    <header class="gal-head" id="summary">
+      <p class="kicker">NodeHerder · design exploration</p>
+      <h1>Trust, access, and cleanup</h1>
+      <p>Four screens carry most of the friction: Home cards can look live when they are not,
+        logs are buried in a thin top-level page, alerts vanish after three seconds, and Settings
+        has no maintenance surface. The mocks below show options for each, and the final section
+        repeats every area for a 390 px phone; the report next to this file explains the code
+        evidence and effort.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+        <span class="pill rec">Recommended kit: 1A + paused banner · 2B/2C logs · 3A/3B alerts · 4B index + 4D cleanup · 5A · mobile M1–M8</span>
+        <span class="pill">No implementation in this pass</span>
+      </div>
+    </header>
+
+    <!-- ============================================================ 1. HOME -->
+    <section class="sec" id="home">
+      <div class="sec-head"><h2>1 · Home cards and staleness</h2><span class="pill warn">highest impact</span></div>
+      <p class="sec-lede">Today a tile is “online” purely from the Zigbee2MQTT availability flag
+        (<code>deviceStatus</code>), so a device that has gone quiet for hours still renders like a live one.
+        The device’s <code>last_seen</code> already exists but only appears in the Devices list. Three ways
+        to surface age without making every card noisy.</p>
+      <p class="finding"><b>Evidence:</b> <code>EntityTile.vue</code> only prints “Offline” when
+        <code>status === 'offline'</code>; <code>domain/devices/index.ts:66</code> derives status from
+        <code>availability</code> only. A disconnected browser socket freezes values with no age marker and
+        no per-card signal.</p>
+
+      <!-- 1A -->
+      <div class="variant">
+        <div class="v-head">
+          <span class="v-tag">A</span>
+          <div><h3>Age line on every tile</h3>
+            <p class="v-note">One extra muted line under the device name; stale cards switch that line to amber and
+              gain a 3 px left edge. Fresh cards stay calm. Most legible; costs one line of tile height.</p></div>
+          <span class="pill rec v-best">recommended</span>
+        </div>
+        <div class="screen">
+          <div class="app">
+            <aside class="side">
+              <div class="logo"><span class="brand-dot">NH</span> NodeHerder</div>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-home"/></svg>Overview</a>
+              <a class="nvi active" href="#"><svg class="i"><use href="#i-home"/></svg>Home</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-devices"/></svg>Devices</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-link"/></svg>Integrations</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-bolt"/></svg>Automations</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-bot"/></svg>Assistant</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-settings"/></svg>Settings</a>
+            </aside>
+            <div class="main">
+              <div class="top">
+                <span class="ttl">Home</span>
+                <div class="right">
+                  <span class="conn"><span class="dot"></span> Connected</span>
+                  <button class="ico-btn" aria-label="Panel mode"><svg class="i"><use href="#i-wave"/></svg></button>
+                  <button class="btn sm">Edit layout</button>
+                </div>
+              </div>
+              <div class="body">
+                <div class="page-h"><div><h1>Home</h1><div class="sub">4 areas · 18 tiles</div></div></div>
+
+                <div class="area-head"><h2>Living room</h2><span class="area-meta">4 tiles</span></div>
+                <div class="tiles">
+                  <article class="tile k-light stale-a">
+                    <span class="ic"><svg class="i"><use href="#i-sun"/></svg></span>
+                    <div class="txt"><span class="lab">Brightness</span><span class="val">136 lx</span>
+                      <span class="dev">Living room illuminance</span>
+                      <span class="age"><svg class="i"><use href="#i-clock"/></svg>Updated 4 h ago · not reporting</span></div>
+                  </article>
+                  <article class="tile k-power on">
+                    <span class="ic"><svg class="i"><use href="#i-bolt"/></svg></span>
+                    <div class="txt"><span class="lab">TV power socket</span><span class="val">On · 42 W</span>
+                      <span class="dev">Living room socket</span>
+                      <span class="age"><svg class="i"><use href="#i-clock"/></svg>Updated 18 s ago</span></div>
+                  </article>
+                  <article class="tile k-light off">
+                    <span class="ic"><svg class="i"><use href="#i-sun"/></svg></span>
+                    <div class="txt"><span class="lab">Ceiling light</span><span class="val">Offline</span>
+                      <span class="dev">Living Room Light</span>
+                      <span class="age"><svg class="i"><use href="#i-clock"/></svg>Last seen 2 h ago</span></div>
+                  </article>
+                </div>
+
+                <div class="area-head"><h2>Attic room</h2><span class="area-meta">5 tiles</span>
+                  <span class="health"><span class="pill warn">1 quiet</span></span></div>
+                <div class="tiles">
+                  <article class="tile k-temp">
+                    <span class="ic"><svg class="i"><use href="#i-thermo"/></svg></span>
+                    <div class="txt"><span class="lab">Temperature</span><span class="val">18 °C</span>
+                      <span class="dev">Attic room temperature sensor</span>
+                      <span class="age"><svg class="i"><use href="#i-clock"/></svg>Updated 1 min ago</span></div>
+                  </article>
+                  <article class="tile k-light stale-a">
+                    <span class="ic"><svg class="i"><use href="#i-sun"/></svg></span>
+                    <div class="txt"><span class="lab">Brightness</span><span class="val">42 lx</span>
+                      <span class="dev">Attic room light</span>
+                      <span class="age"><svg class="i"><use href="#i-clock"/></svg>Updated 4 h ago · not reporting</span></div>
+                  </article>
+                  <article class="tile k-power on">
+                    <span class="ic"><svg class="i"><use href="#i-bolt"/></svg></span>
+                    <div class="txt"><span class="lab">State</span><span class="val">On</span>
+                      <span class="dev">Attic room power socket</span>
+                      <span class="age"><svg class="i"><use href="#i-clock"/></svg>Updated 25 s ago</span></div>
+                  </article>
+                  <article class="tile k-hum">
+                    <span class="ic"><svg class="i"><use href="#i-drop"/></svg></span>
+                    <div class="txt"><span class="lab">Humidity</span><span class="val">61.5 %</span>
+                      <span class="dev">Attic room temperature sensor</span>
+                      <span class="age"><svg class="i"><use href="#i-clock"/></svg>Updated 1 min ago</span></div>
+                  </article>
+                  <article class="tile k-motion">
+                    <span class="ic"><svg class="i"><use href="#i-wave"/></svg></span>
+                    <div class="txt"><span class="lab">Occupancy</span><span class="val">Clear</span>
+                      <span class="dev">Attic room motion sensor</span>
+                      <span class="age"><svg class="i"><use href="#i-clock"/></svg>Updated 6 min ago</span></div>
+                  </article>
+                  <article class="tile k-energy">
+                    <span class="ic"><svg class="i"><use href="#i-leaf"/></svg></span>
+                    <div class="txt"><span class="lab">Energy today</span><span class="val">2.4 kWh</span>
+                      <span class="dev">Attic room power socket</span>
+                      <span class="age"><svg class="i"><use href="#i-clock"/></svg>Updated 2 min ago</span></div>
+                  </article>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 1B -->
+      <div class="variant">
+        <div class="v-head">
+          <span class="v-tag">B</span>
+          <div><h3>Corner age chip, dim stale tiles, “~” for last-known values</h3>
+            <p class="v-note">Quietest option: fresh tiles carry no age text at all. Stale tiles dim and show a
+              compact <code>4 h</code> chip; values are prefixed with <code>~</code> to say “last known”.
+              Cheapest visually, but new users must learn the dimming convention.</p></div>
+          <span class="pill">compact alternative</span>
+        </div>
+        <div class="screen">
+          <div class="app">
+            <aside class="side">
+              <div class="logo"><span class="brand-dot">NH</span> NodeHerder</div>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-home"/></svg>Overview</a>
+              <a class="nvi active" href="#"><svg class="i"><use href="#i-home"/></svg>Home</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-devices"/></svg>Devices</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-link"/></svg>Integrations</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-bolt"/></svg>Automations</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-bot"/></svg>Assistant</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-settings"/></svg>Settings</a>
+            </aside>
+            <div class="main">
+              <div class="top"><span class="ttl">Home</span><div class="right"><span class="conn"><span class="dot"></span> Connected</span></div></div>
+              <div class="body">
+                <div class="page-h"><div><h1>Home</h1><div class="sub">4 areas · 18 tiles</div></div></div>
+                <div class="area-head"><h2>Living room</h2><span class="area-meta">4 tiles</span></div>
+                <div class="tiles">
+                  <article class="tile k-light stale-b">
+                    <span class="chip-age">4 h</span>
+                    <span class="ic"><svg class="i"><use href="#i-sun"/></svg></span>
+                    <div class="txt"><span class="lab">Brightness</span><span class="val"><span class="tilde">~</span>136 lx</span>
+                      <span class="dev">Living room illuminance</span></div>
+                  </article>
+                  <article class="tile k-power on">
+                    <span class="ic"><svg class="i"><use href="#i-bolt"/></svg></span>
+                    <div class="txt"><span class="lab">TV power socket</span><span class="val">On · 42 W</span>
+                      <span class="dev">Living room socket</span></div>
+                  </article>
+                  <article class="tile k-light off">
+                    <span class="ic"><svg class="i"><use href="#i-sun"/></svg></span>
+                    <div class="txt"><span class="lab">Ceiling light</span><span class="val">Offline</span>
+                      <span class="dev">Living Room Light</span></div>
+                  </article>
+                </div>
+                <div class="area-head"><h2>Attic room</h2><span class="area-meta">5 tiles</span></div>
+                <div class="tiles">
+                  <article class="tile k-temp">
+                    <span class="ic"><svg class="i"><use href="#i-thermo"/></svg></span>
+                    <div class="txt"><span class="lab">Temperature</span><span class="val">18 °C</span>
+                      <span class="dev">Attic room temperature sensor</span></div>
+                  </article>
+                  <article class="tile k-light stale-b">
+                    <span class="chip-age">4 h</span>
+                    <span class="ic"><svg class="i"><use href="#i-sun"/></svg></span>
+                    <div class="txt"><span class="lab">Brightness</span><span class="val"><span class="tilde">~</span>42 lx</span>
+                      <span class="dev">Attic room light</span></div>
+                  </article>
+                  <article class="tile k-power on">
+                    <span class="ic"><svg class="i"><use href="#i-bolt"/></svg></span>
+                    <div class="txt"><span class="lab">State</span><span class="val">On</span>
+                      <span class="dev">Attic room power socket</span></div>
+                  </article>
+                  <article class="tile k-hum">
+                    <span class="ic"><svg class="i"><use href="#i-drop"/></svg></span>
+                    <div class="txt"><span class="lab">Humidity</span><span class="val">61.5 %</span>
+                      <span class="dev">Attic room temperature sensor</span></div>
+                  </article>
+                  <article class="tile k-motion">
+                    <span class="ic"><svg class="i"><use href="#i-wave"/></svg></span>
+                    <div class="txt"><span class="lab">Occupancy</span><span class="val">Clear</span>
+                      <span class="dev">Attic room motion sensor</span></div>
+                  </article>
+                  <article class="tile k-energy">
+                    <span class="ic"><svg class="i"><use href="#i-leaf"/></svg></span>
+                    <div class="txt"><span class="lab">Energy today</span><span class="val">2.4 kWh</span>
+                      <span class="dev">Attic room power socket</span></div>
+                  </article>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 1C -->
+      <div class="variant">
+        <div class="v-head">
+          <span class="v-tag">C</span>
+          <div><h3>Status verbs, room rollups, and the “live data paused” banner</h3>
+            <p class="v-note">The outage case: socket dropped, snapshot frozen. A global banner states the data
+              age and offers Retry; room headers count quiet/offline tiles; each tile says
+              <code>Online · quiet 4 h</code>. Most explicit, slightly more text.</p></div>
+          <span class="pill info">best for connection outages</span>
+        </div>
+        <div class="screen">
+          <div class="app">
+            <aside class="side">
+              <div class="logo"><span class="brand-dot">NH</span> NodeHerder</div>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-home"/></svg>Overview</a>
+              <a class="nvi active" href="#"><svg class="i"><use href="#i-home"/></svg>Home</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-devices"/></svg>Devices</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-link"/></svg>Integrations</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-bolt"/></svg>Automations</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-bot"/></svg>Assistant</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-settings"/></svg>Settings</a>
+            </aside>
+            <div class="main">
+              <div class="top">
+                <span class="ttl">Home</span>
+                <div class="right">
+                  <span class="conn bad"><span class="dot"></span> Reconnecting</span>
+                  <button class="ico-btn" aria-label="Notifications"><svg class="i"><use href="#i-bell"/></svg><span class="badge">3</span></button>
+                </div>
+              </div>
+              <div class="body">
+                <div class="banner bad">
+                  <svg class="i"><use href="#i-wifioff"/></svg>
+                  <span class="grow"><b>Live updates paused.</b> Showing the snapshot from 16:32 (23 min old). Values may have changed.</span>
+                  <button class="btn sm">Retry</button>
+                </div>
+                <div class="page-h"><div><h1>Home</h1><div class="sub">Snapshot 16:32 · 4 areas · 18 tiles</div></div></div>
+
+                <div class="area-head"><h2>Living room</h2><span class="area-meta">4 tiles</span>
+                  <span class="health"><span class="pill warn">1 quiet</span><span class="pill danger">1 offline</span></span></div>
+                <div class="tiles">
+                  <article class="tile k-light">
+                    <span class="ic"><svg class="i"><use href="#i-sun"/></svg></span>
+                    <div class="txt"><span class="lab">Brightness</span>
+                      <span class="statusline quiet"><svg class="i"><use href="#i-clock"/></svg>Quiet · 4 h</span>
+                      <span class="val">136 lx</span><span class="dev">Living room illuminance</span></div>
+                  </article>
+                  <article class="tile k-power on">
+                    <span class="ic"><svg class="i"><use href="#i-bolt"/></svg></span>
+                    <div class="txt"><span class="lab">TV power socket</span>
+                      <span class="statusline ok"><svg class="i"><use href="#i-check"/></svg>Online · 18 s</span>
+                      <span class="val">On · 42 W</span><span class="dev">Living room socket</span></div>
+                  </article>
+                  <article class="tile k-light off">
+                    <span class="ic"><svg class="i"><use href="#i-sun"/></svg></span>
+                    <div class="txt"><span class="lab">Ceiling light</span>
+                      <span class="statusline dead"><svg class="i"><use href="#i-alert"/></svg>Offline · 2 h</span>
+                      <span class="val">—</span><span class="dev">Living Room Light</span></div>
+                  </article>
+                </div>
+
+                <div class="area-head"><h2>Attic room</h2><span class="area-meta">5 tiles</span>
+                  <span class="health"><span class="pill warn">1 quiet</span><span class="pill danger">1 offline</span></span></div>
+                <div class="tiles">
+                  <article class="tile k-temp">
+                    <span class="ic"><svg class="i"><use href="#i-thermo"/></svg></span>
+                    <div class="txt"><span class="lab">Temperature</span>
+                      <span class="statusline ok"><svg class="i"><use href="#i-check"/></svg>Online · 1 min</span>
+                      <span class="val">18 °C</span><span class="dev">Attic room temperature sensor</span></div>
+                  </article>
+                  <article class="tile k-light">
+                    <span class="ic"><svg class="i"><use href="#i-sun"/></svg></span>
+                    <div class="txt"><span class="lab">Brightness</span>
+                      <span class="statusline quiet"><svg class="i"><use href="#i-clock"/></svg>Quiet · 4 h</span>
+                      <span class="val">42 lx</span><span class="dev">Attic room light</span></div>
+                  </article>
+                  <article class="tile k-power on">
+                    <span class="ic"><svg class="i"><use href="#i-bolt"/></svg></span>
+                    <div class="txt"><span class="lab">State</span>
+                      <span class="statusline ok"><svg class="i"><use href="#i-check"/></svg>Online · 25 s</span>
+                      <span class="val">On</span><span class="dev">Attic room power socket</span></div>
+                  </article>
+                  <article class="tile k-hum">
+                    <span class="ic"><svg class="i"><use href="#i-drop"/></svg></span>
+                    <div class="txt"><span class="lab">Humidity</span>
+                      <span class="statusline ok"><svg class="i"><use href="#i-check"/></svg>Online · 1 min</span>
+                      <span class="val">61.5 %</span><span class="dev">Attic room temperature sensor</span></div>
+                  </article>
+                  <article class="tile k-motion">
+                    <span class="ic"><svg class="i"><use href="#i-wave"/></svg></span>
+                    <div class="txt"><span class="lab">Occupancy</span>
+                      <span class="statusline ok"><svg class="i"><use href="#i-check"/></svg>Online · 6 min</span>
+                      <span class="val">Clear</span><span class="dev">Attic room motion sensor</span></div>
+                  </article>
+                  <article class="tile k-smoke off" style="--kind-energy:#e53935">
+                    <span class="ic" style="color:#e53935"><svg class="i"><use href="#i-shield"/></svg></span>
+                    <div class="txt"><span class="lab">Smoke</span>
+                      <span class="statusline dead"><svg class="i"><use href="#i-alert"/></svg>Offline · 2 h</span>
+                      <span class="val">Clear</span><span class="dev">Attic smoke alarm</span></div>
+                  </article>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ 2. CONSOLE -->
+    <section class="sec" id="console">
+      <div class="sec-head"><h2>2 · Console, logs and quick access</h2><span class="pill info">information architecture</span></div>
+      <p class="sec-lede">Console is a top-level nav item with two controls that are really hub settings
+        (remote logging, level), no search, no export, no pause, and a deep watch that scrolls on every
+        message. Meanwhile the backend already lists and serves archived log files
+        (<code>/api/listlogs</code>, <code>/api/logfile</code>) and the frontend never calls them.
+        The recommendation is to treat logs as a utility: a global drawer for “what just happened”
+        plus Settings → Logs &amp; diagnostics for retention, archive download and level.</p>
+      <p class="finding"><b>Evidence:</b> 1,000-message buffer with 24 h expiry in memory only;
+        <code>watch(messages, deep: true)</code>; rows keyed by <code>timestamp</code>; no log-file API client;
+        Settings → Logger duplicates the same two controls.</p>
+
+      <!-- 2A -->
+      <div class="variant">
+        <div class="v-head"><span class="v-tag">A</span>
+          <div><h3>Keep a page, but make it a real log viewer</h3>
+            <p class="v-note">Search, level chips with counts, source filter, problems-only, pause follow,
+              copy, download, and a footer that states buffer and stream state. Good deep-link target and
+              works on a large screen; still one click away from a toast.</p></div>
+          <span class="pill">useful for deep work</span>
+        </div>
+        <div class="screen">
+          <div class="app">
+            <aside class="side">
+              <div class="logo"><span class="brand-dot">NH</span> NodeHerder</div>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-home"/></svg>Overview</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-home"/></svg>Home</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-devices"/></svg>Devices</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-link"/></svg>Integrations</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-bolt"/></svg>Automations</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-bot"/></svg>Assistant</a>
+              <a class="nvi active" href="#"><svg class="i"><use href="#i-terminal"/></svg>Logs</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-settings"/></svg>Settings</a>
+            </aside>
+            <div class="main">
+              <div class="top"><span class="ttl">Logs</span>
+                <div class="right"><span class="conn"><span class="dot"></span> Connected</span>
+                  <span class="pill warn">2 errors</span></div></div>
+              <div class="body">
+                <div class="page-h"><div><h1>Logs</h1><div class="sub">Live from the hub · buffer 412 of 2,000 messages</div></div>
+                  <div class="actions"><button class="btn"><svg class="i"><use href="#i-download"/></svg>Download</button><button class="btn"><svg class="i"><use href="#i-settings"/></svg>Settings</button></div></div>
+
+                <div class="console-toolbar">
+                  <label class="search"><svg class="i"><use href="#i-search"/></svg>Search messages or device…<kbd>/</kbd></label>
+                  <button class="btn ghost"><svg class="i"><use href="#i-filter"/></svg>All sources</button>
+                  <button class="btn ghost"><svg class="i"><use href="#i-alert"/></svg>Problems only</button>
+                  <button class="btn ghost"><svg class="i"><use href="#i-play"/></svg>Pause follow</button>
+                  <button class="btn sq ghost" aria-label="Clear buffer"><svg class="i"><use href="#i-trash"/></svg></button>
+                </div>
+                <div class="lvl-chips">
+                  <span class="lvl">trace <b>0</b></span><span class="lvl">debug <b>12</b></span>
+                  <span class="lvl on">info <b>390</b></span><span class="lvl">warn <b>8</b></span>
+                  <span class="lvl" style="border-color:rgba(229,84,75,.4);color:#ff9d96">error <b>2</b></span>
+                </div>
+
+                <div class="console">
+                  <div class="log"><span class="t">16:22:04.987</span><span class="lv info">INFO</span><span class="src">hub</span><span class="msg">attached to MQTT broker at tcp://mosquitto:1883</span></div>
+                  <div class="log"><span class="t">16:22:05.114</span><span class="lv info">INFO</span><span class="src">device</span><span class="msg">[0xa4c138c383ac3fc8] Attic smoke alarm is online</span></div>
+                  <div class="log"><span class="t">16:21:58.104</span><span class="lv warn">WARN</span><span class="src">attic / light</span><span class="msg">no report for 4 h — availability still "online"</span></div>
+                  <div class="log error"><span class="t">16:21:40.552</span><span class="lv error">ERROR</span><span class="src">automation</span><span class="msg">"Hallway light on motion" failed: target device is offline</span></div>
+                  <div class="log"><span class="t">16:21:12.883</span><span class="lv info">INFO</span><span class="src">kitchen / sensor</span><span class="msg">[0x00124b0029207763] temperature 21.4 °C · humidity 48 %</span></div>
+                  <div class="log warn"><span class="t">16:20:51.402</span><span class="lv warn">WARN</span><span class="src">integrations</span><span class="msg">weather provider answered slowly (1.8 s); kept the previous reading</span></div>
+                  <div class="log"><span class="t">16:20:33.019</span><span class="lv info">INFO</span><span class="src">device</span><span class="msg">[0x00158d0007b0a2c1] Living room illuminance reported 136 lx</span></div>
+                  <div class="log error"><span class="t">16:19:58.741</span><span class="lv error">ERROR</span><span class="src">ws</span><span class="msg">client disconnected: read tcp 10.0.0.12:51244: i/o timeout</span></div>
+                  <div class="log"><span class="t">16:19:58.762</span><span class="lv info">INFO</span><span class="src">ws</span><span class="msg">snapshot replayed after reconnect (1 device updated)</span></div>
+                  <div class="console-foot"><span class="live"><span class="dot"></span>Following</span><span>stream: info</span>
+                    <span class="right"><span>1,000 max · 24 h</span><span>Export .log / .json</span></span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2B -->
+      <div class="variant">
+        <div class="v-head"><span class="v-tag">B</span>
+          <div><h3>Global bottom drawer + header shortcut</h3>
+            <p class="v-note">A terminal icon in the header (with an error dot) opens a drawer over any page.
+              Collapsed, the drawer is a 38 px bar showing the latest message, problem count and a shortcut —
+              so “I saw a toast, now what?” never needs a page change. Full page becomes the “expand” target.</p></div>
+          <span class="pill rec">recommended for quick access</span>
+        </div>
+        <div class="screen">
+          <div class="app">
+            <aside class="side">
+              <div class="logo"><span class="brand-dot">NH</span> NodeHerder</div>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-home"/></svg>Overview</a>
+              <a class="nvi active" href="#"><svg class="i"><use href="#i-home"/></svg>Home</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-devices"/></svg>Devices</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-link"/></svg>Integrations</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-bolt"/></svg>Automations</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-bot"/></svg>Assistant</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-settings"/></svg>Settings</a>
+            </aside>
+            <div class="main" style="position:relative">
+              <div class="top"><span class="ttl">Home</span>
+                <div class="right">
+                  <span class="conn"><span class="dot"></span> Connected</span>
+                  <button class="ico-btn" aria-label="Logs" style="color:#fff;background:var(--accent-soft)"><svg class="i"><use href="#i-terminal"/></svg><span class="badge">2</span></button>
+                  <button class="ico-btn" aria-label="Notifications"><svg class="i"><use href="#i-bell"/></svg><span class="badge">3</span></button>
+                </div>
+              </div>
+              <div class="body">
+                <div class="page-h"><div><h1>Home</h1><div class="sub">4 areas · 18 tiles</div></div></div>
+                <div class="tiles" style="opacity:.55">
+                  <article class="tile k-light stale-a"><span class="ic"><svg class="i"><use href="#i-sun"/></svg></span>
+                    <div class="txt"><span class="lab">Brightness</span><span class="val">136 lx</span><span class="dev">Living room illuminance</span>
+                    <span class="age"><svg class="i"><use href="#i-clock"/></svg>Updated 4 h ago</span></div></article>
+                  <article class="tile k-power on"><span class="ic"><svg class="i"><use href="#i-bolt"/></svg></span>
+                    <div class="txt"><span class="lab">TV power socket</span><span class="val">On</span><span class="dev">Living room socket</span></div></article>
+                  <article class="tile k-temp"><span class="ic"><svg class="i"><use href="#i-thermo"/></svg></span>
+                    <div class="txt"><span class="lab">Temperature</span><span class="val">18 °C</span><span class="dev">Attic sensor</span></div></article>
+                </div>
+              </div>
+              <div class="scrim"></div>
+              <div class="drawer">
+                <div class="grab"><span></span></div>
+                <div class="dhead">
+                  <span class="ttl">Logs</span>
+                  <span class="pill info">live</span>
+                  <span class="pill danger">2 errors</span>
+                  <div class="right">
+                    <button class="btn sm ghost"><svg class="i"><use href="#i-search"/></svg>Search</button>
+                    <button class="btn sm ghost"><svg class="i"><use href="#i-download"/></svg>Download</button>
+                    <button class="btn sm ghost">All logs</button>
+                    <button class="btn sq sm ghost" aria-label="Close"><svg class="i"><use href="#i-down"/></svg></button>
+                  </div>
+                </div>
+                <div class="dbody">
+                  <div class="log error"><span class="t">16:21:40.552</span><span class="lv error">ERROR</span><span class="src">automation</span><span class="msg">"Hallway light on motion" failed: target device is offline</span></div>
+                  <div class="log error"><span class="t">16:19:58.741</span><span class="lv error">ERROR</span><span class="src">ws</span><span class="msg">client disconnected: i/o timeout — retrying in 2 s</span></div>
+                  <div class="log warn"><span class="t">16:21:58.104</span><span class="lv warn">WARN</span><span class="src">attic / light</span><span class="msg">no report for 4 h — availability still "online"</span></div>
+                  <div class="log"><span class="t">16:22:05.114</span><span class="lv info">INFO</span><span class="src">device</span><span class="msg">[0xa4c138c383ac3fc8] Attic smoke alarm is online</span></div>
+                  <div class="log"><span class="t">16:21:12.883</span><span class="lv info">INFO</span><span class="src">kitchen / sensor</span><span class="msg">temperature 21.4 °C · humidity 48 %</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2C -->
+      <div class="variant">
+        <div class="v-head"><span class="v-tag">C</span>
+          <div><h3>Move the real home to Settings → Logs &amp; diagnostics</h3>
+            <p class="v-note">Matches Home Assistant’s model (logs under Settings; Repairs for attention).
+              Live tail is a tab, archived files get a table with download, and retention/level live beside
+              them. The header shortcut (2B) still gives one-click access, so the nav item can go.</p></div>
+          <span class="pill rec">recommended home</span>
+        </div>
+        <div class="screen">
+          <div class="app">
+            <aside class="side">
+              <div class="logo"><span class="brand-dot">NH</span> NodeHerder</div>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-home"/></svg>Overview</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-home"/></svg>Home</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-devices"/></svg>Devices</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-link"/></svg>Integrations</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-bolt"/></svg>Automations</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-bot"/></svg>Assistant</a>
+              <a class="nvi active" href="#"><svg class="i"><use href="#i-settings"/></svg>Settings</a>
+            </aside>
+            <div class="main">
+              <div class="top"><span class="ttl">Settings</span>
+                <div class="right"><button class="btn sm ghost"><svg class="i"><use href="#i-search"/></svg>Search settings</button></div></div>
+              <div class="body">
+                <div class="page-h"><div><h1>Settings</h1><div class="sub">Hub behaviour for this home, plus appearance for this browser.</div></div></div>
+                <div class="settings">
+                  <nav class="srail">
+                    <label class="ssearch"><svg class="i"><use href="#i-search"/></svg>Search settings…</label>
+                    <div class="sgroup"><div class="gh">This browser</div>
+                      <a class="sitem" href="#"><svg class="i"><use href="#i-sun"/></svg><span class="st"><b>Appearance</b><small>Daylight · dark · 14 px</small></span></a>
+                    </div>
+                    <div class="sgroup"><div class="gh">Hub</div>
+                      <a class="sitem" href="#"><svg class="i"><use href="#i-devices"/></svg><span class="st"><b>Device defaults</b><small>Reporting every 60 s</small></span></a>
+                      <a class="sitem active" href="#"><svg class="i"><use href="#i-terminal"/></svg><span class="st"><b>Logs &amp; diagnostics</b><small>info · 10 MB on disk</small></span></a>
+                      <a class="sitem" href="#"><svg class="i"><use href="#i-db"/></svg><span class="st"><b>Storage &amp; retention</b><small>10 days · 28 MB</small></span></a>
+                      <a class="sitem" href="#"><svg class="i"><use href="#i-bot"/></svg><span class="st"><b>Assistant</b><small>Connected</small></span></a>
+                    </div>
+                  </nav>
+                  <div class="sbody">
+                    <h2>Logs &amp; diagnostics</h2>
+                    <p class="sdesc">Live stream, archived files and how long the hub keeps them.</p>
+                    <div style="display:flex;gap:4px;margin-bottom:10px">
+                      <span class="ptab on">Live tail</span><span class="ptab">Archived files</span><span class="ptab">Retention</span>
+                    </div>
+                    <div class="sect-card">
+                      <div class="ch"><svg class="i"><use href="#i-terminal"/></svg>Live stream <span class="scope">this browser</span></div>
+                      <div class="row"><div class="rl"><b>Send hub logs to this browser</b><small>Streams messages at or above the level below while the tab is open.</small></div><div class="toggle on"></div></div>
+                      <div class="row"><div class="rl"><b>Minimum level</b><small>Lower levels are detailed but noisy.</small></div><span class="seg"><span>debug</span><span class="on">info</span><span>warn</span><span>error</span></span></div>
+                      <div class="row"><div class="rl"><b>Current buffer</b><small>412 of 2,000 messages · oldest 16:02</small></div><button class="btn sm">Clear</button><button class="btn sm"><svg class="i"><use href="#i-download"/></svg>Download</button></div>
+                    </div>
+                    <div class="sect-card">
+                      <div class="ch"><svg class="i"><use href="#i-db"/></svg>Archived files <span class="scope">hub</span>
+                        <button class="btn sm ghost" style="margin-left:auto"><svg class="i"><use href="#i-refresh"/></svg>Refresh</button></div>
+                      <div class="row"><div class="rl"><b>nodeherder.log</b><small>Today 16:22 · 1.8 MB</small></div><button class="btn sm"><svg class="i"><use href="#i-download"/></svg>Download</button></div>
+                      <div class="row"><div class="rl"><b>nodeherder-2026-11-24.log</b><small>Yesterday 23:59 · 4.2 MB</small></div><button class="btn sm"><svg class="i"><use href="#i-download"/></svg>Download</button></div>
+                      <div class="row"><div class="rl"><b>nodeherder-2026-11-23.log</b><small>23 Nov 23:59 · 3.9 MB</small></div><button class="btn sm"><svg class="i"><use href="#i-download"/></svg>Download</button></div>
+                      <div class="row"><div class="rl"><b>Keep files</b><small>Older files are deleted first when the log directory exceeds the limit.</small></div><span class="seg"><span>7 d</span><span class="on">30 d</span><span>90 d</span></span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ 3. ALERTS -->
+    <section class="sec" id="alerts">
+      <div class="sec-head"><h2>3 · Attention inbox and new-session flag</h2><span class="pill danger">lost information</span></div>
+      <p class="sec-lede">Alerts are 3-second toasts with no history. If a toast appears while the user is
+        on another tab, it is gone. Failures, stale devices and connection drops deserve a small inbox with
+        a badge; routine “Saved” confirmations can stay as toasts. On a new session, show one digest rather
+        than replaying a queue of toasts.</p>
+      <p class="finding"><b>Evidence:</b> <code>store/modules/alerts/index.ts</code> uses a fixed
+        <code>TIMEOUT = 3000</code> and never persists; <code>operationFailed</code> maps straight to
+        <code>alerts/showError</code>. <code>needsAttention()</code> already computes offline/low battery/weak
+        link for Overview but is not global.</p>
+
+      <!-- 3A -->
+      <div class="variant">
+        <div class="v-head"><span class="v-tag">A</span>
+          <div><h3>Header bell → slide-over inbox</h3>
+            <p class="v-note">Grouped by day, severity icons, deep links and inline actions. Unread count on the
+              bell. “Mark all read” is scoped to the inbox, not the data. Keep toasts only for direct results
+              of a user action (saved, command sent, command failed).</p></div>
+          <span class="pill rec">recommended</span>
+        </div>
+        <div class="screen">
+          <div class="app">
+            <aside class="side">
+              <div class="logo"><span class="brand-dot">NH</span> NodeHerder</div>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-home"/></svg>Overview</a>
+              <a class="nvi active" href="#"><svg class="i"><use href="#i-home"/></svg>Home</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-devices"/></svg>Devices</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-link"/></svg>Integrations</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-bolt"/></svg>Automations</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-bot"/></svg>Assistant</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-settings"/></svg>Settings</a>
+              <div class="spacer"></div>
+              <div class="foot">
+                <a class="nvi" href="#"><svg class="i"><use href="#i-alert"/></svg>Needs attention <span class="count">3</span></a>
+              </div>
+            </aside>
+            <div class="main" style="position:relative">
+              <div class="top"><span class="ttl">Home</span>
+                <div class="right">
+                  <span class="conn"><span class="dot"></span> Connected</span>
+                  <button class="ico-btn" aria-label="Notifications" style="background:var(--accent-soft);color:#fff"><svg class="i"><use href="#i-bell"/></svg><span class="badge">4</span></button>
+                </div>
+              </div>
+              <div class="body" style="opacity:.35">
+                <div class="page-h"><div><h1>Home</h1><div class="sub">4 areas · 18 tiles</div></div></div>
+                <div class="tiles">
+                  <article class="tile k-light"><span class="ic"><svg class="i"><use href="#i-sun"/></svg></span><div class="txt"><span class="lab">Brightness</span><span class="val">136 lx</span><span class="dev">Living room</span></div></article>
+                  <article class="tile k-temp"><span class="ic"><svg class="i"><use href="#i-thermo"/></svg></span><div class="txt"><span class="lab">Temperature</span><span class="val">18 °C</span><span class="dev">Attic</span></div></article>
+                  <article class="tile k-power on"><span class="ic"><svg class="i"><use href="#i-bolt"/></svg></span><div class="txt"><span class="lab">State</span><span class="val">On</span><span class="dev">Attic</span></div></article>
+                </div>
+              </div>
+              <div class="scrim"></div>
+              <section class="panel" aria-label="Notifications">
+                <div class="ph"><h2>Notifications</h2>
+                  <div class="right"><button class="btn sm ghost">Mark all read</button><button class="ico-btn" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button></div></div>
+                <div class="ptabs"><span class="ptab on">All 4</span><span class="ptab">Problems 3</span><span class="ptab">System 1</span></div>
+                <div class="plist">
+                  <div class="pgroup">Today</div>
+                  <article class="nitem unread">
+                    <span class="nic err"><svg class="i"><use href="#i-wifioff"/></svg></span>
+                    <div class="nt"><b>Hub connection lost</b><p>Live data paused for 23 min. Values on screen are from 16:32.</p>
+                      <div class="acts"><a href="#">Reconnect</a><a href="#">Connection details</a></div></div>
+                    <span class="when">16:09</span>
+                  </article>
+                  <article class="nitem unread">
+                    <span class="nic warn"><svg class="i"><use href="#i-clock"/></svg></span>
+                    <div class="nt"><b>Attic room light has gone quiet</b><p>No report for 4 h, but availability still says online.</p>
+                      <div class="acts"><a href="#">Open device</a><a href="#">Open logs</a></div></div>
+                    <span class="when">16:02</span>
+                  </article>
+                  <article class="nitem unread">
+                    <span class="nic err"><svg class="i"><use href="#i-bolt"/></svg></span>
+                    <div class="nt"><b>Automation failed 3 times</b><p>“Hallway light on motion” — target device is offline.</p>
+                      <div class="acts"><a href="#">Open automation</a><a href="#">Disable</a></div></div>
+                    <span class="when">15:48</span>
+                  </article>
+                  <article class="nitem unread">
+                    <span class="nic info"><svg class="i"><use href="#i-refresh"/></svg></span>
+                    <div class="nt"><b>2 devices rejoined</b><p>Attic smoke alarm and kitchen sensor are reporting again.</p></div>
+                    <span class="when">15:31</span>
+                  </article>
+                  <div class="pgroup">Earlier</div>
+                  <article class="nitem">
+                    <span class="nic warn"><svg class="i"><use href="#i-db"/></svg></span>
+                    <div class="nt"><b>Storage at 78 %</b><p>History retention is 10 days. Oldest readings roll off tomorrow.</p>
+                      <div class="acts"><a href="#">Storage settings</a></div></div>
+                    <span class="when">Tue</span>
+                  </article>
+                </div>
+                <div class="pfoot"><span>Kept for 7 days</span><a href="#">Notification settings</a></div>
+              </section>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3B -->
+      <div class="variant">
+        <div class="v-head"><span class="v-tag">B</span>
+          <div><h3>“While you were away” digest on the first visit</h3>
+            <p class="v-note">One card on Home/Overview, computed from the last-seen marker (localStorage) and the
+              current attention selectors. Three rows maximum, then “Review all”. Dismiss stays dismissed.
+              This is the new-session flag without toast spam.</p></div>
+          <span class="pill rec">recommended for sessions</span>
+        </div>
+        <div class="screen">
+          <div class="app">
+            <aside class="side">
+              <div class="logo"><span class="brand-dot">NH</span> NodeHerder</div>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-home"/></svg>Overview</a>
+              <a class="nvi active" href="#"><svg class="i"><use href="#i-home"/></svg>Home</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-devices"/></svg>Devices</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-link"/></svg>Integrations</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-bolt"/></svg>Automations</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-bot"/></svg>Assistant</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-settings"/></svg>Settings</a>
+            </aside>
+            <div class="main">
+              <div class="top"><span class="ttl">Home</span>
+                <div class="right"><span class="conn"><span class="dot"></span> Connected</span>
+                  <button class="ico-btn" aria-label="Notifications"><svg class="i"><use href="#i-bell"/></svg><span class="badge">3</span></button></div></div>
+              <div class="body">
+                <div class="digest">
+                  <div class="dh"><svg class="i"><use href="#i-bell"/></svg><b>While you were away</b>
+                    <span class="since">since yesterday 19:40</span>
+                    <div class="right"><button class="btn sm ghost">Dismiss</button><button class="btn sm">Review all</button></div></div>
+                  <div class="drow"><svg class="i" style="color:#e8a33d"><use href="#i-clock"/></svg><span class="what">Attic room light has not reported for 4 h</span><a href="#">Open</a></div>
+                  <div class="drow"><svg class="i" style="color:#e5544b"><use href="#i-bolt"/></svg><span class="what">“Hallway light on motion” failed 3 times</span><a href="#">Open</a></div>
+                  <div class="drow"><svg class="i" style="color:#3ecf8e"><use href="#i-check"/></svg><span class="what">2 devices rejoined after the hub restart</span><a href="#">View</a></div>
+                </div>
+                <div class="page-h"><div><h1>Home</h1><div class="sub">4 areas · 18 tiles</div></div></div>
+                <div class="area-head"><h2>Living room</h2><span class="area-meta">4 tiles</span>
+                  <span class="health"><span class="pill warn">1 quiet</span></span></div>
+                <div class="tiles">
+                  <article class="tile k-light stale-a"><span class="ic"><svg class="i"><use href="#i-sun"/></svg></span>
+                    <div class="txt"><span class="lab">Brightness</span><span class="val">136 lx</span><span class="dev">Living room illuminance</span>
+                      <span class="age"><svg class="i"><use href="#i-clock"/></svg>Updated 4 h ago</span></div></article>
+                  <article class="tile k-power on"><span class="ic"><svg class="i"><use href="#i-bolt"/></svg></span>
+                    <div class="txt"><span class="lab">TV power socket</span><span class="val">On · 42 W</span><span class="dev">Living room socket</span>
+                      <span class="age"><svg class="i"><use href="#i-clock"/></svg>Updated 18 s ago</span></div></article>
+                  <article class="tile k-temp"><span class="ic"><svg class="i"><use href="#i-thermo"/></svg></span>
+                    <div class="txt"><span class="lab">Temperature</span><span class="val">18 °C</span><span class="dev">Attic sensor</span>
+                      <span class="age"><svg class="i"><use href="#i-clock"/></svg>Updated 1 min ago</span></div></article>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ 4. SETTINGS -->
+    <section class="sec" id="settings">
+      <div class="sec-head"><h2>4 · Settings and maintenance</h2><span class="pill warn">discoverability</span></div>
+      <p class="sec-lede">Six sections exist today — Appearance, Device defaults, Storage &amp; retention,
+        Logger, MCP server, Assistant, plus the section registry. <b>None are removed in this proposal:</b>
+        the dashboard is an index, and every detail page keeps the same controls it has now, plus the new
+        maintenance actions. The earlier draft dropped MCP and compressed the detail pages; these frames fix
+        that and show the full inventory.</p>
+      <p class="finding"><b>Evidence:</b> <code>Settings.vue</code> + <code>sections.ts</code> define six ids
+        (<code>appearance, device-defaults, storage, logger, mcp, assistant</code>);
+        <code>StorageSettings.vue</code> reads sizes only and its only action is Refresh; MCP has
+        status/Start/Stop/Restart and Assistant has a URL field — both must keep a home. Download helpers
+        already exist for Home (<code>services/home/export.ts</code>) and CSV history.</p>
+
+      <!-- 4A -->
+      <div class="variant">
+        <div class="v-head"><span class="v-tag">A</span>
+          <div><h3>Refined rail: search, summaries, scope badges</h3>
+            <p class="v-note">Lowest-risk evolution: keep the rail, add a search field, put the current value under
+              each label, and mark rows that are browser-local vs hub-wide. Adds a “Maintenance” group without
+              changing the content layout.</p></div>
+          <span class="pill">least disruption</span>
+        </div>
+        <div class="screen">
+          <div class="app">
+            <aside class="side">
+              <div class="logo"><span class="brand-dot">NH</span> NodeHerder</div>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-home"/></svg>Overview</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-home"/></svg>Home</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-devices"/></svg>Devices</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-link"/></svg>Integrations</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-bolt"/></svg>Automations</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-bot"/></svg>Assistant</a>
+              <a class="nvi active" href="#"><svg class="i"><use href="#i-settings"/></svg>Settings</a>
+            </aside>
+            <div class="main">
+              <div class="top"><span class="ttl">Settings</span></div>
+              <div class="body">
+                <div class="page-h"><div><h1>Settings</h1><div class="sub">Hub behaviour for this home, plus appearance for this browser.</div></div></div>
+                <div class="settings">
+                  <nav class="srail">
+                    <label class="ssearch"><svg class="i"><use href="#i-search"/></svg>Search settings…</label>
+                    <div class="sgroup"><div class="gh">This browser</div>
+                      <a class="sitem active" href="#"><svg class="i"><use href="#i-sun"/></svg><span class="st"><b>Appearance</b><small>Daylight · dark · 14 px</small></span></a>
+                    </div>
+                    <div class="sgroup"><div class="gh">Hub</div>
+                      <a class="sitem" href="#"><svg class="i"><use href="#i-devices"/></svg><span class="st"><b>Device defaults</b><small>Reporting every 60 s</small></span></a>
+                      <a class="sitem" href="#"><svg class="i"><use href="#i-db"/></svg><span class="st"><b>Storage &amp; retention</b><small>10 days · 28 MB used</small></span></a>
+                      <a class="sitem" href="#"><svg class="i"><use href="#i-terminal"/></svg><span class="st"><b>Logs &amp; diagnostics</b><small>info · 10 MB on disk</small></span></a>
+                      <a class="sitem" href="#"><svg class="i"><use href="#i-settings"/></svg><span class="st"><b>MCP server</b><small>Running · 2 clients</small></span></a>
+                      <a class="sitem" href="#"><svg class="i"><use href="#i-bot"/></svg><span class="st"><b>Assistant</b><small>Connected</small></span></a>
+                    </div>
+                    <div class="sgroup"><div class="gh">Maintenance</div>
+                      <a class="sitem" href="#"><svg class="i"><use href="#i-shield"/></svg><span class="st"><b>Data &amp; cleanup</b><small>Clear, purge, export</small></span></a>
+                      <a class="sitem" href="#"><svg class="i"><use href="#i-download"/></svg><span class="st"><b>Backup &amp; export</b><small>Last export: never</small></span></a>
+                    </div>
+                  </nav>
+                  <div class="sbody">
+                    <h2>Appearance</h2>
+                    <p class="sdesc">Theme, accent, density and text size are saved in this browser only.</p>
+                    <div class="sect-card">
+                      <div class="ch"><svg class="i"><use href="#i-sun"/></svg>Theme <span class="scope">this browser</span></div>
+                      <div class="row"><div class="rl"><b>Mode</b><small>Follow the system, or force light or dark.</small></div>
+                        <span class="seg"><span>System</span><span class="on">Dark</span><span>Light</span></span></div>
+                      <div class="row"><div class="rl"><b>Palette</b><small>Changes surfaces and accent defaults.</small></div>
+                        <div class="swatches"><span class="sw on"><i></i>Daylight</span><span class="sw"><i style="background:linear-gradient(135deg,#5cc4ec,#14303f)"></i>Fleece</span><span class="sw"><i style="background:linear-gradient(135deg,#6fd3e8,#1b343d)"></i>Lagoon</span></div></div>
+                      <div class="row"><div class="rl"><b>Density</b><small>Comfortable suits touch screens.</small></div>
+                        <span class="seg"><span>Compact</span><span class="on">Comfortable</span><span>Spacious</span></span></div>
+                      <div class="row"><div class="rl"><b>Corner rounding</b><small>14 px</small></div>
+                        <div style="width:160px"><div class="meter"><i style="--w:62%"></i></div></div></div>
+                      <div class="row"><div class="rl"><b>Reset appearance</b><small>Restores the defaults for this browser. Does not touch hub settings.</small></div>
+                        <button class="btn sm"><svg class="i"><use href="#i-refresh"/></svg>Reset</button></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4B -->
+      <div class="variant">
+        <div class="v-head"><span class="v-tag">B</span>
+          <div><h3>Settings dashboard — index only, nothing removed</h3>
+            <p class="v-note">Every existing section is present, grouped by scope, with live summaries and
+              warning chips. Clicking a card opens the unchanged detail page (4A shows the rail, 4C shows MCP
+              depth). Hub health stays on top so “where do I clear X?” is answerable from one screen.</p></div>
+          <span class="pill rec">recommended direction</span>
+        </div>
+        <div class="screen">
+          <div class="app">
+            <aside class="side">
+              <div class="logo"><span class="brand-dot">NH</span> NodeHerder</div>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-home"/></svg>Overview</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-home"/></svg>Home</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-devices"/></svg>Devices</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-link"/></svg>Integrations</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-bolt"/></svg>Automations</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-bot"/></svg>Assistant</a>
+              <a class="nvi active" href="#"><svg class="i"><use href="#i-settings"/></svg>Settings</a>
+            </aside>
+            <div class="main">
+              <div class="top"><span class="ttl">Settings</span>
+                <div class="right"><span class="conn"><span class="dot"></span> Connected</span><span class="conn">v0.18.0</span></div></div>
+              <div class="body">
+                <div class="page-h"><div><h1>Settings</h1><div class="sub">This home and this browser. Changes save as you go.</div></div></div>
+                <div class="health-strip">
+                  <span class="hchip"><svg class="i"><use href="#i-check"/></svg><b>Connected</b> · 42 devices</span>
+                  <span class="hchip"><svg class="i"><use href="#i-db"/></svg><b>32.7 MB</b> data · 36 GB free</span>
+                  <span class="hchip"><svg class="i"><use href="#i-clock"/></svg>Uptime <b>3 d 4 h</b></span>
+                  <span class="hchip"><svg class="i"><use href="#i-terminal"/></svg><b>10</b> log files · 28 MB</span>
+                  <span class="hchip"><svg class="i"><use href="#i-bot"/></svg>Assistant <b>on</b></span>
+                </div>
+                <div class="setgroup-label">This browser</div>
+                <div class="setgrid">
+                  <a class="setcard" href="#"><span class="ic"><svg class="i"><use href="#i-sun"/></svg></span>
+                    <b>Appearance</b><small>Mode, palette, accent, density, corner rounding, text size, texture.</small>
+                    <span class="chips"><span class="minichip">Daylight</span><span class="minichip">Dark</span><span class="minichip">14 px</span></span></a>
+                </div>
+                <div class="setgroup-label">This hub</div>
+                <div class="setgrid">
+                  <a class="setcard" href="#"><span class="ic"><svg class="i"><use href="#i-devices"/></svg></span>
+                    <b>Device defaults</b><small>Reporting interval and which sensors report, with per-device overrides.</small>
+                    <span class="chips"><span class="minichip">60 s</span><span class="minichip">3 overrides</span></span></a>
+                  <a class="setcard" href="#"><span class="ic"><svg class="i"><use href="#i-db"/></svg></span>
+                    <b>Storage &amp; retention</b><small>Cleanup interval, keep history for, usage and disk space.</small>
+                    <span class="chips"><span class="minichip">10 days</span><span class="minichip">28 MB</span><span class="minichip" style="color:var(--warn)">78 % used</span></span></a>
+                  <a class="setcard" href="#"><span class="ic"><svg class="i"><use href="#i-terminal"/></svg></span>
+                    <b>Logs &amp; diagnostics</b><small>Live tail, archived files, level, retention, download.</small>
+                    <span class="chips"><span class="minichip">info</span><span class="minichip" style="color:#ff9d96">2 errors</span><span class="minichip">10 files</span></span></a>
+                  <a class="setcard" href="#"><span class="ic"><svg class="i"><use href="#i-settings"/></svg></span>
+                    <b>MCP server</b><small>Status, server name, version, clients, Start / Stop / Restart.</small>
+                    <span class="chips"><span class="minichip" style="color:var(--ok)">Running</span><span class="minichip">2 clients</span></span></a>
+                  <a class="setcard" href="#"><span class="ic"><svg class="i"><use href="#i-bot"/></svg></span>
+                    <b>Assistant</b><small>Service address the Assistant screen sends chat messages to.</small>
+                    <span class="chips"><span class="minichip">Connected</span><span class="minichip">URL set</span></span></a>
+                </div>
+                <div class="setgroup-label">Maintenance</div>
+                <div class="setgrid">
+                  <a class="setcard" href="#" style="border-color:rgba(124,92,255,.45);background:rgba(124,92,255,.05)">
+                    <span class="ic"><svg class="i"><use href="#i-shield"/></svg></span>
+                    <b>Data &amp; cleanup</b><small>Purge history and spatial data, prune logs, clear caches, reset appearance.</small>
+                    <span class="chips"><span class="minichip">Maintenance</span></span></a>
+                  <a class="setcard" href="#"><span class="ic"><svg class="i"><use href="#i-download"/></svg></span>
+                    <b>Backup &amp; export</b><small>Home layout, all automations and a full hub backup.</small>
+                    <span class="chips"><span class="minichip">Last export: never</span></span></a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4C -->
+      <div class="variant">
+        <div class="v-head"><span class="v-tag">C</span>
+          <div><h3>Detail pages keep the full depth (MCP server shown)</h3>
+            <p class="v-note">The dashboard is only an index. Opening a card keeps the existing rail and every
+              control: here, MCP status, server name, version, connected clients and Start / Stop / Restart.
+              The same applies to Device defaults, Assistant and Appearance — no field is collapsed away.</p></div>
+          <span class="pill ok">no information lost</span>
+        </div>
+        <div class="screen">
+          <div class="app">
+            <aside class="side">
+              <div class="logo"><span class="brand-dot">NH</span> NodeHerder</div>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-home"/></svg>Overview</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-home"/></svg>Home</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-devices"/></svg>Devices</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-link"/></svg>Integrations</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-bolt"/></svg>Automations</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-bot"/></svg>Assistant</a>
+              <a class="nvi active" href="#"><svg class="i"><use href="#i-settings"/></svg>Settings</a>
+            </aside>
+            <div class="main">
+              <div class="top"><span class="ttl">Settings · MCP server</span>
+                <div class="right"><span class="conn"><span class="dot"></span> Connected</span></div></div>
+              <div class="body">
+                <div class="page-h">
+                  <div>
+                    <a href="#" style="display:inline-flex;align-items:center;gap:5px;color:var(--muted);font-size:11.5px;text-decoration:none;margin-bottom:6px">
+                      <svg class="i" style="width:13px;height:13px;transform:rotate(180deg)"><use href="#i-right"/></svg>All settings
+                    </a>
+                    <h1>MCP server</h1>
+                    <div class="sub">Assistant tools connect to this hub through the MCP server.</div>
+                  </div>
+                  <div class="actions"><button class="btn sm"><svg class="i"><use href="#i-download"/></svg>Download diagnostics</button></div>
+                </div>
+                <div class="settings">
+                  <nav class="srail">
+                    <label class="ssearch"><svg class="i"><use href="#i-search"/></svg>Search settings…</label>
+                    <div class="sgroup"><div class="gh">This browser</div>
+                      <a class="sitem" href="#"><svg class="i"><use href="#i-sun"/></svg><span class="st"><b>Appearance</b><small>Daylight · dark · 14 px</small></span></a>
+                    </div>
+                    <div class="sgroup"><div class="gh">Hub</div>
+                      <a class="sitem" href="#"><svg class="i"><use href="#i-devices"/></svg><span class="st"><b>Device defaults</b><small>Reporting every 60 s</small></span></a>
+                      <a class="sitem" href="#"><svg class="i"><use href="#i-db"/></svg><span class="st"><b>Storage &amp; retention</b><small>10 days · 28 MB used</small></span></a>
+                      <a class="sitem" href="#"><svg class="i"><use href="#i-terminal"/></svg><span class="st"><b>Logs &amp; diagnostics</b><small>info · 10 MB on disk</small></span></a>
+                      <a class="sitem active" href="#"><svg class="i"><use href="#i-settings"/></svg><span class="st"><b>MCP server</b><small>Running · 2 clients</small></span></a>
+                      <a class="sitem" href="#"><svg class="i"><use href="#i-bot"/></svg><span class="st"><b>Assistant</b><small>Connected</small></span></a>
+                    </div>
+                    <div class="sgroup"><div class="gh">Maintenance</div>
+                      <a class="sitem" href="#"><svg class="i"><use href="#i-shield"/></svg><span class="st"><b>Data &amp; cleanup</b><small>Clear, purge, export</small></span></a>
+                      <a class="sitem" href="#"><svg class="i"><use href="#i-download"/></svg><span class="st"><b>Backup &amp; export</b><small>Last export: never</small></span></a>
+                    </div>
+                  </nav>
+                  <div class="sbody">
+                    <div class="sect-card">
+                      <div class="ch"><svg class="i"><use href="#i-settings"/></svg>Server status
+                        <button class="btn sm ghost" style="margin-left:auto"><svg class="i"><use href="#i-refresh"/></svg>Refresh</button></div>
+                      <div class="row"><div class="rl"><b>Status</b></div><span class="pill ok">Running</span></div>
+                      <div class="row"><div class="rl"><b>Server name</b></div><span style="font:12px var(--mono);color:var(--muted)">nodeherder</span></div>
+                      <div class="row"><div class="rl"><b>Version</b></div><span style="font:12px var(--mono);color:var(--muted)">0.18.0</span></div>
+                      <div class="row"><div class="rl"><b>Connected clients</b><small>Assistant sessions currently attached.</small></div><span style="font-size:12px">2 clients</span></div>
+                      <div class="row" style="gap:8px">
+                        <button class="btn sm">Stop</button>
+                        <button class="btn sm"><svg class="i"><use href="#i-refresh"/></svg>Restart</button>
+                        <span style="color:var(--faint);font-size:11px;margin-left:auto">Stays pending until the hub reports a new status.</span>
+                      </div>
+                    </div>
+                    <div class="sect-card">
+                      <div class="ch"><svg class="i"><use href="#i-terminal"/></svg>Diagnostics</div>
+                      <div class="row"><div class="rl"><b>Connection state</b><small>Read-only summary used when debugging assistant sessions.</small></div>
+                        <button class="btn sm ghost">Copy</button><button class="btn sm"><svg class="i"><use href="#i-download"/></svg>JSON</button></div>
+                      <div class="row"><div class="rl"><b>Section depth</b><small>Device defaults, Assistant and Appearance keep every control they have today; the index adds no replacement UI.</small></div>
+                        <span class="pill">unchanged</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4D -->
+      <div class="variant">
+        <div class="v-head"><span class="v-tag">D</span>
+          <div><h3>Data &amp; cleanup: the missing “clear things” surface</h3>
+            <p class="v-note">Grouped by blast radius, each row states what is kept and what is lost, and
+              destructive actions ask for a typed confirmation. Export lives here too, so “download the log”
+              and “download the automation” have an obvious home.</p></div>
+          <span class="pill">fills a real gap</span>
+        </div>
+        <div class="screen">
+          <div class="app">
+            <aside class="side">
+              <div class="logo"><span class="brand-dot">NH</span> NodeHerder</div>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-home"/></svg>Overview</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-home"/></svg>Home</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-devices"/></svg>Devices</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-link"/></svg>Integrations</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-bolt"/></svg>Automations</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-bot"/></svg>Assistant</a>
+              <a class="nvi active" href="#"><svg class="i"><use href="#i-settings"/></svg>Settings</a>
+            </aside>
+            <div class="main">
+              <div class="top"><span class="ttl">Settings · Data &amp; cleanup</span></div>
+              <div class="body">
+                <div class="page-h"><div><h1>Data &amp; cleanup</h1><div class="sub">Everything that grows, and how to remove it safely.</div></div>
+                  <div class="actions"><button class="btn"><svg class="i"><use href="#i-download"/></svg>Download logs</button></div></div>
+
+                <div class="sect-card">
+                  <div class="ch"><svg class="i"><use href="#i-db"/></svg>Storage <span class="scope">hub</span></div>
+                  <div class="row"><div class="rl"><b>Metrics database · 28 MB</b><small>10-day retention · oldest reading 15 Nov</small>
+                    <div class="meter"><i style="--w:62%"></i></div><div class="statline"><span>62 % of 45 MB budget</span><span>36.1 GB free on disk</span></div></div></div>
+                  <div class="row"><div class="rl"><b>Spatial &amp; position history · 2 MB</b><small>7-day retention</small></div>
+                    <button class="btn sm">Purge…</button></div>
+                  <div class="row"><div class="rl"><b>Log files · 10 files, 28 MB</b><small>30-day retention · oldest 26 Oct</small></div>
+                    <button class="btn sm">Purge…</button><button class="btn sm"><svg class="i"><use href="#i-download"/></svg>Download all</button></div>
+                </div>
+
+                <div class="sect-card">
+                  <div class="ch"><svg class="i"><use href="#i-x"/></svg>Clear data <span class="scope">choose a scope</span></div>
+                  <div class="row"><div class="rl"><b>Clear this browser’s cache</b><small>Layout cache, dismissed notices and saved view state. Devices reload on next connect.</small></div>
+                    <button class="btn sm">Clear 1.2 MB</button></div>
+                  <div class="row"><div class="rl"><b>Reset appearance</b><small>Theme, accent, density and text size for this browser only.</small></div>
+                    <button class="btn sm">Reset</button></div>
+                  <div class="row"><div class="rl"><b>Clear automation run history</b><small>Keeps automations and triggers; removes the “last run” evidence.</small></div>
+                    <button class="btn sm">Clear</button></div>
+                  <div class="row"><div class="rl"><b>Delete history before…</b><small>Charts and exports cannot reach past the chosen date.</small></div>
+                    <button class="btn sm danger">Choose date…</button></div>
+                </div>
+
+                <div class="sect-card" style="border-color:rgba(229,84,75,.28)">
+                  <div class="ch" style="color:#ffb1ac"><svg class="i"><use href="#i-alert"/></svg>Danger zone <span class="scope">cannot be undone</span></div>
+                  <div class="row"><div class="rl"><b>Delete all history</b><small>All devices, all readings. Automations keep running; charts start empty.</small></div>
+                    <button class="btn sm danger">Delete…</button></div>
+                  <div class="row"><div class="rl"><b>Remove all automations</b><small>32 automations and their triggers are removed from the hub.</small></div>
+                    <button class="btn sm danger">Remove…</button></div>
+                </div>
+
+                <div class="sect-card">
+                  <div class="ch"><svg class="i"><use href="#i-download"/></svg>Export &amp; backup <span class="scope">downloads a file</span></div>
+                  <div class="row"><div class="rl"><b>Home layout</b><small>Areas, tiles and ordering. Re-importable from Home.</small></div><button class="btn sm"><svg class="i"><use href="#i-download"/></svg>JSON</button></div>
+                  <div class="row"><div class="rl"><b>All automations</b><small>One JSON file with every automation and trigger.</small></div><button class="btn sm"><svg class="i"><use href="#i-download"/></svg>JSON</button></div>
+                  <div class="row"><div class="rl"><b>Full backup</b><small>Config, device overrides and automations. History is not included.</small></div><button class="btn sm"><svg class="i"><use href="#i-download"/></svg>Backup</button></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ 5. AUTOMATION -->
+    <section class="sec" id="automation">
+      <div class="sec-head"><h2>5 · Automation row actions</h2><span class="pill info">small, high value</span></div>
+      <p class="sec-lede">Each row currently has Run, toggle and Delete. A kebab menu can expose export,
+        duplicate, copy ID and “view last run”, and the page header can export all — reusing the download
+        helper already used for Home layouts.</p>
+      <div class="variant">
+        <div class="v-head"><span class="v-tag">A</span>
+          <div><h3>Row menu + export all</h3>
+            <p class="v-note">Keeps the row scannable; destructive actions stay behind the menu with a clear
+              danger treatment. Export is per automation JSON, matching the Home export format.</p></div>
+          <span class="pill rec">recommended</span>
+        </div>
+        <div class="screen">
+          <div class="app">
+            <aside class="side">
+              <div class="logo"><span class="brand-dot">NH</span> NodeHerder</div>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-home"/></svg>Overview</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-home"/></svg>Home</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-devices"/></svg>Devices</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-link"/></svg>Integrations</a>
+              <a class="nvi active" href="#"><svg class="i"><use href="#i-bolt"/></svg>Automations</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-bot"/></svg>Assistant</a>
+              <a class="nvi" href="#"><svg class="i"><use href="#i-settings"/></svg>Settings</a>
+            </aside>
+            <div class="main">
+              <div class="top"><span class="ttl">Automations</span>
+                <div class="right"><button class="btn sm ghost"><svg class="i"><use href="#i-download"/></svg>Export all</button><button class="btn sm primary"><svg class="i"><use href="#i-plus"/></svg>New automation</button></div></div>
+              <div class="body">
+                <div class="page-h"><div><h1>Automations</h1><div class="sub">32 automations · 24 on</div></div></div>
+                <div class="autolist">
+                  <article class="autorow">
+                    <span class="aic"><svg class="i"><use href="#i-bolt"/></svg></span>
+                    <div class="atxt"><b>Hallway light on motion</b><small>Hallway motion sensor</small>
+                      <div class="sum">When motion is detected → turn on Hallway light for 5 min</div></div>
+                    <div class="aside"><span class="pill danger">Failed 3×</span><span class="toggle on"></span>
+                      <button class="btn sq sm ghost" aria-label="More actions"><svg class="i"><use href="#i-more"/></svg></button></div>
+                    <div class="menu">
+                      <div class="mi"><svg class="i"><use href="#i-play"/></svg>Run now</div>
+                      <div class="mi"><svg class="i"><use href="#i-settings"/></svg>Edit</div>
+                      <div class="mi"><svg class="i"><use href="#i-refresh"/></svg>Duplicate</div>
+                      <div class="mi"><svg class="i"><use href="#i-download"/></svg>Export JSON</div>
+                      <div class="mi"><svg class="i"><use href="#i-terminal"/></svg>View log for this run</div>
+                      <div class="mi"><svg class="i"><use href="#i-clock"/></svg>Last run: 14:02, failed</div>
+                      <div class="sep"></div>
+                      <div class="mi danger"><svg class="i"><use href="#i-trash"/></svg>Delete…</div>
+                    </div>
+                  </article>
+                  <article class="autorow">
+                    <span class="aic"><svg class="i"><use href="#i-bolt"/></svg></span>
+                    <div class="atxt"><b>Bedroom lamp at sunset</b><small>Sunset schedule</small>
+                      <div class="sum">At sunset → turn on Bedroom lamp at 40 %</div></div>
+                    <div class="aside"><span class="pill info">Scheduled</span><span class="toggle on"></span>
+                      <button class="btn sq sm ghost" aria-label="More actions"><svg class="i"><use href="#i-more"/></svg></button></div>
+                  </article>
+                  <article class="autorow">
+                    <span class="aic"><svg class="i"><use href="#i-bolt"/></svg></span>
+                    <div class="atxt"><b>Kitchen extraction off</b><small>Kitchen power socket</small>
+                      <div class="sum">When power drops below 5 W for 10 min → turn off socket</div></div>
+                    <div class="aside"><span class="toggle on"></span>
+                      <button class="btn sq sm ghost" aria-label="More actions"><svg class="i"><use href="#i-more"/></svg></button></div>
+                  </article>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ 6. MOBILE -->
+    <section class="sec" id="mobile">
+      <div class="sec-head"><h2>6 · Mobile views for every area</h2><span class="pill warn">390 × 812</span></div>
+      <p class="sec-lede">Mobile is not a squeezed desktop here. The chosen patterns change shape: tiles go
+        single-column, filter chips scroll, menus become bottom sheets, settings gets a section picker and
+        full-width controls, and destructive actions require a typed confirmation sheet. The header keeps the
+        two shortcuts that matter — notifications and logs.</p>
+      <div class="mobile-rules">
+        <div class="rule"><b>Touch &amp; reach</b><small>44 px minimum targets, primary actions in the lower
+          third, no hover-only affordances, no icon smaller than 18 px.</small></div>
+        <div class="rule"><b>One column, stacked rows</b><small>Label and help above the control; segmented
+          controls fill the width; long values wrap instead of truncating.</small></div>
+        <div class="rule"><b>Sheets over menus</b><small>Section pickers, row actions and destructive
+          confirmations open as bottom sheets with a grabber and safe-area padding.</small></div>
+      </div>
+
+      <div class="phones">
+
+        <!-- M1 HOME -->
+        <div class="variant" style="margin:0">
+          <div class="v-head"><span class="v-tag">M1</span><div><h3>Home — single column, age line, digest</h3>
+            <p class="v-note">The 1A/1C treatment at 390 px. Room chips stay on the right of the heading; the
+              stale banner is dismissible; the digest is one card, not a toast queue.</p></div></div>
+          <div class="phone"><div class="m-screen">
+            <div class="m-status"><span>16:32</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><svg class="i" style="width:14px;height:14px"><use href="#i-wifi"/></svg><span class="batt"></span></span></div>
+            <header class="m-head">
+              <button class="m-ico" aria-label="Open navigation"><svg class="i"><use href="#i-menu"/></svg></button>
+              <span class="m-title">Home</span>
+              <button class="m-ico" aria-label="Notifications"><svg class="i"><use href="#i-bell"/></svg><span class="m-badge">4</span></button>
+              <button class="m-ico" aria-label="Logs"><svg class="i"><use href="#i-terminal"/></svg><span class="m-badge">2</span></button>
+            </header>
+            <div class="m-body">
+              <div class="m-banner bad"><svg class="i"><use href="#i-wifioff"/></svg><span class="grow"><b>Live updates paused.</b> Snapshot from 16:32 (23 min old).</span><span class="retry">Retry</span></div>
+              <div class="m-digest">
+                <div class="dh"><svg class="i"><use href="#i-bell"/></svg><b>While you were away</b><span class="since">since 19:40</span></div>
+                <div class="drow"><svg class="i" style="color:var(--warn)"><use href="#i-clock"/></svg><span>Attic light quiet for 4 h</span><a href="#">Open</a></div>
+                <div class="drow"><svg class="i" style="color:var(--danger)"><use href="#i-bolt"/></svg><span>Hallway automation failed 3×</span><a href="#">Open</a></div>
+                <div class="more"><button class="btn ghost">Dismiss</button><button class="btn">Review all (3)</button></div>
+              </div>
+              <div class="m-area"><h3>Living room</h3><span class="n">4 tiles</span>
+                <span class="chips"><span class="pill warn">1 quiet</span></span></div>
+              <article class="m-tile on">
+                <span class="ic"><svg class="i"><use href="#i-bolt"/></svg></span>
+                <div class="txt"><span class="lab">TV power socket</span><span class="val">On · 42 W</span>
+                  <span class="dev">Living room socket</span><span class="age"><svg class="i"><use href="#i-clock"/></svg>Updated 18 s ago</span></div>
+              </article>
+              <article class="m-tile stale">
+                <span class="ic"><svg class="i"><use href="#i-sun"/></svg></span>
+                <div class="txt"><span class="lab">Brightness</span><span class="val">136 lx</span>
+                  <span class="dev">Living room illuminance</span><span class="age"><svg class="i"><use href="#i-clock"/></svg>Updated 4 h ago · not reporting</span></div>
+              </article>
+              <article class="m-tile off">
+                <span class="ic"><svg class="i"><use href="#i-sun"/></svg></span>
+                <div class="txt"><span class="lab">Ceiling light</span><span class="val">Offline</span>
+                  <span class="dev">Living Room Light</span><span class="age"><svg class="i"><use href="#i-clock"/></svg>Last seen 2 h ago</span></div>
+              </article>
+              <div class="m-area"><h3>Attic room</h3><span class="n">5 tiles</span>
+                <span class="chips"><span class="pill danger">1 offline</span></span></div>
+              <article class="m-tile">
+                <span class="ic"><svg class="i"><use href="#i-thermo"/></svg></span>
+                <div class="txt"><span class="lab">Temperature</span><span class="val">18 °C</span>
+                  <span class="dev">Attic sensor</span><span class="age"><svg class="i"><use href="#i-clock"/></svg>Updated 1 min ago</span></div>
+              </article>
+              <article class="m-tile">
+                <span class="ic"><svg class="i"><use href="#i-shield"/></svg></span>
+                <div class="txt"><span class="lab">Smoke</span><span class="val" style="color:var(--danger)">Offline</span>
+                  <span class="dev">Attic smoke alarm</span><span class="age"><svg class="i"><use href="#i-clock"/></svg>Last seen 2 h ago</span></div>
+              </article>
+            </div>
+          </div></div>
+        </div>
+
+        <!-- M2 LOGS -->
+        <div class="variant" style="margin:0">
+          <div class="v-head"><span class="v-tag">M2</span><div><h3>Logs — full-screen, stacked rows</h3>
+            <p class="v-note">Opened from the header icon as a 92 % sheet, or the full page. Filters scroll
+              horizontally; each entry becomes two lines so the message never gets a 60 px column.</p></div></div>
+          <div class="phone"><div class="m-screen">
+            <div class="m-status"><span>16:32</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><svg class="i" style="width:14px;height:14px"><use href="#i-wifi"/></svg><span class="batt"></span></span></div>
+            <header class="m-head">
+              <button class="m-ico" aria-label="Back"><svg class="i"><use href="#i-down"/></svg></button>
+              <span class="m-title">Logs</span>
+              <button class="m-ico" aria-label="Search"><svg class="i"><use href="#i-search"/></svg></button>
+              <button class="m-ico" aria-label="Download"><svg class="i"><use href="#i-download"/></svg></button>
+              <button class="m-ico" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button>
+            </header>
+            <div class="m-grab"><span></span></div>
+            <div class="m-body flush" style="padding:6px 12px 0">
+              <div class="m-search" style="margin:6px 2px 8px"><svg class="i"><use href="#i-search"/></svg>Search messages or device…</div>
+              <div class="m-chips">
+                <span class="m-chip">trace<span class="n">0</span></span>
+                <span class="m-chip">debug<span class="n">12</span></span>
+                <span class="m-chip on">info<span class="n">390</span></span>
+                <span class="m-chip">warn<span class="n">8</span></span>
+                <span class="m-chip" style="color:#ff9d96;border-color:rgba(229,84,75,.4)">error<span class="n">2</span></span>
+                <span class="m-chip">Problems only</span>
+              </div>
+              <div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#0c0c0f">
+                <div class="m-log error"><div class="meta"><span>16:21:40</span><span class="lv error">ERROR</span><span class="src">automation</span></div><div class="msg">"Hallway light on motion" failed: target device is offline</div></div>
+                <div class="m-log error"><div class="meta"><span>16:19:58</span><span class="lv error">ERROR</span><span class="src">ws</span></div><div class="msg">client disconnected: i/o timeout — retrying in 2 s</div></div>
+                <div class="m-log warn"><div class="meta"><span>16:21:58</span><span class="lv warn">WARN</span><span class="src">attic / light</span></div><div class="msg">no report for 4 h — availability still "online"</div></div>
+                <div class="m-log"><div class="meta"><span>16:22:05</span><span class="lv info">INFO</span><span class="src">device</span></div><div class="msg">[0xa4c138c383ac3fc8] Attic smoke alarm is online</div></div>
+                <div class="m-log"><div class="meta"><span>16:21:12</span><span class="lv info">INFO</span><span class="src">kitchen</span></div><div class="msg">temperature 21.4 °C · humidity 48 %</div></div>
+              </div>
+            </div>
+            <div class="m-foot"><span class="live"><span class="dot"></span>Following</span><span>412 / 2,000</span>
+              <span class="right"><span>Pause</span><span>Settings</span></span></div>
+          </div></div>
+        </div>
+
+        <!-- M3 LOG FILES -->
+        <div class="variant" style="margin:0">
+          <div class="v-head"><span class="v-tag">M3</span><div><h3>Logs &amp; diagnostics — archived files</h3>
+            <p class="v-note">Settings detail on mobile: tabs become equal-width segments, archive rows stack,
+              and download is a 44 px icon button on the right.</p></div></div>
+          <div class="phone"><div class="m-screen">
+            <div class="m-status"><span>16:32</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><svg class="i" style="width:14px;height:14px"><use href="#i-wifi"/></svg><span class="batt"></span></span></div>
+            <header class="m-head">
+              <button class="m-ico" aria-label="Back"><svg class="i"><use href="#i-back"/></svg></button>
+              <span class="m-title">Logs &amp; diagnostics</span>
+              <button class="m-ico" aria-label="Refresh"><svg class="i"><use href="#i-refresh"/></svg></button>
+            </header>
+            <div class="m-body">
+              <div class="m-tabs"><span class="m-tab">Live</span><span class="m-tab on">Files</span><span class="m-tab">Retention</span></div>
+              <div class="m-group" style="padding-top:0">Archived files · 30 days</div>
+              <div class="m-list">
+                <div class="m-item"><span class="ic"><svg class="i"><use href="#i-terminal"/></svg></span>
+                  <div class="tx"><b>nodeherder.log</b><small>Today 16:22 · 1.8 MB</small></div>
+                  <button class="btn sq sm ghost" aria-label="Download" style="width:40px;height:40px"><svg class="i"><use href="#i-download"/></svg></button></div>
+                <div class="m-item"><span class="ic"><svg class="i"><use href="#i-terminal"/></svg></span>
+                  <div class="tx"><b>nodeherder-2026-11-24.log</b><small>Yesterday 23:59 · 4.2 MB</small></div>
+                  <button class="btn sq sm ghost" aria-label="Download" style="width:40px;height:40px"><svg class="i"><use href="#i-download"/></svg></button></div>
+                <div class="m-item"><span class="ic"><svg class="i"><use href="#i-terminal"/></svg></span>
+                  <div class="tx"><b>nodeherder-2026-11-23.log</b><small>23 Nov 23:59 · 3.9 MB</small></div>
+                  <button class="btn sq sm ghost" aria-label="Download" style="width:40px;height:40px"><svg class="i"><use href="#i-download"/></svg></button></div>
+                <div class="m-item"><span class="ic"><svg class="i"><use href="#i-terminal"/></svg></span>
+                  <div class="tx"><b>nodeherder-2026-11-22.log</b><small>22 Nov 23:59 · 3.1 MB</small></div>
+                  <button class="btn sq sm ghost" aria-label="Download" style="width:40px;height:40px"><svg class="i"><use href="#i-download"/></svg></button></div>
+              </div>
+              <button class="btn" style="width:100%;height:40px;margin-top:10px"><svg class="i"><use href="#i-download"/></svg>Download all (28 MB)</button>
+              <div class="m-card" style="margin-top:12px"><div class="ct"><svg class="i"><use href="#i-db"/></svg>Retention</div>
+                <p>Older files are deleted first when the log directory exceeds the limit.</p>
+                <div class="m-seg" style="margin-top:8px"><span>7 d</span><span class="on">30 d</span><span>90 d</span></div></div>
+              <div class="m-card"><div class="ct"><svg class="i"><use href="#i-terminal"/></svg>Live buffer</div>
+                <p>412 of 2,000 messages · oldest 16:02. Downloads the current buffer as .log or .json.</p>
+                <div style="display:flex;gap:8px;margin-top:8px"><button class="btn sm">Clear</button><button class="btn sm"><svg class="i"><use href="#i-download"/></svg>Download</button></div></div>
+            </div>
+          </div></div>
+        </div>
+
+        <!-- M4 NOTIFICATIONS -->
+        <div class="variant" style="margin:0">
+          <div class="v-head"><span class="v-tag">M4</span><div><h3>Notifications — full-screen inbox</h3>
+            <p class="v-note">The bell opens a full-screen list on mobile. Actions wrap under the body text;
+              “Mark all read” moves into the header as text.</p></div></div>
+          <div class="phone"><div class="m-screen">
+            <div class="m-status"><span>16:32</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><svg class="i" style="width:14px;height:14px"><use href="#i-wifi"/></svg><span class="batt"></span></span></div>
+            <header class="m-head">
+              <button class="m-ico" aria-label="Back"><svg class="i"><use href="#i-back"/></svg></button>
+              <span class="m-title">Notifications</span>
+              <button class="m-textbtn">Mark all read</button>
+            </header>
+            <div class="m-body">
+              <div class="m-tabs"><span class="m-tab on">All 4</span><span class="m-tab">Problems 3</span><span class="m-tab">System 1</span></div>
+              <article class="m-item err" style="border-radius:12px;border:1px solid var(--border);background:var(--surface);padding:12px">
+                <span class="ic"><svg class="i"><use href="#i-wifioff"/></svg></span>
+                <div class="tx"><b>Hub connection lost</b><small>Live data paused for 23 min. Values are from 16:32.</small>
+                  <div style="display:flex;gap:14px;margin-top:7px"><a href="#" style="font-size:11px;color:#b6a6ff;font-weight:650;text-decoration:none">Reconnect</a><a href="#" style="font-size:11px;color:#b6a6ff;font-weight:650;text-decoration:none">Details</a></div></div>
+                <span style="font-size:10px;color:var(--faint)">16:09</span>
+              </article>
+              <article class="m-item warn" style="border-radius:12px;border:1px solid var(--border);background:rgba(124,92,255,.05);padding:12px;margin-top:8px">
+                <span class="ic"><svg class="i"><use href="#i-clock"/></svg></span>
+                <div class="tx"><b>Attic room light has gone quiet</b><small>No report for 4 h, but availability still says online.</small>
+                  <div style="display:flex;gap:14px;margin-top:7px"><a href="#" style="font-size:11px;color:#b6a6ff;font-weight:650;text-decoration:none">Open device</a><a href="#" style="font-size:11px;color:#b6a6ff;font-weight:650;text-decoration:none">Open logs</a></div></div>
+                <span style="font-size:10px;color:var(--faint)">16:02</span>
+              </article>
+              <article class="m-item err" style="border-radius:12px;border:1px solid var(--border);background:rgba(124,92,255,.05);padding:12px;margin-top:8px">
+                <span class="ic"><svg class="i"><use href="#i-bolt"/></svg></span>
+                <div class="tx"><b>Automation failed 3 times</b><small>“Hallway light on motion” — target device is offline.</small>
+                  <div style="display:flex;gap:14px;margin-top:7px"><a href="#" style="font-size:11px;color:#b6a6ff;font-weight:650;text-decoration:none">Open automation</a><a href="#" style="font-size:11px;color:#b6a6ff;font-weight:650;text-decoration:none">Disable</a></div></div>
+                <span style="font-size:10px;color:var(--faint)">15:48</span>
+              </article>
+              <article class="m-item" style="border-radius:12px;border:1px solid var(--border);background:var(--surface);padding:12px;margin-top:8px">
+                <span class="ic"><svg class="i"><use href="#i-refresh"/></svg></span>
+                <div class="tx"><b>2 devices rejoined</b><small>Attic smoke alarm and kitchen sensor are reporting again.</small></div>
+                <span style="font-size:10px;color:var(--faint)">15:31</span>
+              </article>
+              <p style="font-size:10.5px;color:var(--faint);text-align:center;margin:14px 0 0">Kept for 7 days · Notification settings</p>
+            </div>
+          </div></div>
+        </div>
+
+        <!-- M5 SETTINGS INDEX -->
+        <div class="variant" style="margin:0">
+          <div class="v-head"><span class="v-tag">M5</span><div><h3>Settings — index, all six sections</h3>
+            <p class="v-note">Same inventory as desktop: Appearance; Device defaults, Storage, Logs, MCP,
+              Assistant; then Maintenance. Cards are full width with a chevron and a one-line summary.</p></div></div>
+          <div class="phone"><div class="m-screen">
+            <div class="m-status"><span>16:32</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><svg class="i" style="width:14px;height:14px"><use href="#i-wifi"/></svg><span class="batt"></span></span></div>
+            <header class="m-head">
+              <button class="m-ico" aria-label="Open navigation"><svg class="i"><use href="#i-menu"/></svg></button>
+              <span class="m-title">Settings</span>
+              <button class="m-ico" aria-label="Search settings"><svg class="i"><use href="#i-search"/></svg></button>
+            </header>
+            <div class="m-body">
+              <div class="m-search"><svg class="i"><use href="#i-search"/></svg>Search settings…</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px">
+                <span class="hchip" style="padding:5px 8px;font-size:10.5px"><svg class="i" style="width:12px;height:12px"><use href="#i-check"/></svg><b>Connected</b></span>
+                <span class="hchip" style="padding:5px 8px;font-size:10.5px"><svg class="i" style="width:12px;height:12px"><use href="#i-db"/></svg><b>32.7 MB</b> · 36 GB free</span>
+                <span class="hchip" style="padding:5px 8px;font-size:10.5px"><svg class="i" style="width:12px;height:12px"><use href="#i-clock"/></svg><b>3 d 4 h</b></span>
+              </div>
+              <div class="m-group">This browser</div>
+              <div class="m-list">
+                <a class="m-item" href="#"><span class="ic"><svg class="i"><use href="#i-sun"/></svg></span>
+                  <div class="tx"><b>Appearance</b><small>Daylight · Dark · 14 px</small></div><span class="go"><svg class="i"><use href="#i-right"/></svg></span></a>
+              </div>
+              <div class="m-group">This hub</div>
+              <div class="m-list">
+                <a class="m-item" href="#"><span class="ic"><svg class="i"><use href="#i-devices"/></svg></span>
+                  <div class="tx"><b>Device defaults</b><small>Reporting every 60 s · 3 overrides</small></div><span class="go"><svg class="i"><use href="#i-right"/></svg></span></a>
+                <a class="m-item warn" href="#"><span class="ic"><svg class="i"><use href="#i-db"/></svg></span>
+                  <div class="tx"><b>Storage &amp; retention</b><small>10 days · 28 MB · 78 % used</small></div><span class="go"><svg class="i"><use href="#i-right"/></svg></span></a>
+                <a class="m-item err" href="#"><span class="ic"><svg class="i"><use href="#i-terminal"/></svg></span>
+                  <div class="tx"><b>Logs &amp; diagnostics</b><small>info · 10 files · 2 errors</small></div><span class="go"><svg class="i"><use href="#i-right"/></svg></span></a>
+                <a class="m-item" href="#"><span class="ic"><svg class="i"><use href="#i-settings"/></svg></span>
+                  <div class="tx"><b>MCP server</b><small>Running · 2 clients</small></div><span class="go"><svg class="i"><use href="#i-right"/></svg></span></a>
+                <a class="m-item" href="#"><span class="ic"><svg class="i"><use href="#i-bot"/></svg></span>
+                  <div class="tx"><b>Assistant</b><small>Connected · service address set</small></div><span class="go"><svg class="i"><use href="#i-right"/></svg></span></a>
+              </div>
+              <div class="m-group">Maintenance</div>
+              <div class="m-list">
+                <a class="m-item" href="#"><span class="ic"><svg class="i"><use href="#i-shield"/></svg></span>
+                  <div class="tx"><b>Data &amp; cleanup</b><small>Purge, clear caches, reset</small></div><span class="go"><svg class="i"><use href="#i-right"/></svg></span></a>
+                <a class="m-item" href="#"><span class="ic"><svg class="i"><use href="#i-download"/></svg></span>
+                  <div class="tx"><b>Backup &amp; export</b><small>Home, automations, full backup</small></div><span class="go"><svg class="i"><use href="#i-right"/></svg></span></a>
+              </div>
+            </div>
+          </div></div>
+        </div>
+
+        <!-- M6 SETTINGS DETAIL -->
+        <div class="variant" style="margin:0">
+          <div class="v-head"><span class="v-tag">M6</span><div><h3>Appearance detail — picker + stacked controls</h3>
+            <p class="v-note">The rail becomes a scrollable section picker; every control keeps its help text and
+              takes the full width. No horizontally squeezed segmented control or slider.</p></div></div>
+          <div class="phone"><div class="m-screen">
+            <div class="m-status"><span>16:32</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><svg class="i" style="width:14px;height:14px"><use href="#i-wifi"/></svg><span class="batt"></span></span></div>
+            <header class="m-head">
+              <button class="m-ico" aria-label="Back"><svg class="i"><use href="#i-back"/></svg></button>
+              <span class="m-title">Appearance</span>
+              <button class="m-ico" aria-label="Reset appearance"><svg class="i"><use href="#i-refresh"/></svg></button>
+            </header>
+            <div class="m-body">
+              <div class="m-chips" style="margin-top:-2px">
+                <span class="m-chip on">Appearance</span>
+                <span class="m-chip">Device defaults</span>
+                <span class="m-chip">Storage</span>
+                <span class="m-chip">Logs</span>
+                <span class="m-chip">MCP</span>
+                <span class="m-chip">Assistant</span>
+                <span class="m-chip">Cleanup</span>
+              </div>
+              <div class="m-tilehead"><h2>Appearance</h2><span class="scope">this browser</span></div>
+              <div class="m-list">
+                <div class="m-row stack"><div class="rl"><b>Mode</b><small>Follow the system, or force light or dark.</small></div>
+                  <div class="ctl"><div class="m-seg"><span>System</span><span class="on">Dark</span><span>Light</span></div></div></div>
+                <div class="m-row stack"><div class="rl"><b>Palette</b><small>Changes surfaces and the default accent.</small></div>
+                  <div class="ctl"><div class="chips" style="display:flex;gap:5px;flex-wrap:wrap">
+                    <span class="sw on"><i></i>Daylight</span><span class="sw"><i style="background:linear-gradient(135deg,#5cc4ec,#14303f)"></i>Fleece</span>
+                    <span class="sw"><i style="background:linear-gradient(135deg,#6fd3e8,#1b343d)"></i>Lagoon</span><span class="sw"><i style="background:linear-gradient(135deg,#e0901a,#121416)"></i>Ember</span></div></div></div>
+                <div class="m-row stack"><div class="rl"><b>Accent</b><small>Used for highlights and selected states.</small></div>
+                  <div class="ctl" style="display:flex;gap:8px">
+                    <span style="width:22px;height:22px;border-radius:50%;background:#7c5cff;box-shadow:0 0 0 2px var(--bg),0 0 0 3.5px #7c5cff"></span>
+                    <span style="width:22px;height:22px;border-radius:50%;background:#5cc4ec"></span>
+                    <span style="width:22px;height:22px;border-radius:50%;background:#3ecf8e"></span>
+                    <span style="width:22px;height:22px;border-radius:50%;background:#e8a33d"></span>
+                    <span style="width:22px;height:22px;border-radius:50%;background:#e5544b"></span>
+                    <span style="width:22px;height:22px;border-radius:50%;background:#9a9aa5"></span>
+                  </div></div>
+                <div class="m-row stack"><div class="rl"><b>Density</b><small>Comfortable suits touch screens.</small></div>
+                  <div class="ctl"><div class="m-seg"><span>Compact</span><span class="on">Comfortable</span><span>Spacious</span></div></div></div>
+                <div class="m-row stack"><div class="rl"><b>Corner rounding · 14</b><small>Softer cards and dialogs.</small></div>
+                  <div class="ctl"><div class="m-meter"><i style="--w:62%"></i></div></div></div>
+                <div class="m-row stack"><div class="rl"><b>Text size · 100 %</b><small>Scales every UI label, not the browser zoom.</small></div>
+                  <div class="ctl"><div class="m-meter"><i style="--w:34%"></i></div></div></div>
+                <div class="m-row"><div class="rl"><b>Background texture</b><small>Subtle dot grid.</small></div><div class="toggle on"></div></div>
+              </div>
+              <button class="btn" style="width:100%;height:40px;margin-top:10px"><svg class="i"><use href="#i-refresh"/></svg>Reset to defaults</button>
+              <p style="font-size:10.5px;color:var(--faint);margin:8px 2px 0">Applies to this browser only. Hub settings are unchanged.</p>
+            </div>
+          </div></div>
+        </div>
+
+        <!-- M7 CLEANUP -->
+        <div class="variant" style="margin:0">
+          <div class="v-head"><span class="v-tag">M7</span><div><h3>Data &amp; cleanup + typed confirmation</h3>
+            <p class="v-note">Destructive actions open a sheet that names the impact and requires typing the
+              action. Rows stack so nothing is a 44 px pill at the edge of the screen.</p></div></div>
+          <div class="phone"><div class="m-screen">
+            <div class="m-status"><span>16:32</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><svg class="i" style="width:14px;height:14px"><use href="#i-wifi"/></svg><span class="batt"></span></span></div>
+            <header class="m-head">
+              <button class="m-ico" aria-label="Back"><svg class="i"><use href="#i-back"/></svg></button>
+              <span class="m-title">Data &amp; cleanup</span>
+              <button class="m-ico" aria-label="Download logs"><svg class="i"><use href="#i-download"/></svg></button>
+            </header>
+            <div class="m-body">
+              <div class="m-card"><div class="ct"><svg class="i"><use href="#i-db"/></svg>Metrics · 28 MB</div>
+                <p>10-day retention · oldest reading 15 Nov</p>
+                <div class="m-meter"><i style="--w:78%"></i></div>
+                <div class="m-kv"><span>78 % of 45 MB budget</span><span>36.1 GB free</span></div></div>
+              <div class="m-card"><div class="ct"><svg class="i"><use href="#i-db"/></svg>Log files · 10 files, 28 MB</div>
+                <p>30-day retention · oldest 26 Oct</p>
+                <div style="display:flex;gap:8px;margin-top:8px"><button class="btn sm">Purge…</button><button class="btn sm"><svg class="i"><use href="#i-download"/></svg>Download all</button></div></div>
+              <div class="m-group" style="padding-top:6px">Clear</div>
+              <div class="m-list">
+                <div class="m-row stack"><div class="rl"><b>Clear browser cache</b><small>Layout cache and dismissed notices. Devices reload on connect.</small></div>
+                  <div class="ctl"><button class="btn" style="width:100%;height:36px">Clear 1.2 MB</button></div></div>
+                <div class="m-row stack"><div class="rl"><b>Reset appearance</b><small>Theme, accent, density, text size for this browser.</small></div>
+                  <div class="ctl"><button class="btn" style="width:100%;height:36px">Reset</button></div></div>
+              </div>
+              <div class="m-group" style="color:#ff9d96">Danger zone</div>
+              <div class="m-list" style="border-color:rgba(229,84,75,.3)">
+                <div class="m-row stack"><div class="rl"><b>Delete all history</b><small>Readings for every device. Charts start empty.</small></div>
+                  <div class="ctl"><button class="btn danger" style="width:100%;height:36px">Delete…</button></div></div>
+                <div class="m-row stack"><div class="rl"><b>Remove all automations</b><small>32 automations and triggers are removed.</small></div>
+                  <div class="ctl"><button class="btn danger" style="width:100%;height:36px">Remove…</button></div></div>
+              </div>
+            </div>
+            <div class="m-scrim"></div>
+            <div class="m-sheet">
+              <div class="m-grab"><span></span></div>
+              <div class="sh"><div><b>Delete all history?</b><br><small>Cannot be undone</small></div><button class="m-ico x" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button></div>
+              <div class="impact">Removes 1.2 million readings across 42 devices. Automations keep running; charts and exports start empty.</div>
+              <div class="typebox"><small>Type DELETE to confirm</small><div class="m-input">DELETE</div></div>
+              <div class="sf" style="display:flex;gap:8px">
+                <button class="btn" style="flex:1;height:40px">Cancel</button>
+                <button class="btn" style="flex:1;height:40px;background:var(--danger);border-color:var(--danger);color:#fff">Delete everything</button>
+              </div>
+            </div>
+          </div></div>
+        </div>
+
+        <!-- M8 AUTOMATION SHEET -->
+        <div class="variant" style="margin:0">
+          <div class="v-head"><span class="v-tag">M8</span><div><h3>Automation actions — bottom sheet</h3>
+            <p class="v-note">A kebab menu near a 390 px edge is fragile; use a sheet with 48 px rows, the
+              automation name in the header and delete separated at the bottom.</p></div></div>
+          <div class="phone"><div class="m-screen">
+            <div class="m-status"><span>16:32</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><svg class="i" style="width:14px;height:14px"><use href="#i-wifi"/></svg><span class="batt"></span></span></div>
+            <header class="m-head">
+              <button class="m-ico" aria-label="Open navigation"><svg class="i"><use href="#i-menu"/></svg></button>
+              <span class="m-title">Automations</span>
+              <button class="m-ico" aria-label="Export all"><svg class="i"><use href="#i-download"/></svg></button>
+              <button class="m-ico" aria-label="New automation"><svg class="i"><use href="#i-plus"/></svg></button>
+            </header>
+            <div class="m-body">
+              <p style="font-size:11.5px;color:var(--muted);margin:2px 2px 10px">32 automations · 24 on</p>
+              <div class="m-item" style="border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:8px">
+                <span class="ic"><svg class="i"><use href="#i-bolt"/></svg></span>
+                <div class="tx"><b>Hallway light on motion</b><small>When motion is detected → turn on Hallway light for 5 min</small>
+                  <div style="display:flex;gap:6px;margin-top:6px"><span class="pill danger">Failed 3×</span><span class="pill">Last run 14:02</span></div></div>
+                <button class="m-ico" aria-label="More actions" style="align-self:center"><svg class="i"><use href="#i-more"/></svg></button>
+              </div>
+              <div class="m-item" style="border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:8px">
+                <span class="ic"><svg class="i"><use href="#i-bolt"/></svg></span>
+                <div class="tx"><b>Bedroom lamp at sunset</b><small>At sunset → turn on Bedroom lamp at 40 %</small>
+                  <div style="display:flex;gap:6px;margin-top:6px"><span class="pill info">Scheduled</span></div></div>
+                <button class="m-ico" aria-label="More actions" style="align-self:center"><svg class="i"><use href="#i-more"/></svg></button>
+              </div>
+              <div class="m-item" style="border:1px solid var(--border);border-radius:12px;background:var(--surface)">
+                <span class="ic"><svg class="i"><use href="#i-bolt"/></svg></span>
+                <div class="tx"><b>Kitchen extraction off</b><small>When power drops below 5 W for 10 min → turn off socket</small></div>
+                <button class="m-ico" aria-label="More actions" style="align-self:center"><svg class="i"><use href="#i-more"/></svg></button>
+              </div>
+            </div>
+            <div class="m-scrim"></div>
+            <div class="m-sheet">
+              <div class="m-grab"><span></span></div>
+              <div class="sh"><div><b>Hallway light on motion</b><br><small>3 triggers · last run failed at 14:02</small></div><button class="m-ico x" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button></div>
+              <div class="sa"><svg class="i"><use href="#i-play"/></svg>Run now</div>
+              <div class="sa"><svg class="i"><use href="#i-settings"/></svg>Edit</div>
+              <div class="sa"><svg class="i"><use href="#i-refresh"/></svg>Duplicate</div>
+              <div class="sa"><svg class="i"><use href="#i-download"/></svg>Export JSON</div>
+              <div class="sa"><svg class="i"><use href="#i-terminal"/></svg>View log for this run</div>
+              <div class="sa danger"><svg class="i"><use href="#i-trash"/></svg>Delete…</div>
+              <div class="sf"><button class="btn" style="width:100%;height:40px">Cancel</button></div>
+            </div>
+          </div></div>
+        </div>
+
+      </div>
+
+      <p class="finding" style="margin-top:20px"><b>Responsive rules for implementation:</b> keep the header
+        at two icons (bell, logs) and move theme/user into the drawer; sheets get
+        <code>env(safe-area-inset-bottom)</code> padding; chips and tabs scroll rather than wrap when space is
+        tight; every destructive action uses the typed sheet; sliders show the numeric value next to the label,
+        not only in the tooltip.</p>
+    </section>
+
+    <p class="gallery-foot">Static prototype · no production code changed · values and device names are illustrative.
+      Companion report: <code>docs/design/ui-experience-review.md</code>.
+      Next ring: <a href="ring2.html" style="color:#b6a6ff">Devices, device detail, Overview, Integrations →</a></p>
+  </main>
+</div>
+</body>
+</html>
