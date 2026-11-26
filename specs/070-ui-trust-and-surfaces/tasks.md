@@ -35,9 +35,8 @@ after the check ran.
 - [x] T011 — Panel mode: schedule night (22:30–06:30) + persistent manual override, configurable
   four night essentials, paused/last-known controls while offline, status page retained; IDs:
   FR-07/AC-17–19; done: parser unit test + desktop/mobile panel specs including persistence.
-- [x] T012 — Browser coverage for notification inbox persistence (`NotificationBell.spec.ts`), panel
-  night persistence, and the Overview action; IDs: AC-05–08/17/23/24. Digest dismissal still lacks a
-  dedicated spec.
+- [x] T012 — Browser coverage for notification inbox persistence, digest dismissal/reappearance,
+  panel night persistence and the Overview action; IDs: AC-05–08/17/23/24.
 - [x] T021 — Overview “Review in order” now scrolls and focuses the ranked list (nested scroll
   container made the hash anchor inert); browser regression added.
 - [x] T022 — Browser-only Data & cleanup section: notifications, activity, log buffer and appearance,
@@ -50,8 +49,9 @@ after the check ran.
 - [x] T024 — Notification bell badge: smaller, no heavy ring, touch-safe.
 - [x] T025 — Tile footer: no clock glyph, device left / age right, mock options in
   `docs/design/mocks/card-footer.html`.
-- [ ] T014 — Server-side cleanup/purge UI; IDs: AC-21 (excluded by NH-06). Blocked: no endpoints
-  and no named approval for destructive history/log deletion.
+- [x] T014 — Server-side cleanup: explicit-cutoff history delete (`/api/history/purge`) and one-file
+  archive delete (`/api/logfile` action delete), authenticated, rate-limited, audited and confirmed;
+  IDs: AC-21. History UI states scope and irreversibility; log delete names the file.
 
 ## Verification
 
