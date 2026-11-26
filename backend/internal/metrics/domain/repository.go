@@ -20,5 +20,9 @@ type Repository interface {
 
 	Prune(expireAt time.Duration) error
 
+	// DeleteBefore removes stored readings strictly before cutoff. The explicit cutoff keeps
+	// a caller from clearing recent data through a relative window by accident.
+	DeleteBefore(cutoff time.Time) error
+
 	Close() error
 }

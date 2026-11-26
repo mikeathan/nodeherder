@@ -106,6 +106,25 @@ func (s *MetricsRepo) Prune(expireAt time.Duration) error {
 	return s.kvdb.Prune(callback)
 }
 
+// DeleteBefore removes readings older than cutoff and drops the tail cache, which may still
+// hold entries from the deleted window. It never touches device or configuration state.
+func (s *MetricsRepo) DeleteBefore(cutoff time.Time) error {
+	callback := func(key []byte) (bool, error) {
+		timestamp, err := s.keyGenerator.GetTimestampFromkey(key)
+		if err != nil {
+			return false, err
+		}
+		return timestamp.Before(cutoff), nil
+	}
+	if err := s.kvdb.Prune(callback); err != nil {
+		return err
+	}
+	s.tailCacheLock.Lock()
+	s.tailCache = make(map[string][]domain.CachedEntry)
+	s.tailCacheLock.Unlock()
+	return nil
+}
+
 func (s *MetricsRepo) QueryDevice(deviceID string,
 	from, to time.Time, filters []domain.MetricFilter, collectors map[string]domain.ExposeResult) (*domain.DeviceMetricsResult, error) {
 

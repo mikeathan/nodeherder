@@ -76,6 +76,8 @@ type FileSystem interface {
 	// Stat reports file metadata for a listed path. It does not follow a different data
 	// source than Load; both operate on the log directory contract owned by the caller.
 	Stat(file string) (os.FileInfo, error)
+	// Delete removes exactly the named file. Callers own path validation and confirmation.
+	Delete(file string) error
 }
 
 type FileSystemImpl struct {
@@ -142,6 +144,11 @@ func (s *FileSystemImpl) ListFilesWithExtension(path string, extension string) (
 	}
 	s.cache.Add(path, files, cache.DefaultExpiration)
 	return files, nil
+}
+
+// Delete removes one file; no directory or wildcard operation is exposed here.
+func (s *FileSystemImpl) Delete(file string) error {
+	return os.Remove(file)
 }
 
 // Stat returns metadata for one file without caching it; callers only need this on an
