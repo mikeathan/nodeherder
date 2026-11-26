@@ -290,3 +290,21 @@ test('night mode simplifies the room and persists for the night', async ({ page 
   await page.getByRole('button', { name: 'Switch to day mode' }).click();
   await expect(page.getByRole('button', { name: 'Switch to night mode' })).toBeVisible();
 });
+
+// Spec 070: the four night controls are chosen, not implied by room order.
+test('night essentials are selectable and persist', async ({ page }) => {
+  await signIn(page, '/panel');
+  await page.getByRole('button', { name: 'Switch to night mode' }).click();
+  await page.getByRole('button', { name: 'Choose night essentials' }).click();
+
+  const dialog = page.getByRole('dialog', { name: 'Night essentials' });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('checkbox').first().check();
+  await dialog.getByRole('button', { name: 'Save essentials' }).click();
+
+  const controls = page.locator('.hp-buttons > .pb');
+  await expect(controls).toHaveCount(1);
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Switch to day mode' })).toBeVisible();
+  await expect(page.locator('.hp-buttons > .pb')).toHaveCount(1);
+});

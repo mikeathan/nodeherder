@@ -15,15 +15,14 @@
   import { useNow } from '@/composables/useClock';
   import { useMediaQuery } from '@/composables/useMediaQuery';
   import { summarizeNetwork } from '@/domain/network';
+  import { freshnessPolicy, reportFreshness } from '@/domain/devices/freshness';
   import { OVERVIEW_REASON_LABEL, overviewIssues } from '@/domain/overview';
-  import { relativeTime } from '@/domain/time';
   import { deviceIcon } from '@/components/ui/icons';
   import UiPageHeader from '@/components/ui/UiPageHeader.vue';
   import UiButton from '@/components/ui/UiButton.vue';
   import UiIcon from '@/components/ui/UiIcon.vue';
   import RelativeTime from '@/components/ui/RelativeTime.vue';
   import NotificationDigest from './NotificationDigest.vue';
-  import RecentActivityBrief from './RecentActivityBrief.vue';
   import ActivityFeed from './ActivityFeed.vue';
 
   const { devices, isDeviceDisabled } = useHub();
@@ -38,6 +37,18 @@
   const top = computed(() => issues.value.slice(0, 3));
   const remaining = computed(() => Math.max(0, issues.value.length - top.value.length));
   const enabledRules = computed(() => (automations.value as Automations).filter((automation) => automation.enabled).length);
+  const freshnessCounts = computed(() =>
+    devices.value.reduce(
+      (counts, device) => {
+        if (device.availability !== 'online' || isDeviceDisabled(device.id)) return counts;
+        const freshness = reportFreshness(device.last_seen, now.value, freshnessPolicy(device));
+        if (freshness === 'quiet') counts.quiet += 1;
+        if (freshness === 'stale') counts.stale += 1;
+        return counts;
+      },
+      { quiet: 0, stale: 0 }
+    )
+  );
   const mcp = computed(() => store.getters['hub/mcpStatus']());
   const lastSynced = computed(() => store.getters['hub/lastSyncedAt']() as number | null);
   const snapshot = computed(() =>
@@ -105,13 +116,30 @@
           </RouterLink>
         </li>
       </ul>
-      <RouterLink v-if="remaining" :to="{ name: RouteName.DeviceList }" class="nh-start-more">
+      <RouterLink
+        v-if="remaining"
+        :to="{ name: RouteName.DeviceList, query: { status: 'attention' } }"
+        class="nh-start-more">
         Show {{ remaining }} more
       </RouterLink>
     </section>
 
     <div class="nh-health-line">
-      <RouterLink :to="{ name: RouteName.DeviceList }">{{ summary.total }} devices · {{ summary.online }} online</RouterLink>
+      <RouterLink :to="{ name: RouteName.DeviceList }">{{ summary.total }} devices</RouterLink>
+      <span aria-hidden="true">·</span>
+      <RouterLink :to="{ name: RouteName.DeviceList, query: { status: 'online' } }">{{ summary.online }} online</RouterLink>
+      <template v-if="freshnessCounts.quiet">
+        <span aria-hidden="true">·</span>
+        <RouterLink :to="{ name: RouteName.DeviceList, query: { status: 'quiet' } }">{{ freshnessCounts.quiet }} quiet</RouterLink>
+      </template>
+      <template v-if="freshnessCounts.stale">
+        <span aria-hidden="true">·</span>
+        <RouterLink :to="{ name: RouteName.DeviceList, query: { status: 'stale' } }">{{ freshnessCounts.stale }} stale</RouterLink>
+      </template>
+      <template v-if="summary.offline">
+        <span aria-hidden="true">·</span>
+        <RouterLink :to="{ name: RouteName.DeviceList, query: { status: 'offline' } }">{{ summary.offline }} offline</RouterLink>
+      </template>
       <span aria-hidden="true">|</span>
       <RouterLink :to="{ name: RouteName.Viewer }">{{ enabledRules }} of {{ automations.length }} automations on</RouterLink>
       <span aria-hidden="true">|</span>
@@ -120,16 +148,8 @@
       <RouterLink :to="{ name: RouteName.Settings }">MCP {{ mcp?.running ? 'on' : 'off' }}</RouterLink>
     </div>
 
-    <section class="nh-recent" aria-labelledby="nh-recent-title">
-      <header>
-        <h2 id="nh-recent-title">Recent</h2>
-        <span>{{ lastSynced === null ? 'no sync yet' : relativeTime(new Date(lastSynced).toISOString(), now) }}</span>
-      </header>
-      <RecentActivityBrief />
-      <details class="nh-activity-details">
-        <summary>All activity, filters and recording</summary>
-        <ActivityFeed />
-      </details>
+    <section class="nh-recent" aria-label="Recent activity">
+      <ActivityFeed />
     </section>
   </div>
 </template>
@@ -201,20 +221,17 @@
   .nh-start {
     margin-bottom: var(--nh-space);
   }
-  .nh-start header,
-  .nh-recent header {
+  .nh-start header {
     display: flex;
     align-items: baseline;
     gap: 0.5rem;
     margin-bottom: 0.4rem;
   }
-  .nh-start header h2,
-  .nh-recent header h2 {
+  .nh-start header h2 {
     font-size: 0.85rem;
     font-weight: 700;
   }
-  .nh-start header span,
-  .nh-recent header span {
+  .nh-start header span {
     color: var(--nh-text-muted);
     font-size: 0.72rem;
   }
@@ -309,14 +326,6 @@
   }
   .nh-recent {
     margin-bottom: var(--nh-space);
-  }
-  .nh-activity-details {
-    margin-top: 0.7rem;
-  }
-  .nh-activity-details summary {
-    cursor: pointer;
-    color: var(--nh-text-muted);
-    font-size: 0.75rem;
   }
   @media (max-width: 640px) {
     .nh-verdict {

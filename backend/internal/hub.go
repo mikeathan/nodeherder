@@ -92,6 +92,7 @@ func newRouter(port int, ws ws.EventHub, hub *controllers.HubController, store s
 	router.POST("/api/automation/trigger", api.NewAutomationTriggerHandler(hub, 1*time.Second))
 	router.POST("/api/assistant/message", api.NewAssistantMessageHandler(store))
 	router.GET("/api/listlogs", api.NewListFileLogsHandler(fservice))
+	router.GET("/api/logfiles", api.NewListLogFilesHandler(fservice))
 	router.GET("/api/hubstate", api.NewHubStateHandler(store, 15*time.Minute))
 	router.GET("/api/assistant/conversations", api.NewAssistantConversationsHandler(store))
 	router.GET("/api/assistant/history/:id", api.NewAssistantHistoryHandler(store))

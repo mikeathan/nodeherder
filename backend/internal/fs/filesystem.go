@@ -73,6 +73,9 @@ type FileSystem interface {
 	ListFiles(path string) ([]string, error)
 	ListFilesWithExtension(path string, extension string) ([]string, error)
 	Load(file string) ([]byte, error)
+	// Stat reports file metadata for a listed path. It does not follow a different data
+	// source than Load; both operate on the log directory contract owned by the caller.
+	Stat(file string) (os.FileInfo, error)
 }
 
 type FileSystemImpl struct {
@@ -139,6 +142,12 @@ func (s *FileSystemImpl) ListFilesWithExtension(path string, extension string) (
 	}
 	s.cache.Add(path, files, cache.DefaultExpiration)
 	return files, nil
+}
+
+// Stat returns metadata for one file without caching it; callers only need this on an
+// explicit log-list request.
+func (s *FileSystemImpl) Stat(file string) (os.FileInfo, error) {
+	return os.Stat(file)
 }
 
 func (s *FileSystemImpl) Load(file string) ([]byte, error) {

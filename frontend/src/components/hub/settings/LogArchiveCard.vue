@@ -4,12 +4,14 @@
    * use the existing protected endpoints through `services/logs`.
    */
   import { ref } from 'vue';
-  import { downloadLogFile, listLogFiles, logFileName } from '@/services/logs';
+  import { downloadLogFile, listLogFiles, logFileName, type LogFile } from '@/services/logs';
+  import { formatQuantity } from '@/utils/units';
+  import RelativeTime from '@/components/ui/RelativeTime.vue';
   import UiButton from '@/components/ui/UiButton.vue';
   import UiCard from '@/components/ui/UiCard.vue';
   import UiIcon from '@/components/ui/UiIcon.vue';
 
-  const files = ref<string[] | null>(null);
+  const files = ref<LogFile[] | null>(null);
   const loading = ref(false);
   const error = ref('');
 
@@ -49,9 +51,12 @@
     </p>
     <p v-else-if="!files.length" class="nh-muted">No archived log files on the hub yet.</p>
     <ul v-else class="nh-log-files">
-      <li v-for="file in files" :key="file">
-        <span class="nh-log-file-name"><UiIcon name="console" />{{ logFileName(file) }}</span>
-        <UiButton size="sm" icon="download" :label="`Download ${logFileName(file)}`" @click="download(file)" />
+      <li v-for="file in files" :key="file.name">
+        <span class="nh-log-file-name"><UiIcon name="console" />{{ logFileName(file.name) }}</span>
+        <span class="nh-log-file-meta">
+          {{ formatQuantity(file.size, 'bytes') }}<template v-if="file.modified"> · <RelativeTime :value="file.modified" /></template>
+        </span>
+        <UiButton size="sm" icon="download" :label="`Download ${logFileName(file.name)}`" @click="download(file.name)" />
       </li>
     </ul>
   </UiCard>
@@ -72,6 +77,11 @@
   }
   .nh-log-files li:last-child {
     border-bottom: 0;
+  }
+  .nh-log-file-meta {
+    color: var(--nh-text-muted);
+    font-size: 0.7rem;
+    white-space: nowrap;
   }
   .nh-log-file-name {
     display: flex;

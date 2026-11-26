@@ -9,7 +9,7 @@
   import { Automations } from '@/types/automation.type';
   import { useHomeLayout } from '@/composables/home/useHomeLayout';
   import { homeDeviceGroup } from '@/domain/home/compatibility';
-  import { homePanelBlocks, homePanelItems } from '@/domain/home/panel';
+  import { homePanelBlocks, homePanelItems, type HomePanelItem } from '@/domain/home/panel';
   import { homeCardTitle } from '@/domain/home/cards';
   import IntegrationTile from '@/components/home/IntegrationTile.vue';
   import { findDevice, useHub } from '@/composables/useHub';
@@ -31,6 +31,9 @@
   import DefaultViewButton from '@/components/ui/DefaultViewButton.vue';
   import PanelDial from './PanelDial.vue';
   import PanelButton from './PanelButton.vue';
+  import PanelEssentialsDialog from './PanelEssentialsDialog.vue';
+  import { usePanelEssentials } from '@/composables/usePanelEssentials';
+  import type { PanelEssential } from '@/domain/panel-essentials';
 
   defineEmits<{ (e: 'open-appearance'): void }>();
 
@@ -75,6 +78,8 @@
     safeStorage.setItem(NIGHT_OVERRIDE_KEY, JSON.stringify({ mode: nightOverride.value ? 'night' : 'day', at: Date.now() }));
   }
 
+  const { essentials, save: saveEssentials } = usePanelEssentials();
+  const essentialsOpen = ref(false);
   const page = ref<'rooms' | 'status'>('rooms');
   const roomIndex = ref(Number(safeStorage.getItem(ROOM_KEY)) || 0);
   watch(roomIndex, (i) => safeStorage.setItem(ROOM_KEY, String(i)));
@@ -87,7 +92,34 @@
   const block = computed(() => groups.value[current.value]);
   const room = computed(() => (block.value ? panelRoom(homeDeviceGroup(block.value), findDevice) : null));
   const panelItems = computed(() => (block.value && room.value ? homePanelItems(block.value, room.value) : []));
-  const visiblePanelItems = computed(() => (night.value ? panelItems.value.slice(0, 4) : panelItems.value));
+
+  /** Every device control the panel can show, grouped by room, for the essentials picker. */
+  const essentialOptions = computed<(PanelEssential & { room: string })[]>(() => {
+    const options: (PanelEssential & { room: string })[] = [];
+    const seen = new Set<string>();
+    groups.value.forEach((group, index) => {
+      const groupRoom = panelRoom(homeDeviceGroup(group), findDevice);
+      if (!groupRoom) return;
+      for (const item of homePanelItems(group, groupRoom)) {
+        if (item.kind !== 'device') continue;
+        const key = `${item.button.deviceId}|${item.button.expose}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        options.push({ ...item.button, room: pageName(index) });
+      }
+    });
+    return options;
+  });
+
+  const nightItems = computed<HomePanelItem[]>(() => {
+    if (!essentials.value.length) return panelItems.value.slice(0, 4);
+    return essentials.value.map((item, index) => ({
+      kind: 'device',
+      id: `night-${index}-${item.deviceId}-${item.expose}`,
+      button: { deviceId: item.deviceId, expose: item.expose, label: item.label },
+    }));
+  });
+  const visiblePanelItems = computed(() => (night.value ? nightItems.value : panelItems.value));
   function pageName(index: number): string {
     const group = groups.value[index];
     if (group.kind === 'group') return group.name;
@@ -190,6 +222,12 @@
         :label="night ? 'Switch to day mode' : 'Switch to night mode'"
         :aria-pressed="night"
         @click="toggleNight" />
+      <UiButton
+        v-if="night"
+        variant="ghost"
+        icon="settings"
+        label="Choose night essentials"
+        @click="essentialsOpen = true" />
       <UiButton
         variant="ghost"
         :icon="mode === 'dark' ? 'light' : 'dark'"
@@ -327,6 +365,13 @@
         </div>
       </template>
     </main>
+
+    <PanelEssentialsDialog
+      :open="essentialsOpen"
+      :options="essentialOptions"
+      :selected="essentials"
+      @close="essentialsOpen = false"
+      @save="saveEssentials" />
 
     <nav class="hp-dock" aria-label="Panel">
       <DefaultViewButton dock />
