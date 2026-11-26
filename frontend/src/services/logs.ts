@@ -43,6 +43,13 @@ export async function listLogFiles(): Promise<LogFile[]> {
   return payload;
 }
 
+/** Deletes exactly one archive file after the caller has confirmed the name. */
+export async function deleteLogFile(path: string): Promise<void> {
+  if (invalid(path)) throw new Error('That log file name is not valid.');
+  const response = await post('logfile', { file: path, action: 'delete' });
+  if (!response.ok) throw new Error(`Could not delete ${logFileName(path)} (${response.status}).`);
+}
+
 /** Loads one archived file as text. The caller owns confirmation and download. */
 export async function loadLogFile(path: string): Promise<string> {
   if (invalid(path)) throw new Error('That log file name is not valid.');

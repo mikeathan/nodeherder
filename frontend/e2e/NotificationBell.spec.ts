@@ -30,3 +30,27 @@ test('operation failures stay in the inbox and read state persists', async ({ pa
   await expect(reopened.getByText('Operation failed')).toBeVisible();
   await expect(reopened.getByText('All caught up')).toBeVisible();
 });
+
+test('the Overview digest dismisses, stays dismissed and returns for a new event', async ({ page }) => {
+  let send: ((data: string) => void) | undefined;
+  await page.routeWebSocket('ws://localhost:4110/ws', (route) => {
+    route.connectToServer();
+    send = (data) => route.send(data);
+  });
+  await signIn(page, '/overview');
+  await expect.poll(() => typeof send).toBe('function');
+
+  send!(JSON.stringify({ type: 'operationFailed', payload: 'First failure' }));
+  const digest = page.getByRole('region', { name: 'While you were away' });
+  await expect(digest).toBeVisible();
+  await digest.getByRole('button', { name: 'Dismiss' }).click();
+  await expect(digest).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByRole('region', { name: 'While you were away' })).toHaveCount(0);
+
+  await expect.poll(() => typeof send).toBe('function');
+  send!(JSON.stringify({ type: 'operationFailed', payload: 'Second failure' }));
+  await expect(page.getByRole('region', { name: 'While you were away' })).toBeVisible();
+  await page.getByRole('region', { name: 'While you were away' }).getByRole('button', { name: 'Review all' }).click();
+  await expect(page.getByRole('dialog', { name: 'Notifications' })).toBeVisible();
+});

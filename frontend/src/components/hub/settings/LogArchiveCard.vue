@@ -4,12 +4,13 @@
    * use the existing protected endpoints through `services/logs`.
    */
   import { ref } from 'vue';
-  import { downloadLogFile, listLogFiles, logFileName, type LogFile } from '@/services/logs';
+  import { deleteLogFile, downloadLogFile, listLogFiles, logFileName, type LogFile } from '@/services/logs';
   import { formatQuantity } from '@/utils/units';
   import RelativeTime from '@/components/ui/RelativeTime.vue';
   import UiButton from '@/components/ui/UiButton.vue';
   import UiCard from '@/components/ui/UiCard.vue';
   import UiIcon from '@/components/ui/UiIcon.vue';
+  import { confirm } from '@/composables/useConfirm';
 
   const files = ref<LogFile[] | null>(null);
   const loading = ref(false);
@@ -24,6 +25,24 @@
       error.value = reason instanceof Error ? reason.message : 'Could not list log files.';
     } finally {
       loading.value = false;
+    }
+  }
+
+  async function remove(path: string) {
+    const name = logFileName(path);
+    const ok = await confirm({
+      title: `Delete ${name}?`,
+      message: 'The archived file is removed from the hub. This cannot be undone.',
+      confirmLabel: 'Delete file',
+      danger: true,
+    });
+    if (!ok) return;
+    error.value = '';
+    try {
+      await deleteLogFile(path);
+      await load();
+    } catch (reason) {
+      error.value = reason instanceof Error ? reason.message : 'Could not delete that log file.';
     }
   }
 
@@ -57,6 +76,13 @@
           {{ formatQuantity(file.size, 'bytes') }}<template v-if="file.modified"> · <RelativeTime :value="file.modified" /></template>
         </span>
         <UiButton size="sm" icon="download" :label="`Download ${logFileName(file.name)}`" @click="download(file.name)" />
+        <UiButton
+          size="sm"
+          variant="ghost"
+          icon="delete"
+          class="is-danger"
+          :label="`Delete ${logFileName(file.name)}`"
+          @click="remove(file.name)" />
       </li>
     </ul>
   </UiCard>
