@@ -28,6 +28,7 @@ import (
 	utils_test "node-herder/testing"
 	"node-herder/utils"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -1357,5 +1358,35 @@ func TestAssistantMessageHandlerDoesNotConcealFailedWrite(t *testing.T) {
 	api.NewAssistantMessageHandler(failingAssistantStore{app}).ServeHTTP(response, request)
 	if response.Code != 500 {
 		t.Fatalf("failed write status=%d", response.Code)
+	}
+}
+
+func TestListLogFilesIncludesMetadata(t *testing.T) {
+	dir := t.TempDir()
+	file := filepath.Join(dir, "nodeherder.log")
+	if err := os.WriteFile(file, []byte("log contents"), 0o600); err != nil {
+		t.Fatalf("write fixture: %v", err)
+	}
+
+	fsys := fs.NewFileSystem(fs.WithFileWalker(mocks.NewMockWalker([]string{file})))
+	req := httptest.NewRequest(http.MethodGet, "/api/logfiles", nil)
+	w := httptest.NewRecorder()
+	api.NewListLogFilesHandler(fsys).ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", w.Code)
+	}
+	var infos []api.LogFileInfo
+	if err := json.Unmarshal(w.Body.Bytes(), &infos); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(infos) != 1 || infos[0].Name != file {
+		t.Fatalf("infos = %+v, want one named %s", infos, file)
+	}
+	if infos[0].Size != int64(len("log contents")) {
+		t.Fatalf("size = %d, want %d", infos[0].Size, len("log contents"))
+	}
+	if infos[0].Modified.IsZero() {
+		t.Fatal("modified timestamp was not populated")
 	}
 }

@@ -278,6 +278,53 @@ func (h *ListFileLogsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
+// LogFileInfo is the explicit metadata contract for the log archive list. Size is bytes;
+// Modified is UTC RFC3339 when the filesystem can provide it.
+type LogFileInfo struct {
+	Name     string    `json:"name"`
+	Size     int64     `json:"size"`
+	Modified time.Time `json:"modified"`
+}
+
+// ListLogFilesHandler lists archived log files with size and modification time. It is additive
+// to the legacy names-only route so older clients keep working.
+type ListLogFilesHandler struct {
+	fs fs.FileSystem
+}
+
+// NewListLogFilesHandler builds the metadata list handler around the log filesystem contract.
+func NewListLogFilesHandler(fs fs.FileSystem) *ListLogFilesHandler {
+	return &ListLogFilesHandler{fs: fs}
+}
+
+func (h *ListLogFilesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	files, err := h.fs.ListFilesWithExtension(utils.LogsPath, utils.LogExtension)
+	if err != nil {
+		utils.LogErrorf("ListLogFilesHandler: ListFilesWithExtension error %s", err.Error())
+		writeJSONError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	infos := make([]LogFileInfo, 0, len(files))
+	for _, file := range files {
+		info := LogFileInfo{Name: file}
+		// Metadata is best-effort: a file can disappear between listing and stat. The name is
+		// still useful, and a zero size is truthful rather than invented.
+		if stat, statErr := h.fs.Stat(file); statErr == nil {
+			info.Size = stat.Size()
+			info.Modified = stat.ModTime().UTC()
+		}
+		infos = append(infos, info)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(infos); err != nil {
+		utils.LogErrorf("ListLogFilesHandler: Failed to encode response %s", err.Error())
+		writeJSONError(w, http.StatusInternalServerError, "Failed to encode response")
+	}
+}
+
 // Log file
 type LogFileHandler struct {
 	fs fs.FileSystem

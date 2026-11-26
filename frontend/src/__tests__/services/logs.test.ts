@@ -15,10 +15,10 @@ afterEach(() => {
 
 describe('log archive service', () => {
   test('lists validated names and rejects a malformed payload', async () => {
-    mockedGet.mockResolvedValue({ ok: true, json: async () => ['logs/a.log'] } as Response);
-    await expect(listLogFiles()).resolves.toEqual(['logs/a.log']);
+    mockedGet.mockResolvedValue({ ok: true, json: async () => [{ name: 'logs/a.log', size: 12, modified: '2026-11-26T09:00:00Z' }] } as Response);
+    await expect(listLogFiles()).resolves.toEqual([{ name: 'logs/a.log', size: 12, modified: '2026-11-26T09:00:00Z' }]);
 
-    mockedGet.mockResolvedValue({ ok: true, json: async () => [{ name: 'a.log' }] } as unknown as Response);
+    mockedGet.mockResolvedValue({ ok: true, json: async () => [{ name: 'a.log', size: 'no' }] } as unknown as Response);
     await expect(listLogFiles()).rejects.toThrow('unexpected log list');
   });
 

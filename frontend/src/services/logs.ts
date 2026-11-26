@@ -4,8 +4,8 @@
  */
 import { get, post } from '@/contracts/api';
 
-/** A file returned by the hub; the API currently returns paths relative to the log root. */
-export type LogFile = string;
+/** One archived log file. `name` is the path expected by the load endpoint. */
+export type LogFile = { name: string; size: number; modified: string };
 
 const MAX_DOWNLOAD_BYTES = 20 * 1024 * 1024;
 
@@ -19,12 +19,20 @@ function invalid(path: string): boolean {
   return !path || path.startsWith('/') || path.includes('\0') || path.includes('..') || !path.endsWith('.log');
 }
 
-/** Lists archived log files. Throws a readable error for the settings surface. */
+function isLogFile(value: unknown): value is LogFile {
+  if (typeof value !== 'object' || value === null) return false;
+  const name = Reflect.get(value, 'name');
+  const size = Reflect.get(value, 'size');
+  const modified = Reflect.get(value, 'modified');
+  return typeof name === 'string' && typeof size === 'number' && Number.isFinite(size) && typeof modified === 'string' && Number.isFinite(Date.parse(modified));
+}
+
+/** Lists archived log files with size and modification time. */
 export async function listLogFiles(): Promise<LogFile[]> {
-  const response = await get('listlogs');
+  const response = await get('logfiles');
   if (!response.ok) throw new Error(`Could not list log files (${response.status}).`);
   const payload: unknown = await response.json();
-  if (!Array.isArray(payload) || payload.some((entry) => typeof entry !== 'string')) {
+  if (!Array.isArray(payload) || !payload.every(isLogFile)) {
     throw new Error('The hub returned an unexpected log list.');
   }
   return payload;
