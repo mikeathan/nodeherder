@@ -30,8 +30,9 @@ after the check ran.
   `/api/logfiles` route.
 - [x] T009 — Settings rail summaries and section title alignment; IDs: FR-08/AC-20; done:
   `Settings.spec.ts` 22 passing; all six sections still present.
-- [x] T010 — Automations export all/per row with versioned JSON; IDs: FR-08/AC-22 (export only);
-  done: `automation-export` test passing; duplicate/copy-ID/run-history remain open.
+- [x] T010 — Automations export all/per row with versioned JSON and Copy ID; IDs: FR-08/AC-22.
+  Duplicate and run history are not supported by the automation model (one automation per device;
+  no persisted run records), so no misleading UI is offered.
 - [x] T011 — Panel mode: schedule night (22:30–06:30) + persistent manual override, configurable
   four night essentials, paused/last-known controls while offline, status page retained; IDs:
   FR-07/AC-17–19; done: parser unit test + desktop/mobile panel specs including persistence.
@@ -52,6 +53,8 @@ after the check ran.
 - [x] T014 — Server-side cleanup: explicit-cutoff history delete (`/api/history/purge`) and one-file
   archive delete (`/api/logfile` action delete), authenticated, rate-limited, audited and confirmed;
   IDs: AC-21. History UI states scope and irreversibility; log delete names the file.
+- [x] T026 — Panel ambient-light night: optional lux source + threshold, validated browser storage,
+  schedule/ambient/manual precedence; parser tests and panel specs.
 
 ## Verification
 
@@ -64,7 +67,6 @@ after the check ran.
 
 ## Discovered work
 
-- Files list size/age: extend `/api/listlogs` only if the UX needs it; current UI avoids inventing
-  data.
-- Panel essentials configuration: needs a persisted per-panel preference and selection UI.
-- Destructive cleanup: needs its own NH-06 spec, backend endpoints and approval.
+No unchecked product work remains in this spec. Automation run history/duplicate are absent by model,
+not deferred UI: automations are keyed by device and runs are not persisted. Any future run history
+needs its own storage/contract spec.

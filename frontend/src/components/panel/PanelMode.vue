@@ -33,6 +33,9 @@
   import PanelButton from './PanelButton.vue';
   import PanelEssentialsDialog from './PanelEssentialsDialog.vue';
   import { usePanelEssentials } from '@/composables/usePanelEssentials';
+  import { usePanelAmbient } from '@/composables/usePanelAmbient';
+  import { isAmbientNight, type PanelAmbientLight } from '@/domain/panel-ambient';
+  import { exposeDisplayLabel } from '@/domain/exposes';
   import type { PanelEssential } from '@/domain/panel-essentials';
 
   defineEmits<{ (e: 'open-appearance'): void }>();
@@ -72,13 +75,21 @@
     const minutes = date.getHours() * 60 + date.getMinutes();
     return minutes >= NIGHT_START_MINUTES || minutes < NIGHT_END_MINUTES;
   });
-  const night = computed(() => nightOverride.value ?? scheduledNight.value);
+  const ambientNight = computed(() => {
+    const config = ambient.value;
+    if (!config) return false;
+    const device = findDevice(config.deviceId);
+    if (!device || device.availability !== 'online') return false;
+    return isAmbientNight(device.exposes[config.expose]?.data, config.threshold);
+  });
+  const night = computed(() => nightOverride.value ?? (scheduledNight.value || ambientNight.value));
   function toggleNight() {
     nightOverride.value = !night.value;
     safeStorage.setItem(NIGHT_OVERRIDE_KEY, JSON.stringify({ mode: nightOverride.value ? 'night' : 'day', at: Date.now() }));
   }
 
   const { essentials, save: saveEssentials } = usePanelEssentials();
+  const { ambient, save: saveAmbient } = usePanelAmbient();
   const essentialsOpen = ref(false);
   const page = ref<'rooms' | 'status'>('rooms');
   const roomIndex = ref(Number(safeStorage.getItem(ROOM_KEY)) || 0);
@@ -108,6 +119,23 @@
         options.push({ ...item.button, room: pageName(index) });
       }
     });
+    return options;
+  });
+
+  const ambientOptions = computed(() => {
+    const rooms = new Map<string, string>();
+    groups.value.forEach((block, index) => {
+      for (const card of block.cards) {
+        if (card.kind === 'device') rooms.set(card.device_id, block.kind === 'group' ? pageName(index) : 'Home');
+      }
+    });
+    const options: { deviceId: string; expose: string; label: string; room: string }[] = [];
+    for (const device of devices.value) {
+      for (const expose of Object.values(device.exposes)) {
+        if (expose.unit !== 'lx') continue;
+        options.push({ deviceId: device.id, expose: expose.name, label: `${device.friendly_name} · ${exposeDisplayLabel(expose)}`, room: rooms.get(device.id) ?? 'Device' });
+      }
+    }
     return options;
   });
 
@@ -370,8 +398,11 @@
       :open="essentialsOpen"
       :options="essentialOptions"
       :selected="essentials"
+      :ambient="ambient"
+      :ambientOptions="ambientOptions"
       @close="essentialsOpen = false"
-      @save="saveEssentials" />
+      @save="saveEssentials"
+      @save-ambient="(value: PanelAmbientLight | null) => saveAmbient(value)" />
 
     <nav class="hp-dock" aria-label="Panel">
       <DefaultViewButton dock />
