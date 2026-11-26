@@ -281,9 +281,9 @@ func (h *ListFileLogsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 // LogFileInfo is the explicit metadata contract for the log archive list. Size is bytes;
 // Modified is UTC RFC3339 when the filesystem can provide it.
 type LogFileInfo struct {
-	Name     string    `json:"name"`
-	Size     int64     `json:"size"`
-	Modified time.Time `json:"modified"`
+	Name     string     `json:"name"`
+	Size     int64      `json:"size"`
+	Modified *time.Time `json:"modified,omitempty"`
 }
 
 // ListLogFilesHandler lists archived log files with size and modification time. It is additive
@@ -312,7 +312,8 @@ func (h *ListLogFilesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		// still useful, and a zero size is truthful rather than invented.
 		if stat, statErr := h.fs.Stat(file); statErr == nil {
 			info.Size = stat.Size()
-			info.Modified = stat.ModTime().UTC()
+			modified := stat.ModTime().UTC()
+			info.Modified = &modified
 		}
 		infos = append(infos, info)
 	}

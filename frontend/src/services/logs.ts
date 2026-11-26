@@ -5,7 +5,7 @@
 import { get, post } from '@/contracts/api';
 
 /** One archived log file. `name` is the path expected by the load endpoint. */
-export type LogFile = { name: string; size: number; modified: string };
+export type LogFile = { name: string; size: number; modified?: string };
 
 const MAX_DOWNLOAD_BYTES = 20 * 1024 * 1024;
 
@@ -24,7 +24,12 @@ function isLogFile(value: unknown): value is LogFile {
   const name = Reflect.get(value, 'name');
   const size = Reflect.get(value, 'size');
   const modified = Reflect.get(value, 'modified');
-  return typeof name === 'string' && typeof size === 'number' && Number.isFinite(size) && typeof modified === 'string' && Number.isFinite(Date.parse(modified));
+  return (
+    typeof name === 'string' &&
+    typeof size === 'number' &&
+    Number.isFinite(size) &&
+    (modified === undefined || (typeof modified === 'string' && Number.isFinite(Date.parse(modified))))
+  );
 }
 
 /** Lists archived log files with size and modification time. */

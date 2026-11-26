@@ -54,7 +54,7 @@
       <li v-for="file in files" :key="file.name">
         <span class="nh-log-file-name"><UiIcon name="console" />{{ logFileName(file.name) }}</span>
         <span class="nh-log-file-meta">
-          {{ formatQuantity(file.size, 'bytes') }} · <RelativeTime :value="file.modified" />
+          {{ formatQuantity(file.size, 'bytes') }}<template v-if="file.modified"> · <RelativeTime :value="file.modified" /></template>
         </span>
         <UiButton size="sm" icon="download" :label="`Download ${logFileName(file.name)}`" @click="download(file.name)" />
       </li>

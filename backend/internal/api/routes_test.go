@@ -1386,7 +1386,7 @@ func TestListLogFilesIncludesMetadata(t *testing.T) {
 	if infos[0].Size != int64(len("log contents")) {
 		t.Fatalf("size = %d, want %d", infos[0].Size, len("log contents"))
 	}
-	if infos[0].Modified.IsZero() {
+	if infos[0].Modified == nil || infos[0].Modified.IsZero() {
 		t.Fatal("modified timestamp was not populated")
 	}
 }
