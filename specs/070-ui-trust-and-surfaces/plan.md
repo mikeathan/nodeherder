@@ -131,6 +131,14 @@ Commands actually run:
 - Automation duplicate/run history are not exposed because the model has one automation per device and
   no persisted run records; adding them would be a new storage/contract feature, not a UI fix.
 
+## Restart-noise follow-up (2026-11-26)
+
+- Connection loss no longer notifies immediately. A 30 s grace window suppresses routine hub
+  restarts; sustained outages create one `Hub connection lost` item that is updated in place to
+  `Hub connection restored` (read state preserved). The producer's timer is cleared on scope dispose.
+- Unit tests cover short outage, sustained outage, and repeated unread outages; browser test covers
+  a quick reconnect producing an empty inbox.
+
 ## Debt, risks, exceptions
 
 - Automation run history/duplicate are not representable in the current model; panel ambient-light

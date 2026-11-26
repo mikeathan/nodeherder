@@ -55,6 +55,8 @@ after the check ran.
   IDs: AC-21. History UI states scope and irreversibility; log delete names the file.
 - [x] T026 — Panel ambient-light night: optional lux source + threshold, validated browser storage,
   schedule/ambient/manual precedence; parser tests and panel specs.
+- [x] T027 — Restart-noise fix: connection loss waits a 30 s grace window, long outages create one
+  lifecycle item that resolves in place on reconnect; unit + browser coverage.
 
 ## Verification
 

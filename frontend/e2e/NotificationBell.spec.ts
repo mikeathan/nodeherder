@@ -57,3 +57,22 @@ test('the Overview digest dismisses, stays dismissed and returns for a new event
   await page.getByRole('region', { name: 'While you were away' }).getByRole('button', { name: 'Review all' }).click();
   await expect(page.getByRole('dialog', { name: 'Notifications' })).toBeVisible();
 });
+
+// Spec 070: routine restarts within the grace window must not create an inbox row.
+test('a quick reconnect produces no notification', async ({ page }) => {
+  let close: (() => void) | undefined;
+  await page.routeWebSocket('ws://localhost:4110/ws', (route) => {
+    route.connectToServer();
+    close = () => route.close({ code: 1012 });
+  });
+  await signIn(page, '/overview');
+  const chip = page.locator('.nh-conn:not([aria-hidden="true"])');
+  await expect(chip).toHaveClass(/is-connected/);
+  close?.();
+  await expect(chip).toHaveClass(/is-reconnecting/);
+  await expect(chip).toHaveClass(/is-connected/, { timeout: 10_000 });
+
+  await page.getByRole('button', { name: 'Notifications', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Notifications' });
+  await expect(dialog.getByText('No notifications yet')).toBeVisible();
+});

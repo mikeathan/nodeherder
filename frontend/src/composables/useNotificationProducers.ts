@@ -3,14 +3,26 @@
  * One subscription owns dedupe and cleanup, so remounting a page cannot duplicate history
  * or leak a listener.
  */
-import { onBeforeUnmount } from 'vue';
+import { onScopeDispose } from 'vue';
 import { store } from '@/store';
 import type { ConnectionStatusType } from '@/types/connection.type';
 import { connectionTransition } from '@/domain/notifications';
 
+/** A quick restart/reconnect is routine maintenance, not an incident worth an inbox row. */
+export const OUTAGE_GRACE_MS = 30_000;
+
 export function useNotificationProducers() {
   let previous = store.getters['ws/getConnectionStatus'] as ConnectionStatusType;
-  let observedLoss = false;
+  let outageStartedAt: number | null = null;
+  let lossNotified = false;
+  let lossTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function clearOutage() {
+    if (lossTimer !== null) clearTimeout(lossTimer);
+    lossTimer = null;
+    outageStartedAt = null;
+    lossNotified = false;
+  }
 
   const unsubscribe = store.subscribe((mutation) => {
     if (mutation.type !== 'ws/setConnectionStatus') return;
@@ -19,29 +31,39 @@ export function useNotificationProducers() {
 
     const transition = connectionTransition(previous, next);
     previous = next;
+
     if (transition === 'lost') {
-      observedLoss = true;
-      void store.dispatch('notifications/notify', {
-        severity: 'warn',
-        category: 'connection',
-        title: 'Hub connection lost',
-        body: 'Live updates are paused. Values show the last snapshot until the link returns.',
-        dedupeKey: 'hub-connection-lost',
-        action: { label: 'Open logs', to: '/consoleviewer' },
-      });
+      if (outageStartedAt !== null) return;
+      outageStartedAt = Date.now();
+      lossNotified = false;
+      if (lossTimer !== null) clearTimeout(lossTimer);
+      lossTimer = setTimeout(() => {
+        lossTimer = null;
+        if (outageStartedAt === null) return;
+        lossNotified = true;
+        void store.dispatch('notifications/notify', {
+          severity: 'warn',
+          category: 'connection',
+          title: 'Hub connection lost',
+          body: 'Live updates are paused. Values show the last snapshot until the link returns.',
+          dedupeKey: 'hub-connection',
+          action: { label: 'Open logs', to: '/consoleviewer' },
+        });
+      }, OUTAGE_GRACE_MS);
       return;
     }
-    if (transition === 'restored' && observedLoss) {
-      observedLoss = false;
-      void store.dispatch('notifications/notify', {
-        severity: 'success',
-        category: 'connection',
-        title: 'Hub connection restored',
-        body: 'Live updates resumed. Values that changed while you were away are now current.',
-        dedupeKey: 'hub-connection-restored',
-      });
+
+    if (transition === 'restored' && outageStartedAt !== null) {
+      const duration = Date.now() - outageStartedAt;
+      const shouldResolve = lossNotified;
+      clearOutage();
+      if (shouldResolve) void store.dispatch('notifications/resolveConnection', duration);
     }
   });
 
-  onBeforeUnmount(unsubscribe);
+  onScopeDispose(() => {
+    unsubscribe();
+    if (lossTimer !== null) clearTimeout(lossTimer);
+    lossTimer = null;
+  });
 }
