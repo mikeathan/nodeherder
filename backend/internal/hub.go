@@ -89,6 +89,7 @@ func newRouter(port int, ws ws.EventHub, hub *controllers.HubController, store s
 	router.GET("/api/system/storage", api.NewSystemStorageHandler(int(store.AppConfig().HistoryRetention().Hours()/24)))
 	router.POST("/api/collect", api.NewDataCollectorHandler(hub))
 	router.POST("/api/logfile", api.NewLogFileHandler(fservice))
+	router.POST("/api/history/purge", api.NewPurgeMetricsHandler(ratelimiter.NewWindowRateLimiter(1, 10*time.Second), store))
 	router.POST("/api/automation/trigger", api.NewAutomationTriggerHandler(hub, 1*time.Second))
 	router.POST("/api/assistant/message", api.NewAssistantMessageHandler(store))
 	router.GET("/api/listlogs", api.NewListFileLogsHandler(fservice))

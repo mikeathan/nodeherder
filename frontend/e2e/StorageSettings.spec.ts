@@ -86,3 +86,21 @@ test('retention controls are disabled while the hub is disconnected', async ({ p
   await expect(page.getByText('Connect to the hub to change retention.', { exact: false })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
 });
+
+test('history purge sends an explicit cutoff and confirms the result', async ({ page }) => {
+  let payload: unknown;
+  await page.route('**/api/history/purge', async (route) => {
+    payload = route.request().postDataJSON();
+    await route.fulfill({ status: 200, contentType: 'application/json', json: { purgedBefore: '2026-11-25T00:00:00Z', purgedAt: '2026-11-26T10:00:00Z' } });
+  });
+  await signIn(page, '/settings?section=storage');
+  const date = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  await page.getByLabel('Delete readings before').fill(date);
+  await page.getByRole('button', { name: 'Delete history', exact: true }).click();
+
+  const dialog = page.getByRole('dialog', { name: /Delete history before/ });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('button', { name: 'Delete history', exact: true }).click();
+  await expect(page.getByText(`History before ${date} was deleted.`)).toBeVisible();
+  expect(payload).toEqual({ before: `${date}T00:00:00.000Z` });
+});

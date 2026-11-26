@@ -7,7 +7,7 @@
    */
   import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
   import { store } from '@/store';
-  import { get } from '@/contracts/api';
+  import { get, post } from '@/contracts/api';
   import type { HistorySettingsType } from '@/types/settings.type';
   import type { TimeInterval, TimeUnit } from '@/types/types.type';
   import {
@@ -27,6 +27,7 @@
   import UiSelect from '@/components/ui/UiSelect.vue';
   import UiSettingRow from '@/components/ui/UiSettingRow.vue';
   import UiIcon from '@/components/ui/UiIcon.vue';
+  import { confirm } from '@/composables/useConfirm';
 
   interface StorageEntry {
     label: string;
@@ -63,6 +64,38 @@
 
   /** Draft text per field so a rejected value stays visible while the user corrects it. */
   const drafts = ref<Partial<Record<RetentionFieldId, string>>>({});
+
+  const purgeDate = ref('');
+  const purgeBusy = ref(false);
+  const purgeError = ref('');
+  const purgeMessage = ref('');
+  const today = new Date().toISOString().slice(0, 10);
+
+  async function purgeHistory() {
+    if (!purgeDate.value) return;
+    const ok = await confirm({
+      title: `Delete history before ${purgeDate.value}?`,
+      message: 'Readings before local midnight on that date are permanently removed from this hub. Charts and exports cannot reach them again.',
+      confirmLabel: 'Delete history',
+      danger: true,
+    });
+    if (!ok) return;
+    purgeBusy.value = true;
+    purgeError.value = '';
+    purgeMessage.value = '';
+    try {
+      const before = new Date(`${purgeDate.value}T00:00:00`).toISOString();
+      const response = await post('history/purge', { before });
+      if (!response.ok) throw new Error('The hub could not delete that history.');
+      purgeMessage.value = `History before ${purgeDate.value} was deleted.`;
+      purgeDate.value = '';
+      await loadUsage();
+    } catch (cause) {
+      purgeError.value = (cause as Error).message;
+    } finally {
+      purgeBusy.value = false;
+    }
+  }
 
   const usage = ref<StorageUsage | null>(null);
   const usageError = ref('');
@@ -206,6 +239,27 @@
           </p>
         </template>
       </UiSettingRow>
+    </UiCard>
+
+    <UiCard title="Delete history" icon="delete" :heading-level="3">
+      <p class="nh-help">
+        Permanently remove readings before a chosen date. Device settings, automations and archived log files are untouched.
+      </p>
+      <div class="purge-row">
+        <label for="purge-date" class="purge-label">Delete readings before</label>
+        <input
+          id="purge-date"
+          v-model="purgeDate"
+          class="nh-input"
+          type="date"
+          :max="today"
+          :disabled="offline || purgeBusy" />
+        <UiButton variant="danger" icon="delete" :loading="purgeBusy" :disabled="offline || !purgeDate" @click="purgeHistory">
+          Delete history
+        </UiButton>
+      </div>
+      <p v-if="purgeError" class="nh-alert is-danger" role="alert"><UiIcon name="error" /><span>{{ purgeError }}</span></p>
+      <p v-if="purgeMessage" class="nh-alert is-info" role="status"><UiIcon name="check" /><span>{{ purgeMessage }}</span></p>
     </UiCard>
 
     <UiCard title="Usage" icon="settingsUsage" :heading-level="3">

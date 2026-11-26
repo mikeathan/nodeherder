@@ -33,6 +33,8 @@ type AppStore interface {
 	FindBridgeInfoById(id string) (*devices.BridgeInfo, error)
 
 	StoreMetrics(friendlyName string, data map[string]any) error
+	// PurgeMetricsBefore deletes readings strictly before cutoff. Device/config state is untouched.
+	PurgeMetricsBefore(cutoff time.Time) error
 	ViewMetrics(device *devices.Device, from time.Time, to time.Time) (*metrics.DeviceMetricsResult, error)
 	QueryDevice(deviceID string, from, to time.Time, filters []metrics.MetricFilter, collectors map[string]metrics.ExposeResult) (*metrics.DeviceMetricsResult, error)
 	ResolveFriendlyName(friendlyName string) string
@@ -99,6 +101,10 @@ func (s *appStore) LoadHubState() (*hub.HubState, error) {
 	}
 
 	return hub.NewHubState(appConfig, devs), nil
+}
+
+func (s *appStore) PurgeMetricsBefore(cutoff time.Time) error {
+	return s.metrics.DeleteBefore(cutoff)
 }
 
 func (s *appStore) ViewMetrics(device *devices.Device, from time.Time, to time.Time) (*metrics.DeviceMetricsResult, error) {

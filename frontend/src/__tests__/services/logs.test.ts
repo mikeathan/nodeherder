@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test, jest } from '@jest/globals';
 import { get, post } from '@/contracts/api';
-import { downloadLogFile, listLogFiles, loadLogFile, logFileName } from '@/services/logs';
+import { deleteLogFile, downloadLogFile, listLogFiles, loadLogFile, logFileName } from '@/services/logs';
 
 jest.mock('@/contracts/api', () => ({ get: jest.fn(), post: jest.fn() }));
 
@@ -30,6 +30,13 @@ describe('log archive service', () => {
     await expect(loadLogFile('../secret.log')).rejects.toThrow('not valid');
     expect(mockedPost).toHaveBeenCalledTimes(1);
     expect(logFileName('logs/nodeherder.log')).toBe('nodeherder.log');
+  });
+
+  test('deletes one named archive with the shared action contract', async () => {
+    mockedPost.mockResolvedValue({ ok: true } as Response);
+    await deleteLogFile('logs/a.log');
+    expect(mockedPost).toHaveBeenCalledWith('logfile', { file: 'logs/a.log', action: 'delete' });
+    await expect(deleteLogFile('../a.log')).rejects.toThrow('not valid');
   });
 
   test('download releases the object URL', async () => {

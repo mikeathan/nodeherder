@@ -356,7 +356,7 @@ func (h *LogFileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if request.Action != logging.LoadAction {
+	if request.Action != logging.LoadAction && request.Action != logging.DeleteAction {
 		http.Error(w, "Error unknown request action type", http.StatusBadRequest)
 		return
 	}
@@ -364,6 +364,18 @@ func (h *LogFileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	cleanPath := filepath.Clean(request.File)
 	if filepath.IsAbs(cleanPath) || strings.HasPrefix(cleanPath, "..") || filepath.Ext(cleanPath) != utils.LogExtension {
 		http.Error(w, "Invalid file path", http.StatusBadRequest)
+		return
+	}
+
+	if request.Action == logging.DeleteAction {
+		if err := h.fs.Delete(cleanPath); err != nil {
+			utils.LogErrorf("LogFileHandler: delete %s failed: %s", cleanPath, err.Error())
+			http.Error(w, "Could not delete log file", http.StatusInternalServerError)
+			return
+		}
+		utils.LogWarnf("LogFileHandler: deleted archive %s", cleanPath)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]string{"deleted": cleanPath})
 		return
 	}
 

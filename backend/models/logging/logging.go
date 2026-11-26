@@ -2,6 +2,8 @@ package logging
 
 const (
 	LoadAction = "load"
+	// DeleteAction removes one explicitly named archive file; callers must confirm scope.
+	DeleteAction = "delete"
 )
 
 const (

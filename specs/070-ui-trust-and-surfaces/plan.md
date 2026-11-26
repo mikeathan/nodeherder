@@ -66,7 +66,7 @@ purge into the UI before endpoints exist (unsafe).
 | FR-08/AC-20–22 | `Settings.vue`, `CleanupSection.vue`, `AutomationList.vue`, `automation-export.ts` | `automation-export.test.ts`, Settings/Logger/Storage specs | PARTIAL: rail summaries, export, copy ID and browser cleanup shipped; duplicate/run history open |
 | FR-09/AC-23–25 | changed components | `layout.spec.ts` desktop+mobile, panel specs, lint/build | PASS for shipped surfaces; targeted a11y checks for new notifications still to add |
 | T013 assistants/deep flows | `AssistantView.vue`, chat/history components; other surfaces audited | layout desktop/mobile + full CI | PASS (Assistant aligned; others already consistent) |
-| T014 purge UI | — | excluded by NH-06 | BLOCKED, no dead controls shown |
+| T014 purge UI | `maintenance.go`, `StorageSettings.vue`, `LogArchiveCard.vue` | handler tests + StorageSettings browser spec | PASS |
 
 Commands actually run:
 - `npm test -- --runInBand` → 168 suites / 1116 tests passed (before the last additions; rerun recorded in tasks).
@@ -116,10 +116,18 @@ Commands actually run:
 - Editor/creator, provider setup and Login reviewed: already use the shared header/cards/forms and
   needed no rewrite.
 
+## Cleanup completion (2026-11-26)
+
+- `POST /api/history/purge` accepts an explicit RFC3339 cutoff, rejects malformed/future values,
+  is rate-limited, and logs the deletion. The UI requires a date and informed confirmation.
+- Log archive deletion reuses `/api/logfile` with `action:"delete"`; one validated file at a time,
+  with confirmation, audit log and list refresh.
+- Automation run history has no stored source yet, so no UI is exposed.
+
 ## Debt, risks, exceptions
 
-- Server purge, automation run history and panel lux override are deferred; UI does not advertise
-  them. Risk: users still cannot delete server history; consequence documented in the spec and PR.
+- Automation run history and panel lux override remain future work; server history/log deletion is
+  shipped with explicit cutoffs and confirmations.
 - Freshness thresholds are heuristic; false “quiet” is limited to amber styling and explained text.
 - Notification dedupe must not drop distinct same-title events: include category, device/action and
   a time bucket in the key; cap prevents unbounded growth.

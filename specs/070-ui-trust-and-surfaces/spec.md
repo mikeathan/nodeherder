@@ -21,12 +21,9 @@ Home cards and status strip; Overview; Devices and device detail; Integrations; 
 new-session digest; logs and log archive download; Settings index and available cleanup/export;
 automation row actions; Panel mode; shared Ring 0 primitives; mobile layouts for all of the above.
 
-**Excluded / blocked (safety and reviewability):**
-Server-side purge/delete of metrics history or log files, and automation run-history deletion.
-Those are destructive data operations under NH-06 and need backend endpoints, recovery semantics and
-named approval; they are not implemented in this UI change. UI entry points for them are omitted
-rather than shown as dead controls. Automation editor/creator visual redesign, Assistant chat,
-Login and integration setup forms remain out of this branch; typed contracts still apply if touched.
+**Out of this change:** automation run-history deletion (no data source/schema yet). Automation
+editor/creator, Assistant, Login and integration setup are now aligned or audited; typed contracts
+still apply if touched.
 
 ## Scenarios and acceptance
 
@@ -150,4 +147,5 @@ Independent verification: page browser spec at desktop and mobile.
   for the current night cycle. Ambient light remains deferred until a lux source is modelled. The
   four essentials are selectable from panel device controls and stored per browser.
 - Q3: Offline commands. Decision: disabled, never queued (stale intent is unsafe).
-- Q4: Server-side purge. Blocked by NH-06; excluded above.
+- Q4: Server-side purge. Resolved with an explicit RFC3339 cutoff, authenticated/rate-limited
+  endpoint, audit log and informed confirmation; log deletion is one named file at a time.

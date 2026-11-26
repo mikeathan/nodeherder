@@ -671,6 +671,11 @@ func (s *NopMetricsRepo) Prune(expireAt time.Duration) error {
 	return nil
 }
 
+func (s *NopMetricsRepo) DeleteBefore(cutoff time.Time) error {
+	fmt.Println("Mocked DeleteBefore")
+	return nil
+}
+
 func (s *NopMetricsRepo) Store(id string, data map[string]any) error {
 	fmt.Println("Mocked Store")
 	s.invokeStoreHandler()(id, data)
@@ -872,6 +877,11 @@ func (s *NopAppStore) StoreDevice(friendlyName string, device *devices.Device) e
 
 func (s *NopAppStore) RemoveDeviceById(id string) error {
 	fmt.Println("Mocked store RemoveDeviceById")
+	return nil
+}
+
+func (s *NopAppStore) PurgeMetricsBefore(cutoff time.Time) error {
+	fmt.Println("Mocked PurgeMetricsBefore")
 	return nil
 }
 
