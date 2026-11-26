@@ -49,6 +49,16 @@ describe('notification inbox', () => {
     expect(store.getters['notifications/items']()).toEqual([]);
   });
 
+  test('resolving a connection outage updates one item and preserves read state', async () => {
+    const item = await store.dispatch('notifications/notify', input({ dedupeKey: 'hub-connection', title: 'Hub connection lost' }));
+    store.dispatch('notifications/markRead', item.id);
+    store.dispatch('notifications/resolveConnection', 4 * 60_000);
+    const items = store.getters['notifications/items']();
+    expect(items).toHaveLength(1);
+    expect(items[0]).toMatchObject({ title: 'Hub connection restored', read: true, severity: 'success' });
+    expect(items[0].body).toContain('4 min');
+  });
+
   test('bounds the inbox and returns newest first', () => {
     for (let index = 0; index < 205; index += 1) {
       store.dispatch('notifications/notify', input({ title: `event ${index}`, at: Date.now() + index }));

@@ -56,6 +56,12 @@ export const NotificationsModule: Module<NotificationsModuleState, RootState> = 
       for (const item of state.items) item.read = true;
     },
 
+    /** Updates an existing notification even when it was already read. */
+    resolveByKey(state: NotificationsModuleState, payload: { dedupeKey: string; patch: Partial<AppNotification> }) {
+      const item = state.items.find((candidate) => candidate.dedupeKey === payload.dedupeKey);
+      if (item) Object.assign(item, payload.patch);
+    },
+
     remove(state: NotificationsModuleState, id: string) {
       state.items = state.items.filter((item) => item.id !== id);
     },
@@ -77,6 +83,20 @@ export const NotificationsModule: Module<NotificationsModuleState, RootState> = 
       commit('add', item);
       const stored = state.items.find((candidate) => (candidate.dedupeKey && candidate.dedupeKey === item.dedupeKey) || candidate.id === item.id);
       return stored ?? item;
+    },
+
+    /** Resolves the one outage item in place so a restart cannot add a second “restored” row. */
+    resolveConnection({ commit }, durationMs: number) {
+      const minutes = Math.max(1, Math.round(durationMs / 60_000));
+      commit('resolveByKey', {
+        dedupeKey: 'hub-connection',
+        patch: {
+          severity: 'success',
+          title: 'Hub connection restored',
+          body: `Live updates resumed after ${minutes} min. Values are current again.`,
+          action: undefined,
+        },
+      });
     },
 
     markRead({ commit }, id: string) {
