@@ -44,9 +44,12 @@ after the check ran.
   with confirmations; no server deletion and no dead controls.
 - [x] T023 — Overview activity is one list (removed the preview/full duplicate); health-line counts
   and “Show more” deep-link the device list with `status`/`q`; device filters are URL-addressable.
-- [ ] T013 — Editors/deep flows: automation editor/creator, integration setup/provider, Assistant,
-  Login consistency pass; IDs: FR-09. Not started: these already use the shared header/form/empty
-  patterns and no concrete defect is recorded, so they stay a separate reviewed change.
+- [x] T013 — Editors/deep flows consistency pass; IDs: FR-09. Assistant rebuilt on the shell
+  header/tokens, history and composer; editor/creator, provider setup and Login audited and already
+  use the shared patterns (no churn).
+- [x] T024 — Notification bell badge: smaller, no heavy ring, touch-safe.
+- [x] T025 — Tile footer: no clock glyph, device left / age right, mock options in
+  `docs/design/mocks/card-footer.html`.
 - [ ] T014 — Server-side cleanup/purge UI; IDs: AC-21 (excluded by NH-06). Blocked: no endpoints
   and no named approval for destructive history/log deletion.
 

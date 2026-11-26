@@ -2,6 +2,7 @@
 
 **Status:** exploration only — no production code changed. Mocks are static HTML.
 **Companion mocks:** [`docs/design/mocks/ui-improvements.html`](mocks/ui-improvements.html)
+(footer options: [`docs/design/mocks/card-footer.html`](mocks/card-footer.html))
 (screenshots in [`docs/design/mocks/shots/`](mocks/shots/)) and
 [`docs/design/mocks/ring2.html`](mocks/ring2.html)
 (screenshots in [`docs/design/mocks/shots-ring2/`](mocks/shots-ring2/)).
