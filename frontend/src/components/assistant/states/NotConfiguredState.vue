@@ -1,36 +1,58 @@
 <script setup lang="ts">
+  /* Configuration gate with a direct route to the settings section that fixes it. */
   import { computed } from 'vue';
+  import { RouteName } from '@/types/router';
+  import UiButton from '@/components/ui/UiButton.vue';
+  import UiIcon from '@/components/ui/UiIcon.vue';
 
-  const props = defineProps<{
-    reason: 'assistant' | 'mcp' | null;
-  }>();
+  const props = defineProps<{ reason: 'assistant' | 'mcp' | null }>();
 
-  const title = computed(() => {
-    if (props.reason === 'mcp') return 'MCP Server Disconnected';
-    return 'Assistant API URL not configured';
-  });
-
-  const description = computed(() => {
-    if (props.reason === 'mcp') return 'The Model Context Protocol (MCP) server is not running or has no connection. Please configure it in ';
-    return 'Please configure the Assistant API URL in ';
-  });
+  const title = computed(() => (props.reason === 'mcp' ? 'MCP server is not connected' : 'Assistant address is not set'));
+  const description = computed(() =>
+    props.reason === 'mcp'
+      ? 'Start the MCP server and connect a client before asking the assistant about your home.'
+      : 'Set the assistant service address in Settings before starting a conversation.'
+  );
 </script>
 
 <template>
-  <div
-    class="absolute top-0 left-0 w-full h-full flex flex-column align-items-center justify-content-center px-4 pb-8 fadein z-1">
-    <div class="text-center">
-      <i 
-        class="text-6xl text-color-secondary mb-4" 
-        :class="reason === 'mcp' ? 'pi pi-server' : 'pi pi-cog'"
-      ></i>
-      <h2 class="text-xl font-normal text-color-secondary m-0">{{ title }}</h2>
-      <p class="text-color-secondary mt-2">
-        {{ description }}
-        <router-link to="/settings" class="text-primary no-underline hover:underline cursor-pointer"
-          >Settings</router-link
-        >.
-      </p>
-    </div>
+  <div class="nh-not-config">
+    <span class="nh-not-config-ic"><UiIcon :name="reason === 'mcp' ? 'settings' : 'assistant'" /></span>
+    <h2>{{ title }}</h2>
+    <p>{{ description }}</p>
+    <UiButton :to="{ name: RouteName.Settings }" icon="settings">Open settings</UiButton>
   </div>
 </template>
+
+<style scoped>
+  .nh-not-config {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    padding: 2rem var(--nh-space);
+    text-align: center;
+  }
+  .nh-not-config-ic {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 1rem;
+    display: grid;
+    place-items: center;
+    background: var(--nh-surface-2);
+    color: var(--nh-text-muted);
+  }
+  .nh-not-config-ic .nh-ic {
+    width: 1.6rem;
+    height: 1.6rem;
+  }
+  .nh-not-config h2 {
+    font-size: 1.1rem;
+  }
+  .nh-not-config p {
+    max-width: 30rem;
+    color: var(--nh-text-muted);
+    font-size: 0.85rem;
+  }
+</style>

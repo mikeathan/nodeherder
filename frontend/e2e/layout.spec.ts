@@ -2,7 +2,7 @@ import { test, expect, signIn } from './support/fixtures';
 import { MOCK } from './support/mock';
 
 // Spec 007 NFR-01, NFR-06: no screen scrolls sideways at desktop or phone width.
-const PATHS = ['/overview', '/groupdashboard', '/devicedashboard', '/devicelist', `/devicepage/${MOCK.atticSocket.id}`, '/viewer', `/editor/${MOCK.presenceAutomation.id}`, '/creator', '/settings', '/consoleviewer', '/panel'];
+const PATHS = ['/overview', '/groupdashboard', '/devicedashboard', '/devicelist', `/devicepage/${MOCK.atticSocket.id}`, '/viewer', `/editor/${MOCK.presenceAutomation.id}`, '/creator', '/assistant', '/settings', '/consoleviewer', '/panel'];
 
 // Spec 059 AC-16: every settings section fits without a horizontal scroll.
 const SETTINGS_SECTIONS = ['appearance', 'device-defaults', 'storage', 'logger', 'mcp', 'assistant'];

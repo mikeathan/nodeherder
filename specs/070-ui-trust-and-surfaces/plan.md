@@ -65,7 +65,7 @@ purge into the UI before endpoints exist (unsafe).
 | FR-07/AC-17–19 | `PanelMode.vue`, `PanelEssentialsDialog.vue`, `panel-essentials.ts` | panel parser test + desktop/mobile specs incl. essentials persistence | PASS |
 | FR-08/AC-20–22 | `Settings.vue`, `CleanupSection.vue`, `AutomationList.vue`, `automation-export.ts` | `automation-export.test.ts`, Settings/Logger/Storage specs | PARTIAL: rail summaries, export, copy ID and browser cleanup shipped; duplicate/run history open |
 | FR-09/AC-23–25 | changed components | `layout.spec.ts` desktop+mobile, panel specs, lint/build | PASS for shipped surfaces; targeted a11y checks for new notifications still to add |
-| T013 editors/Assistant/Login | — | not started | DEFERRED (scope note in spec) |
+| T013 assistants/deep flows | `AssistantView.vue`, chat/history components; other surfaces audited | layout desktop/mobile + full CI | PASS (Assistant aligned; others already consistent) |
 | T014 purge UI | — | excluded by NH-06 | BLOCKED, no dead controls shown |
 
 Commands actually run:
@@ -105,6 +105,16 @@ Commands actually run:
   (and `q` search) with the corresponding filter preselected; filters stay URL-addressable.
 - Added the `attention` filter backed by availability + low battery/weak link + freshness.
 - Browser coverage: overview desktop/mobile and ActivityFeed desktop/mobile.
+
+## Consistency pass (2026-11-26)
+
+- Assistant now uses `UiPageHeader`, app buttons/tokens, a desktop conversation rail, a mobile
+  history dialog, a native composer and shared empty/not-configured states. Chat behaviour is
+  unchanged (`useAssistant`).
+- Notification badge reduced and de-ringed; tile footer drops the clock glyph and spreads device
+  left / age right. Options recorded in `docs/design/mocks/card-footer.html`.
+- Editor/creator, provider setup and Login reviewed: already use the shared header/cards/forms and
+  needed no rewrite.
 
 ## Debt, risks, exceptions
 

@@ -89,17 +89,18 @@
   }
   .nh-bell-badge {
     position: absolute;
-    top: 0.1rem;
-    right: 0.1rem;
-    min-width: 1rem;
-    height: 1rem;
-    padding: 0 0.25rem;
+    top: 0.05rem;
+    right: 0.05rem;
+    min-width: 0.9rem;
+    height: 0.9rem;
+    padding: 0 0.18rem;
     border-radius: 999px;
     background: var(--nh-danger);
     color: #fff;
-    font: 700 0.62rem/1rem var(--nh-font-ui);
-    text-align: center;
-    border: 2px solid var(--nh-header-bg, var(--nh-bg));
+    font: 700 0.56rem/1 var(--nh-font-ui);
+    display: grid;
+    place-items: center;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.35);
     pointer-events: none;
   }
   .nh-notif-toolbar {

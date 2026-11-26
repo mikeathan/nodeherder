@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en" data-mode="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NodeHerder — tile footer options</title>
+<style>
+  :root{
+    --bg:#0b0b0d;--surface:#151519;--surface2:#1c1c21;--border:#27272e;--text:#ececf2;--muted:#9c9caa;--faint:#6f6f7d;
+    --warn:#e8a33d;--danger:#e5544b;--ok:#3ecf8e;--accent:#7c5cff;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 var(--font);padding:28px}
+  h1{font-size:24px;letter-spacing:-.02em;margin:0 0 4px}
+  .lede{color:var(--muted);margin:0 0 24px;max-width:80ch}
+  .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;max-width:1200px}
+  .variant{border:1px solid var(--border);background:#0f0f12;border-radius:16px;padding:14px}
+  .vhead{display:flex;gap:8px;align-items:baseline;margin-bottom:10px}
+  .tag{font:700 10px/20px var(--mono);min-width:20px;height:20px;border-radius:6px;background:rgba(124,92,255,.16);color:#c9bdff;text-align:center;padding:0 5px}
+  .vhead b{font-size:13px}
+  .vhead span{color:var(--faint);font-size:11px;margin-left:auto}
+  .vnote{color:var(--muted);font-size:11.5px;margin:0 0 10px;min-height:32px}
+  .tile{display:flex;gap:10px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:11px 12px;margin-bottom:8px;min-width:0}
+  .tile:last-child{margin-bottom:0}
+  .ic{width:34px;height:34px;border-radius:50%;background:var(--surface2);display:grid;place-items:center;flex:none;color:var(--muted)}
+  .ic svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  .tx{min-width:0;flex:1;display:flex;flex-direction:column;gap:1px}
+  .lab{font-weight:640;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .val{font-size:12.5px;color:var(--muted)}
+  .dev{font-size:11px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  .age{font-size:10.5px;color:var(--faint);display:flex;align-items:center;gap:4px;margin-top:2px;white-space:nowrap}
+  .age.warn{color:var(--warn)}
+  .age.bad{color:var(--danger)}
+  .stale{border-color:rgba(232,163,61,.32);box-shadow:inset 3px 0 0 var(--warn)}
+  .off{opacity:.82}
+  .off .val{color:var(--danger)}
+
+  /* A — stacked, no icon */
+  .v-a .age{margin-top:2px}
+  /* B — name left, age right */
+  .v-b .foot{display:flex;align-items:baseline;gap:8px;min-width:0;margin-top:3px}
+  .v-b .foot .dev{flex:1;min-width:0}
+  .v-b .foot .age{margin:0;flex:none}
+  /* C — divider */
+  .v-c .foot{border-top:1px solid var(--border);margin-top:7px;padding-top:5px;display:flex;justify-content:flex-end}
+  .v-c .foot .dev{display:none}
+  .v-c .foot .age{margin:0}
+  /* D — age chip */
+  .v-d .tile{position:relative}
+  .v-d .chip{position:absolute;top:9px;right:10px;font:650 9.5px/1 var(--mono);color:var(--warn);background:rgba(232,163,61,.12);border:1px solid rgba(232,163,61,.3);padding:3px 6px;border-radius:99px}
+  .v-d .chip.fresh{color:var(--faint);background:var(--surface2);border-color:var(--border)}
+  .v-d .chip.bad{color:#ffb1ac;background:rgba(229,84,75,.12);border-color:rgba(229,84,75,.35)}
+  .v-d .foot{margin-top:2px}
+  @media (max-width:900px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+  <h1>Tile footer — freshness presentation</h1>
+  <p class="lede">The clock glyph is removed in every option. Pick how the device name and age share the
+    footer. Each option shows a fresh tile and a quiet/stale tile at the same width.</p>
+
+  <div class="grid">
+    <section class="variant v-a">
+      <div class="vhead"><span class="tag">A</span><b>Stacked, no icon</b><span>least change</span></div>
+      <p class="vnote">Device line first, age below. Calm, but the two muted lines compete and take vertical space.</p>
+      <article class="tile">
+        <span class="ic"><svg viewBox="0 0 24 24"><path d="M14 14.8V5a2 2 0 1 0-4 0v9.8a4 4 0 1 0 4 0z"/></svg></span>
+        <div class="tx"><span class="lab">Temperature</span><span class="val">18 °C</span>
+          <span class="dev">Attic room sensor</span><span class="age">Updated just now</span></div>
+      </article>
+      <article class="tile stale">
+        <span class="ic"><svg viewBox="0 0 24 24"><path d="M14 14.8V5a2 2 0 1 0-4 0v9.8a4 4 0 1 0 4 0z"/></svg></span>
+        <div class="tx"><span class="lab">Temperature</span><span class="val">18 °C</span>
+          <span class="dev">Attic room sensor</span><span class="age warn">Updated 4 h ago · not reporting</span></div>
+      </article>
+    </section>
+
+    <section class="variant v-b">
+      <div class="vhead"><span class="tag">B</span><b>Device left, age right</b><span>recommended</span></div>
+      <p class="vnote">One footer row: identity left, age right. Uses horizontal space, keeps one calm line.
+        Long names truncate before the age.</p>
+      <article class="tile">
+        <span class="ic"><svg viewBox="0 0 24 24"><path d="M14 14.8V5a2 2 0 1 0-4 0v9.8a4 4 0 1 0 4 0z"/></svg></span>
+        <div class="tx"><span class="lab">Temperature</span><span class="val">18 °C</span>
+          <div class="foot"><span class="dev">Attic room sensor</span><span class="age">just now</span></div></div>
+      </article>
+      <article class="tile stale">
+        <span class="ic"><svg viewBox="0 0 24 24"><path d="M14 14.8V5a2 2 0 1 0-4 0v9.8a4 4 0 1 0 4 0z"/></svg></span>
+        <div class="tx"><span class="lab">Temperature</span><span class="val">18 °C</span>
+          <div class="foot"><span class="dev">Attic room sensor</span><span class="age warn">4 h ago · not reporting</span></div></div>
+      </article>
+    </section>
+
+    <section class="variant v-c">
+      <div class="vhead"><span class="tag">C</span><b>Divider footer</b><span>structured</span></div>
+      <p class="vnote">A hairline separates metadata; age sits right. Strong hierarchy, slightly heavier card.</p>
+      <article class="tile">
+        <span class="ic"><svg viewBox="0 0 24 24"><path d="M14 14.8V5a2 2 0 1 0-4 0v9.8a4 4 0 1 0 4 0z"/></svg></span>
+        <div class="tx"><span class="lab">Temperature</span><span class="val">18 °C</span><span class="dev">Attic room sensor</span>
+          <div class="foot"><span class="age">Updated just now</span></div></div>
+      </article>
+      <article class="tile stale">
+        <span class="ic"><svg viewBox="0 0 24 24"><path d="M14 14.8V5a2 2 0 1 0-4 0v9.8a4 4 0 1 0 4 0z"/></svg></span>
+        <div class="tx"><span class="lab">Temperature</span><span class="val">18 °C</span><span class="dev">Attic room sensor</span>
+          <div class="foot"><span class="age warn">Updated 4 h ago · not reporting</span></div></div>
+      </article>
+    </section>
+
+    <section class="variant v-d">
+      <div class="vhead"><span class="tag">D</span><b>Age chip, device line only</b><span>quickest scan</span></div>
+      <p class="vnote">Fresh tiles show no age text; a small chip appears only when the device is quiet/stale.
+        Least noise, but hides the age of healthy devices.</p>
+      <article class="tile">
+        <span class="ic"><svg viewBox="0 0 24 24"><path d="M14 14.8V5a2 2 0 1 0-4 0v9.8a4 4 0 1 0 4 0z"/></svg></span>
+        <div class="tx"><span class="lab">Temperature</span><span class="val">18 °C</span><span class="dev">Attic room sensor</span></div>
+      </article>
+      <article class="tile stale">
+        <span class="chip">4 h</span>
+        <span class="ic"><svg viewBox="0 0 24 24"><path d="M14 14.8V5a2 2 0 1 0-4 0v9.8a4 4 0 1 0 4 0z"/></svg></span>
+        <div class="tx"><span class="lab">Temperature</span><span class="val">18 °C</span><span class="dev">Attic room sensor</span></div>
+      </article>
+    </section>
+  </div>
+</body>
+</html>
