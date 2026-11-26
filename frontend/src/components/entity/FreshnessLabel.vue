@@ -7,12 +7,11 @@
   import type { Device } from '@/types/device';
   import { freshnessPolicy, reportFreshness } from '@/domain/devices/freshness';
   import { useNow } from '@/composables/useClock';
-  import UiIcon from '@/components/ui/UiIcon.vue';
   import RelativeTime from '@/components/ui/RelativeTime.vue';
 
   const props = withDefaults(
-    defineProps<{ device: Device; mode?: 'updated' | 'seen'; compact?: boolean }>(),
-    { mode: 'updated', compact: false }
+    defineProps<{ device: Device; mode?: 'updated' | 'seen'; compact?: boolean; short?: boolean }>(),
+    { mode: 'updated', compact: false, short: false }
   );
 
   const now = useNow();
@@ -20,6 +19,7 @@
 
   /** Screen-reader and visible copy for one freshness band. */
   const prefix = computed(() => {
+    if (props.short) return '';
     if (props.mode === 'seen') return 'Last seen';
     return freshness.value === 'stale' ? 'Last known' : 'Updated';
   });
@@ -32,11 +32,10 @@
     class="nh-freshness"
     :class="`is-${freshness}`"
     :data-freshness="freshness">
-    <UiIcon v-if="!compact" name="clock" />
     <RelativeTime v-if="compact" :value="device.last_seen" />
-    <template v-else>{{ prefix }} <RelativeTime :value="device.last_seen" />{{ suffix }}</template>
+    <template v-else><template v-if="prefix">{{ prefix }} </template><RelativeTime :value="device.last_seen" />{{ suffix }}</template>
   </span>
-  <span v-else-if="!compact" class="nh-freshness is-unknown"><UiIcon name="info" />No report yet</span>
+  <span v-else-if="!compact" class="nh-freshness is-unknown">No report yet</span>
 </template>
 
 <style scoped>
@@ -48,11 +47,6 @@
     color: var(--nh-text-muted);
     font-size: 0.7rem;
     line-height: 1.35;
-  }
-  .nh-freshness .nh-ic {
-    width: 0.75rem;
-    height: 0.75rem;
-    flex: none;
   }
   .nh-freshness.is-quiet {
     color: var(--nh-warn);

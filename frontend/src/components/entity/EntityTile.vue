@@ -113,12 +113,15 @@
         <UiIcon v-else-if="status === 'disabled'" name="disabled" />
         {{ value }}
       </span>
-      <span class="nh-tile-dev">{{ device?.friendly_name ?? deviceId }}</span>
-      <FreshnessLabel
-        v-if="device"
-        class="nh-tile-age"
-        :device="device"
-        :mode="status === 'offline' ? 'seen' : 'updated'" />
+      <span class="nh-tile-meta">
+        <span class="nh-tile-dev">{{ device?.friendly_name ?? deviceId }}</span>
+        <FreshnessLabel
+          v-if="device"
+          class="nh-tile-age"
+          :device="device"
+          short
+          :mode="status === 'offline' ? 'seen' : 'updated'" />
+      </span>
     </button>
     <button
       v-if="editing"
@@ -218,14 +221,25 @@
     width: 0.95rem;
     height: 0.95rem;
   }
+  .nh-tile-meta {
+    display: flex;
+    align-items: baseline;
+    gap: 0.45rem;
+    width: 100%;
+    min-width: 0;
+    margin-top: 0.15rem;
+  }
   .nh-tile-dev {
+    flex: 1;
+    min-width: 0;
     font-size: 0.7rem;
     color: var(--nh-text-muted);
-    max-width: 100%;
-    overflow-wrap: anywhere;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .nh-tile-age {
-    margin-top: 0.1rem;
+    flex: none;
   }
   .nh-tile.is-quiet {
     box-shadow: inset 3px 0 0 var(--nh-warn);
