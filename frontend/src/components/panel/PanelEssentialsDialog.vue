@@ -5,6 +5,7 @@
    */
   import { ref, watch } from 'vue';
   import { PANEL_ESSENTIAL_LIMIT, togglePanelEssential, type PanelEssential } from '@/domain/panel-essentials';
+  import type { PanelAmbientLight } from '@/domain/panel-ambient';
   import UiButton from '@/components/ui/UiButton.vue';
   import UiDialog from '@/components/ui/UiDialog.vue';
 
@@ -12,14 +13,25 @@
     open: boolean;
     options: readonly (PanelEssential & { room: string })[];
     selected: readonly PanelEssential[];
+    ambient: PanelAmbientLight | null;
+    ambientOptions: readonly { deviceId: string; expose: string; label: string; room: string }[];
   }>();
-  const emit = defineEmits<{ (e: 'close'): void; (e: 'save', value: PanelEssential[]): void }>();
+  const emit = defineEmits<{
+    (e: 'close'): void;
+    (e: 'save', value: PanelEssential[]): void;
+    (e: 'save-ambient', value: PanelAmbientLight | null): void;
+  }>();
 
   const draft = ref<PanelEssential[]>([]);
+  const ambientKey = ref('');
+  const threshold = ref(20);
   watch(
     () => props.open,
     (open) => {
-      if (open) draft.value = [...props.selected];
+      if (!open) return;
+      draft.value = [...props.selected];
+      ambientKey.value = props.ambient ? `${props.ambient.deviceId}|${props.ambient.expose}` : '';
+      threshold.value = props.ambient?.threshold ?? 20;
     },
     { immediate: true }
   );
@@ -33,6 +45,13 @@
   }
   function save() {
     emit('save', draft.value);
+    const option = props.ambientOptions.find((candidate) => `${candidate.deviceId}|${candidate.expose}` === ambientKey.value);
+    emit(
+      'save-ambient',
+      option && Number.isFinite(Number(threshold.value)) && threshold.value >= 0
+        ? { deviceId: option.deviceId, expose: option.expose, threshold: Number(threshold.value) }
+        : null
+    );
     emit('close');
   }
 </script>
@@ -43,6 +62,26 @@
       Choose up to {{ PANEL_ESSENTIAL_LIMIT }} controls for the simplified night panel.
       {{ draft.length }} of {{ PANEL_ESSENTIAL_LIMIT }} selected.
     </p>
+    <fieldset class="nh-ambient">
+      <legend>Ambient light (optional)</legend>
+      <p class="nh-muted">Go to night when this sensor reads below the threshold; the schedule still applies.</p>
+      <div class="nh-ambient-row">
+        <label>
+          <span>Light sensor</span>
+          <select v-model="ambientKey">
+            <option value="">Off — use schedule only</option>
+            <option v-for="option in ambientOptions" :key="`${option.deviceId}|${option.expose}`" :value="`${option.deviceId}|${option.expose}`">
+              {{ option.label }} · {{ option.room }}
+            </option>
+          </select>
+        </label>
+        <label>
+          <span>Below (lx)</span>
+          <input v-model.number="threshold" type="number" min="0" max="100000" step="1" :disabled="!ambientKey" />
+        </label>
+      </div>
+    </fieldset>
+
     <ul class="nh-essential-list">
       <li v-for="item in options" :key="key(item)">
         <label :class="{ 'is-selected': isSelected(item) }">
@@ -66,6 +105,45 @@
 </template>
 
 <style scoped>
+  .nh-ambient {
+    border: var(--nh-border-w) solid var(--nh-border);
+    border-radius: var(--nh-radius-m);
+    padding: 0.65rem 0.75rem 0.75rem;
+    margin: 0.8rem 0 0;
+  }
+  .nh-ambient legend {
+    font-size: 0.78rem;
+    font-weight: 650;
+    padding: 0 0.25rem;
+  }
+  .nh-ambient p {
+    font-size: 0.72rem;
+    margin: 0.2rem 0 0.5rem;
+  }
+  .nh-ambient-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+  .nh-ambient-row label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--nh-text-muted);
+    min-width: 0;
+    flex: 1 1 12rem;
+  }
+  .nh-ambient-row select,
+  .nh-ambient-row input {
+    min-height: var(--nh-ctl-h);
+    border: var(--nh-border-w) solid var(--nh-border-strong);
+    border-radius: var(--nh-radius-s);
+    background: var(--nh-surface);
+    color: var(--nh-text);
+    font: inherit;
+    padding: 0 0.55rem;
+  }
   .nh-essential-list {
     list-style: none;
     margin: 0.6rem 0 0;

@@ -63,7 +63,7 @@ purge into the UI before endpoints exist (unsafe).
 | FR-05/AC-12–14 | `OverviewPage.vue`, `overview.ts`, `RecentActivityBrief.vue` | `overview.test.ts` (3), overview + ActivityFeed browser specs, desktop/mobile layout | PASS |
 | FR-06/AC-15–16 | `DeviceList.vue`, `DeviceFilterBar.vue`, `DevicePage.vue` | network filter test, devices + EntityTile specs | PASS |
 | FR-07/AC-17–19 | `PanelMode.vue`, `PanelEssentialsDialog.vue`, `panel-essentials.ts` | panel parser test + desktop/mobile specs incl. essentials persistence | PASS |
-| FR-08/AC-20–22 | `Settings.vue`, `CleanupSection.vue`, `AutomationList.vue`, `automation-export.ts` | `automation-export.test.ts`, Settings/Logger/Storage specs | PARTIAL: rail summaries, export, copy ID and browser cleanup shipped; duplicate/run history open |
+| FR-08/AC-20–22 | `Settings.vue`, `CleanupSection.vue`, `AutomationList.vue`, `automation-export.ts` | export/copy tests + Settings specs | PASS; duplicate/run history absent by model |
 | FR-09/AC-23–25 | changed components | `layout.spec.ts` desktop+mobile, panel specs, lint/build | PASS for shipped surfaces; targeted a11y checks for new notifications still to add |
 | T013 assistants/deep flows | `AssistantView.vue`, chat/history components; other surfaces audited | layout desktop/mobile + full CI | PASS (Assistant aligned; others already consistent) |
 | T014 purge UI | `maintenance.go`, `StorageSettings.vue`, `LogArchiveCard.vue` | handler tests + StorageSettings browser spec | PASS |
@@ -124,10 +124,17 @@ Commands actually run:
   with confirmation, audit log and list refresh.
 - Automation run history has no stored source yet, so no UI is exposed.
 
+## Final remaining closure (2026-11-26)
+
+- Panel night now supports schedule OR optional ambient light (selected lux device + threshold) OR a
+  persisted manual override; ambient is ignored while the sensor is offline/non-finite.
+- Automation duplicate/run history are not exposed because the model has one automation per device and
+  no persisted run records; adding them would be a new storage/contract feature, not a UI fix.
+
 ## Debt, risks, exceptions
 
-- Automation run history and panel lux override remain future work; server history/log deletion is
-  shipped with explicit cutoffs and confirmations.
+- Automation run history/duplicate are not representable in the current model; panel ambient-light
+  night is shipped. Server history/log deletion is shipped with explicit cutoffs and confirmations.
 - Freshness thresholds are heuristic; false “quiet” is limited to amber styling and explained text.
 - Notification dedupe must not drop distinct same-title events: include category, device/action and
   a time bucket in the key; cap prevents unbounded growth.
