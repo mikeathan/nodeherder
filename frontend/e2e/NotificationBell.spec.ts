@@ -45,7 +45,10 @@ test('the Overview digest dismisses, stays dismissed and returns for a new event
   await expect(digest).toBeVisible();
   await digest.getByRole('button', { name: 'Dismiss' }).click();
   await expect(digest).toHaveCount(0);
+  send = undefined;
   await page.reload();
+  await expect(page.getByRole('heading', { name: 'Overview' })).toBeVisible();
+  await expect(page.locator('.nh-conn.is-connected')).toBeVisible();
   await expect(page.getByRole('region', { name: 'While you were away' })).toHaveCount(0);
 
   await expect.poll(() => typeof send).toBe('function');
