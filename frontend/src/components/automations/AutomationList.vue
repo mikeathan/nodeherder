@@ -16,6 +16,8 @@
   import UiToggle from '@/components/ui/UiToggle.vue';
   import UiChip from '@/components/ui/UiChip.vue';
   import { downloadAutomations } from '@/services/automation-export';
+  import { copyToClipboard } from '@/utils/clipboard.utils';
+  import { store } from '@/store';
 
   const { automations, loaded, setEnabled, remove, run } = useAutomations();
   const query = ref('');
@@ -46,6 +48,15 @@
 
   function exportAll() {
     downloadAutomations(automations.value);
+  }
+
+  async function copyId(a: Automation) {
+    try {
+      await copyToClipboard(a.id);
+      store.dispatch('alerts/showSuccess', 'Automation ID copied.');
+    } catch {
+      store.dispatch('alerts/showError', 'Could not copy the automation ID.');
+    }
   }
 
   async function onDelete(a: Automation) {
@@ -90,6 +101,7 @@
           <UiChip v-if="r.scheduled" icon="schedule" tone="info">Scheduled</UiChip>
           <UiButton v-if="r.runnable" size="sm" icon="run" @click="run(r.automation, r.runnable.name)">Run</UiButton>
           <UiButton size="sm" variant="ghost" icon="export" :label="`Export ${r.automation.friendlyname}`" @click="exportOne(r.automation)" />
+          <UiButton size="sm" variant="ghost" icon="copy" :label="`Copy ${r.automation.friendlyname} ID`" @click="copyId(r.automation)" />
           <UiToggle :model-value="r.automation.enabled" :label="`${r.automation.friendlyname} on`" @update:model-value="setEnabled(r.automation, $event)" />
           <UiButton size="sm" variant="ghost" icon="delete" class="is-danger" :label="`Delete ${r.automation.friendlyname}`" @click="onDelete(r.automation)" />
         </div>

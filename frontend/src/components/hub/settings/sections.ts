@@ -21,7 +21,7 @@ export const SETTINGS_GROUP_LABELS: Readonly<Record<SettingsGroup, string>> = {
   hub: 'Hub',
 };
 
-export type SettingsSectionId = 'appearance' | 'device-defaults' | 'storage' | 'logger' | 'mcp' | 'assistant';
+export type SettingsSectionId = 'appearance' | 'cleanup' | 'device-defaults' | 'storage' | 'logger' | 'mcp' | 'assistant';
 
 export interface SettingsSection {
   id: SettingsSectionId;
@@ -39,6 +39,13 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     group: SETTINGS_GROUPS.browser,
     icon: 'palette',
     content: defineAsyncComponent(() => import('@/components/hub/settings/AppearanceSection.vue')),
+  },
+  {
+    id: 'cleanup',
+    title: 'Data & cleanup',
+    group: SETTINGS_GROUPS.browser,
+    icon: 'delete',
+    content: defineAsyncComponent(() => import('@/components/hub/settings/CleanupSection.vue')),
   },
   {
     id: 'device-defaults',

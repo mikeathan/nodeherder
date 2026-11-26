@@ -43,11 +43,27 @@
   const automations = useAutomationsLoader();
   const { mode, toggleMode } = useThemeSettings();
   const now = useNow(15_000);
-  // Schedule is the baseline; a manual toggle overrides it until the next page load. Ambient
-  // light is deliberately out of scope until a lux source is modelled in settings.
+  // Schedule is the baseline. A manual choice persists for the current night cycle (12 h) so
+  // a reload does not flip the panel back. Ambient light is out of scope until a lux source
+  // is modelled in settings.
   const NIGHT_START_MINUTES = 22 * 60 + 30;
   const NIGHT_END_MINUTES = 6 * 60 + 30;
-  const nightOverride = ref<boolean | null>(null);
+  const NIGHT_OVERRIDE_KEY = 'nodeherder_panel_night';
+  function readNightOverride(): boolean | null {
+    const raw = safeStorage.getItem(NIGHT_OVERRIDE_KEY);
+    if (!raw) return null;
+    try {
+      const value: unknown = JSON.parse(raw);
+      if (typeof value !== 'object' || value === null) return null;
+      const mode = Reflect.get(value, 'mode');
+      const at = Reflect.get(value, 'at');
+      if ((mode !== 'day' && mode !== 'night') || typeof at !== 'number' || Date.now() - at > 12 * 60 * 60 * 1000) return null;
+      return mode === 'night';
+    } catch {
+      return null;
+    }
+  }
+  const nightOverride = ref<boolean | null>(readNightOverride());
   const scheduledNight = computed(() => {
     const date = new Date(now.value);
     const minutes = date.getHours() * 60 + date.getMinutes();
@@ -56,6 +72,7 @@
   const night = computed(() => nightOverride.value ?? scheduledNight.value);
   function toggleNight() {
     nightOverride.value = !night.value;
+    safeStorage.setItem(NIGHT_OVERRIDE_KEY, JSON.stringify({ mode: nightOverride.value ? 'night' : 'day', at: Date.now() }));
   }
 
   const page = ref<'rooms' | 'status'>('rooms');

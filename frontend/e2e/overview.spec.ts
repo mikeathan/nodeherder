@@ -19,3 +19,12 @@ test.describe('overview', () => {
     await expect(ui.overview.activitySwitch(page)).toHaveAttribute('aria-checked', 'true');
   });
 });
+
+// Spec 070: the verdict action must operate, not rely on a hash the app's scroll container ignores.
+test('review in order moves focus to the ranked list', async ({ page }) => {
+  await signIn(page, '/overview');
+  const review = page.getByRole('button', { name: 'Review in order' });
+  await expect(review).toBeVisible();
+  await review.click();
+  await expect(page.getByRole('heading', { name: 'Start here' })).toBeFocused();
+});

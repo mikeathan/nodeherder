@@ -36,9 +36,13 @@ after the check ran.
   paused/last-known controls while offline, status page retained; IDs: FR-07/AC-17–19; done:
   desktop/mobile panel specs pass. Deviation: the four essentials are the current room's first
   four tiles, not yet configurable.
-- [x] T012 — Browser coverage for notification inbox persistence (`NotificationBell.spec.ts`) plus
-  affected layout/panel/home/device suites; IDs: AC-05–08/23/24. Digest dismissal and panel night
-  toggle still lack dedicated specs.
+- [x] T012 — Browser coverage for notification inbox persistence (`NotificationBell.spec.ts`), panel
+  night persistence, and the Overview action; IDs: AC-05–08/17/23/24. Digest dismissal still lacks a
+  dedicated spec.
+- [x] T021 — Overview “Review in order” now scrolls and focuses the ranked list (nested scroll
+  container made the hash anchor inert); browser regression added.
+- [x] T022 — Browser-only Data & cleanup section: notifications, activity, log buffer and appearance,
+  with confirmations; no server deletion and no dead controls.
 - [ ] T013 — Editors/deep flows: automation editor/creator, integration setup/provider, Assistant,
   Login; IDs: FR-09 (scope deferred in spec §Problem). Not started.
 - [ ] T014 — Server-side cleanup/purge UI; IDs: AC-21 (excluded by NH-06). Blocked: no endpoints

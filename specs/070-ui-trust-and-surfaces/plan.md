@@ -62,8 +62,8 @@ purge into the UI before endpoints exist (unsafe).
 | FR-04/AC-09–11 | `services/logs.ts`, `LogArchiveCard.vue`, `ConsoleViewer.vue`, `AppHeader.vue` | `logs.test.ts` (3), Settings/Logger browser specs | PASS; file size/age not shown because the route returns names only |
 | FR-05/AC-12–14 | `OverviewPage.vue`, `overview.ts`, `RecentActivityBrief.vue` | `overview.test.ts` (3), overview + ActivityFeed browser specs, desktop/mobile layout | PASS |
 | FR-06/AC-15–16 | `DeviceList.vue`, `DeviceFilterBar.vue`, `DevicePage.vue` | network filter test, devices + EntityTile specs | PASS |
-| FR-07/AC-17–19 | `PanelMode.vue`, `PanelButton.vue` | panel desktop/mobile specs, layout at 320/390 | PASS; four essentials are the room's first four tiles |
-| FR-08/AC-20–22 | `Settings.vue`, `AutomationList.vue`, `automation-export.ts` | `automation-export.test.ts`, Settings/Logger/Storage specs | PARTIAL: rail summaries + export shipped; copy-ID/duplicate/run history open |
+| FR-07/AC-17–19 | `PanelMode.vue`, `PanelButton.vue` | panel desktop/mobile specs incl. night persistence, layout at 320/390 | PASS; four essentials are the room's first four tiles |
+| FR-08/AC-20–22 | `Settings.vue`, `CleanupSection.vue`, `AutomationList.vue`, `automation-export.ts` | `automation-export.test.ts`, Settings/Logger/Storage specs | PARTIAL: rail summaries, export, copy ID and browser cleanup shipped; duplicate/run history open |
 | FR-09/AC-23–25 | changed components | `layout.spec.ts` desktop+mobile, panel specs, lint/build | PASS for shipped surfaces; targeted a11y checks for new notifications still to add |
 | T013 editors/Assistant/Login | — | not started | DEFERRED (scope note in spec) |
 | T014 purge UI | — | excluded by NH-06 | BLOCKED, no dead controls shown |
@@ -75,6 +75,19 @@ Commands actually run:
 - `npx vue-tsc --noEmit --project tsconfig.build.json` → passed.
 - `npx tsc --noEmit --project tsconfig.e2e.json` → passed.
 - Playwright affected suites: Settings group (22), overview/ActivityFeed/layout/panel/EntityTile, home/devices, mobile layout/panel all green.
+
+## Follow-up (2026-11-26)
+
+- Overview “Review in order” now calls `scrollIntoView` on the ranked list and moves focus to
+  its heading; the previous hash link was inert because `.nh-app-main` owns scrolling. Regression:
+  `overview.spec.ts` “review in order moves focus to the ranked list”.
+- Added browser-only Settings → Data & cleanup (notifications, activity, log buffer, appearance)
+  with confirmation; server deletion remains excluded under NH-06.
+- Panel night choice now persists for the current night cycle, and the panel suite pins a
+  deterministic day baseline while adding an explicit night test.
+- Automation rows gained Copy ID alongside Export.
+- Affected Playwright suites: 43 desktop + 43 mobile passed; unit 169/1118, lint 0 errors,
+  build and e2e type-check pass.
 
 ## Debt, risks, exceptions
 
