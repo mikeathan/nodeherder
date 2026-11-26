@@ -9,6 +9,7 @@ import {
 test('sections use stable literal ids in rail order', () => {
   expect(SETTINGS_SECTIONS.map((section) => section.id)).toEqual([
     'appearance',
+    'cleanup',
     'device-defaults',
     'storage',
     'logger',
@@ -27,7 +28,7 @@ test('every section names its own icon so the rail never reuses a nav or integra
 test('appearance is browser scoped and hub sections are grouped after it', () => {
   const groups = groupSettingsSections();
   expect(groups.map((group) => group.label)).toEqual([SETTINGS_GROUP_LABELS.browser, SETTINGS_GROUP_LABELS.hub]);
-  expect(groups[0].sections.map((section) => section.id)).toEqual(['appearance']);
+  expect(groups[0].sections.map((section) => section.id)).toEqual(['appearance', 'cleanup']);
   expect(groups[1].sections.map((section) => section.id)).toEqual(['device-defaults', 'storage', 'logger', 'mcp', 'assistant']);
 });
 
@@ -40,7 +41,7 @@ test('retired ids resolve to the merged storage section', () => {
 test('known ids resolve exactly and the first section keeps a clean URL', () => {
   expect(resolveSettingsSection('logger').id).toBe('logger');
   expect(sectionQueryValue(SETTINGS_SECTIONS[0])).toBeUndefined();
-  expect(sectionQueryValue(SETTINGS_SECTIONS[2])).toBe('storage');
+  expect(sectionQueryValue(SETTINGS_SECTIONS.find((section) => section.id === 'storage')!)).toBe('storage');
 });
 
 test('missing, empty, repeated and unknown queries fall back to the first section', () => {

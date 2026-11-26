@@ -2,6 +2,16 @@ import { test, expect, signIn } from './support/fixtures';
 import { ui } from './support/ui';
 import { MOCK } from './support/mock';
 
+// Keep the wall-panel suite deterministic regardless of the runner's local clock; night has
+// its own explicit test below.
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    if (!localStorage.getItem('nodeherder_panel_night')) {
+      localStorage.setItem('nodeherder_panel_night', JSON.stringify({ mode: 'day', at: Date.now() }));
+    }
+  });
+});
+
 // Spec 007 US-07 (AC-23, AC-24): panel mode shows each Home area and exits back to Home.
 test.describe('panel mode', () => {
   test('shows one tab per area and exits to Home', async ({ page }) => {
@@ -265,4 +275,18 @@ test('12-hour clock remains on one line at 320px', async ({ page }) => {
   expect(size.lines).toBe(1);
   expect(size.width).toBeLessThanOrEqual(size.available + 1);
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+});
+
+// Spec 070: night keeps the clock and at most four controls, and the manual choice survives reload.
+test('night mode simplifies the room and persists for the night', async ({ page }) => {
+  await signIn(page, '/panel');
+  await page.getByRole('button', { name: 'Switch to night mode' }).click();
+  await expect(page.getByRole('button', { name: 'Switch to day mode' })).toBeVisible();
+  const controls = page.locator('.hp-buttons > .pb');
+  await expect.poll(() => controls.count()).toBeGreaterThan(0);
+  expect(await controls.count()).toBeLessThanOrEqual(4);
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Switch to day mode' })).toBeVisible();
+  await page.getByRole('button', { name: 'Switch to day mode' }).click();
+  await expect(page.getByRole('button', { name: 'Switch to night mode' })).toBeVisible();
 });

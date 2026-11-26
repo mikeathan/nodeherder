@@ -4,7 +4,7 @@
    * moved to Devices and Panel status; full activity stays available but collapsed. The
    * goal is to answer “what first?” in the first viewport.
    */
-  import { computed } from 'vue';
+  import { computed, ref } from 'vue';
   import { store } from '@/store';
   import { RouteName } from '@/types/router';
   import type { Automations } from '@/types/automation.type';
@@ -13,6 +13,7 @@
   import { useDashboardGroups } from '@/composables/useDashboardGroups';
   import { useAutomationsLoader } from '@/composables/useAutomations';
   import { useNow } from '@/composables/useClock';
+  import { useMediaQuery } from '@/composables/useMediaQuery';
   import { summarizeNetwork } from '@/domain/network';
   import { OVERVIEW_REASON_LABEL, overviewIssues } from '@/domain/overview';
   import { relativeTime } from '@/domain/time';
@@ -29,6 +30,8 @@
   const { groups } = useDashboardGroups();
   const automations = useAutomationsLoader();
   const now = useNow();
+  const startHere = ref<HTMLElement | null>(null);
+  const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
 
   const summary = computed(() => summarizeNetwork(devices.value));
   const issues = computed(() => overviewIssues(devices.value, (device: Device) => isDeviceDisabled(device.id), now.value));
@@ -40,6 +43,19 @@
   const snapshot = computed(() =>
     lastSynced.value === null ? 'waiting for the first sync' : `snapshot ${new Date(lastSynced.value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
   );
+
+  /**
+   * Moves the viewport and keyboard focus to the ranked list. Native hash navigation does
+   * nothing when the app's main element owns scroll, so the action is explicit.
+   */
+  function reviewInOrder() {
+    const section = startHere.value;
+    if (!section) return;
+    section.scrollIntoView({ behavior: reduceMotion.value ? 'auto' : 'smooth', block: 'start' });
+    const heading = section.querySelector<HTMLElement>('h2');
+    heading?.setAttribute('tabindex', '-1');
+    heading?.focus({ preventScroll: true });
+  }
 
   /** Short, human breakdown used by the verdict; it never claims a cause the data lacks. */
   const breakdown = computed(() => {
@@ -66,10 +82,10 @@
         <p v-if="issues.length">{{ breakdown }}</p>
         <p v-else>{{ summary.online }} of {{ summary.total }} devices reporting · {{ enabledRules }} automations on · no action needed.</p>
       </div>
-      <a v-if="issues.length" class="nh-verdict-cta" href="#nh-start-here">Review in order</a>
+      <button v-if="issues.length" type="button" class="nh-verdict-cta" @click="reviewInOrder">Review in order</button>
     </section>
 
-    <section v-if="top.length" id="nh-start-here" class="nh-start" aria-labelledby="nh-start-title">
+    <section v-if="top.length" id="nh-start-here" ref="startHere" class="nh-start" aria-labelledby="nh-start-title">
       <header>
         <h2 id="nh-start-title">Start here</h2>
         <span>{{ top.length }} of {{ issues.length }}</span>
@@ -169,12 +185,18 @@
     align-items: center;
     min-height: var(--nh-ctl-h);
     padding: 0 0.9rem;
+    border: 0;
     border-radius: var(--nh-radius-m);
     background: var(--nh-accent);
     color: var(--nh-accent-contrast);
+    font: inherit;
     font-size: 0.82rem;
     font-weight: 650;
-    text-decoration: none;
+    cursor: pointer;
+  }
+  .nh-verdict-cta:focus-visible {
+    outline: 2px solid var(--nh-focus);
+    outline-offset: 2px;
   }
   .nh-start {
     margin-bottom: var(--nh-space);

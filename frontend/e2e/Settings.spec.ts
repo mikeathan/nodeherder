@@ -33,6 +33,7 @@ test('each section is reachable by URL and exposes exactly one section heading',
     ['device-defaults', 'Device defaults'],
     ['storage', 'Storage & retention'],
     ['logger', 'Logs & diagnostics'],
+    ['cleanup', 'Data & cleanup'],
     ['mcp', 'MCP server'],
     ['assistant', 'Assistant'],
   ];
@@ -70,7 +71,7 @@ test('rail is keyboard operable and scrolls horizontally on a phone', async ({ p
 });
 
 test('no settings section nests a card inside another card', async ({ page }) => {
-  for (const id of ['appearance', 'device-defaults', 'storage', 'logger', 'mcp', 'assistant']) {
+  for (const id of ['appearance', 'cleanup', 'device-defaults', 'storage', 'logger', 'mcp', 'assistant']) {
     await signIn(page, `/settings?section=${id}`);
     await page.waitForLoadState('networkidle');
     const nested = await page.evaluate(() => document.querySelectorAll('.nh-card .nh-card').length);

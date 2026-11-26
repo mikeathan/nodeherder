@@ -29,6 +29,11 @@
     switch (id) {
       case 'appearance':
         return `${theme.value.theme} · ${mode.value} · ${theme.value.fontScale}%`;
+      case 'cleanup': {
+        const unread = store.getters['notifications/unreadCount']() as number;
+        const logs = (store.getters['console/messages']() as unknown[]).length;
+        return `${unread} unread · ${logs} logs`;
+      }
       case 'device-defaults': {
         const defaults = store.getters['hub/deviceDefaults']();
         return defaults ? `${defaults.metricsEnabled ? 'history on' : 'history off'}` : 'Not loaded';
