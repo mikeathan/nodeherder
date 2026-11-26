@@ -1,69 +1,111 @@
 <script setup lang="ts">
-import { ConversationSummary } from '@/types/assistant.type';
+  /* Conversation list with app-token rows; delete stays visible on touch and on focus. */
+  import type { ConversationSummary } from '@/types/assistant.type';
+  import UiButton from '@/components/ui/UiButton.vue';
 
-defineProps<{
-  conversations: ConversationSummary[];
-  activeId?: string;
-}>();
+  defineProps<{
+    conversations: ConversationSummary[];
+    activeId?: string;
+  }>();
 
-const emit = defineEmits<{
-  (e: 'select', id: string): void;
-  (e: 'delete', id: string): void;
-}>();
+  const emit = defineEmits<{
+    (e: 'select', id: string): void;
+    (e: 'delete', id: string): void;
+  }>();
 
-const formatDate = (isoString?: string) => {
-  if (!isoString) return '';
-  return new Date(isoString).toLocaleDateString([], { month: 'short', day: 'numeric' });
-};
+  function formatDate(isoString?: string): string {
+    if (!isoString) return '';
+    return new Date(isoString).toLocaleDateString([], { month: 'short', day: 'numeric' });
+  }
 </script>
 
 <template>
-  <div class="flex flex-column gap-2 pb-3">
-    <div 
-      v-for="conv in conversations" 
-      :key="conv.id"
-      class="history-item flex align-items-center justify-content-between p-2 mx-2 border-round cursor-pointer transition-colors"
-      :class="conv.id === activeId ? 'surface-hover text-primary font-medium' : 'hover:surface-hover text-color'"
-      @click="emit('select', conv.id)"
-    >
-      <div class="flex flex-column overflow-hidden mr-2 flex-1 min-w-0">
-        <span class="white-space-nowrap overflow-hidden text-overflow-ellipsis text-sm">{{ conv.title || 'New Conversation' }}</span>
-        <span class="text-xs text-color-secondary mt-1">{{ formatDate(conv.created_at) }}</span>
+  <ul class="nh-conv-list">
+    <li v-for="conversation in conversations" :key="conversation.id">
+      <div class="nh-conv" :class="{ 'is-active': conversation.id === activeId }">
+        <button type="button" class="nh-conv-main" @click="emit('select', conversation.id)">
+          <span>{{ conversation.title || 'New conversation' }}</span>
+          <small>{{ formatDate(conversation.created_at) }}</small>
+        </button>
+        <UiButton
+          size="sm"
+          variant="ghost"
+          icon="delete"
+          class="is-danger nh-conv-delete"
+          :label="`Delete ${conversation.title || 'conversation'}`"
+          @click.stop="emit('delete', conversation.id)" />
       </div>
-      <div class="flex-shrink-0">
-        <Button 
-          icon="pi pi-trash" 
-          severity="danger" 
-          text 
-          rounded 
-          size="small"
-          class="h-2rem w-2rem delete-btn"
-          @click.stop="emit('delete', conv.id)" 
-          aria-label="Delete Conversation"
-        />
-      </div>
-    </div>
-    
-    <div v-if="conversations.length === 0" class="text-center text-color-secondary p-3 text-sm">
-      No recent conversations
-    </div>
-  </div>
+    </li>
+    <li v-if="!conversations.length" class="nh-conv-empty">No recent conversations</li>
+  </ul>
 </template>
 
 <style scoped>
-.history-item .delete-btn {
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.history-item:hover .delete-btn {
-  opacity: 1;
-}
-
-/* Ensure the delete button is always visible on touch devices if hover media isn't supported */
-@media (hover: none) {
-  .history-item .delete-btn {
+  .nh-conv-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+  .nh-conv {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+    border-radius: var(--nh-radius-m);
+    padding: 0.1rem;
+  }
+  .nh-conv:hover,
+  .nh-conv.is-active {
+    background: var(--nh-surface-2);
+  }
+  .nh-conv.is-active {
+    box-shadow: inset 3px 0 0 var(--nh-accent);
+  }
+  .nh-conv-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.1rem;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    padding: 0.45rem 0.55rem;
+    cursor: pointer;
+  }
+  .nh-conv-main span {
+    font-size: 0.8rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+  .nh-conv-main small {
+    color: var(--nh-text-muted);
+    font-size: 0.68rem;
+  }
+  .nh-conv-delete {
+    opacity: 0;
+    flex: none;
+  }
+  .nh-conv:hover .nh-conv-delete,
+  .nh-conv:focus-within .nh-conv-delete {
     opacity: 1;
   }
-}
+  .nh-conv-empty {
+    color: var(--nh-text-muted);
+    font-size: 0.78rem;
+    padding: 0.6rem;
+    text-align: center;
+  }
+  @media (hover: none) {
+    .nh-conv-delete {
+      opacity: 1;
+    }
+  }
 </style>

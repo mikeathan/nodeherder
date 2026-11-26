@@ -1,92 +1,90 @@
 <script setup lang="ts">
-  import { computed } from 'vue';
+  /* Composer with the shell's input/button tokens; Enter sends, Shift+Enter adds a line. */
+  import { computed, nextTick, ref, watch } from 'vue';
+  import UiButton from '@/components/ui/UiButton.vue';
 
-  const props = defineProps<{
-    modelValue: string;
-    isLoading?: boolean;
-  }>();
+  const props = defineProps<{ modelValue: string; isLoading?: boolean }>();
+  const emit = defineEmits<{ (e: 'update:modelValue', value: string): void; (e: 'send'): void }>();
 
-  const emit = defineEmits<{
-    (e: 'update:modelValue', value: string): void;
-    (e: 'send'): void;
-  }>();
+  const field = ref<HTMLTextAreaElement | null>(null);
+  const canSend = computed(() => !!props.modelValue.trim() && !props.isLoading);
 
-  const trimmedValue = computed(() => props.modelValue.trim());
-  const canSend = computed(() => !!trimmedValue.value && !props.isLoading);
+  function resize() {
+    const element = field.value;
+    if (!element) return;
+    element.style.height = 'auto';
+    element.style.height = `${Math.min(element.scrollHeight, 180)}px`;
+  }
 
-  const handleInput = (event: Event) => {
-    const target = event.target as HTMLTextAreaElement;
-    emit('update:modelValue', target.value);
-  };
+  watch(() => props.modelValue, () => void nextTick(resize));
 
-  const handleSend = () => {
-    if (canSend.value) {
-      emit('send');
-    }
-  };
+  function onInput(event: Event) {
+    emit('update:modelValue', (event.target as HTMLTextAreaElement).value);
+    resize();
+  }
+  function send() {
+    if (canSend.value) emit('send');
+  }
+  function onKeydown(event: KeyboardEvent) {
+    if (event.key !== 'Enter' || event.shiftKey) return;
+    event.preventDefault();
+    send();
+  }
 </script>
 
 <template>
-  <div
-    class="chat-input-container w-full relative shadow-1 border-1 border-solid surface-border border-round-xl py-1 px-2 flex align-items-end transition-colors surface-overlay">
-    <Textarea
+  <div class="nh-chat-input">
+    <textarea
+      ref="field"
       :value="modelValue"
-      @input="handleInput"
-      autoResize
       rows="1"
-      class="flex-1 bg-transparent border-none outline-none shadow-none text-color text-base custom-textarea px-3 py-2 m-1"
-      placeholder="Ask anything..."
-      @keydown.enter.prevent="handleSend" />
-
-    <div class="pb-2 pr-1 flex align-items-center justify-content-center">
-      <Button
-        rounded
-        :disabled="!canSend"
-        :class="[
-          'p-0 flex justify-content-center align-items-center border-none transition-colors chat-send-button',
-          canSend ? 'active' : 'surface-400',
-        ]"
-        style="width: 32px; height: 32px"
-        @click="handleSend">
-        <i
-          :class="['pi pi-arrow-up text-sm font-bold chat-send-icon', canSend ? 'active' : 'text-color-secondary']"></i>
-      </Button>
-    </div>
+      class="nh-chat-field"
+      placeholder="Ask about your home…"
+      aria-label="Message the assistant"
+      @input="onInput"
+      @keydown="onKeydown" />
+    <UiButton variant="primary" icon="send" label="Send message" :disabled="!canSend" @click="send">
+      <span class="nh-chat-send-label">Send</span>
+    </UiButton>
   </div>
 </template>
 
 <style scoped>
-  .chat-input-container {
+  .nh-chat-input {
+    width: 100%;
     max-width: 48rem;
     margin: 0 auto;
+    display: flex;
+    align-items: flex-end;
+    gap: 0.45rem;
+    padding: 0.35rem;
+    border: var(--nh-border-w) solid var(--nh-border-strong);
+    border-radius: var(--nh-radius-l);
+    background: var(--nh-surface-2);
   }
-
-  .chat-send-button.active {
-    background-color: var(--text-color) !important;
-  }
-
-  .chat-send-icon.active {
-    color: var(--surface-overlay) !important;
-  }
-  :deep(.custom-textarea) {
-    min-height: 24px;
-    max-height: 300px;
+  .nh-chat-field {
+    flex: 1;
+    min-width: 0;
+    min-height: 2.35rem;
+    max-height: 11rem;
     resize: none;
-    background-color: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
+    border: 0;
+    background: transparent;
+    color: var(--nh-text);
+    font: inherit;
+    line-height: 1.45;
+    padding: 0.55rem 0.6rem;
   }
-  :deep(.custom-textarea:focus) {
-    outline: none !important;
-    box-shadow: none !important;
+  .nh-chat-field:focus {
+    outline: none;
   }
-
-  :deep(.p-button.p-button-icon-only) {
-    padding: 0;
+  .nh-chat-input:focus-within {
+    border-color: var(--nh-focus);
+    box-shadow: 0 0 0 2px var(--nh-accent-soft);
   }
-  :deep(.p-button.surface-400:disabled) {
-    background-color: var(--surface-00) !important;
-    color: var(--surface-600) !important;
-    opacity: 1;
+  @media (max-width: 640px) {
+    .nh-chat-send-label {
+      display: none;
+    }
   }
 </style>
